@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FaSearch,
   FaBars,
@@ -7,6 +8,11 @@ import {
 import logoKan from '../assets/kan.png';
 
 const Header = () => {
+  const { i18n } = useTranslation();
+  useEffect(() => {
+    console.log('Bahasa sekarang:', i18n.language);
+    console.log('Resolved language:', i18n.resolvedLanguage);
+  }, [i18n.language, i18n.resolvedLanguage]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,7 +49,7 @@ const Header = () => {
       label: 'Tentang KAN',
       href: '/tentang-kan',
       dropdown: [
-        { label: 'Profil KAN', href: '/tentang-kan'},
+        { label: 'Profil KAN', href: '/tentang-kan' },
         { label: 'Sejarah dan Fungsi KAN', href: '/sejarah-fungsi' },
         { label: 'Struktur Organisasi', href: '/struktur-organisasi' },
         { label: 'Ketidakberpihakan', href: '/ketidakberpihakan' },
@@ -61,7 +67,7 @@ const Header = () => {
         { label: 'Tarif Akreditasi', href: '/tarif-akreditasi' },
         { label: 'Penanganan Komplain', href: '/penanganan-komplain' },
         { label: 'Penanganan Banding', href: '/penanganan-banding' },
-        { label: 'Survey Kepuasan Pelanggan', href: '/survey-kepuasan-pelanggan'},
+        { label: 'Survey Kepuasan Pelanggan', href: '/survey-kepuasan-pelanggan' },
       ]
     },
     {
@@ -142,11 +148,13 @@ const Header = () => {
     },
   ];
 
+  const activeLang = (i18n.resolvedLanguage || i18n.language || 'id').startsWith('en') ? 'en' : 'id';
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled
-          ? 'bg-white/95 backdrop-blur-xl shadow-2xl shadow-primary-500/10'
-          : 'bg-gradient-to-b from-black/60 via-black/30 to-transparent backdrop-blur-md'
+        ? 'bg-white/95 backdrop-blur-xl shadow-2xl shadow-primary-500/10'
+        : 'bg-gradient-to-b from-black/60 via-black/30 to-transparent backdrop-blur-md'
         }`}
     >
 
@@ -184,6 +192,33 @@ const Header = () => {
                   Hubungi Kami
                 </a>
 
+                {/* Language */}
+                <div className="flex items-center gap-2 font-medium text-white">
+                  <button
+                    type="button"
+                    onClick={() => i18n.changeLanguage('en')}
+                    className={`transition-colors ${activeLang === 'en'
+                        ? 'text-white underline underline-offset-4'
+                        : 'text-white/70 hover:text-white'
+                      }`}
+                  >
+                    EN
+                  </button>
+
+                  <span className="text-white/70">|</span>
+
+                  <button
+                    type="button"
+                    onClick={() => i18n.changeLanguage('id')}
+                    className={`transition-colors ${activeLang === 'id'
+                        ? 'text-white underline underline-offset-4'
+                        : 'text-white/70 hover:text-white'
+                      }`}
+                  >
+                    ID
+                  </button>
+                </div>
+
               </div>
 
             </div>
@@ -196,8 +231,8 @@ const Header = () => {
           ===================================================== */}
       <div
         className={`${isScrolled
-            ? 'py-2 md:py-3'
-            : 'py-3 md:py-4'
+          ? 'py-2 md:py-3'
+          : 'py-3 md:py-4'
           } transition-all duration-300`}
       >
         <div className="container">
@@ -238,15 +273,15 @@ const Header = () => {
                   <a
                     href={item.href}
                     className={`${isScrolled
-                        ? 'text-gray-700 hover:text-primary-600'
-                        : 'text-white/90 hover:text-white'
+                      ? 'text-gray-700 hover:text-primary-600'
+                      : 'text-white/90 hover:text-white'
                       } px-2.5 lg:px-3.5 py-2.5 rounded-xl font-semibold transition-all relative overflow-hidden text-[11px] lg:text-sm group/item flex items-center gap-1 lg:gap-1.5 whitespace-nowrap`}
                   >
 
                     <span
                       className={`absolute inset-0 ${isScrolled
-                          ? 'bg-primary-50'
-                          : 'bg-white/10'
+                        ? 'bg-primary-50'
+                        : 'bg-white/10'
                         } scale-0 group-hover/item:scale-100 transition-transform duration-300 rounded-xl`}
                     ></span>
 
@@ -257,8 +292,8 @@ const Header = () => {
                     {item.dropdown && (
                       <span
                         className={`relative z-10 text-xs transition-transform ${activeDropdown === index
-                            ? 'rotate-180'
-                            : ''
+                          ? 'rotate-180'
+                          : ''
                           }`}
                       >
                         ▼
@@ -304,8 +339,8 @@ const Header = () => {
 
                   <FaSearch
                     className={`ml-3 text-sm flex-shrink-0 ${isScrolled
-                        ? 'text-gray-400'
-                        : 'text-white/70'
+                      ? 'text-gray-400'
+                      : 'text-white/70'
                       }`}
                   />
 
@@ -317,8 +352,8 @@ const Header = () => {
                       setSearchQuery(e.target.value)
                     }
                     className={`flex-1 min-w-0 px-3 bg-transparent outline-none text-xs lg:text-sm font-medium ${isScrolled
-                        ? 'text-gray-800 placeholder-gray-400'
-                        : 'text-white placeholder-white/60'
+                      ? 'text-gray-800 placeholder-gray-400'
+                      : 'text-white placeholder-white/60'
                       }`}
                     aria-label="Cari"
                   />
@@ -327,8 +362,8 @@ const Header = () => {
                     <button
                       onClick={() => setSearchQuery('')}
                       className={`mr-2 flex items-center justify-center w-6 h-6 rounded-md transition-all flex-shrink-0 ${isScrolled
-                          ? 'text-gray-400 hover:text-gray-700 hover:bg-gray-200'
-                          : 'text-white/60 hover:text-white hover:bg-white/10'
+                        ? 'text-gray-400 hover:text-gray-700 hover:bg-gray-200'
+                        : 'text-white/60 hover:text-white hover:bg-white/10'
                         }`}
                       aria-label="Hapus pencarian"
                     >
@@ -350,8 +385,8 @@ const Header = () => {
                 setIsMobileMenuOpen(!isMobileMenuOpen)
               }
               className={`xl:hidden ${isScrolled
-                  ? 'text-gray-800 bg-gray-50'
-                  : 'text-white bg-white/10'
+                ? 'text-gray-800 bg-gray-50'
+                : 'text-white bg-white/10'
                 } p-2 md:p-3 rounded-xl transition-all hover:scale-110 backdrop-blur-xl border ${isScrolled
                   ? 'border-gray-200'
                   : 'border-white/20'

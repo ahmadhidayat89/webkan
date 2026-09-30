@@ -41,4 +41,3 @@ class TranslateController extends Controller
         ]);
     }
 }
-

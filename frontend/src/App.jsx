@@ -23,12 +23,15 @@ import DirectoryManagement from './pages/admin/DirectoryManagement';
 import DocumentManagement from './pages/admin/DocumentManagement';
 
 import ProtectedRoute from './components/admin/ProtectedRoute';
+import AutoPageTranslator from './components/AutoPageTranslator';
 
 import './App.css';
 
 function App() {
   return (
     <Router>
+      <AutoPageTranslator />
+
       <Routes>
 
         {/* =========================================================
@@ -67,7 +70,10 @@ function App() {
         <Route path="/penanganan-komplain" element={<DynamicPage />} />
         <Route path="/penanganan-banding" element={<DynamicPage />} />
         <Route path="/survey-kepuasan-pelanggan" element={<DynamicPage />} />
-        <Route path="/survey-kepuasan-pelanggan/:year" element={<DynamicPage />} />
+        <Route
+          path="/survey-kepuasan-pelanggan/:year"
+          element={<DynamicPage />}
+        />
         <Route path="/hasil-survei" element={<DynamicPage />} />
 
 
@@ -78,7 +84,10 @@ function App() {
         <Route path="/layanan-akreditasi" element={<DynamicPage />} />
 
         <Route path="/layanan/laboratorium" element={<DynamicPage />} />
-        <Route path="/layanan/laboratorium/:slug" element={<DynamicPage />} />
+        <Route
+          path="/layanan/laboratorium/:slug"
+          element={<DynamicPage />}
+        />
 
         <Route path="/daftar-laboratorium" element={<DynamicPage />} />
 
@@ -123,8 +132,15 @@ function App() {
         />
 
         {/* Dynamic service routes */}
-        <Route path="/daftar-layanan/:cat" element={<DynamicPage />} />
-        <Route path="/layanan/:cat/:slug" element={<DynamicPage />} />
+        <Route
+          path="/daftar-layanan/:cat"
+          element={<DynamicPage />}
+        />
+
+        <Route
+          path="/layanan/:cat/:slug"
+          element={<DynamicPage />}
+        />
 
 
         {/* =========================================================
@@ -136,15 +152,21 @@ function App() {
           element={<Navigate to="/direktori/semua" replace />}
         />
 
-        <Route path="/direktori/semua" element={<DirectoryPage />} />
+        <Route
+          path="/direktori/semua"
+          element={<DirectoryPage />}
+        />
+
         <Route
           path="/direktori/terakreditasi"
           element={<DirectoryPage />}
         />
+
         <Route
           path="/direktori/akreditasi-dibekukan"
           element={<DirectoryPage />}
         />
+
         <Route
           path="/direktori/akreditasi-dicabut"
           element={<DirectoryPage />}
@@ -155,14 +177,20 @@ function App() {
             UNDUH / DOCUMENTS
         ========================================================= */}
 
-        <Route path="/unduh/*" element={<DocumentPage />} />
+        <Route
+          path="/unduh/*"
+          element={<DocumentPage />}
+        />
 
 
         {/* =========================================================
             ADMIN ROUTES
         ========================================================= */}
 
-        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin/login"
+          element={<AdminLogin />}
+        />
 
         <Route
           path="/admin/dashboard"
@@ -200,11 +228,14 @@ function App() {
           }
         />
 
-        <Route path="/admin/faq" 
-        element={
-          <ProtectedRoute>
-            <FaqManagement />
-          </ProtectedRoute>} />
+        <Route
+          path="/admin/faq"
+          element={
+            <ProtectedRoute>
+              <FaqManagement />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/admin/pages"
