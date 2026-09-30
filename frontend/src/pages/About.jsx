@@ -1,82 +1,123 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import {
-  FaHome, FaChevronRight, FaArrowRight,
-  FaCheckCircle, FaAward, FaUsers, FaGlobe,
-  FaHistory, FaSitemap, FaBalanceScale, FaStar, FaIdCard, FaFileAlt, FaClipboardList,
+  FaHome,
+  FaChevronRight,
+  FaArrowRight,
+  FaArrowLeft,
+  FaCheckCircle,
+  FaAward,
+  FaUsers,
+  FaGlobe,
+  FaStar,
+  FaClipboardList,
 } from 'react-icons/fa';
 
 const About = () => {
   const navigate = useNavigate();
 
-  const subPages = [
+  // =========================
+  // Sidebar
+  // =========================
+  const sidebarPages = [
+    { href: '/tentang-kan', label: 'Profil KAN' },
+    { href: '/sejarah-fungsi', label: 'Sejarah dan Fungsi KAN' },
+    { href: '/struktur-organisasi', label: 'Struktur Organisasi' },
+    { href: '/ketidakberpihakan', label: 'Ketidakberpihakan' },
+    { href: '/pengakuan-internasional', label: 'Pengakuan Internasional' },
+    { href: '/anggota-kan', label: 'Anggota KAN' },
+    { href: '/maklumat-layanan', label: 'Maklumat Layanan' },
+    { href: '/standar-layanan', label: 'Standar Layanan Akreditasi' },
+  ];
+
+  // =========================
+  // Statistik
+  // =========================
+  const stats = [
     {
-      icon: FaHistory,
-      href: '/sejarah-fungsi',
-      label: 'Sejarah dan Fungsi KAN',
-      desc: 'Perjalanan dan peran KAN sejak berdiri hingga kini',
-      color: 'from-blue-600 to-blue-700',
+      value: 1997,
+      suffix: '',
+      label: 'Tahun Berdiri',
     },
     {
-      icon: FaSitemap,
-      href: '/struktur-organisasi',
-      label: 'Struktur Organisasi',
-      desc: 'Susunan kepengurusan dan organisasi KAN',
-      color: 'from-indigo-600 to-indigo-700',
+      value: 500,
+      suffix: '+',
+      label: 'LPK Terakreditasi',
     },
     {
-      icon: FaBalanceScale,
-      href: '/ketidakberpihakan',
-      label: 'Ketidakberpihakan',
-      desc: 'Komitmen KAN dalam menjaga independensi dan objektivitas',
+      value: 10,
+      suffix: '+',
+      label: 'Pengakuan Internasional',
+    },
+    {
+      value: 25,
+      suffix: '+',
+      label: 'Tahun Pengalaman',
+    },
+  ];
+
+  const statsRef = useRef(null);
+  const [isStatsVisible, setIsStatsVisible] = useState(false);
+
+  useEffect(() => {
+    const element = statsRef.current;
+
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsStatsVisible(true);
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: 0.3,
+      }
+    );
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
+
+  // =========================
+  // Nilai-Nilai KAN
+  // =========================
+  const values = [
+    {
+      icon: FaCheckCircle,
+      color: 'from-blue-500 to-blue-600',
+      label: 'Integritas',
+      desc: 'Menjunjung tinggi kejujuran dan transparansi dalam setiap tindakan',
+    },
+    {
+      icon: FaAward,
+      color: 'from-primary-600 to-primary-700',
+      label: 'Profesionalisme',
+      desc: 'Berkomitmen pada standar kompetensi tertinggi',
+    },
+    {
+      icon: FaUsers,
       color: 'from-violet-600 to-violet-700',
+      label: 'Kolaborasi',
+      desc: 'Bekerja sama untuk kemajuan akreditasi nasional',
     },
     {
       icon: FaGlobe,
-      href: '/pengakuan-internasional',
-      label: 'Pengakuan Internasional',
-      desc: 'Keanggotaan dan pengakuan KAN di kancah internasional',
       color: 'from-cyan-600 to-cyan-700',
-    },
-    {
-      icon: FaIdCard,
-      href: '/anggota-kan',
-      label: 'Anggota KAN',
-      desc: 'Daftar lembaga penilaian kesesuaian yang terakreditasi',
-      color: 'from-teal-600 to-teal-700',
-    },
-    {
-      icon: FaFileAlt,
-      href: '/maklumat-layanan',
-      label: 'Maklumat Layanan',
-      desc: 'Komitmen dan janji pelayanan KAN kepada masyarakat',
-      color: 'from-emerald-600 to-emerald-700',
-    },
-    {
-      icon: FaClipboardList,
-      href: '/standar-layanan',
-      label: 'Standar Layanan Akreditasi',
-      desc: 'Standar dan prosedur layanan akreditasi KAN',
-      color: 'from-green-600 to-green-700',
+      label: 'Internasional',
+      desc: 'Diakui dan dipercaya di tingkat global',
     },
   ];
 
-  const stats = [
-    { value: '1997', label: 'Tahun Berdiri' },
-    { value: '500+', label: 'LPK Terakreditasi' },
-    { value: '10+', label: 'Pengakuan Internasional' },
-    { value: '25+', label: 'Tahun Pengalaman' },
-  ];
-
-  const values = [
-    { icon: FaCheckCircle, color: 'from-blue-500 to-blue-600', label: 'Integritas', desc: 'Menjunjung tinggi kejujuran dan transparansi dalam setiap tindakan' },
-    { icon: FaAward, color: 'from-primary-600 to-primary-700', label: 'Profesionalisme', desc: 'Berkomitmen pada standar kompetensi tertinggi' },
-    { icon: FaUsers, color: 'from-violet-600 to-violet-700', label: 'Kolaborasi', desc: 'Bekerja sama untuk kemajuan akreditasi nasional' },
-    { icon: FaGlobe, color: 'from-cyan-600 to-cyan-700', label: 'Internasional', desc: 'Diakui dan dipercaya di tingkat global' },
-  ];
-
-  const vision = 'Menjadi lembaga akreditasi yang diakui secara internasional dan terpercaya dalam memberikan jaminan kompetensi lembaga penilaian kesesuaian.';
+  // =========================
+  // Visi & Misi
+  // =========================
+  const vision =
+    'Menjadi lembaga akreditasi yang diakui secara internasional dan terpercaya dalam memberikan jaminan kompetensi lembaga penilaian kesesuaian.';
 
   const missions = [
     'Memberikan layanan akreditasi yang berkualitas tinggi dan dapat dipertanggungjawabkan',
@@ -89,176 +130,332 @@ const About = () => {
     <div className="min-h-screen bg-gray-100">
       <Header />
 
-      {/* Dark Banner + Stats — satu kesatuan */}
-      <div className="relative bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800 overflow-hidden">
+      {/* =========================
+          Dark Banner
+      ========================= */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-20 -right-20 w-96 h-96 bg-primary-600/20 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+          <div className="absolute rounded-full -top-20 -right-20 w-96 h-96 bg-primary-600/20 blur-3xl"></div>
+
+          <div className="absolute bottom-0 w-64 h-64 rounded-full left-1/4 bg-white/5 blur-3xl"></div>
+
+          <div className="absolute w-32 h-32 rounded-full top-1/2 right-1/3 bg-primary-400/10 blur-2xl"></div>
         </div>
 
-        <div className="container mx-auto px-6 relative z-10">
-          {/* Breadcrumb — di dalam banner, di bawah navbar */}
-          <div className="pt-32 lg:pt-40 pb-4 border-b border-white/10">
-            <nav className="flex items-center gap-2 text-sm flex-wrap">
-              <button onClick={() => navigate('/')} className="flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors font-medium">
+        <div className="container relative z-10 px-6 mx-auto">
+          {/* Breadcrumb */}
+          <div className="pt-32 pb-4 border-b lg:pt-40 border-white/10">
+            <nav className="flex flex-wrap items-center gap-2 text-sm">
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center gap-1.5 font-medium text-white/50 hover:text-white/80 transition-colors"
+              >
                 <FaHome className="text-xs" />
                 <span>Beranda</span>
               </button>
+
               <FaChevronRight className="text-xs text-white/30" />
-              <span className="text-white/80 font-semibold">Tentang KAN</span>
+
+              <span className="text-white/50">
+                Tentang KAN
+              </span>
+
+              <FaChevronRight className="text-xs text-white/30" />
+
+              <span className="font-semibold text-white/80">
+                Profil KAN
+              </span>
             </nav>
           </div>
 
           {/* Title */}
           <div className="py-10">
-            <p className="text-primary-300 font-bold text-sm uppercase tracking-widest mb-3">
-              Komite Akreditasi Nasional
-            </p>
-            <h1 className="text-4xl md:text-5xl font-black text-white leading-tight mb-3">
-              Tentang KAN
-            </h1>
-            <div className="w-16 h-1 bg-primary-400 rounded-full mb-5"></div>
-            <p className="text-white/70 text-lg max-w-2xl leading-relaxed">
-              Lembaga non-struktural yang bertanggung jawab langsung kepada Presiden Republik Indonesia dalam bidang akreditasi.
-            </p>
-          </div>
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <h1 className="mb-3 text-4xl font-black leading-tight text-white md:text-5xl">
+                  Profil KAN
+                </h1>
 
-          {/* Stats — di dalam banner, dipisah garis atas */}
-          <div className="border-t border-white/10 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-            {stats.map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="text-3xl md:text-4xl font-black text-white mb-1">{stat.value}</div>
-                <div className="text-sm text-white/50 font-semibold">{stat.label}</div>
+                <div className="w-16 h-1 rounded-full bg-primary-400" />
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
 
-      <main className="py-14">
-        <div className="container mx-auto px-6">
+      {/* =========================
+          Content Area
+      ========================= */}
+      <main className="py-12">
+        <div className="container px-6 mx-auto">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex items-start gap-8">
 
-          {/* Subpages Navigation */}
-          <div className="mb-16">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">
-                Informasi Tentang KAN
-              </h2>
-              <p className="text-gray-500 max-w-xl mx-auto">
-                Jelajahi informasi lengkap mengenai Komite Akreditasi Nasional
-              </p>
-            </div>
+              {/* =========================
+                  Sidebar
+              ========================= */}
+              <aside className="flex-shrink-0 hidden lg:block w-72">
+                <div className="sticky space-y-4 top-28">
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {subPages.map((page, i) => {
-                const Icon = page.icon;
-                return (
-                  <a
-                    key={i}
-                    href={page.href}
-                    className="group bg-white rounded-2xl shadow-md border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
+                  <button
+                    onClick={() => navigate('/')}
+                    className="flex items-center gap-2 text-sm font-semibold transition-colors text-primary-600 hover:text-primary-700"
                   >
-                    <div className={`w-12 h-12 bg-gradient-to-br ${page.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
-                      <Icon className="text-xl text-white" />
-                    </div>
-                    <h3 className="font-black text-gray-900 mb-2 group-hover:text-primary-600 transition-colors leading-tight">
-                      {page.label}
-                    </h3>
-                    <p className="text-sm text-gray-500 leading-relaxed flex-1">
-                      {page.desc}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-4 text-primary-600 font-bold text-sm group-hover:gap-3 transition-all">
-                      <span>Selengkapnya</span>
-                      <FaArrowRight className="text-xs" />
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
+                    <FaArrowLeft className="text-xs" />
+                    <span>Kembali ke Beranda</span>
+                  </button>
 
-          {/* Visi & Misi */}
-          <div className="mb-16">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-primary-700 to-primary-800 px-8 py-6">
-                <h2 className="text-2xl font-black text-white">
-                  Visi & Misi
-                </h2>
-              </div>
-              <div className="p-8 md:p-12 grid md:grid-cols-2 gap-10">
-                {/* Visi */}
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-                      <FaStar className="text-primary-600 text-lg" />
-                    </div>
-                    <h3 className="text-xl font-black text-gray-900">
-                      Visi
-                    </h3>
+                  <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+                    <nav className="p-2">
+                      {sidebarPages.map((page) => {
+                        const isActive =
+                          page.href === '/tentang-kan';
+
+                        return (
+                          <button
+                            key={page.href}
+                            onClick={() =>
+                              navigate(page.href)
+                            }
+                            className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                              isActive
+                                ? 'bg-primary-50 text-primary-700 font-bold border-l-4 border-primary-600 pl-3'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-primary-600'
+                            }`}
+                          >
+                            <span>{page.label}</span>
+                          </button>
+                        );
+                      })}
+                    </nav>
                   </div>
-                  <p className="text-gray-700 leading-relaxed border-l-4 border-primary-500 pl-4">
-                    {vision}
-                  </p>
                 </div>
+              </aside>
 
-                {/* Misi */}
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-accent-100 rounded-xl flex items-center justify-center">
-                      <FaClipboardList className="text-accent-600 text-lg" />
-                    </div>
-                    <h3 className="text-xl font-black text-gray-900">
-                      Misi
-                    </h3>
+              {/* =========================
+                  Main Content
+              ========================= */}
+              <div className="flex-1 min-w-0">
+                <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+
+                  <div className="p-8 space-y-12 md:p-12">
+
+                    {/* =========================
+                        Pengantar + Statistik
+                    ========================= */}
+                    <section>
+                      <h2 className="pb-3 mb-4 text-2xl font-black text-gray-900 border-b border-gray-100">
+                        Komite Akreditasi Nasional
+                      </h2>
+
+                      <p className="mb-6 leading-relaxed text-gray-700">
+                        Lembaga non-struktural yang bertanggung jawab
+                        langsung kepada Presiden Republik Indonesia dalam
+                        bidang akreditasi.
+                      </p>
+
+                      {/* Statistik */}
+                      <div
+                        ref={statsRef}
+                        className="grid grid-cols-2 gap-4 md:grid-cols-4"
+                      >
+                        {stats.map((stat, i) => (
+                          <div
+                            key={i}
+                            className={`relative overflow-hidden p-5 text-center bg-primary-50 rounded-xl border border-primary-100 transition-all duration-500 hover:bg-primary-100 hover:-translate-y-1 hover:shadow-md group ${
+                              isStatsVisible
+                                ? 'opacity-100 translate-y-0'
+                                : 'opacity-0 translate-y-5'
+                            }`}
+                            style={{
+                              transitionDelay: `${i * 100}ms`,
+                            }}
+                          >
+                            {/* Decorative Circle */}
+                            <div className="absolute top-0 right-0 w-16 h-16 transition-transform duration-500 translate-x-8 -translate-y-8 rounded-full bg-primary-200/30 group-hover:scale-150"></div>
+
+                            {/* Number */}
+                            <div className="relative mb-1 text-2xl font-black md:text-3xl text-primary-700">
+                              {isStatsVisible ? (
+                                <AnimatedNumber
+                                  value={stat.value}
+                                  suffix={stat.suffix}
+                                />
+                              ) : (
+                                <>
+                                  0
+                                  {stat.suffix}
+                                </>
+                              )}
+                            </div>
+
+                            {/* Label */}
+                            <div className="relative text-xs font-semibold text-gray-500">
+                              {stat.label}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+
+                    {/* =========================
+                        Visi & Misi
+                    ========================= */}
+                    <section>
+                      <h2 className="pb-3 mb-6 text-2xl font-black text-gray-900 border-b border-gray-100">
+                        Visi &amp; Misi
+                      </h2>
+
+                      <div className="grid gap-8 md:grid-cols-2">
+
+                        {/* Visi */}
+                        <div>
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="flex items-center justify-center w-10 h-10 bg-primary-100 rounded-xl">
+                              <FaStar className="text-lg text-primary-600" />
+                            </div>
+
+                            <h3 className="text-xl font-black text-gray-900">
+                              Visi
+                            </h3>
+                          </div>
+
+                          <p className="pl-4 leading-relaxed text-gray-700 border-l-4 border-primary-500">
+                            {vision}
+                          </p>
+                        </div>
+
+                        {/* Misi */}
+                        <div>
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="flex items-center justify-center w-10 h-10 bg-accent-100 rounded-xl">
+                              <FaClipboardList className="text-lg text-accent-600" />
+                            </div>
+
+                            <h3 className="text-xl font-black text-gray-900">
+                              Misi
+                            </h3>
+                          </div>
+
+                          <ul className="space-y-3">
+                            {missions.map((mission, i) => (
+                              <li
+                                key={i}
+                                className="flex items-start gap-3"
+                              >
+                                <FaCheckCircle className="flex-shrink-0 mt-1 text-primary-600" />
+
+                                <span className="leading-relaxed text-gray-700">
+                                  {mission}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* =========================
+                        Nilai-Nilai KAN
+                    ========================= */}
+                    <section>
+                      <h2 className="pb-3 mb-4 text-2xl font-black text-gray-900 border-b border-gray-100">
+                        Nilai-Nilai KAN
+                      </h2>
+
+                      <p className="mb-6 text-gray-500">
+                        Prinsip yang menjadi landasan setiap langkah KAN
+                      </p>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {values.map((val, i) => {
+                          const Icon = val.icon;
+
+                          return (
+                            <div
+                              key={i}
+                              className="p-5 text-center transition-all bg-gray-50 border border-gray-100 group rounded-xl hover:shadow-md hover:-translate-y-0.5"
+                            >
+                              <div
+                                className={`w-14 h-14 bg-gradient-to-br ${val.color} rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform shadow-lg`}
+                              >
+                                <Icon className="text-xl text-white" />
+                              </div>
+
+                              <h3 className="mb-1.5 text-lg font-black text-gray-900">
+                                {val.label}
+                              </h3>
+
+                              <p className="text-sm leading-relaxed text-gray-500">
+                                {val.desc}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+
                   </div>
-                  <ul className="space-y-3">
-                    {missions.map((m, i) => (
-                      <li key={i} className="flex items-start gap-3">
-                        <FaCheckCircle className="text-primary-600 flex-shrink-0 mt-1" />
-                        <span className="text-gray-700 leading-relaxed">{m}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Nilai-Nilai */}
-          <div>
-            <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">
-                Nilai-Nilai KAN
-              </h2>
-              <p className="text-gray-500">
-                Prinsip yang menjadi landasan setiap langkah KAN
-              </p>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {values.map((val, i) => {
-                const Icon = val.icon;
-                return (
-                  <div key={i} className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all group text-center">
-                    <div className={`w-16 h-16 bg-gradient-to-br ${val.color} rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
-                      <Icon className="text-2xl text-white" />
-                    </div>
-                    <h3 className="text-lg font-black text-gray-900 mb-2">
-                      {val.label}
-                    </h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">
-                      {val.desc}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
         </div>
       </main>
 
       <Footer />
     </div>
+  );
+};
+
+/* =========================
+   Animated Number
+========================= */
+const AnimatedNumber = ({ value, suffix = '' }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTime = null;
+    const duration = 1200;
+
+    const animate = (currentTime) => {
+      if (!startTime) {
+        startTime = currentTime;
+      }
+
+      const progress = Math.min(
+        (currentTime - startTime) / duration,
+        1
+      );
+
+      // Ease-out effect
+      const easedProgress =
+        1 - Math.pow(1 - progress, 3);
+
+      const currentValue = Math.floor(
+        easedProgress * value
+      );
+
+      setCount(currentValue);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setCount(value);
+      }
+    };
+
+    const animationFrame =
+      requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [value]);
+
+  return (
+    <>
+      {count}
+      {suffix}
+    </>
   );
 };
 

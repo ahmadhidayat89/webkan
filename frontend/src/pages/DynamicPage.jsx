@@ -4,10 +4,25 @@ import DOMPurify from 'dompurify';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import {
-  FaHome, FaChevronRight, FaSpinner, FaCalendarAlt, FaLink,
+  FaHome, FaChevronRight, FaSpinner, FaCalendarAlt,
   FaArrowLeft, FaTimes, FaSearchPlus, FaSearchMinus,
   FaChevronLeft, FaExpand, FaPlay, FaImage
 } from 'react-icons/fa';
+
+const SURVEY_BASE = 'survey-kepuasan-pelanggan';
+const SURVEY_LIST = 'hasil-survei';
+// Kategori Layanan Akreditasi yang punya sub-halaman (lainnya langsung tampil)
+const SUB_CATS = [
+  { slug: 'laboratorium', label: 'Laboratorium' },
+  { slug: 'lembaga-verifikasi-validasi-grk', label: 'Lembaga Verifikasi dan/atau Validasi Gas Rumah Kaca'},
+  { slug: 'sistem-manajemen', label: 'Sistem Manajemen'},
+  { slug: 'sertifikasi-sni-iso-iec-17065', label: 'Sertifikasi Berdasarkan SNI ISO/IEC 17065' },
+  { slug: 'sertifikasi-pembangunan-berkelanjutan', label: 'Sertifikasi Pembangunan Berkelanjutan' },
+];
+const SUB_LIST = 'daftar-layanan';
+
+const humanizeSlug = (slug) =>
+  slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 // ─── Lightbox Component ───────────────────────────────────────────────────────
 const Lightbox = ({ images, initialIndex, onClose }) => {
@@ -73,38 +88,38 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-6 py-4 z-10 flex-shrink-0"
+      <div className="z-10 flex items-center justify-between flex-shrink-0 px-6 py-4"
         style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)' }}>
         <div className="flex items-center gap-3">
-          <FaImage className="text-white/60 text-sm" />
-          <span className="text-white/80 text-sm font-medium">
+          <FaImage className="text-sm text-white/60" />
+          <span className="text-sm font-medium text-white/80">
             {current + 1} / {images.length}
           </span>
           {img.caption && (
-            <span className="text-white/50 text-sm hidden md:inline">— {img.caption}</span>
+            <span className="hidden text-sm text-white/50 md:inline">— {img.caption}</span>
           )}
         </div>
         <div className="flex items-center gap-3">
           {/* Zoom controls */}
           <button
             onClick={() => setZoom((z) => Math.max(z - 0.5, 1))}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
-            title="Zoom out (−)"
+            className="p-2 text-white transition-all rounded-full bg-white/10 hover:bg-white/20"
+            title="Zoom out (-)"
           >
             <FaSearchMinus className="text-sm" />
           </button>
-          <span className="text-white/60 text-xs w-10 text-center">{Math.round(zoom * 100)}%</span>
+          <span className="w-10 text-xs text-center text-white/60">{Math.round(zoom * 100)}%</span>
           <button
             onClick={() => setZoom((z) => Math.min(z + 0.5, 4))}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+            className="p-2 text-white transition-all rounded-full bg-white/10 hover:bg-white/20"
             title="Zoom in (+)"
           >
             <FaSearchPlus className="text-sm" />
           </button>
-          <div className="w-px h-5 bg-white/20 mx-1" />
+          <div className="w-px h-5 mx-1 bg-white/20" />
           <button
             onClick={onClose}
-            className="p-2 rounded-full bg-white/10 hover:bg-red-500/80 text-white transition-all"
+            className="p-2 text-white transition-all rounded-full bg-white/10 hover:bg-red-500/80"
             title="Tutup (Esc)"
           >
             <FaTimes className="text-sm" />
@@ -114,7 +129,7 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
 
       {/* Image area */}
       <div
-        className="flex-1 flex items-center justify-center relative overflow-hidden select-none"
+        className="relative flex items-center justify-center flex-1 overflow-hidden select-none"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -123,8 +138,8 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
       >
         {/* Loading spinner */}
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <FaSpinner className="text-white/40 text-3xl animate-spin" />
+          <div className="absolute inset-0 z-10 flex items-center justify-center">
+            <FaSpinner className="text-3xl text-white/40 animate-spin" />
           </div>
         )}
 
@@ -133,7 +148,7 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
           src={img.src}
           alt={img.caption || ''}
           onLoad={() => setIsLoading(false)}
-          className="max-h-full max-w-full object-contain transition-transform duration-200"
+          className="object-contain max-w-full max-h-full transition-transform duration-200"
           style={{
             transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${offset.y / zoom}px)`,
             opacity: isLoading ? 0 : 1,
@@ -147,13 +162,13 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
           <>
             <button
               onClick={(e) => { e.stopPropagation(); goPrev(); }}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all backdrop-blur-sm border border-white/10"
+              className="absolute p-3 text-white transition-all -translate-y-1/2 border rounded-full left-4 top-1/2 bg-white/10 hover:bg-white/25 backdrop-blur-sm border-white/10"
             >
               <FaChevronLeft className="text-lg" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); goNext(); }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all backdrop-blur-sm border border-white/10"
+              className="absolute p-3 text-white transition-all -translate-y-1/2 border rounded-full right-4 top-1/2 bg-white/10 hover:bg-white/25 backdrop-blur-sm border-white/10"
             >
               <FaChevronRight className="text-lg" />
             </button>
@@ -164,7 +179,7 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
       {/* Bottom: Thumbnails */}
       {images.length > 1 && (
         <div
-          className="flex-shrink-0 px-6 py-4 flex items-center justify-center gap-2 overflow-x-auto"
+          className="flex items-center justify-center flex-shrink-0 gap-2 px-6 py-4 overflow-x-auto"
           style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}
         >
           {images.map((im, i) => (
@@ -175,7 +190,7 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
                 i === current ? 'border-white scale-110' : 'border-white/20 opacity-50 hover:opacity-80'
               }`}
             >
-              <img src={im.src} alt="" className="w-full h-full object-cover" />
+              <img src={im.src} alt="" className="object-cover w-full h-full" />
             </button>
           ))}
         </div>
@@ -183,8 +198,8 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
 
       {/* Caption bottom */}
       {img.caption && (
-        <div className="flex-shrink-0 text-center pb-4 px-6">
-          <p className="text-white/50 text-sm italic">{img.caption}</p>
+        <div className="flex-shrink-0 px-6 pb-4 text-center">
+          <p className="text-sm italic text-white/50">{img.caption}</p>
         </div>
       )}
     </div>
@@ -204,17 +219,17 @@ const VideoEmbed = ({ src, title }) => {
   const thumbnail = getThumbnail(src);
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl bg-black group my-6"
+    <div className="relative w-full my-6 overflow-hidden bg-black shadow-2xl rounded-2xl group"
       style={{ aspectRatio: '16/9' }}>
       {!playing && thumbnail ? (
         <div className="absolute inset-0 cursor-pointer" onClick={() => setPlaying(true)}>
-          <img src={thumbnail} alt={title || 'Video'} className="w-full h-full object-cover" />
+          <img src={thumbnail} alt={title || 'Video'} className="object-cover w-full h-full" />
           {/* Dark overlay */}
-          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
+          <div className="absolute inset-0 transition-colors bg-black/40 group-hover:bg-black/30" />
           {/* Play button */}
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-            <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xl">
-              <FaPlay className="text-white text-2xl ml-1" />
+            <div className="flex items-center justify-center w-20 h-20 transition-transform border-2 rounded-full shadow-2xl bg-white/20 backdrop-blur-sm border-white/40 group-hover:scale-110">
+              <FaPlay className="ml-1 text-2xl text-white" />
             </div>
             {title && (
               <div className="max-w-xs text-center">
@@ -247,12 +262,42 @@ const DynamicPage = () => {
   const [loading, setLoading] = useState(true);
   const [, setNotFound] = useState(false);
   const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
+  const [surveyYears, setSurveyYears] = useState([]);
+  const [surveyLoading, setSurveyLoading] = useState(true);
+  const [labs, setLabs] = useState([]);
+  const [labsLoading, setLabsLoading] = useState(true);
   const contentRef = useRef(null);
 
   const pageId = location.pathname.substring(1);
 
+  // Halaman survei per tahun, contoh: survey-kepuasan-pelanggan/2019
+  const surveyYear = pageId.startsWith(`${SURVEY_BASE}/`) ? pageId.slice(SURVEY_BASE.length + 1) : null;
+  // Halaman daftar tahun: /hasil-survei
+  const isSurveyList = pageId === SURVEY_LIST;
+
+    // Sub-halaman: layanan/{kategori}/{slug}, daftar: daftar-layanan/{kategori}
+  const pageParts = pageId.split('/');
+  const subCatInfo = SUB_CATS.find((c) => c.slug === pageParts[1]);
+  const isSubDetail = pageParts[0] === 'layanan' && pageParts.length === 3 && !!subCatInfo;
+  const isLabList = pageParts[0] === SUB_LIST && pageParts.length === 2 && !!subCatInfo;
+  const isSubMain = pageParts[0] === 'layanan' && pageParts.length === 2 && !!subCatInfo;
+  const subCat = (isSubDetail || isLabList || isSubMain) ? pageParts[1] : null;
+  const catLabel = subCatInfo?.label || '';
+  // Nama lama dipertahankan supaya JSX di bawah tidak perlu diubah
+  const labSlug = isSubDetail ? pageParts[2] : null;
+  const LAB_BASE = subCat ? `layanan/${subCat}` : null;
+  const LAB_LIST = subCat ? `${SUB_LIST}/${subCat}` : null;
+
+  // id menu sidebar yang harus menyala (halaman turunan menyalakan menu induknya)
+  const activeId = (surveyYear || isSurveyList)
+    ? SURVEY_BASE
+    : (labSlug || isLabList)
+      ? LAB_BASE
+      : pageId;
+
   const sectionPages = {
     'Tentang KAN': [
+      { id: 'tentang-kan', label: 'Profil KAN' },
       { id: 'sejarah-fungsi', label: 'Sejarah dan Fungsi KAN' },
       { id: 'struktur-organisasi', label: 'Struktur Organisasi' },
       { id: 'ketidakberpihakan', label: 'Ketidakberpihakan' },
@@ -269,6 +314,7 @@ const DynamicPage = () => {
       { id: 'survey-kepuasan-pelanggan', label: 'Survey Kepuasan Pelanggan' },
     ],
     'Layanan Akreditasi': [
+      { id: 'layanan-akreditasi', label: 'Layanan Akreditasi' },
       { id: 'layanan/laboratorium', label: 'Laboratorium' },
       { id: 'layanan/lembaga-inspeksi', label: 'Lembaga Inspeksi' },
       { id: 'layanan/lembaga-verifikasi-validasi-grk', label: 'Lembaga Verifikasi GRK' },
@@ -293,6 +339,7 @@ const DynamicPage = () => {
   };
 
   const pageMeta = {
+    'tentang-kan': { label: 'Profil KAN', section: 'Tentang KAN' },
     'sejarah-fungsi': { label: 'Sejarah dan Fungsi KAN', section: 'Tentang KAN' },
     'struktur-organisasi': { label: 'Struktur Organisasi', section: 'Tentang KAN' },
     'ketidakberpihakan': { label: 'Ketidakberpihakan', section: 'Tentang KAN' },
@@ -305,6 +352,7 @@ const DynamicPage = () => {
     'penanganan-komplain': { label: 'Penanganan Komplain', section: 'Proses Akreditasi' },
     'penanganan-banding': { label: 'Penanganan Banding', section: 'Proses Akreditasi' },
     'survey-kepuasan-pelanggan': { label: 'Survey Kepuasan Pelanggan', section: 'Proses Akreditasi' },
+    'layanan-akreditasi': { label: 'Layanan Akreditasi', section: 'Layanan Akreditasi' },
     'layanan/laboratorium': { label: 'Laboratorium', section: 'Layanan Akreditasi' },
     'layanan/lembaga-inspeksi': { label: 'Lembaga Inspeksi', section: 'Layanan Akreditasi' },
     'layanan/lembaga-verifikasi-validasi-grk': { label: 'Lembaga Verifikasi dan/atau Validasi Gas Rumah Kaca', section: 'Layanan Akreditasi' },
@@ -327,10 +375,150 @@ const DynamicPage = () => {
     fetchPageContent();
   }, [pageId]);
 
+  // Konten tetap, ditulis langsung di kode (tidak lewat admin)
+  const staticPages = {
+    'layanan-akreditasi': `
+      <p>KAN menyediakan berbagai layanan akreditasi untuk lembaga penilaian kesesuaian sesuai dengan standar internasional ISO/IEC 17000 series.</p>
+
+      <h2>Jenis Layanan Akreditasi</h2>
+      <div class="not-prose grid sm:grid-cols-2 gap-4 mb-8">
+        <a href="/layanan/laboratorium" class="flex gap-4 p-4 rounded-xl border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
+          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl">🧪</div>
+          <div>
+            <p class="font-bold text-gray-900 mb-1">Laboratorium Pengujian</p>
+            <p class="text-sm text-gray-500">Akreditasi untuk laboratorium yang melakukan pengujian (ISO/IEC 17025)</p>
+          </div>
+        </a>
+        <a href="/layanan/sertifikasi-sni-iso-iec-17065" class="flex gap-4 p-4 rounded-xl border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
+          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-xl">📜</div>
+          <div>
+            <p class="font-bold text-gray-900 mb-1">Lembaga Sertifikasi</p>
+            <p class="text-sm text-gray-500">Akreditasi lembaga sertifikasi produk, personel, dan sistem manajemen</p>
+          </div>
+        </a>
+        <a href="/layanan/lembaga-inspeksi" class="flex gap-4 p-4 rounded-xl border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
+          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl">📋</div>
+          <div>
+            <p class="font-bold text-gray-900 mb-1">Lembaga Inspeksi</p>
+            <p class="text-sm text-gray-500">Akreditasi untuk lembaga inspeksi (ISO/IEC 17020)</p>
+          </div>
+        </a>
+        <a href="/layanan/produsen-bahan-acuan" class="flex gap-4 p-4 rounded-xl border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
+          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-xl">🏭</div>
+          <div>
+            <p class="font-bold text-gray-900 mb-1">Produser Bahan Acuan</p>
+            <p class="text-sm text-gray-500">Akreditasi produser bahan acuan (ISO 17034)</p>
+          </div>
+        </a>
+        <a href="/layanan/lembaga-verifikasi-validasi-grk" class="flex gap-4 p-4 rounded-xl border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all sm:col-span-2">
+          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-xl">🌿</div>
+          <div>
+            <p class="font-bold text-gray-900 mb-1">Verifikasi &amp; Validasi GRK</p>
+            <p class="text-sm text-gray-500">Akreditasi verifikasi dan validasi gas rumah kaca (ISO 14065)</p>
+          </div>
+        </a>
+      </div>
+
+      <h2>Proses Akreditasi</h2>
+      <div class="not-prose grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="p-4 rounded-xl border-2 border-primary-100">
+          <p class="text-3xl font-black text-primary-200 mb-1">01</p>
+          <p class="font-bold text-gray-900 mb-1">Pengajuan</p>
+          <p class="text-sm text-gray-500">Mengisi formulir dan dokumen persyaratan</p>
+        </div>
+        <div class="p-4 rounded-xl border-2 border-primary-100">
+          <p class="text-3xl font-black text-primary-200 mb-1">02</p>
+          <p class="font-bold text-gray-900 mb-1">Evaluasi</p>
+          <p class="text-sm text-gray-500">Tinjauan dokumen dan asesmen lapangan</p>
+        </div>
+        <div class="p-4 rounded-xl border-2 border-primary-100">
+          <p class="text-3xl font-black text-primary-200 mb-1">03</p>
+          <p class="font-bold text-gray-900 mb-1">Keputusan</p>
+          <p class="text-sm text-gray-500">Komite akreditasi membuat keputusan</p>
+        </div>
+        <div class="p-4 rounded-xl border-2 border-primary-100">
+          <p class="text-3xl font-black text-primary-200 mb-1">04</p>
+          <p class="font-bold text-gray-900 mb-1">Sertifikat</p>
+          <p class="text-sm text-gray-500">Penerbitan sertifikat akreditasi</p>
+        </div>
+      </div>
+
+      <h2>Manfaat Akreditasi</h2>
+      <div class="not-prose grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-primary-50">
+          <span class="w-8 h-8 flex-shrink-0 rounded-lg bg-primary-600 text-white flex items-center justify-center text-sm">✓</span>
+          <span class="font-semibold text-gray-800">Pengakuan Internasional</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-primary-50">
+          <span class="w-8 h-8 flex-shrink-0 rounded-lg bg-primary-600 text-white flex items-center justify-center text-sm">✓</span>
+          <span class="font-semibold text-gray-800">Meningkatkan Kredibilitas</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-primary-50">
+          <span class="w-8 h-8 flex-shrink-0 rounded-lg bg-primary-600 text-white flex items-center justify-center text-sm">✓</span>
+          <span class="font-semibold text-gray-800">Akses Pasar Global</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-primary-50">
+          <span class="w-8 h-8 flex-shrink-0 rounded-lg bg-primary-600 text-white flex items-center justify-center text-sm">✓</span>
+          <span class="font-semibold text-gray-800">Peningkatan Kompetensi</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-primary-50">
+          <span class="w-8 h-8 flex-shrink-0 rounded-lg bg-primary-600 text-white flex items-center justify-center text-sm">✓</span>
+          <span class="font-semibold text-gray-800">Jaminan Kualitas</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-primary-50">
+          <span class="w-8 h-8 flex-shrink-0 rounded-lg bg-primary-600 text-white flex items-center justify-center text-sm">✓</span>
+          <span class="font-semibold text-gray-800">Kepercayaan Stakeholder</span>
+        </div>
+      </div>
+    `,
+  };
+
+  // Ambil daftar tahun survei (halaman daftar /hasil-survei & halaman tahun untuk tombol prev/next)
+  useEffect(() => {
+    if (!isSurveyList && !surveyYear) return;
+    if (surveyYear && surveyYears.length > 0) return; // sudah pernah dimuat
+    setSurveyLoading(true);
+    fetch('/api/v1/survey-years')
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setSurveyYears(d.data); })
+      .catch(() => {})
+      .finally(() => setSurveyLoading(false));
+  }, [isSurveyList, surveyYear]);
+
+  // Ambil daftar laboratorium (halaman daftar /daftar-laboratorium & judul halaman lab)
+    useEffect(() => {
+    setLabs([]);
+    if (!subCat) return;
+    setLabsLoading(true);
+    fetch(`/api/v1/layanan-services/${subCat}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setLabs(d.data); })
+      .catch(() => {})
+      .finally(() => setLabsLoading(false));
+  }, [subCat]);
+
   const fetchPageContent = async () => {
+    // Halaman dengan konten statis (ditulis langsung di kode, bukan lewat admin)
+    if (staticPages[pageId]) {
+      setLoading(true);
+      setNotFound(false);
+      setPageContent({ content_id: staticPages[pageId], image: null, updated_at: null });
+      setLoading(false);
+      return;
+    }
+
+    // Halaman daftar (survei per tahun / daftar laboratorium) tidak punya konten sendiri
+    if (isSurveyList || isLabList) {
+      setPageContent(null);
+      setNotFound(false);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setNotFound(false);
+      setPageContent(null);
       const response = await fetch(`/api/v1/page-content/${pageId}?lang=id`);
       const data = await response.json();
       if (data.success && data.data) {
@@ -346,10 +534,28 @@ const DynamicPage = () => {
     }
   };
 
-  const meta = pageMeta[pageId];
+  const currentLab = labSlug ? labs.find((l) => l.slug === labSlug) : null;
+
+  const meta = surveyYear
+    ? { label: `Survei Kepuasan Pelanggan ${surveyYear}`, section: 'Proses Akreditasi' }
+    : isSurveyList
+      ? { label: 'Hasil Survei per Tahun', section: 'Proses Akreditasi' }
+      : labSlug
+        ? { label: currentLab?.title || pageContent?.title || humanizeSlug(labSlug), section: 'Layanan Akreditasi' }
+        : isLabList
+          ? { label: `Daftar ${catLabel}`, section: 'Layanan Akreditasi' }
+          : pageMeta[pageId];
   const title = meta ? meta.label : pageId;
   const sectionKey = meta?.section || null;
   const siblings = sectionKey ? (sectionPages[sectionKey] || []) : [];
+
+  // Tahun sebelumnya / berikutnya untuk navigasi di halaman survei per tahun
+  const sortedYears = [...surveyYears].sort((a, b) => Number(a.year) - Number(b.year));
+  const yearIndex = surveyYear
+    ? sortedYears.findIndex((s) => String(s.year) === String(surveyYear))
+    : -1;
+  const prevYear = yearIndex > 0 ? sortedYears[yearIndex - 1] : null;
+  const nextYear = yearIndex >= 0 && yearIndex < sortedYears.length - 1 ? sortedYears[yearIndex + 1] : null;
 
   const content = pageContent ? pageContent.content_id : '';
 
@@ -357,11 +563,13 @@ const DynamicPage = () => {
     ? new Date(pageContent.updated_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
 
-  // ── Enhance rendered content: lightbox + responsive video ──
+  // ── Enhance rendered content: lightbox + responsive video + tabel ──
   useEffect(() => {
     if (!contentRef.current || !content) return;
 
     const container = contentRef.current;
+
+    
 
     // ── Images: collect all, add click → lightbox ──
     const imgs = Array.from(container.querySelectorAll('img'));
@@ -446,6 +654,16 @@ const DynamicPage = () => {
       });
     });
 
+    // ── tables: bungkus supaya bisa digeser ke samping di layar kecil ──
+    container.querySelectorAll('table').forEach((table) => {
+      if (table.parentElement?.classList.contains('table-wrapper')) return;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'table-wrapper';
+      Object.assign(wrapper.style, { overflowX: 'auto', margin: '24px 0' });
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    });
+
     // ── Auto-detect consecutive images → gallery grid ──
     // Find groups of consecutive <p> tags each containing only 1 img
     const paragraphs = Array.from(container.querySelectorAll('p'));
@@ -499,10 +717,10 @@ const DynamicPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <FaSpinner className="text-5xl text-primary-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 font-semibold">Memuat halaman...</p>
+          <FaSpinner className="mx-auto mb-4 text-5xl text-primary-600 animate-spin" />
+          <p className="font-semibold text-gray-500">Memuat halaman...</p>
         </div>
       </div>
     );
@@ -522,17 +740,17 @@ const DynamicPage = () => {
       )}
 
       {/* Dark Banner */}
-      <div className="relative bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800 overflow-hidden">
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-20 -right-20 w-96 h-96 bg-primary-600/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 right-1/3 w-32 h-32 bg-primary-400/10 rounded-full blur-2xl" />
+          <div className="absolute rounded-full -top-20 -right-20 w-96 h-96 bg-primary-600/20 blur-3xl" />
+          <div className="absolute bottom-0 w-64 h-64 rounded-full left-1/4 bg-white/5 blur-3xl" />
+          <div className="absolute w-32 h-32 rounded-full top-1/2 right-1/3 bg-primary-400/10 blur-2xl" />
         </div>
 
-        <div className="container mx-auto px-6 relative z-10">
+        <div className="container relative z-10 px-6 mx-auto">
           {/* Breadcrumb */}
-          <div className="pt-32 lg:pt-40 pb-4 border-b border-white/10">
-            <nav className="flex items-center gap-2 text-sm flex-wrap">
+          <div className="pt-32 pb-4 border-b lg:pt-40 border-white/10">
+            <nav className="flex flex-wrap items-center gap-2 text-sm">
               <button
                 onClick={() => navigate('/')}
                 className="flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors font-medium"
@@ -546,8 +764,52 @@ const DynamicPage = () => {
                   <span className="text-white/50">{sectionKey}</span>
                 </>
               )}
+              {(surveyYear || isSurveyList) && (
+                <>
+                  <FaChevronRight className="text-xs text-white/30" />
+                  <button
+                    onClick={() => navigate(`/${SURVEY_BASE}`)}
+                    className="transition-colors text-white/50 hover:text-white/80"
+                  >
+                    Survey Kepuasan Pelanggan
+                  </button>
+                </>
+              )}
+              {surveyYear && (
+                <>
+                  <FaChevronRight className="text-xs text-white/30" />
+                  <button
+                    onClick={() => navigate(`/${SURVEY_LIST}`)}
+                    className="transition-colors text-white/50 hover:text-white/80"
+                  >
+                    Hasil Survei per Tahun
+                  </button>
+                </>
+              )}
+              {(labSlug || isLabList) && (
+                <>
+                  <FaChevronRight className="text-xs text-white/30" />
+                  <button
+                    onClick={() => navigate(`/${LAB_BASE}`)}
+                    className="transition-colors text-white/50 hover:text-white/80"
+                  >
+                    {catLabel}
+                  </button>
+                </>
+              )}
+              {labSlug && (
+                <>
+                  <FaChevronRight className="text-xs text-white/30" />
+                  <button
+                    onClick={() => navigate(`/${LAB_LIST}`)}
+                    className="transition-colors text-white/50 hover:text-white/80"
+                  >
+                    {`Daftar${catLabel}`}
+                  </button>
+                </>
+              )}
               <FaChevronRight className="text-xs text-white/30" />
-              <span className="text-white/80 font-semibold">{title}</span>
+              <span className="font-semibold text-white/80">{title}</span>
             </nav>
           </div>
 
@@ -555,17 +817,12 @@ const DynamicPage = () => {
           <div className="py-10">
             <div className="flex items-start gap-4">
               <div className="flex-1">
-                {sectionKey && (
-                  <span className="inline-block px-3 py-1 bg-white/10 text-white/70 text-xs font-bold rounded-full uppercase tracking-wider mb-4 border border-white/20">
-                    {sectionKey}
-                  </span>
-                )}
-                <h1 className="text-4xl md:text-5xl font-black text-white leading-tight mb-3">
+                <h1 className="mb-3 text-4xl font-black leading-tight text-white md:text-5xl">
                   {title}
                 </h1>
-                <div className="w-16 h-1 bg-primary-400 rounded-full" />
+                <div className="w-16 h-1 rounded-full bg-primary-400" />
                 {updatedAt && (
-                  <div className="flex items-center gap-2 mt-4 text-white/40 text-sm">
+                  <div className="flex items-center gap-2 mt-4 text-sm text-white/40">
                     <FaCalendarAlt className="text-xs" />
                     <span>{`Diperbarui: ${updatedAt}`}</span>
                   </div>
@@ -578,31 +835,26 @@ const DynamicPage = () => {
 
       {/* Content Area */}
       <main className="py-12">
-        <div className="container mx-auto px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex gap-8 items-start">
+        <div className="container px-6 mx-auto">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex items-start gap-8">
 
               {/* Sidebar */}
-              <aside className="hidden lg:block w-72 flex-shrink-0">
-                <div className="sticky top-28 space-y-4">
+              <aside className="flex-shrink-0 hidden lg:block w-72">
+                <div className="sticky space-y-4 top-28">
                   <button
                     onClick={() => navigate('/')}
-                    className="flex items-center gap-2 text-sm text-primary-600 font-semibold hover:text-primary-700 transition-colors"
+                    className="flex items-center gap-2 text-sm font-semibold transition-colors text-primary-600 hover:text-primary-700"
                   >
                     <FaArrowLeft className="text-xs" />
                     <span>Kembali ke Beranda</span>
                   </button>
 
                   {siblings.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                      <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-5 py-4">
-                        <h3 className="text-white font-black text-sm tracking-wide uppercase">
-                          {sectionKey}
-                        </h3>
-                      </div>
+                    <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
                       <nav className="p-2">
                         {siblings.map((page) => {
-                          const isActive = page.id === pageId;
+                          const isActive = page.id === activeId;
                           return (
                             <button
                               key={page.id}
@@ -613,9 +865,6 @@ const DynamicPage = () => {
                                   : 'text-gray-600 hover:bg-gray-50 hover:text-primary-600'
                               }`}
                             >
-                              {isActive && (
-                                <div className="w-1.5 h-1.5 bg-primary-600 rounded-full flex-shrink-0" />
-                              )}
                               <span>{page.label}</span>
                             </button>
                           );
@@ -623,138 +872,321 @@ const DynamicPage = () => {
                       </nav>
                     </div>
                   )}
-
-                  <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl border border-primary-100 p-5">
-                    <h4 className="text-sm font-black text-primary-900 mb-3 flex items-center gap-2">
-                      <FaLink className="text-primary-600 text-xs" />
-                      <span>Tautan Cepat</span>
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        { label: 'Tentang KAN', path: '/tentang-kan' },
-                        { label: 'Proses Akreditasi', path: '/proses-akreditasi' },
-                        { label: 'Hubungi Kami', path: '/kontak' },
-                      ].map((link) => (
-                        <button
-                          key={link.path}
-                          onClick={() => navigate(link.path)}
-                          className="block w-full text-left text-xs text-primary-700 hover:text-primary-900 font-medium py-1.5 border-b border-primary-100 last:border-0 transition-colors"
-                        >
-                          {link.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               </aside>
 
               {/* Main Content */}
               <div className="flex-1 min-w-0">
 
-                {/* ── Featured Image Hero ── */}
-                {pageContent?.image && (
-                  <div
-                    className="relative mb-8 rounded-2xl overflow-hidden shadow-2xl group cursor-zoom-in"
-                    style={{ maxHeight: '480px' }}
-                    onClick={() =>
-                      setLightbox({
-                        open: true,
-                        images: [{ src: `/storage/${pageContent.image}`, caption: title }],
-                        index: 0,
-                      })
-                    }
+                {/* Tombol kembali (halaman daftar tahun survei / daftar lab) */}
+                {(isSurveyList || isLabList) && (
+                  <button
+                    onClick={() => navigate(isSurveyList ? `/${SURVEY_BASE}` : `/${LAB_BASE}`)}
+                    className="inline-flex items-center gap-2 px-5 py-3 mb-6 text-sm font-bold text-gray-700 transition-colors border border-gray-200 bg-gray-50 hover:bg-gray-200 rounded-xl"
                   >
-                    <img
-                      src={`/storage/${pageContent.image}`}
-                      alt={title}
-                      className="w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      style={{ maxHeight: '480px' }}
-                    />
-                    {/* Gradient overlay bottom */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                    {/* Zoom hint */}
-                    <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                      <FaExpand className="text-xs" />
-                      <span>Perbesar</span>
-                    </div>
-                    {/* Title overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <p className="text-white/80 text-sm font-medium">{title}</p>
-                    </div>
-                  </div>
+                    <FaArrowLeft className="text-xs" />
+                    <span>Kembali</span>
+                  </button>
                 )}
 
-                {/* ── Content Card ── */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  {content ? (
-                    <div className="p-8 md:p-12">
-                      <div
-                        ref={contentRef}
-                        className="
-                          prose prose-lg max-w-none
-                          prose-headings:font-black prose-headings:text-gray-900
-                          prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:pb-3 prose-h2:border-b prose-h2:border-gray-100
-                          prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-primary-800
-                          prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-4
-                          prose-a:text-primary-600 prose-a:font-semibold prose-a:no-underline hover:prose-a:underline
-                          prose-strong:text-gray-900 prose-strong:font-bold
-                          prose-ul:space-y-2 prose-ol:space-y-2
-                          prose-li:text-gray-700 prose-li:leading-relaxed
-                          prose-img:rounded-xl prose-img:shadow-md prose-img:w-full prose-img:my-6
-                          prose-figure:my-6 prose-figcaption:text-center prose-figcaption:text-sm prose-figcaption:text-gray-500 prose-figcaption:italic prose-figcaption:mt-2
-                          prose-table:border prose-table:border-gray-200
-                          prose-td:border prose-td:border-gray-200 prose-td:p-3
-                          prose-th:border prose-th:border-gray-200 prose-th:p-3 prose-th:bg-gray-50
-                          prose-blockquote:border-l-4 prose-blockquote:border-primary-400 prose-blockquote:bg-primary-50 prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-r-xl prose-blockquote:not-italic
-                          [&_h2]:first:mt-0
-                          [&_ul]:list-disc [&_ul]:pl-6
-                          [&_ol]:list-decimal [&_ol]:pl-6
-                          [&_.video-wrapper]:my-6
-                          [&_.auto-gallery]:my-6
-                        "
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling'] }) }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-center py-16 px-8">
-                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <span className="text-3xl">📄</span>
-                      </div>
-                      <h3 className="text-2xl font-black text-gray-800 mb-3">
-                        Konten Belum Tersedia
-                      </h3>
-                      <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                        Konten untuk halaman ini sedang dalam proses pengembangan.
+                {isSurveyList ? (
+                  /* ── Halaman daftar tahun survei ── */
+                  <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+                    <div className="px-8 py-6 border-b border-gray-100 md:px-12">
+                      <h2 className="text-xl font-black text-gray-900">Pilih Tahun Survei</h2>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Hasil Survei Kepuasan Pelanggan KAN dari tahun ke tahun
                       </p>
-                      <button
-                        onClick={() => navigate('/')}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors"
-                      >
-                        <FaHome />
-                        <span>Kembali ke Beranda</span>
-                      </button>
                     </div>
-                  )}
 
-                  {updatedAt && content && (
-                    <div className="px-8 md:px-12 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-gray-400 text-sm">
-                        <FaCalendarAlt className="text-xs" />
-                        <span>{`Terakhir diperbarui: ${updatedAt}`}</span>
+                    {surveyLoading ? (
+                      <div className="flex justify-center py-16">
+                        <FaSpinner className="text-3xl text-primary-600 animate-spin" />
                       </div>
+                    ) : surveyYears.length > 0 ? (
+                      <div className="flex flex-col gap-3 p-4 md:p-6">
+                        {[...surveyYears]
+                          .sort((a, b) => Number(a.year) - Number(b.year))
+                          .map((s) => (
+                            <button
+                              key={s.page_id}
+                              onClick={() => navigate(`/${s.page_id}`)}
+                              className="flex items-center justify-between gap-3 px-5 py-4 text-left transition-all border border-gray-200 group rounded-xl hover:border-primary-400 hover:bg-primary-50"
+                            >
+                              <span className="font-bold text-gray-800 group-hover:text-primary-700">
+                                Survei Kepuasan Pelanggan {s.year}
+                              </span>
+                              <FaChevronRight className="flex-shrink-0 text-xs text-gray-300 group-hover:text-primary-600" />
+                            </button>
+                          ))}
+                      </div>
+                    ) : (
+                      <div className="px-8 py-16 text-center">
+                        <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full">
+                          <span className="text-3xl">📄</span>
+                        </div>
+                        <h3 className="mb-3 text-2xl font-black text-gray-800">
+                          Belum Ada Hasil Survei
+                        </h3>
+                        <p className="max-w-md mx-auto text-gray-500">
+                          Hasil survei per tahun akan ditampilkan di sini.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : isLabList ? (
+                  /* ── Halaman daftar laboratorium ── */
+                  <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+                    <div className="px-8 py-6 border-b border-gray-100 md:px-12">
+                      <h2 className="text-xl font-black text-gray-900">{`Pilih ${catLabel}`}</h2>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {`Sub-kategori ${catLabel} yang tersedia`}
+                      </p>
                     </div>
-                  )}
-                </div>
+
+                    {labsLoading ? (
+                      <div className="flex justify-center py-16">
+                        <FaSpinner className="text-3xl text-primary-600 animate-spin" />
+                      </div>
+                    ) : labs.length > 0 ? (
+                      <div className="flex flex-col gap-3 p-4 md:p-6">
+                        {labs.map((l) => (
+                          <button
+                            key={l.page_id}
+                            onClick={() => navigate(`/${l.page_id}`)}
+                            className="flex items-center justify-between gap-3 px-5 py-4 text-left transition-all border border-gray-200 group rounded-xl hover:border-primary-400 hover:bg-primary-50"
+                          >
+                            <span className="font-bold text-gray-800 group-hover:text-primary-700">
+                              {l.title}
+                            </span>
+                            <FaChevronRight className="flex-shrink-0 text-xs text-gray-300 group-hover:text-primary-600" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-8 py-16 text-center">
+                        <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full">
+                          <span className="text-3xl">🧪</span>
+                        </div>
+                        <h3 className="mb-3 text-2xl font-black text-gray-800">
+                          {`Belum Ada ${catLabel}`}
+                        </h3>
+                        <p className="max-w-md mx-auto text-gray-500">
+                          Sub-halaman akan ditampilkan di sini.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {/* Tombol kembali (halaman survei per tahun / halaman lab tertentu) */}
+                    {(surveyYear || labSlug) && (
+                      <button
+                        onClick={() => navigate(surveyYear ? `/${SURVEY_LIST}` : `/${LAB_LIST}`)}
+                        className="inline-flex items-center gap-2 px-5 py-3 mb-6 text-sm font-bold text-gray-700 transition-colors border border-gray-200 bg-gray-50 hover:bg-gray-200 rounded-xl"
+                      >
+                        <FaArrowLeft className="text-xs" />
+                        <span>Kembali</span>
+                      </button>
+                    )}
+
+                    {/* ── Featured Image Hero ── */}
+                    {pageContent?.image && (
+                      <div
+                        className={`relative mb-8 rounded-2xl overflow-hidden group cursor-zoom-in ${
+                          (surveyYear || labSlug) ? 'bg-white border border-gray-200' : 'shadow-2xl'
+                        }`}
+                        style={{ maxHeight: '480px' }}
+                        onClick={() =>
+                          setLightbox({
+                            open: true,
+                            images: [{ src: `/storage/${pageContent.image}`, caption: title }],
+                            index: 0,
+                          })
+                        }
+                      >
+                        <img
+                          src={`/storage/${pageContent.image}`}
+                          alt={title}
+                          className="object-cover w-full transition-transform duration-700 group-hover:scale-105"
+                          style={{ maxHeight: '480px' }}
+                        />
+                        {/* Gradient overlay bottom (tidak dipakai di halaman survei/lab) */}
+                        {!(surveyYear || labSlug) && (
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                        )}
+                        {/* Zoom hint */}
+                        <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                          <FaExpand className="text-xs" />
+                          <span>Perbesar</span>
+                        </div>
+                        {/* Title overlay (tidak dipakai di halaman survei/lab) */}
+                        {!(surveyYear || labSlug) && (
+                          <div className="absolute bottom-0 left-0 right-0 p-6">
+                            <p className="text-sm font-medium text-white/80">{title}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── Content Card ── */}
+                    <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+                      {content ? (
+                        <div className="p-8 md:p-12">
+                          <div
+                            ref={contentRef}
+                            className="
+                              prose prose-lg max-w-none
+                              prose-headings:font-black prose-headings:text-gray-900
+                              prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:pb-3 prose-h2:border-b prose-h2:border-gray-100
+                              prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-primary-800
+                              prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-4
+                              prose-a:text-primary-600 prose-a:font-semibold prose-a:no-underline hover:prose-a:underline
+                              prose-strong:text-gray-900 prose-strong:font-bold
+                              prose-ul:space-y-2 prose-ol:space-y-2
+                              prose-li:text-gray-700 prose-li:leading-relaxed
+                              prose-img:rounded-xl prose-img:shadow-md prose-img:w-full prose-img:my-6
+                              prose-figure:my-6 prose-figcaption:text-center prose-figcaption:text-sm prose-figcaption:text-gray-500 prose-figcaption:italic prose-figcaption:mt-2
+                              prose-table:border prose-table:border-gray-200
+                              prose-td:border prose-td:border-gray-200 prose-td:p-3
+                              prose-th:border prose-th:border-gray-200 prose-th:p-3 prose-th:bg-gray-50
+                              prose-blockquote:border-l-4 prose-blockquote:border-primary-400 prose-blockquote:bg-primary-50 prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-r-xl prose-blockquote:not-italic
+                              [&_h2]:first:mt-0
+                              [&_ul]:list-disc [&_ul]:pl-6
+                              [&_ol]:list-decimal [&_ol]:pl-6
+                              [&_.video-wrapper]:my-6
+                              [&_.auto-gallery]:my-6
+                              [&_table]:m-0
+                              [&_td_p]:m-0
+                              [&_th_p]:m-0
+                              [&_.ql-align-center]:text-center
+                              [&_.ql-align-right]:text-right
+                              [&_.ql-align-justify]:text-justify
+                            "
+                            dangerouslySetInnerHTML={{
+                              __html: DOMPurify
+                                .sanitize(content, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling'] })
+                                .replace(/&nbsp;/g, ' '),
+                              }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="px-8 py-16 text-center">
+                          <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full">
+                            <span className="text-3xl">📄</span>
+                          </div>
+                          <h3 className="mb-3 text-2xl font-black text-gray-800">
+                            Konten Belum Tersedia
+                          </h3>
+                          <p className="max-w-md mx-auto mb-6 text-gray-500">
+                            Konten untuk halaman ini sedang dalam proses pengembangan.
+                          </p>
+                          <button
+                            onClick={() => navigate('/')}
+                            className="inline-flex items-center gap-2 px-6 py-3 font-bold text-white transition-colors bg-primary-600 rounded-xl hover:bg-primary-700"
+                          >
+                            <FaHome />
+                            <span>Kembali ke Beranda</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {updatedAt && content && (
+                        <div className="flex items-center justify-between px-8 py-4 border-t border-gray-100 md:px-12 bg-gray-50">
+                          <div className="flex items-center gap-2 text-sm text-gray-400">
+                            <FaCalendarAlt className="text-xs" />
+                            <span>{`Terakhir diperbarui: ${updatedAt}`}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tombol Sebelumnya / Berikutnya antar tahun survei */}
+                    {surveyYear && (prevYear || nextYear) && (
+                      <div className="flex items-stretch justify-between gap-4 mt-6">
+                        {prevYear ? (
+                          <button
+                            onClick={() => navigate(`/${prevYear.page_id}`)}
+                            className="flex items-center gap-3 px-5 py-3 text-left transition-all shadow-sm group bg-primary-600 hover:bg-primary-700 rounded-xl hover:shadow-md"
+                          >
+                            <FaChevronLeft className="text-xs transition-all text-white/70 group-hover:text-white group-hover:-translate-x-1" />
+                            <span className="flex flex-col">
+                              <span className="text-xs font-medium text-white/70">Sebelumnya</span>
+                              <span className="text-sm font-bold text-white">
+                                Survei {prevYear.year}
+                              </span>
+                            </span>
+                          </button>
+                        ) : (
+                          <div />
+                        )}
+
+                        {nextYear ? (
+                          <button
+                            onClick={() => navigate(`/${nextYear.page_id}`)}
+                            className="flex items-center gap-3 px-5 py-3 text-right transition-all shadow-sm group bg-primary-600 hover:bg-primary-700 rounded-xl hover:shadow-md"
+                          >
+                            <span className="flex flex-col">
+                              <span className="text-xs font-medium text-white/70">Berikutnya</span>
+                              <span className="text-sm font-bold text-white">
+                                Survei {nextYear.year}
+                              </span>
+                            </span>
+                            <FaChevronRight className="text-xs transition-all text-white/70 group-hover:text-white group-hover:translate-x-1" />
+                          </button>
+                        ) : (
+                          <div />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Tombol menuju daftar Hasil Survei per Tahun */}
+                    {pageId === SURVEY_BASE && (
+                      <button
+                        onClick={() => navigate(`/${SURVEY_LIST}`)}
+                        className="flex items-center justify-between w-full gap-4 px-8 py-6 mt-6 text-left transition-all shadow-sm group bg-primary-600 hover:bg-primary-700 rounded-2xl hover:shadow-md md:px-12"
+                      >
+                        <div>
+                          <h2 className="text-xl font-black text-white">
+                            Hasil Survei per Tahun
+                          </h2>
+                          <p className="mt-1 text-sm text-white/70">
+                            Lihat hasil survei kepuasan pelanggan dari tahun ke tahun
+                          </p>
+                        </div>
+                        <FaChevronRight className="flex-shrink-0 transition-all text-white/70 group-hover:text-white group-hover:translate-x-1" />
+                      </button>
+                    )}
+
+                    {/* Tombol menuju daftar Laboratorium */}
+                    {isSubMain && (
+                      <button
+                        onClick={() => navigate(`/${LAB_LIST}`)}
+                        className="flex items-center justify-between w-full gap-4 px-8 py-6 mt-6 text-left transition-all shadow-sm group bg-primary-600 hover:bg-primary-700 rounded-2xl hover:shadow-md md:px-12"
+                      >
+                        <div>
+                          <h2 className="text-xl font-black text-white">
+                            {`Daftar ${catLabel}`}
+                          </h2>
+                          <p className="mt-1 text-sm text-white/70">
+                            {`Pilih ${catLabel} yang ingin dilihat`}
+                          </p>
+                        </div>
+                        <FaChevronRight className="flex-shrink-0 transition-all text-white/70 group-hover:text-white group-hover:translate-x-1" />
+                      </button>
+                    )}
+                  </>
+                )}
 
                 {/* Mobile Section Nav */}
                 {siblings.length > 0 && (
-                  <div className="lg:hidden mt-6 bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-                    <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-5 py-3">
-                      <h3 className="text-white font-black text-sm tracking-wide uppercase">{sectionKey}</h3>
+                  <div className="mt-6 overflow-hidden bg-white border border-gray-200 shadow-sm lg:hidden rounded-2xl">
+                    <div className="px-5 py-3 bg-gradient-to-r from-primary-600 to-primary-700">
+                      <h3 className="text-sm font-black tracking-wide text-white uppercase">{sectionKey}</h3>
                     </div>
-                    <nav className="p-2 grid grid-cols-2 gap-1">
+                    <nav className="grid grid-cols-2 gap-1 p-2">
                       {siblings.map((page) => {
-                        const isActive = page.id === pageId;
+                        const isActive = page.id === activeId;
                         return (
                           <button
                             key={page.id}

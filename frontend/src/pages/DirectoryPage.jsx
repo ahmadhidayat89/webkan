@@ -6,34 +6,50 @@ import {
   FaHome, FaChevronRight, FaSpinner, FaSearch, FaTimes,
   FaBuilding, FaCheckCircle, FaExclamationCircle, FaBan,
   FaPhone, FaEnvelope, FaGlobe, FaMapMarkerAlt, FaFilter,
-  FaCalendarAlt, FaIdCard, FaChevronDown, FaChevronUp, FaThList,
+  FaCalendarAlt, FaIdCard, FaChevronDown, FaChevronUp, FaThList, FaLink,
 } from 'react-icons/fa';
 
 const TABS = [
-  { segment: 'semua',               pageId: 'direktori/semua',               label: 'Semua',         color: 'primary',  status: null },
-  { segment: 'terakreditasi',        pageId: 'direktori/terakreditasi',        label: 'Terakreditasi', color: 'emerald',  status: 'active' },
-  { segment: 'akreditasi-dibekukan', pageId: 'direktori/akreditasi-dibekukan', label: 'Dibekukan',     color: 'amber',    status: 'suspended' },
-  { segment: 'akreditasi-dicabut',   pageId: 'direktori/akreditasi-dicabut',   label: 'Dicabut',       color: 'red',      status: 'revoked' },
+  { segment: 'semua', pageId: 'direktori/semua', label: 'Semua', color: 'primary', status: null },
+  { segment: 'terakreditasi', pageId: 'direktori/terakreditasi', label: 'Terakreditasi', color: 'emerald', status: 'active' },
+  { segment: 'akreditasi-dibekukan', pageId: 'direktori/akreditasi-dibekukan', label: 'Dibekukan', color: 'amber', status: 'suspended' },
+  { segment: 'akreditasi-dicabut', pageId: 'direktori/akreditasi-dicabut', label: 'Dicabut', color: 'red', status: 'revoked' },
 ];
 
 const STATUS_CFG = {
-  active:    { badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: FaCheckCircle,       iconCls: 'text-emerald-500', label: 'Terakreditasi' },
-  suspended: { badge: 'bg-amber-100 text-amber-700 border-amber-200',      icon: FaExclamationCircle,  iconCls: 'text-amber-500',   label: 'Dibekukan' },
-  revoked:   { badge: 'bg-red-100 text-red-700 border-red-200',            icon: FaBan,                iconCls: 'text-red-500',     label: 'Dicabut' },
+  active: { badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: FaCheckCircle, iconCls: 'text-emerald-500', label: 'Terakreditasi' },
+  suspended: { badge: 'bg-amber-100 text-amber-700 border-amber-200', icon: FaExclamationCircle, iconCls: 'text-amber-500', label: 'Dibekukan' },
+  revoked: { badge: 'bg-red-100 text-red-700 border-red-200', icon: FaBan, iconCls: 'text-red-500', label: 'Dicabut' },
 };
 
 const TAB_STYLE = {
-  null:        { active: 'border-primary-600 text-primary-700 bg-primary-50', bar: 'bg-primary-600',  icon: FaThList },
-  active:      { active: 'border-emerald-500 text-emerald-700 bg-emerald-50', bar: 'bg-emerald-500',  icon: FaCheckCircle },
-  suspended:   { active: 'border-amber-500 text-amber-700 bg-amber-50',       bar: 'bg-amber-500',    icon: FaExclamationCircle },
-  revoked:     { active: 'border-red-500 text-red-700 bg-red-50',             bar: 'bg-red-500',      icon: FaBan },
+  null: { active: 'border-primary-600 text-primary-700 bg-primary-50', bar: 'bg-primary-600', icon: FaThList },
+  active: { active: 'border-emerald-500 text-emerald-700 bg-emerald-50', bar: 'bg-emerald-500', icon: FaCheckCircle },
+  suspended: { active: 'border-amber-500 text-amber-700 bg-amber-50', bar: 'bg-amber-500', icon: FaExclamationCircle },
+  revoked: { active: 'border-red-500 text-red-700 bg-red-50', bar: 'bg-red-500', icon: FaBan },
 };
 
 const TYPE_OPTIONS = [
-  'Laboratorium Pengujian','Laboratorium Kalibrasi','Laboratorium Medis',
-  'Lembaga Inspeksi','Lembaga Sertifikasi Produk','Lembaga Sertifikasi Personel',
-  'Lembaga Sertifikasi Sistem Manajemen','Penyelenggara Uji Profisiensi',
-  'Produsen Bahan Acuan','Lembaga Verifikasi & Validasi GRK',
+  'Laboratorium Pengujian',
+  'Laboratorium Kalibrasi',
+  'Laboratorium Medis',
+  'Lembaga Inspeksi',
+  'Lembaga Sertifikasi Produk',
+  'Lembaga Sertifikasi Personel',
+  'Lembaga Sertifikasi Person',
+  'Lembaga Sertifikasi Person Sektor dan Jasa',
+  'Lembaga Sertifikasi Sistem Mutu',
+  'Lembaga Sertifikasi Berdasarkan SNI ISO/IEC 17065',
+  'Lembaga Sertifikasi Badan Usaha Jasa Konstruksi',
+  'Laboratorium Lingkungan Hidup',
+  'Lembaga Sertifikasi Sistem Manajemen',
+  'Penyelenggara Uji Profisiensi',
+  'Produsen Bahan Acuan',
+  'Lembaga Verifikasi & Validasi GRK',
+  'Lembaga Sertifikasi Indonesian Sustainable Palm Oil (ISPO)',
+  'Lembaga Sertifikasi Umrah dan Haji Khusus',
+  'Lembaga Penilai dan Verifikasi Independen',
+  'Lembaga Sertifikasi Person Jasa Konstruksi',
 ];
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
@@ -109,37 +125,37 @@ const DirectoryPage = () => {
       <Header />
 
       {/* Hero Banner */}
-      <div className="relative bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800 overflow-hidden">
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-1/3 w-72 h-72 bg-primary-600/20 rounded-full blur-3xl" />
+          <div className="absolute rounded-full -top-24 -right-24 w-96 h-96 bg-white/5 blur-3xl" />
+          <div className="absolute bottom-0 rounded-full left-1/3 w-72 h-72 bg-primary-600/20 blur-3xl" />
         </div>
-        <div className="container mx-auto px-4 lg:px-8 relative z-10">
+        <div className="container relative z-10 px-4 mx-auto lg:px-8">
           {/* Breadcrumb */}
-          <div className="pt-32 lg:pt-40 pb-3 border-b border-white/10">
-            <nav className="flex items-center gap-2 text-sm flex-wrap">
+          <div className="pt-32 pb-3 border-b lg:pt-40 border-white/10">
+            <nav className="flex flex-wrap items-center gap-2 text-sm">
               <button onClick={() => navigate('/')} className="flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors font-medium">
                 <FaHome className="text-xs" /><span>Beranda</span>
               </button>
               <FaChevronRight className="text-[10px] text-white/30" />
-              <span className="text-white/80 font-semibold">Direktori LPK</span>
+              <span className="font-semibold text-white/80">Direktori LPK</span>
             </nav>
           </div>
 
           {/* Title */}
           <div className="py-8">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-1">
-                <FaBuilding className="text-white text-xl" />
+              <div className="flex items-center justify-center flex-shrink-0 mt-1 w-14 h-14 bg-white/10 rounded-2xl">
+                <FaBuilding className="text-xl text-white" />
               </div>
               <div>
-                <span className="inline-block px-3 py-1 bg-white/10 text-white/70 text-xs font-bold rounded-full uppercase tracking-wider mb-3 border border-white/20">
+                <span className="inline-block px-3 py-1 mb-3 text-xs font-bold tracking-wider uppercase border rounded-full bg-white/10 text-white/70 border-white/20">
                   Direktori LPK
                 </span>
-                <h1 className="text-3xl md:text-4xl font-black text-white leading-tight">
+                <h1 className="text-3xl font-black leading-tight text-white md:text-4xl">
                   Lembaga Penilaian Kesesuaian
                 </h1>
-                <p className="text-white/50 text-sm mt-2">
+                <p className="mt-2 text-sm text-white/50">
                   Daftar lembaga yang telah mendapatkan akreditasi dari Komite Akreditasi Nasional (KAN)
                 </p>
               </div>
@@ -148,8 +164,8 @@ const DirectoryPage = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="container mx-auto px-4 lg:px-8 relative z-10">
-          <div className="flex gap-1 overflow-x-auto pb-0">
+        <div className="container relative z-10 px-4 mx-auto lg:px-8">
+          <div className="flex gap-1 pb-0 overflow-x-auto">
             {TABS.map(tab => {
               const isActive = tab.pageId === pageId;
               const tStyleKey = tab.status === null ? 'null' : tab.status;
@@ -159,15 +175,13 @@ const DirectoryPage = () => {
                 <button
                   key={tab.pageId}
                   onClick={() => navigate(`/${tab.pageId}`)}
-                  className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-t-xl transition-all border-t-2 ${
-                    isActive
-                      ? `bg-white text-gray-900 ${tStyle.active.includes('border') ? '' : ''} border-t-[3px] ${
-                          tab.status === null ? 'border-primary-600' :
-                          tab.status === 'active' ? 'border-emerald-500' :
+                  className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-t-xl transition-all border-t-2 ${isActive
+                      ? `bg-white text-gray-900 ${tStyle.active.includes('border') ? '' : ''} border-t-[3px] ${tab.status === null ? 'border-primary-600' :
+                        tab.status === 'active' ? 'border-emerald-500' :
                           tab.status === 'suspended' ? 'border-amber-500' : 'border-red-500'
-                        }`
+                      }`
                       : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white border-transparent'
-                  }`}
+                    }`}
                 >
                   <TIcon className="text-sm" />
                   {tabLabel(tab)}
@@ -179,14 +193,14 @@ const DirectoryPage = () => {
       </div>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 lg:px-8 py-6">
+      <main className="container px-4 py-6 mx-auto lg:px-8">
 
         {/* Toolbar */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-5">
-          <div className="flex flex-wrap gap-3 items-center">
+        <div className="p-4 mb-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
-            <form onSubmit={handleSearch} className="flex-1 min-w-60 flex gap-2">
-              <div className="flex-1 relative">
+            <form onSubmit={handleSearch} className="flex flex-1 gap-2 min-w-60">
+              <div className="relative flex-1">
                 <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                 <input
                   type="text"
@@ -197,7 +211,7 @@ const DirectoryPage = () => {
                 />
                 {searchInput && (
                   <button type="button" onClick={() => { setSearchInput(''); setSearch(''); setPage(1); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    className="absolute text-gray-400 -translate-y-1/2 right-3 top-1/2 hover:text-gray-600">
                     <FaTimes className="text-xs" />
                   </button>
                 )}
@@ -215,11 +229,11 @@ const DirectoryPage = () => {
                 className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-semibold transition-colors ${filterType ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300 bg-white'}`}
               >
                 <FaFilter className="text-xs" />
-                <span className="max-w-40 truncate">{filterType || 'Semua Tipe'}</span>
-                {typeOpen ? <FaChevronUp className="text-xs ml-1" /> : <FaChevronDown className="text-xs ml-1" />}
+                <span className="truncate max-w-40">{filterType || 'Semua Tipe'}</span>
+                {typeOpen ? <FaChevronUp className="ml-1 text-xs" /> : <FaChevronDown className="ml-1 text-xs" />}
               </button>
               {typeOpen && (
-                <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 max-h-72 overflow-y-auto">
+                <div className="absolute right-0 z-20 w-64 py-1 mt-1 overflow-y-auto bg-white border border-gray-200 shadow-lg top-full rounded-xl max-h-72">
                   <button
                     onClick={() => { setFilterType(''); setPage(1); setTypeOpen(false); }}
                     className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${!filterType ? 'bg-primary-50 text-primary-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}
@@ -248,7 +262,7 @@ const DirectoryPage = () => {
             )}
 
             {!loading && (
-              <span className="ml-auto text-sm text-gray-400 font-medium">
+              <span className="ml-auto text-sm font-medium text-gray-400">
                 {pagination.total || 0} lembaga
               </span>
             )}
@@ -256,22 +270,22 @@ const DirectoryPage = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
           {loading ? (
-            <div className="py-24 flex flex-col items-center gap-3">
-              <FaSpinner className="text-primary-500 text-3xl animate-spin" />
+            <div className="flex flex-col items-center gap-3 py-24">
+              <FaSpinner className="text-3xl text-primary-500 animate-spin" />
               <p className="text-sm text-gray-400">Memuat data...</p>
             </div>
           ) : data.length === 0 ? (
             <div className="py-20 text-center">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FaBuilding className="text-gray-300 text-3xl" />
+              <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full">
+                <FaBuilding className="text-3xl text-gray-300" />
               </div>
-              <p className="font-bold text-gray-500 mb-1">Tidak ada data ditemukan</p>
+              <p className="mb-1 font-bold text-gray-500">Tidak ada data ditemukan</p>
               <p className="text-sm text-gray-400">Coba ubah kata kunci pencarian atau filter</p>
               {(search || filterType) && (
                 <button onClick={() => { setSearch(''); setSearchInput(''); setFilterType(''); setPage(1); }}
-                  className="mt-4 text-sm text-primary-600 font-bold hover:underline">
+                  className="mt-4 text-sm font-bold text-primary-600 hover:underline">
                   Reset pencarian
                 </button>
               )}
@@ -279,10 +293,10 @@ const DirectoryPage = () => {
           ) : (
             <>
               {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
+                    <tr className="border-b border-gray-100 bg-gray-50">
                       <th className="text-left px-5 py-3.5 font-bold text-gray-600 w-12">No.</th>
                       <th className="text-left px-5 py-3.5 font-bold text-gray-600">Nama Lembaga</th>
                       <th className="text-left px-5 py-3.5 font-bold text-gray-600">Tipe LPK</th>
@@ -291,16 +305,17 @@ const DirectoryPage = () => {
                       <th className="text-left px-5 py-3.5 font-bold text-gray-600">Berlaku s/d</th>
                       <th className="text-left px-5 py-3.5 font-bold text-gray-600">Status</th>
                       <th className="text-left px-5 py-3.5 font-bold text-gray-600">Kontak</th>
+                      <th className="text-left px-5 py-3.5 font-bold text-gray-600">Link</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {data.map((item, idx) => (
-                      <tr key={item.id} className="hover:bg-gray-50/80 transition-colors group">
-                        <td className="px-5 py-4 text-gray-400 text-xs font-medium">
+                      <tr key={item.id} className="transition-colors hover:bg-gray-50/80 group">
+                        <td className="px-5 py-4 text-xs font-medium text-gray-400">
                           {(pagination.from || 1) + idx}
                         </td>
                         <td className="px-5 py-4">
-                          <div className="font-bold text-gray-900 group-hover:text-primary-700 transition-colors">{item.name}</div>
+                          <div className="font-bold text-gray-900 transition-colors group-hover:text-primary-700">{item.name}</div>
                           {item.address && (
                             <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
                               <FaMapMarkerAlt className="flex-shrink-0 text-[10px]" />
@@ -337,26 +352,42 @@ const DirectoryPage = () => {
                           <div className="flex items-center gap-2">
                             {item.phone && (
                               <a href={`tel:${item.phone}`} title={item.phone}
-                                className="w-7 h-7 flex items-center justify-center bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors">
+                                className="flex items-center justify-center transition-colors rounded-lg w-7 h-7 bg-primary-50 text-primary-600 hover:bg-primary-100">
                                 <FaPhone className="text-[10px]" />
                               </a>
                             )}
                             {item.email && (
                               <a href={`mailto:${item.email}`} title={item.email}
-                                className="w-7 h-7 flex items-center justify-center bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors">
+                                className="flex items-center justify-center transition-colors rounded-lg w-7 h-7 bg-primary-50 text-primary-600 hover:bg-primary-100">
                                 <FaEnvelope className="text-[10px]" />
                               </a>
                             )}
                             {item.website && (
                               <a href={item.website} target="_blank" rel="noopener noreferrer" title={item.website}
-                                className="w-7 h-7 flex items-center justify-center bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors">
+                                className="flex items-center justify-center transition-colors rounded-lg w-7 h-7 bg-primary-50 text-primary-600 hover:bg-primary-100">
                                 <FaGlobe className="text-[10px]" />
                               </a>
                             )}
                             {!item.phone && !item.email && !item.website && (
-                              <span className="text-gray-300 text-xs">—</span>
+                              <span className="text-xs text-gray-300">—</span>
                             )}
                           </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          {item.certificate_link ? (
+                            <a
+                              href={item.certificate_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title=""
+                              className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 whitespace-nowrap"
+                            >
+                              <FaLink className="text-xs" />
+                              
+                            </a>
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -365,7 +396,7 @@ const DirectoryPage = () => {
               </div>
 
               {/* Mobile Cards */}
-              <div className="md:hidden divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 md:hidden">
                 {data.map((item, idx) => (
                   <div key={item.id} className="p-4">
                     <div
@@ -373,34 +404,34 @@ const DirectoryPage = () => {
                       onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-xs text-gray-400 font-medium">#{(pagination.from || 1) + idx}</span>
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="text-xs font-medium text-gray-400">#{(pagination.from || 1) + idx}</span>
                           <StatusBadge status={item.status} />
                         </div>
-                        <h3 className="font-bold text-gray-900 text-sm leading-snug">{item.name}</h3>
+                        <h3 className="text-sm font-bold leading-snug text-gray-900">{item.name}</h3>
                         <p className="text-xs text-gray-400 mt-0.5">{item.type}</p>
                       </div>
                       <div className="flex-shrink-0 pt-1">
                         {expandedId === item.id
-                          ? <FaChevronUp className="text-gray-400 text-xs" />
-                          : <FaChevronDown className="text-gray-400 text-xs" />}
+                          ? <FaChevronUp className="text-xs text-gray-400" />
+                          : <FaChevronDown className="text-xs text-gray-400" />}
                       </div>
                     </div>
 
                     {expandedId === item.id && (
-                      <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                      <div className="pt-3 mt-3 space-y-2 border-t border-gray-100">
                         <div className="flex items-center gap-2 text-xs">
-                          <FaIdCard className="text-gray-300 flex-shrink-0" />
+                          <FaIdCard className="flex-shrink-0 text-gray-300" />
                           <span className="text-gray-500">No. Sertifikat:</span>
                           <span className="font-mono font-bold text-gray-700">{item.certificate_number}</span>
                         </div>
                         <div className="flex items-center gap-2 text-xs">
-                          <FaCalendarAlt className="text-gray-300 flex-shrink-0" />
+                          <FaCalendarAlt className="flex-shrink-0 text-gray-300" />
                           <span className="text-gray-500">Akreditasi:</span>
                           <span className="text-gray-700">{fmtDate(item.accreditation_date)}</span>
                         </div>
                         <div className="flex items-center gap-2 text-xs">
-                          <FaCalendarAlt className="text-gray-300 flex-shrink-0" />
+                          <FaCalendarAlt className="flex-shrink-0 text-gray-300" />
                           <span className="text-gray-500">Berlaku s/d:</span>
                           <span className="text-gray-700">{fmtDate(item.expiry_date)}</span>
                         </div>
@@ -435,7 +466,7 @@ const DirectoryPage = () => {
 
               {/* Pagination */}
               {pagination.last_page > 1 && (
-                <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-t border-gray-100">
                   <p className="text-sm text-gray-400">
                     Menampilkan{' '}
                     <span className="font-semibold text-gray-700">{pagination.from}–{pagination.to}</span>{' '}
@@ -444,9 +475,9 @@ const DirectoryPage = () => {
                   </p>
                   <div className="flex items-center gap-1">
                     <button disabled={page === 1} onClick={() => setPage(1)}
-                      className="w-9 h-9 flex items-center justify-center text-sm border border-gray-200 rounded-lg disabled:opacity-30 hover:bg-gray-50 transition-colors">«</button>
+                      className="flex items-center justify-center text-sm transition-colors border border-gray-200 rounded-lg w-9 h-9 disabled:opacity-30 hover:bg-gray-50">«</button>
                     <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
-                      className="px-3 h-9 flex items-center justify-center text-sm border border-gray-200 rounded-lg disabled:opacity-30 hover:bg-gray-50 transition-colors font-medium">‹ Prev</button>
+                      className="flex items-center justify-center px-3 text-sm font-medium transition-colors border border-gray-200 rounded-lg h-9 disabled:opacity-30 hover:bg-gray-50">‹ Prev</button>
                     {Array.from({ length: Math.min(5, pagination.last_page) }, (_, i) => {
                       let p;
                       if (pagination.last_page <= 5) p = i + 1;
@@ -455,15 +486,14 @@ const DirectoryPage = () => {
                       else p = page - 2 + i;
                       return (
                         <button key={p} onClick={() => setPage(p)}
-                          className={`w-9 h-9 flex items-center justify-center text-sm rounded-lg font-semibold transition-colors ${
-                            p === page ? 'bg-primary-600 text-white border border-primary-600' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
-                          }`}>{p}</button>
+                          className={`w-9 h-9 flex items-center justify-center text-sm rounded-lg font-semibold transition-colors ${p === page ? 'bg-primary-600 text-white border border-primary-600' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                            }`}>{p}</button>
                       );
                     })}
                     <button disabled={page === pagination.last_page} onClick={() => setPage(p => p + 1)}
-                      className="px-3 h-9 flex items-center justify-center text-sm border border-gray-200 rounded-lg disabled:opacity-30 hover:bg-gray-50 transition-colors font-medium">Next ›</button>
+                      className="flex items-center justify-center px-3 text-sm font-medium transition-colors border border-gray-200 rounded-lg h-9 disabled:opacity-30 hover:bg-gray-50">Next ›</button>
                     <button disabled={page === pagination.last_page} onClick={() => setPage(pagination.last_page)}
-                      className="w-9 h-9 flex items-center justify-center text-sm border border-gray-200 rounded-lg disabled:opacity-30 hover:bg-gray-50 transition-colors">»</button>
+                      className="flex items-center justify-center text-sm transition-colors border border-gray-200 rounded-lg w-9 h-9 disabled:opacity-30 hover:bg-gray-50">»</button>
                   </div>
                 </div>
               )}

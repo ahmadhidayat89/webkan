@@ -47,6 +47,7 @@ class AccreditedOrganizationController extends Controller
             'phone'              => 'nullable|string|max:50',
             'email'              => 'nullable|email|max:255',
             'website'            => 'nullable|url|max:255',
+            'certificate_link'   => 'nullable|url|max:255',
         ]);
 
         $org = AccreditedOrganization::create($validated);
@@ -75,6 +76,7 @@ class AccreditedOrganizationController extends Controller
             'phone'              => 'nullable|string|max:50',
             'email'              => 'nullable|email|max:255',
             'website'            => 'nullable|url|max:255',
+            'certificate_link'   => 'nullable|url|max:255',
         ]);
 
         $org->update($validated);

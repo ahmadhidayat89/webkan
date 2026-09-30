@@ -7,9 +7,9 @@ import {
 import AdminLayout from '../../components/admin/AdminLayout';
 
 const STATUS_MAP = {
-  active:    { label: 'Terakreditasi',       color: 'bg-emerald-100 text-emerald-700' },
-  suspended: { label: 'Dibekukan',           color: 'bg-amber-100 text-amber-700' },
-  revoked:   { label: 'Dicabut',             color: 'bg-red-100 text-red-700' },
+  active: { label: 'Terakreditasi', color: 'bg-emerald-100 text-emerald-700' },
+  suspended: { label: 'Dibekukan', color: 'bg-amber-100 text-amber-700' },
+  revoked: { label: 'Dicabut', color: 'bg-red-100 text-red-700' },
 };
 
 const TYPE_OPTIONS = [
@@ -19,16 +19,27 @@ const TYPE_OPTIONS = [
   'Lembaga Inspeksi',
   'Lembaga Sertifikasi Produk',
   'Lembaga Sertifikasi Personel',
+  'Lembaga Sertifikasi Person',
+  'Lembaga Sertifikasi Person Sektor dan Jasa',
+  'Lembaga Sertifikasi Sistem Mutu',
+  'Lembaga Sertifikasi Berdasarkan SNI ISO/IEC 17065',
+  'Lembaga Sertifikasi Badan Usaha Jasa Konstruksi',
+  'Laboratorium Lingkungan Hidup',
   'Lembaga Sertifikasi Sistem Manajemen',
   'Penyelenggara Uji Profisiensi',
   'Produsen Bahan Acuan',
   'Lembaga Verifikasi & Validasi GRK',
+  'Lembaga Sertifikasi Indonesian Sustainable Palm Oil (ISPO)',
+  'Lembaga Sertifikasi Umrah dan Haji Khusus',
+  'Lembaga Penilai dan Verifikasi Independen',
+  'Lembaga Sertifikasi Person Jasa Konstruksi',
 ];
 
 const emptyForm = {
   name: '', type: '', certificate_number: '',
   accreditation_date: '', expiry_date: '',
   status: 'active', address: '', phone: '', email: '', website: '',
+  certificate_link: '',
 };
 
 const DirectoryManagement = () => {
@@ -84,6 +95,7 @@ const DirectoryManagement = () => {
       status: item.status,
       address: item.address || '', phone: item.phone || '',
       email: item.email || '', website: item.website || '',
+      certificate_link: item.certificate_link || '',
     });
     setSaveMsg(null);
     setModalOpen(true);
@@ -99,6 +111,10 @@ const DirectoryManagement = () => {
       let website = form.website?.trim() || null;
       if (website && !/^https?:\/\//i.test(website)) {
         website = 'https://' + website;
+      }
+      let certificate_link = form.certificate_link?.trim() || null;
+      if (certificate_link && !/^https?:\/\//i.test(certificate_link)) {
+        certificate_link = 'https://' + certificate_link;
       }
       const payload = {
         ...form,
@@ -145,12 +161,12 @@ const DirectoryManagement = () => {
       <div className="space-y-6">
 
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7 text-white shadow-xl overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-56 h-56 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
+        <div className="relative overflow-hidden text-white shadow-xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7">
+          <div className="absolute w-56 h-56 rounded-full pointer-events-none -top-10 -right-10 bg-white/5 blur-3xl" />
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center">
-                <FaBuilding className="text-white text-xl" />
+              <div className="flex items-center justify-center w-12 h-12 bg-white/15 rounded-xl">
+                <FaBuilding className="text-xl text-white" />
               </div>
               <div>
                 <h2 className="text-2xl font-black">Direktori LPK</h2>
@@ -168,10 +184,10 @@ const DirectoryManagement = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+        <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
           <div className="flex flex-wrap gap-3">
-            <div className="flex-1 min-w-48 relative">
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+            <div className="relative flex-1 min-w-48">
+              <FaSearch className="absolute text-sm text-gray-400 -translate-y-1/2 left-3 top-1/2" />
               <input
                 type="text"
                 placeholder="Cari nama / nomor sertifikat..."
@@ -210,23 +226,23 @@ const DirectoryManagement = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
           {loading ? (
-            <div className="py-20 flex justify-center">
-              <FaSpinner className="text-primary-600 text-3xl animate-spin" />
+            <div className="flex justify-center py-20">
+              <FaSpinner className="text-3xl text-primary-600 animate-spin" />
             </div>
           ) : data.length === 0 ? (
             <div className="py-16 text-center">
-              <FaBuilding className="text-gray-300 text-4xl mx-auto mb-3" />
-              <p className="text-gray-500 font-semibold">Belum ada data LPK</p>
-              <button onClick={openAdd} className="mt-3 text-sm text-primary-600 font-bold hover:underline">+ Tambah LPK pertama</button>
+              <FaBuilding className="mx-auto mb-3 text-4xl text-gray-300" />
+              <p className="font-semibold text-gray-500">Belum ada data LPK</p>
+              <button onClick={openAdd} className="mt-3 text-sm font-bold text-primary-600 hover:underline">+ Tambah LPK pertama</button>
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
+                    <tr className="border-b border-gray-100 bg-gray-50">
                       <th className="text-left px-5 py-3.5 font-bold text-gray-700">Nama Lembaga</th>
                       <th className="text-left px-5 py-3.5 font-bold text-gray-700">Tipe</th>
                       <th className="text-left px-5 py-3.5 font-bold text-gray-700">No. Sertifikat</th>
@@ -237,7 +253,7 @@ const DirectoryManagement = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {data.map(item => (
-                      <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={item.id} className="transition-colors hover:bg-gray-50">
                         <td className="px-5 py-4">
                           <div className="font-semibold text-gray-900">{item.name}</div>
                           {item.address && <div className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{item.address}</div>}
@@ -256,11 +272,11 @@ const DirectoryManagement = () => {
                         <td className="px-5 py-4">
                           <div className="flex items-center justify-end gap-2">
                             <button onClick={() => openEdit(item)}
-                              className="p-2 rounded-lg text-primary-600 hover:bg-primary-50 transition-colors">
+                              className="p-2 transition-colors rounded-lg text-primary-600 hover:bg-primary-50">
                               <FaEdit className="text-sm" />
                             </button>
                             <button onClick={() => setDeleteConfirm(item)}
-                              className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors">
+                              className="p-2 text-red-500 transition-colors rounded-lg hover:bg-red-50">
                               <FaTrash className="text-sm" />
                             </button>
                           </div>
@@ -273,7 +289,7 @@ const DirectoryManagement = () => {
 
               {/* Pagination */}
               {pagination.last_page > 1 && (
-                <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
+                <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100">
                   <p className="text-sm text-gray-500">
                     Menampilkan {pagination.from}–{pagination.to} dari {pagination.total} data
                   </p>
@@ -297,11 +313,11 @@ const DirectoryManagement = () => {
 
       {/* Modal Form */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
               <h3 className="font-black text-gray-900">{editItem ? 'Edit Data LPK' : 'Tambah LPK Baru'}</h3>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
+              <button onClick={() => setModalOpen(false)} className="p-2 text-gray-500 rounded-lg hover:bg-gray-100">
                 <FaTimes />
               </button>
             </div>
@@ -311,14 +327,14 @@ const DirectoryManagement = () => {
                   {saveMsg.text}
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Nama Lembaga *</label>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Nama Lembaga *</label>
                   <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Tipe LPK *</label>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Tipe LPK *</label>
                   <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
                     <option value="">-- Pilih Tipe --</option>
@@ -326,22 +342,22 @@ const DirectoryManagement = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Nomor Sertifikat *</label>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Nomor Sertifikat *</label>
                   <input value={form.certificate_number} onChange={e => setForm(f => ({ ...f, certificate_number: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Tanggal Akreditasi *</label>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Tanggal Akreditasi *</label>
                   <input type="date" value={form.accreditation_date} onChange={e => setForm(f => ({ ...f, accreditation_date: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Berlaku Sampai *</label>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Berlaku Sampai *</label>
                   <input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Status *</label>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Status *</label>
                   <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
                     <option value="active">Terakreditasi</option>
@@ -350,35 +366,40 @@ const DirectoryManagement = () => {
                   </select>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Alamat</label>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Alamat</label>
                   <textarea value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
                     rows={2} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Telepon</label>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Telepon</label>
                   <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Email</label>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Email</label>
                   <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Website</label>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Website</label>
                   <input type="url" value={form.website} onChange={e => setForm(f => ({ ...f, website: e.target.value }))}
+                    placeholder="https://..." className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block mb-1 text-sm font-bold text-gray-700">Link Sertifikat</label>
+                  <input type="url" value={form.certificate_link} onChange={e => setForm(f => ({ ...f, certificate_link: e.target.value }))}
                     placeholder="https://..." className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
               <button onClick={() => setModalOpen(false)}
                 className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-800 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
                 Batal
               </button>
               <button onClick={handleSave} disabled={saving}
                 className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50">
-                {saving ? <FaSpinner className="animate-spin text-xs" /> : <FaSave className="text-xs" />}
+                {saving ? <FaSpinner className="text-xs animate-spin" /> : <FaSave className="text-xs" />}
                 {saving ? 'Menyimpan...' : 'Simpan'}
               </button>
             </div>
@@ -388,13 +409,13 @@ const DirectoryManagement = () => {
 
       {/* Delete Confirm */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
-            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FaTrash className="text-red-500 text-xl" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="w-full max-w-sm p-6 text-center bg-white shadow-2xl rounded-2xl">
+            <div className="flex items-center justify-center mx-auto mb-4 bg-red-100 rounded-full w-14 h-14">
+              <FaTrash className="text-xl text-red-500" />
             </div>
-            <h3 className="font-black text-gray-900 mb-2">Hapus Data?</h3>
-            <p className="text-gray-500 text-sm mb-6">
+            <h3 className="mb-2 font-black text-gray-900">Hapus Data?</h3>
+            <p className="mb-6 text-sm text-gray-500">
               <span className="font-semibold text-gray-700">{deleteConfirm.name}</span> akan dihapus permanen.
             </p>
             <div className="flex gap-3">

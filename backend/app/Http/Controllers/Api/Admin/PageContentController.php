@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 
 class PageContentController extends Controller
 {
+    private const SURVEY_PREFIX = 'survey-kepuasan-pelanggan/';
+
     public function __construct(private readonly HtmlAutoTranslator $translator)
     {
     }
@@ -62,6 +64,7 @@ class PageContentController extends Controller
     {
         $validated = $request->validate([
             'page_id' => 'required|string|max:100',
+            'title' => 'nullable|string|max:150',
             'content_id' => 'required|string',
             'content_en' => 'nullable|string',
             'image' => 'nullable|image|max:2048',
@@ -78,6 +81,10 @@ class PageContentController extends Controller
                     : (($existing && $existing->content_id === $validated['content_id']) ? $existing->content_en : null)
             ),
         ];
+
+        if ($request->has('title')) {
+            $updateData['title'] = $validated['title'] ?? null;
+        }
 
         if ($request->hasFile('image')) {
             // Delete old image if exists
@@ -101,6 +108,89 @@ class PageContentController extends Controller
             'success' => true,
             'message' => 'Content saved successfully',
             'data' => $content
+        ]);
+    }
+
+    /**
+     * Daftar tahun survei kepuasan pelanggan (public)
+     */
+    public function surveyYears()
+    {
+        $years = PageContent::where('page_id', 'like', self::SURVEY_PREFIX . '%')
+            ->get(['page_id', 'updated_at'])
+            ->map(fn ($c) => [
+                'year' => substr($c->page_id, strlen(self::SURVEY_PREFIX)),
+                'page_id' => $c->page_id,
+                'updated_at' => $c->updated_at,
+            ])
+            ->sortByDesc('year')
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $years,
+        ]);
+    }
+
+        /**
+     * Daftar sub-halaman per kategori Layanan Akreditasi (public)
+     * contoh: /layanan-services/laboratorium
+     */
+    public function subPages(string $category)
+    {
+        if (!preg_match('/^[a-z0-9-]+$/', $category)) {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        $prefix = 'layanan/' . $category . '/';
+
+        $items = PageContent::where('page_id', 'like', $prefix . '%')
+            ->get(['page_id', 'title', 'updated_at'])
+            ->map(function ($c) use ($prefix) {
+                $slug = substr($c->page_id, strlen($prefix));
+                return [
+                    'slug' => $slug,
+                    'page_id' => $c->page_id,
+                    'title' => $c->title ?: ucwords(str_replace('-', ' ', $slug)),
+                    'updated_at' => $c->updated_at,
+                ];
+            })
+            ->filter(fn ($i) => $i['slug'] !== '' && !str_contains($i['slug'], '/'))
+            ->sortBy('title')
+            ->values();
+
+        return response()->json(['success' => true, 'data' => $items]);
+    }
+
+        /**
+     * Hapus sub-halaman dinamis (survei tahunan atau sub-halaman layanan)
+     */
+    public function destroy($pageId)
+    {
+        $isDynamic = (bool) preg_match(
+            '#^(survey-kepuasan-pelanggan/[^/]+|layanan/[^/]+/[^/]+)$#',
+            $pageId
+        );
+
+        if (!$isDynamic) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Halaman ini tidak dapat dihapus',
+            ], 403);
+        }
+
+        $content = PageContent::where('page_id', $pageId)->first();
+
+        if ($content) {
+            if ($content->image) {
+                Storage::disk('public')->delete($content->image);
+            }
+            $content->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Halaman berhasil dihapus',
         ]);
     }
 }

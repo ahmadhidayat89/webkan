@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaHome, FaNewspaper, FaUsers, FaCog, FaImages, FaBars, FaTimes, FaSignOutAlt, FaChartBar, FaEdit, FaBuilding } from 'react-icons/fa';
+import { FaHome, FaNewspaper, FaUsers, FaCog, FaImages, FaBars, FaTimes, FaSignOutAlt, FaChartBar, FaEdit, FaBuilding, FaFileAlt, FaQuestionCircle } from 'react-icons/fa';
 
 const AdminLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -12,10 +12,12 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/news', icon: FaNewspaper, label: 'Berita & Pengumuman' },
     { path: '/admin/content', icon: FaEdit, label: 'Konten Halaman' },
     { path: '/admin/directory', icon: FaBuilding, label: 'Direktori LPK' },
+    { path: '/admin/documents', icon: FaFileAlt, label: 'Unduh Dokumen' },
     { path: '/admin/sliders', icon: FaImages, label: 'Sliders' },
     { path: '/admin/partners', icon: FaUsers, label: 'Partners' },
+    { path: '/admin/faq', icon: FaQuestionCircle, label: 'FAQ' },
     { path: '/admin/settings', icon: FaCog, label: 'Settings' },
-  ];
+];
 
   const handleLogout = async () => {
     try {
@@ -37,34 +39,33 @@ const AdminLayout = ({ children }) => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } bg-gradient-to-b from-primary-900 via-primary-800 to-primary-900 text-white transition-all duration-300 fixed h-screen z-40 shadow-2xl`}
+        className={`${sidebarOpen ? 'w-64' : 'w-20'
+          } bg-gradient-to-b from-primary-900 via-primary-800 to-primary-900 text-white transition-all duration-300 fixed h-screen z-40 shadow-2xl`}
       >
         {/* Logo */}
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center justify-between">
             {sidebarOpen ? (
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/10 backdrop-blur-xl rounded-lg flex items-center justify-center font-black text-xl">
+                <div className="flex items-center justify-center w-10 h-10 text-xl font-black rounded-lg bg-white/10 backdrop-blur-xl">
                   KAN
                 </div>
                 <div>
-                  <div className="font-black text-lg">Admin Panel</div>
+                  <div className="text-lg font-black">Admin Panel</div>
                   <div className="text-xs text-white/60">Komite Akreditasi</div>
                 </div>
               </div>
             ) : (
-              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center font-black">
+              <div className="flex items-center justify-center w-10 h-10 font-black rounded-lg bg-white/10">
                 K
               </div>
             )}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-white/80 hover:text-white transition-colors ml-2"
+              className="ml-2 transition-colors text-white/80 hover:text-white"
             >
               {sidebarOpen ? <FaTimes size={18} /> : <FaBars size={18} />}
             </button>
@@ -81,18 +82,17 @@ const AdminLayout = ({ children }) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                  active
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${active
                     ? 'bg-white/20 text-white shadow-lg'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
-                }`}
+                  }`}
               >
                 <Icon className={`text-xl ${active ? 'scale-110' : 'group-hover:scale-110'} transition-transform`} />
                 {sidebarOpen && (
                   <span className="font-semibold">{item.label}</span>
                 )}
                 {active && sidebarOpen && (
-                  <span className="ml-auto w-2 h-2 bg-accent-400 rounded-full animate-pulse"></span>
+                  <span className="w-2 h-2 ml-auto rounded-full bg-accent-400 animate-pulse"></span>
                 )}
               </Link>
             );
@@ -104,9 +104,8 @@ const AdminLayout = ({ children }) => {
           <Link
             to="/"
             target="_blank"
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:bg-white/10 hover:text-white transition-all mb-2 ${
-              !sidebarOpen && 'justify-center'
-            }`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:bg-white/10 hover:text-white transition-all mb-2 ${!sidebarOpen && 'justify-center'
+              }`}
           >
             <FaHome className="text-xl" />
             {sidebarOpen && <span className="font-semibold">Lihat Website</span>}
@@ -114,9 +113,8 @@ const AdminLayout = ({ children }) => {
 
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:bg-red-500/20 hover:text-red-300 transition-all ${
-              !sidebarOpen && 'justify-center'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:bg-red-500/20 hover:text-red-300 transition-all ${!sidebarOpen && 'justify-center'
+              }`}
           >
             <FaSignOutAlt className="text-xl" />
             {sidebarOpen && <span className="font-semibold">Logout</span>}
@@ -126,28 +124,27 @@ const AdminLayout = ({ children }) => {
 
       {/* Main Content */}
       <div
-        className={`flex-1 ${
-          sidebarOpen ? 'ml-64' : 'ml-20'
-        } transition-all duration-300`}
+        className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'
+          } transition-all duration-300`}
       >
         {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
-          <div className="px-6 py-4 flex items-center justify-between">
+        <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between px-6 py-4">
             <div>
               <h1 className="text-2xl font-black text-gray-900">
                 {menuItems.find(item => item.path === location.pathname)?.label || 'Dashboard'}
               </h1>
-              <p className="text-sm text-gray-500 mt-1">Manage your content and settings</p>
+              <p className="mt-1 text-sm text-gray-500">Manage your content and settings</p>
             </div>
 
             <div className="flex items-center gap-4">
               {/* User Info */}
               <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-xl">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-700 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="flex items-center justify-center w-10 h-10 font-bold text-white rounded-full bg-gradient-to-br from-primary-600 to-primary-700">
                   A
                 </div>
                 <div>
-                  <div className="font-bold text-sm text-gray-900">Admin</div>
+                  <div className="text-sm font-bold text-gray-900">Admin</div>
                   <div className="text-xs text-gray-500">Super Admin</div>
                 </div>
               </div>

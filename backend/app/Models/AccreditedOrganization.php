@@ -21,6 +21,7 @@ class AccreditedOrganization extends Model
         'phone',
         'email',
         'website',
+        'certificate_link',
     ];
 
     protected $casts = [
