@@ -11,15 +11,48 @@ import {
 
 const SURVEY_BASE = 'survey-kepuasan-pelanggan';
 const SURVEY_LIST = 'hasil-survei';
-// Kategori Layanan Akreditasi yang punya sub-halaman (lainnya langsung tampil)
-const SUB_CATS = [
-  { slug: 'laboratorium', label: 'Laboratorium' },
-  { slug: 'lembaga-verifikasi-validasi-grk', label: 'Lembaga Verifikasi dan/atau Validasi Gas Rumah Kaca'},
-  { slug: 'sistem-manajemen', label: 'Sistem Manajemen'},
-  { slug: 'sertifikasi-sni-iso-iec-17065', label: 'Sertifikasi Berdasarkan SNI ISO/IEC 17065' },
-  { slug: 'sertifikasi-pembangunan-berkelanjutan', label: 'Sertifikasi Pembangunan Berkelanjutan' },
+
+// ─── Konfigurasi "hub" layanan yang punya sub-halaman ──────────────────────
+// Tambah/ubah di sini saja kalau suatu saat ada layanan lain yang butuh
+// pola sub-halaman yang sama (halaman induk + daftar + halaman per item).
+const SUBPAGE_HUBS = [
+  {
+    base: 'layanan/laboratorium',
+    list: 'daftar-laboratorium',
+    parentLabel: 'Laboratorium',
+    listHeading: 'Daftar Laboratorium',
+    listTitle: 'Pilih Laboratorium',
+    listDesc: 'Jenis laboratorium yang dapat diakreditasi oleh KAN',
+    emptyIcon: '🧪',
+    emptyTitle: 'Belum Ada Laboratorium',
+    emptyDesc: 'Daftar jenis laboratorium akan ditampilkan di sini.',
+    apiEndpoint: '/api/v1/lab-subpages',
+  },
+  {
+    base: 'layanan/lembaga-verifikasi-validasi-grk',
+    list: 'daftar-verifikasi-grk',
+    parentLabel: 'Lembaga Verifikasi dan/atau Validasi GRK',
+    listHeading: 'Daftar Verifikasi & Validasi GRK',
+    listTitle: 'Pilih Skema Verifikasi/Validasi GRK',
+    listDesc: 'Skema verifikasi dan validasi gas rumah kaca yang dapat diakreditasi oleh KAN',
+    emptyIcon: '🌿',
+    emptyTitle: 'Belum Ada Skema',
+    emptyDesc: 'Daftar skema verifikasi/validasi GRK akan ditampilkan di sini.',
+    apiEndpoint: '/api/v1/grk-subpages',
+  },
+  {
+    base: 'layanan/sistem-manajemen',
+    list: 'daftar-sistem-manajemen',
+    parentLabel: 'Sistem Manajemen',
+    listHeading: 'Daftar Sistem Manajemen',
+    listTitle: 'Pilih Skema Sistem Manajemen',
+    listDesc: 'Skema sertifikasi sistem manajemen yang dapat diakreditasi oleh KAN',
+    emptyIcon: '📋',
+    emptyTitle: 'Belum Ada Skema',
+    emptyDesc: 'Daftar skema sistem manajemen akan ditampilkan di sini.',
+    apiEndpoint: '/api/v1/sistem-manajemen-subpages',
+  },
 ];
-const SUB_LIST = 'daftar-layanan';
 
 const humanizeSlug = (slug) =>
   slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -264,8 +297,8 @@ const DynamicPage = () => {
   const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
   const [surveyYears, setSurveyYears] = useState([]);
   const [surveyLoading, setSurveyLoading] = useState(true);
-  const [labs, setLabs] = useState([]);
-  const [labsLoading, setLabsLoading] = useState(true);
+  const [subpagesByHub, setSubpagesByHub] = useState({});
+  const [subpagesLoading, setSubpagesLoading] = useState(false);
   const contentRef = useRef(null);
 
   const pageId = location.pathname.substring(1);
@@ -275,24 +308,20 @@ const DynamicPage = () => {
   // Halaman daftar tahun: /hasil-survei
   const isSurveyList = pageId === SURVEY_LIST;
 
-    // Sub-halaman: layanan/{kategori}/{slug}, daftar: daftar-layanan/{kategori}
-  const pageParts = pageId.split('/');
-  const subCatInfo = SUB_CATS.find((c) => c.slug === pageParts[1]);
-  const isSubDetail = pageParts[0] === 'layanan' && pageParts.length === 3 && !!subCatInfo;
-  const isLabList = pageParts[0] === SUB_LIST && pageParts.length === 2 && !!subCatInfo;
-  const isSubMain = pageParts[0] === 'layanan' && pageParts.length === 2 && !!subCatInfo;
-  const subCat = (isSubDetail || isLabList || isSubMain) ? pageParts[1] : null;
-  const catLabel = subCatInfo?.label || '';
-  // Nama lama dipertahankan supaya JSX di bawah tidak perlu diubah
-  const labSlug = isSubDetail ? pageParts[2] : null;
-  const LAB_BASE = subCat ? `layanan/${subCat}` : null;
-  const LAB_LIST = subCat ? `${SUB_LIST}/${subCat}` : null;
+  // Hub layanan (Laboratorium / GRK / Sistem Manajemen) yang sedang dibuka,
+  // baik itu halaman itemnya (contoh: layanan/laboratorium/kalibrasi)
+  // maupun halaman daftarnya (contoh: daftar-laboratorium).
+  const matchedHub = SUBPAGE_HUBS.find((h) => pageId.startsWith(`${h.base}/`));
+  const listHub = SUBPAGE_HUBS.find((h) => pageId === h.list);
+  const currentHub = matchedHub || listHub || null;
+  const hubSlug = matchedHub ? pageId.slice(matchedHub.base.length + 1) : null;
+  const isHubList = !!listHub;
 
   // id menu sidebar yang harus menyala (halaman turunan menyalakan menu induknya)
   const activeId = (surveyYear || isSurveyList)
     ? SURVEY_BASE
-    : (labSlug || isLabList)
-      ? LAB_BASE
+    : currentHub
+      ? currentHub.base
       : pageId;
 
   const sectionPages = {
@@ -383,35 +412,35 @@ const DynamicPage = () => {
       <h2>Jenis Layanan Akreditasi</h2>
       <div class="not-prose grid sm:grid-cols-2 gap-4 mb-8">
         <a href="/layanan/laboratorium" class="flex gap-4 p-4 rounded-xl border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
-          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl">🧪</div>
+          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23-.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/></svg></div>
           <div>
             <p class="font-bold text-gray-900 mb-1">Laboratorium Pengujian</p>
             <p class="text-sm text-gray-500">Akreditasi untuk laboratorium yang melakukan pengujian (ISO/IEC 17025)</p>
           </div>
         </a>
         <a href="/layanan/sertifikasi-sni-iso-iec-17065" class="flex gap-4 p-4 rounded-xl border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
-          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-xl">📜</div>
+          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg></div>
           <div>
             <p class="font-bold text-gray-900 mb-1">Lembaga Sertifikasi</p>
             <p class="text-sm text-gray-500">Akreditasi lembaga sertifikasi produk, personel, dan sistem manajemen</p>
           </div>
         </a>
         <a href="/layanan/lembaga-inspeksi" class="flex gap-4 p-4 rounded-xl border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
-          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl">📋</div>
+          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.123.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"/></svg></div>
           <div>
             <p class="font-bold text-gray-900 mb-1">Lembaga Inspeksi</p>
             <p class="text-sm text-gray-500">Akreditasi untuk lembaga inspeksi (ISO/IEC 17020)</p>
           </div>
         </a>
         <a href="/layanan/produsen-bahan-acuan" class="flex gap-4 p-4 rounded-xl border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all">
-          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-xl">🏭</div>
+          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-700 to-blue-900 flex items-center justify-center text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m-4.5 0h4.5m6-16.5h3.75a1.5 1.5 0 0 1 1.5 1.5v15a1.5 1.5 0 0 1-1.5 1.5h-3.75m0-18v18m0-18h-3.75a1.5 1.5 0 0 0-1.5 1.5v15a1.5 1.5 0 0 0 1.5 1.5h3.75"/></svg></div>
           <div>
             <p class="font-bold text-gray-900 mb-1">Produser Bahan Acuan</p>
             <p class="text-sm text-gray-500">Akreditasi produser bahan acuan (ISO 17034)</p>
           </div>
         </a>
         <a href="/layanan/lembaga-verifikasi-validasi-grk" class="flex gap-4 p-4 rounded-xl border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all sm:col-span-2">
-          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-xl">🌿</div>
+          <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-500 to-blue-800 flex items-center justify-center text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21c-4.97 0-9-4.03-9-9 0-4.97 7-12 9-12s9 7.03 9 12c0 4.97-4.03 9-9 9Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 21V9"/></svg></div>
           <div>
             <p class="font-bold text-gray-900 mb-1">Verifikasi &amp; Validasi GRK</p>
             <p class="text-sm text-gray-500">Akreditasi verifikasi dan validasi gas rumah kaca (ISO 14065)</p>
@@ -485,17 +514,21 @@ const DynamicPage = () => {
       .finally(() => setSurveyLoading(false));
   }, [isSurveyList, surveyYear]);
 
-  // Ambil daftar laboratorium (halaman daftar /daftar-laboratorium & judul halaman lab)
-    useEffect(() => {
-    setLabs([]);
-    if (!subCat) return;
-    setLabsLoading(true);
-    fetch(`/api/v1/layanan-services/${subCat}`)
+  // Ambil daftar sub-halaman untuk hub yang sedang aktif (Laboratorium / GRK / Sistem Manajemen)
+  useEffect(() => {
+    if (!currentHub) return;
+    if (subpagesByHub[currentHub.base]?.length > 0) return; // sudah pernah dimuat
+    setSubpagesLoading(true);
+    fetch(currentHub.apiEndpoint)
       .then((r) => r.json())
-      .then((d) => { if (d.success) setLabs(d.data); })
+      .then((d) => {
+        if (d.success) {
+          setSubpagesByHub((prev) => ({ ...prev, [currentHub.base]: d.data }));
+        }
+      })
       .catch(() => {})
-      .finally(() => setLabsLoading(false));
-  }, [subCat]);
+      .finally(() => setSubpagesLoading(false));
+  }, [currentHub?.base]);
 
   const fetchPageContent = async () => {
     // Halaman dengan konten statis (ditulis langsung di kode, bukan lewat admin)
@@ -507,8 +540,8 @@ const DynamicPage = () => {
       return;
     }
 
-    // Halaman daftar (survei per tahun / daftar laboratorium) tidak punya konten sendiri
-    if (isSurveyList || isLabList) {
+    // Halaman daftar (survei per tahun / daftar sub-halaman) tidak punya konten sendiri
+    if (isSurveyList || isHubList) {
       setPageContent(null);
       setNotFound(false);
       setLoading(false);
@@ -534,16 +567,17 @@ const DynamicPage = () => {
     }
   };
 
-  const currentLab = labSlug ? labs.find((l) => l.slug === labSlug) : null;
+  const currentHubItems = currentHub ? (subpagesByHub[currentHub.base] || []) : [];
+  const currentSubpage = hubSlug ? currentHubItems.find((s) => s.slug === hubSlug) : null;
 
   const meta = surveyYear
     ? { label: `Survei Kepuasan Pelanggan ${surveyYear}`, section: 'Proses Akreditasi' }
     : isSurveyList
       ? { label: 'Hasil Survei per Tahun', section: 'Proses Akreditasi' }
-      : labSlug
-        ? { label: currentLab?.title || pageContent?.title || humanizeSlug(labSlug), section: 'Layanan Akreditasi' }
-        : isLabList
-          ? { label: `Daftar ${catLabel}`, section: 'Layanan Akreditasi' }
+      : hubSlug
+        ? { label: currentSubpage?.title || pageContent?.title || humanizeSlug(hubSlug), section: 'Layanan Akreditasi' }
+        : isHubList
+          ? { label: currentHub.listHeading, section: 'Layanan Akreditasi' }
           : pageMeta[pageId];
   const title = meta ? meta.label : pageId;
   const sectionKey = meta?.section || null;
@@ -568,8 +602,6 @@ const DynamicPage = () => {
     if (!contentRef.current || !content) return;
 
     const container = contentRef.current;
-
-    
 
     // ── Images: collect all, add click → lightbox ──
     const imgs = Array.from(container.querySelectorAll('img'));
@@ -786,25 +818,25 @@ const DynamicPage = () => {
                   </button>
                 </>
               )}
-              {(labSlug || isLabList) && (
+              {(hubSlug || isHubList) && currentHub && (
                 <>
                   <FaChevronRight className="text-xs text-white/30" />
                   <button
-                    onClick={() => navigate(`/${LAB_BASE}`)}
+                    onClick={() => navigate(`/${currentHub.base}`)}
                     className="transition-colors text-white/50 hover:text-white/80"
                   >
-                    {catLabel}
+                    {currentHub.parentLabel}
                   </button>
                 </>
               )}
-              {labSlug && (
+              {hubSlug && currentHub && (
                 <>
                   <FaChevronRight className="text-xs text-white/30" />
                   <button
-                    onClick={() => navigate(`/${LAB_LIST}`)}
+                    onClick={() => navigate(`/${currentHub.list}`)}
                     className="transition-colors text-white/50 hover:text-white/80"
                   >
-                    {`Daftar${catLabel}`}
+                    {currentHub.listHeading}
                   </button>
                 </>
               )}
@@ -878,10 +910,10 @@ const DynamicPage = () => {
               {/* Main Content */}
               <div className="flex-1 min-w-0">
 
-                {/* Tombol kembali (halaman daftar tahun survei / daftar lab) */}
-                {(isSurveyList || isLabList) && (
+                {/* Tombol kembali (halaman daftar tahun survei / daftar sub-halaman) */}
+                {(isSurveyList || isHubList) && (
                   <button
-                    onClick={() => navigate(isSurveyList ? `/${SURVEY_BASE}` : `/${LAB_BASE}`)}
+                    onClick={() => navigate(isSurveyList ? `/${SURVEY_BASE}` : `/${currentHub.base}`)}
                     className="inline-flex items-center gap-2 px-5 py-3 mb-6 text-sm font-bold text-gray-700 transition-colors border border-gray-200 bg-gray-50 hover:bg-gray-200 rounded-xl"
                   >
                     <FaArrowLeft className="text-xs" />
@@ -934,30 +966,28 @@ const DynamicPage = () => {
                       </div>
                     )}
                   </div>
-                ) : isLabList ? (
-                  /* ── Halaman daftar laboratorium ── */
+                ) : isHubList && currentHub ? (
+                  /* ── Halaman daftar sub-halaman (Laboratorium / GRK / Sistem Manajemen) ── */
                   <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
                     <div className="px-8 py-6 border-b border-gray-100 md:px-12">
-                      <h2 className="text-xl font-black text-gray-900">{`Pilih ${catLabel}`}</h2>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {`Sub-kategori ${catLabel} yang tersedia`}
-                      </p>
+                      <h2 className="text-xl font-black text-gray-900">{currentHub.listTitle}</h2>
+                      <p className="mt-1 text-sm text-gray-500">{currentHub.listDesc}</p>
                     </div>
 
-                    {labsLoading ? (
+                    {subpagesLoading ? (
                       <div className="flex justify-center py-16">
                         <FaSpinner className="text-3xl text-primary-600 animate-spin" />
                       </div>
-                    ) : labs.length > 0 ? (
+                    ) : currentHubItems.length > 0 ? (
                       <div className="flex flex-col gap-3 p-4 md:p-6">
-                        {labs.map((l) => (
+                        {currentHubItems.map((item) => (
                           <button
-                            key={l.page_id}
-                            onClick={() => navigate(`/${l.page_id}`)}
+                            key={item.page_id}
+                            onClick={() => navigate(`/${item.page_id}`)}
                             className="flex items-center justify-between gap-3 px-5 py-4 text-left transition-all border border-gray-200 group rounded-xl hover:border-primary-400 hover:bg-primary-50"
                           >
                             <span className="font-bold text-gray-800 group-hover:text-primary-700">
-                              {l.title}
+                              {item.title}
                             </span>
                             <FaChevronRight className="flex-shrink-0 text-xs text-gray-300 group-hover:text-primary-600" />
                           </button>
@@ -966,23 +996,23 @@ const DynamicPage = () => {
                     ) : (
                       <div className="px-8 py-16 text-center">
                         <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full">
-                          <span className="text-3xl">🧪</span>
+                          <span className="text-3xl">{currentHub.emptyIcon}</span>
                         </div>
                         <h3 className="mb-3 text-2xl font-black text-gray-800">
-                          {`Belum Ada ${catLabel}`}
+                          {currentHub.emptyTitle}
                         </h3>
                         <p className="max-w-md mx-auto text-gray-500">
-                          Sub-halaman akan ditampilkan di sini.
+                          {currentHub.emptyDesc}
                         </p>
                       </div>
                     )}
                   </div>
                 ) : (
                   <>
-                    {/* Tombol kembali (halaman survei per tahun / halaman lab tertentu) */}
-                    {(surveyYear || labSlug) && (
+                    {/* Tombol kembali (halaman survei per tahun / halaman item sub-halaman) */}
+                    {(surveyYear || hubSlug) && (
                       <button
-                        onClick={() => navigate(surveyYear ? `/${SURVEY_LIST}` : `/${LAB_LIST}`)}
+                        onClick={() => navigate(surveyYear ? `/${SURVEY_LIST}` : `/${currentHub.list}`)}
                         className="inline-flex items-center gap-2 px-5 py-3 mb-6 text-sm font-bold text-gray-700 transition-colors border border-gray-200 bg-gray-50 hover:bg-gray-200 rounded-xl"
                       >
                         <FaArrowLeft className="text-xs" />
@@ -994,7 +1024,7 @@ const DynamicPage = () => {
                     {pageContent?.image && (
                       <div
                         className={`relative mb-8 rounded-2xl overflow-hidden group cursor-zoom-in ${
-                          (surveyYear || labSlug) ? 'bg-white border border-gray-200' : 'shadow-2xl'
+                          (surveyYear || hubSlug) ? 'bg-white border border-gray-200' : 'shadow-2xl'
                         }`}
                         style={{ maxHeight: '480px' }}
                         onClick={() =>
@@ -1011,8 +1041,8 @@ const DynamicPage = () => {
                           className="object-cover w-full transition-transform duration-700 group-hover:scale-105"
                           style={{ maxHeight: '480px' }}
                         />
-                        {/* Gradient overlay bottom (tidak dipakai di halaman survei/lab) */}
-                        {!(surveyYear || labSlug) && (
+                        {/* Gradient overlay bottom (tidak dipakai di halaman survei/sub-halaman) */}
+                        {!(surveyYear || hubSlug) && (
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                         )}
                         {/* Zoom hint */}
@@ -1020,8 +1050,8 @@ const DynamicPage = () => {
                           <FaExpand className="text-xs" />
                           <span>Perbesar</span>
                         </div>
-                        {/* Title overlay (tidak dipakai di halaman survei/lab) */}
-                        {!(surveyYear || labSlug) && (
+                        {/* Title overlay (tidak dipakai di halaman survei/sub-halaman) */}
+                        {!(surveyYear || hubSlug) && (
                           <div className="absolute bottom-0 left-0 right-0 p-6">
                             <p className="text-sm font-medium text-white/80">{title}</p>
                           </div>
@@ -1158,22 +1188,25 @@ const DynamicPage = () => {
                       </button>
                     )}
 
-                    {/* Tombol menuju daftar Laboratorium */}
-                    {isSubMain && (
-                      <button
-                        onClick={() => navigate(`/${LAB_LIST}`)}
-                        className="flex items-center justify-between w-full gap-4 px-8 py-6 mt-6 text-left transition-all shadow-sm group bg-primary-600 hover:bg-primary-700 rounded-2xl hover:shadow-md md:px-12"
-                      >
-                        <div>
-                          <h2 className="text-xl font-black text-white">
-                            {`Daftar ${catLabel}`}
-                          </h2>
-                          <p className="mt-1 text-sm text-white/70">
-                            {`Pilih ${catLabel} yang ingin dilihat`}
-                          </p>
-                        </div>
-                        <FaChevronRight className="flex-shrink-0 transition-all text-white/70 group-hover:text-white group-hover:translate-x-1" />
-                      </button>
+                    {/* Tombol menuju daftar sub-halaman (Laboratorium / GRK / Sistem Manajemen) */}
+                    {SUBPAGE_HUBS.map((hub) =>
+                      pageId === hub.base ? (
+                        <button
+                          key={hub.base}
+                          onClick={() => navigate(`/${hub.list}`)}
+                          className="flex items-center justify-between w-full gap-4 px-8 py-6 mt-6 text-left transition-all shadow-sm group bg-primary-600 hover:bg-primary-700 rounded-2xl hover:shadow-md md:px-12"
+                        >
+                          <div>
+                            <h2 className="text-xl font-black text-white">
+                              {hub.listHeading}
+                            </h2>
+                            <p className="mt-1 text-sm text-white/70">
+                              {hub.listDesc}
+                            </p>
+                          </div>
+                          <FaChevronRight className="flex-shrink-0 transition-all text-white/70 group-hover:text-white group-hover:translate-x-1" />
+                        </button>
+                      ) : null
                     )}
                   </>
                 )}

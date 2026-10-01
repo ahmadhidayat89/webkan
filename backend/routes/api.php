@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\Admin\DocumentController as AdminDocumentController
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\Admin\FaqController as AdminFaqController;
+use App\Http\Controllers\Api\SearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -72,6 +73,9 @@ Route::prefix('v1')->group(function () {
     // Documents (public)
     Route::get('/documents', [DocumentController::class, 'index']);
     Route::get('/documents/{slug}', [DocumentController::class, 'show']);
+
+    // Pencarian (public)
+    Route::get('/search', [SearchController::class, 'index']);
 
     // Sitemap & Robots
     Route::get('/sitemap.xml', [SitemapController::class, 'index']);

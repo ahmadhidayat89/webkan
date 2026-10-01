@@ -132,7 +132,7 @@ const QuickLinks = ({ links }) => {
                   title: 'Dokumentasi Mutu KAN',
                   description:
                     'Dokumen standar dan prosedur akreditasi terkini',
-                  link: '/dokumentasi',
+                  link: '/unduh',
                   index: 1,
                 },
                 {

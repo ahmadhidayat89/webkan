@@ -526,7 +526,7 @@ const DocumentPage = () => {
           <div className="absolute rounded-full w-96 h-96 -bottom-48 -left-32 bg-white/5" />
         </div>
 
-        <div className="relative z-10 px-5 mx-auto max-w-7xl py-14 md:px-8 md:py-20">
+        <div className="relative z-10 px-5 pt-32 pb-12 mx-auto max-w-7xl md:px-8 md:pt-40 md:pb-14">
           {/* Breadcrumb */}
           <div className="flex flex-wrap items-center gap-2 text-sm mb-7 text-white/70">
             <button
@@ -564,14 +564,6 @@ const DocumentPage = () => {
           </div>
 
           <div className="max-w-3xl">
-            <div className="inline-flex items-center justify-center mb-6 text-white w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm">
-              <FaFileAlt className="text-2xl" />
-            </div>
-
-            <div className="inline-flex items-center px-3 py-1.5 mb-4 ml-3 text-xs font-semibold tracking-wide text-white uppercase rounded-full bg-white/10">
-              Pusat Unduhan
-            </div>
-
             <h1 className="text-3xl font-bold tracking-tight text-white md:text-5xl">
               {heroContent.title}
             </h1>
@@ -761,12 +753,12 @@ const DocumentPage = () => {
                 pada kategori ini.
               </p>
             </div>
-          )}
-      </main>
+        )}
+    </main>
 
-      <Footer />
+        <Footer />
     </div>
-  );
+    );
 };
 
 export default DocumentPage;

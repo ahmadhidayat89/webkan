@@ -1,12 +1,17 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-const LANGUAGE_STORAGE_KEY = 'kan_language';
+const LANG_KEY = 'kan_lang';
+const SUPPORTED = ['id', 'en'];
 
-const getInitialLanguage = () => {
-  if (typeof window === 'undefined') return 'id';
-  const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  return stored === 'en' || stored === 'id' ? stored : 'id';
+// Bahasa awal: ambil dari sesi tab ini (hilang saat tab ditutup), default 'id'
+const getInitialLang = () => {
+  try {
+    const saved = sessionStorage.getItem(LANG_KEY);
+    return SUPPORTED.includes(saved) ? saved : 'id';
+  } catch {
+    return 'id';
+  }
 };
 
 const resources = {
@@ -20,7 +25,7 @@ const resources = {
       'nav.directory': 'Direktori LPK',
       'nav.download': 'Unduh',
       'nav.contact': 'Kontak',
-      
+
       // Homepage
       'home.welcome': 'Selamat Datang di',
       'home.subtitle': 'Lembaga Akreditasi Nasional Terpercaya',
@@ -29,19 +34,20 @@ const resources = {
       'home.read_more': 'Baca Selengkapnya',
       'home.quick_links': 'Akses Cepat',
       'home.partners': 'Kemitraan dan Kerjasama',
-      
+
       // Footer
       'footer.about': 'Tentang Kami',
       'footer.contact': 'Hubungi Kami',
       'footer.social': 'Ikuti Kami',
       'footer.copyright': '© 2024 Komite Akreditasi Nasional. Hak Cipta Dilindungi.',
-      
+
       // Common
       'common.search': 'Cari...',
       'common.loading': 'Memuat...',
       'common.error': 'Terjadi kesalahan',
     }
   },
+
   en: {
     translation: {
       // Navigation
@@ -52,7 +58,7 @@ const resources = {
       'nav.directory': 'Directory',
       'nav.download': 'Download',
       'nav.contact': 'Contact',
-      
+
       // Homepage
       'home.welcome': 'Welcome to',
       'home.subtitle': 'Trusted National Accreditation Body',
@@ -61,13 +67,13 @@ const resources = {
       'home.read_more': 'Read More',
       'home.quick_links': 'Quick Links',
       'home.partners': 'Partnership and Cooperation',
-      
+
       // Footer
       'footer.about': 'About Us',
       'footer.contact': 'Contact Us',
       'footer.social': 'Follow Us',
       'footer.copyright': '© 2024 National Accreditation Committee. All Rights Reserved.',
-      
+
       // Common
       'common.search': 'Search...',
       'common.loading': 'Loading...',
@@ -80,18 +86,20 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: getInitialLanguage(),
+    lng: getInitialLang(),
     fallbackLng: 'id',
+    supportedLngs: SUPPORTED,
     interpolation: {
       escapeValue: false
     }
   });
 
+// Simpan pilihan setiap kali bahasa diganti (lewat tombol EN | ID di Header)
 i18n.on('languageChanged', (lng) => {
-  if (typeof window === 'undefined') return;
-  if (lng === 'id' || lng === 'en') {
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lng);
-  }
+  try {
+    sessionStorage.setItem(LANG_KEY, lng);
+  } catch { }
+  document.documentElement.lang = lng;
 });
 
 export default i18n;

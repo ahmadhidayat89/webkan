@@ -144,22 +144,12 @@ const DirectoryPage = () => {
 
           {/* Title */}
           <div className="py-8">
-            <div className="flex items-start gap-4">
-              <div className="flex items-center justify-center flex-shrink-0 mt-1 w-14 h-14 bg-white/10 rounded-2xl">
-                <FaBuilding className="text-xl text-white" />
-              </div>
-              <div>
-                <span className="inline-block px-3 py-1 mb-3 text-xs font-bold tracking-wider uppercase border rounded-full bg-white/10 text-white/70 border-white/20">
-                  Direktori LPK
-                </span>
-                <h1 className="text-3xl font-black leading-tight text-white md:text-4xl">
-                  Lembaga Penilaian Kesesuaian
-                </h1>
-                <p className="mt-2 text-sm text-white/50">
-                  Daftar lembaga yang telah mendapatkan akreditasi dari Komite Akreditasi Nasional (KAN)
-                </p>
-              </div>
-            </div>
+            <h1 className="text-3xl font-black leading-tight text-white md:text-4xl">
+              Lembaga Penilaian Kesesuaian
+            </h1>
+            <p className="mt-2 text-sm text-white/50">
+              Daftar lembaga yang telah mendapatkan akreditasi dari Komite Akreditasi Nasional (KAN)
+            </p>
           </div>
         </div>
 

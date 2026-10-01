@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 
 import Home from './pages/Home';
 import About from './pages/About';
@@ -18,12 +19,15 @@ import PartnersManagement from './pages/admin/PartnersManagement';
 import PagesManagement from './pages/admin/PagesManagement';
 import SettingsManagement from './pages/admin/SettingsManagement';
 import SlidersManagement from './pages/admin/SlidersManagement';
-import ContentManagement from './pages/admin/ContentManagement';
+const ContentManagement = lazy(() => import('./pages/admin/ContentManagement'));
 import DirectoryManagement from './pages/admin/DirectoryManagement';
 import DocumentManagement from './pages/admin/DocumentManagement';
+import AutoPageTranslator from './components/AutoPageTranslator';
 
 import ProtectedRoute from './components/admin/ProtectedRoute';
-import AutoPageTranslator from './components/AutoPageTranslator';
+import LegalManagement from './pages/admin/LegalManagement';
+import LegalPage from './pages/LegalPage';
+import SearchResults from './pages/SearchResults';
 
 import './App.css';
 
@@ -31,7 +35,6 @@ function App() {
   return (
     <Router>
       <AutoPageTranslator />
-
       <Routes>
 
         {/* =========================================================
@@ -42,6 +45,8 @@ function App() {
         <Route path="/tentang-kan" element={<About />} />
         <Route path="/layanan" element={<Services />} />
         <Route path="/kontak" element={<Contact />} />
+        <Route path="/privacy" element={<LegalPage pageId="privacy" fallbackTitle="Kebijakan Privasi" />} />
+        <Route path="/terms" element={<LegalPage pageId="terms" fallbackTitle="Syarat & Ketentuan" />} />
 
         {/* Berita */}
         <Route path="/berita" element={<News />} />
@@ -70,10 +75,7 @@ function App() {
         <Route path="/penanganan-komplain" element={<DynamicPage />} />
         <Route path="/penanganan-banding" element={<DynamicPage />} />
         <Route path="/survey-kepuasan-pelanggan" element={<DynamicPage />} />
-        <Route
-          path="/survey-kepuasan-pelanggan/:year"
-          element={<DynamicPage />}
-        />
+        <Route path="/survey-kepuasan-pelanggan/:year" element={<DynamicPage />} />
         <Route path="/hasil-survei" element={<DynamicPage />} />
 
 
@@ -84,10 +86,7 @@ function App() {
         <Route path="/layanan-akreditasi" element={<DynamicPage />} />
 
         <Route path="/layanan/laboratorium" element={<DynamicPage />} />
-        <Route
-          path="/layanan/laboratorium/:slug"
-          element={<DynamicPage />}
-        />
+        <Route path="/layanan/laboratorium/:slug" element={<DynamicPage />} />
 
         <Route path="/daftar-laboratorium" element={<DynamicPage />} />
 
@@ -132,15 +131,8 @@ function App() {
         />
 
         {/* Dynamic service routes */}
-        <Route
-          path="/daftar-layanan/:cat"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/:cat/:slug"
-          element={<DynamicPage />}
-        />
+        <Route path="/daftar-layanan/:cat" element={<DynamicPage />} />
+        <Route path="/layanan/:cat/:slug" element={<DynamicPage />} />
 
 
         {/* =========================================================
@@ -152,21 +144,15 @@ function App() {
           element={<Navigate to="/direktori/semua" replace />}
         />
 
-        <Route
-          path="/direktori/semua"
-          element={<DirectoryPage />}
-        />
-
+        <Route path="/direktori/semua" element={<DirectoryPage />} />
         <Route
           path="/direktori/terakreditasi"
           element={<DirectoryPage />}
         />
-
         <Route
           path="/direktori/akreditasi-dibekukan"
           element={<DirectoryPage />}
         />
-
         <Route
           path="/direktori/akreditasi-dicabut"
           element={<DirectoryPage />}
@@ -177,20 +163,15 @@ function App() {
             UNDUH / DOCUMENTS
         ========================================================= */}
 
-        <Route
-          path="/unduh/*"
-          element={<DocumentPage />}
-        />
-
+        <Route path="/unduh/*" element={<DocumentPage />} />
+        
+        <Route path="/cari" element={<SearchResults />} />
 
         {/* =========================================================
             ADMIN ROUTES
         ========================================================= */}
 
-        <Route
-          path="/admin/login"
-          element={<AdminLogin />}
-        />
+        <Route path="/admin/login" element={<AdminLogin />} />
 
         <Route
           path="/admin/dashboard"
@@ -228,14 +209,11 @@ function App() {
           }
         />
 
-        <Route
-          path="/admin/faq"
-          element={
-            <ProtectedRoute>
-              <FaqManagement />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin/faq" 
+        element={
+          <ProtectedRoute>
+            <FaqManagement />
+          </ProtectedRoute>} />
 
         <Route
           path="/admin/pages"
@@ -250,7 +228,9 @@ function App() {
           path="/admin/content"
           element={
             <ProtectedRoute>
-              <ContentManagement />
+              <Suspense fallback={<div className="p-10 text-center text-gray-400">Memuat editor...</div>}>
+                <ContentManagement />
+              </Suspense>
             </ProtectedRoute>
           }
         />
@@ -270,6 +250,15 @@ function App() {
           element={
             <ProtectedRoute>
               <DocumentManagement />
+            </ProtectedRoute>
+          }
+        />
+
+         <Route
+          path="/admin/legal"
+          element={
+            <ProtectedRoute>
+              <LegalManagement />
             </ProtectedRoute>
           }
         />

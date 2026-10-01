@@ -22,7 +22,8 @@ const FAQSection = () => {
   if (!loading && faqs.length === 0) return null;
 
   return (
-    <section className="py-20 text-white bg-gradient-to-br from-primary-600 to-primary-900">
+    <section id="faq"
+  className="py-20 text-white bg-gradient-to-br from-primary-600 to-primary-900 scroll-mt-24">
       <div className="container max-w-4xl px-4 mx-auto">
         <div className="text-center">
           <h2 className="mb-4 text-4xl font-black md:text-5xl">

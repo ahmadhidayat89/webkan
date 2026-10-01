@@ -10,6 +10,7 @@ import {
   FaArrowUp
 } from 'react-icons/fa';
 import logoKan from '../assets/kan.png';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
   const [logoUrl, setLogoUrl] = useState(null);
@@ -206,27 +207,14 @@ const Footer = () => {
               {`© ${new Date().getFullYear()} KAN - Komite Akreditasi Nasional. All rights reserved.`}
             </p>
 
-            <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-              <a
-                href="/privacy"
-                className="transition-colors hover:text-white"
-              >
+             <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+              <Link to="/privacy" className="transition-colors hover:text-white">
                 Kebijakan Privasi
-              </a>
+              </Link>
 
-              <a
-                href="/terms"
-                className="transition-colors hover:text-white"
-              >
+              <Link to="/terms" className="transition-colors hover:text-white">
                 Syarat & Ketentuan
-              </a>
-
-              <a
-                href="/sitemap"
-                className="transition-colors hover:text-white"
-              >
-                Sitemap
-              </a>
+              </Link>
             </div>
 
           </div>

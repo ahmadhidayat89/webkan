@@ -87,7 +87,7 @@ class DatabaseSeeder extends Seeder
                 'description_id' => 'Dokumen standar dan prosedur akreditasi',
                 'description_en' => 'Accreditation standards and procedure documents',
                 'icon' => null,
-                'link' => '/dokumentasi',
+                'link' => '/unduh',
                 'order' => 2,
                 'is_active' => true,
             ],

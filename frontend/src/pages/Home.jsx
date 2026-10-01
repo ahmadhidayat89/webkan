@@ -7,8 +7,10 @@ import Partners from '../components/Partners';
 import FAQSection from '../components/FAQSection';
 import Footer from '../components/Footer';
 import { getHomeData } from '../services/api';
+import { useLocation } from 'react-router-dom';
 
 const Home = () => {
+  const { hash } = useLocation();
   const [homeData, setHomeData] = useState({
     sliders: [],
     quick_links: [],
@@ -21,6 +23,16 @@ const Home = () => {
   useEffect(() => {
     fetchHomeData();
   }, []);
+
+  useEffect(() => {
+    if (loading || !hash) return;
+    const timer = setTimeout(() => {
+      document
+        .getElementById(hash.slice(1))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [loading, hash]);
 
   const fetchHomeData = async () => {
     try {

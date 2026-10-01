@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   FaSearch,
@@ -8,11 +9,8 @@ import {
 import logoKan from '../assets/kan.png';
 
 const Header = () => {
+  const navigate = useNavigate();
   const { i18n } = useTranslation();
-  useEffect(() => {
-    console.log('Bahasa sekarang:', i18n.language);
-    console.log('Resolved language:', i18n.resolvedLanguage);
-  }, [i18n.language, i18n.resolvedLanguage]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +37,14 @@ const Header = () => {
       })
       .catch(() => { });
   }, []);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
+    navigate(`/cari?q=${encodeURIComponent(trimmed)}`);
+    setIsMobileMenuOpen(false);
+  };
 
   const navItems = [
     {
@@ -173,7 +179,7 @@ const Header = () => {
                 </span>
               </div>
 
-              {/* FAQ + Hubungi Kami */}
+              {/* FAQ + Hubungi Kami + Bahasa */}
               <div className="flex items-center space-x-5 lg:space-x-7">
 
                 {/* FAQ */}
@@ -198,8 +204,8 @@ const Header = () => {
                     type="button"
                     onClick={() => i18n.changeLanguage('en')}
                     className={`transition-colors ${activeLang === 'en'
-                        ? 'text-white underline underline-offset-4'
-                        : 'text-white/70 hover:text-white'
+                      ? 'text-white underline underline-offset-4'
+                      : 'text-white/70 hover:text-white'
                       }`}
                   >
                     EN
@@ -211,8 +217,8 @@ const Header = () => {
                     type="button"
                     onClick={() => i18n.changeLanguage('id')}
                     className={`transition-colors ${activeLang === 'id'
-                        ? 'text-white underline underline-offset-4'
-                        : 'text-white/70 hover:text-white'
+                      ? 'text-white underline underline-offset-4'
+                      : 'text-white/70 hover:text-white'
                       }`}
                   >
                     ID
@@ -330,19 +336,24 @@ const Header = () => {
                   ================================================= */}
               <div className="relative flex items-center flex-shrink-0 ml-1">
 
-                <div
+                <form
+                  onSubmit={handleSearchSubmit}
                   className={`flex items-center h-10 lg:h-11 w-40 lg:w-52 rounded-xl border backdrop-blur-xl shadow-lg ${isScrolled
                     ? 'bg-gray-50 border-gray-200'
                     : 'bg-white/10 border-white/20'
                     }`}
                 >
 
-                  <FaSearch
+                  <button
+                    type="submit"
                     className={`ml-3 text-sm flex-shrink-0 ${isScrolled
-                      ? 'text-gray-400'
-                      : 'text-white/70'
+                      ? 'text-gray-400 hover:text-primary-600'
+                      : 'text-white/70 hover:text-white'
                       }`}
-                  />
+                    aria-label="Cari"
+                  >
+                    <FaSearch />
+                  </button>
 
                   <input
                     type="text"
@@ -360,6 +371,7 @@ const Header = () => {
 
                   {searchQuery && (
                     <button
+                      type="button"
                       onClick={() => setSearchQuery('')}
                       className={`mr-2 flex items-center justify-center w-6 h-6 rounded-md transition-all flex-shrink-0 ${isScrolled
                         ? 'text-gray-400 hover:text-gray-700 hover:bg-gray-200'
@@ -371,7 +383,7 @@ const Header = () => {
                     </button>
                   )}
 
-                </div>
+                </form>
 
               </div>
 
@@ -384,13 +396,14 @@ const Header = () => {
               onClick={() =>
                 setIsMobileMenuOpen(!isMobileMenuOpen)
               }
-              className={`xl:hidden ${isScrolled
+              className={`xl:hidden ml-auto ${isScrolled
                 ? 'text-gray-800 bg-gray-50'
                 : 'text-white bg-white/10'
                 } p-2 md:p-3 rounded-xl transition-all hover:scale-110 backdrop-blur-xl border ${isScrolled
                   ? 'border-gray-200'
                   : 'border-white/20'
                 }`}
+              aria-label="Menu"
             >
               {isMobileMenuOpen ? (
                 <FaTimes size={18} />
@@ -447,10 +460,29 @@ const Header = () => {
                   </div>
                 ))}
 
+                {/* Mobile Language */}
+                <div className="flex items-center gap-2 px-3 pt-3 mt-3 text-sm font-semibold text-gray-700 border-t border-gray-100 md:px-4">
+                  <button
+                    type="button"
+                    onClick={() => i18n.changeLanguage('en')}
+                    className={activeLang === 'en' ? 'text-primary-600 underline underline-offset-4' : 'text-gray-500 hover:text-primary-600'}
+                  >
+                    EN
+                  </button>
+                  <span className="text-gray-300">|</span>
+                  <button
+                    type="button"
+                    onClick={() => i18n.changeLanguage('id')}
+                    className={activeLang === 'id' ? 'text-primary-600 underline underline-offset-4' : 'text-gray-500 hover:text-primary-600'}
+                  >
+                    ID
+                  </button>
+                </div>
+
                 {/* Mobile Search */}
                 <div className="pt-3 mt-3 border-t border-gray-100">
 
-                  <div className="relative">
+                  <form onSubmit={handleSearchSubmit} className="relative">
 
                     <input
                       type="text"
@@ -460,11 +492,18 @@ const Header = () => {
                         setSearchQuery(e.target.value)
                       }
                       className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-800 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400"
+                      aria-label="Cari"
                     />
 
-                    <FaSearch className="absolute text-gray-400 -translate-y-1/2 right-4 top-1/2" />
+                    <button
+                      type="submit"
+                      className="absolute text-gray-400 -translate-y-1/2 right-4 top-1/2 hover:text-primary-600"
+                      aria-label="Cari"
+                    >
+                      <FaSearch />
+                    </button>
 
-                  </div>
+                  </form>
 
                 </div>
 

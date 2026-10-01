@@ -1,3 +1,11 @@
+// API sudah mengirim logo lengkap dengan awalan "/storage/...".
+// Fungsi ini aman untuk dua bentuk data: dengan atau tanpa awalan.
+const logoUrl = (logo) => {
+  if (!logo) return null;
+  if (/^https?:\/\//i.test(logo) || logo.startsWith('/storage/')) return logo;
+  return `/storage/${logo.replace(/^\/+/, '')}`;
+};
+
 const Partners = ({ partners }) => {
 
   const defaultPartners = [
@@ -13,22 +21,10 @@ const Partners = ({ partners }) => {
     partners && partners.length > 0 ? partners : defaultPartners;
 
   const stats = [
-    {
-      number: '100+',
-      label: 'Negara Anggota'
-    },
-    {
-      number: '50+',
-      label: 'Tahun Kemitraan'
-    },
-    {
-      number: '1000+',
-      label: 'Akreditasi Diakui'
-    },
-    {
-      number: '24/7',
-      label: 'Support Global'
-    },
+    { number: '100+', label: 'Negara Anggota' },
+    { number: '50+', label: 'Tahun Kemitraan' },
+    { number: '1000+', label: 'Akreditasi Diakui' },
+    { number: '24/7', label: 'Support Global' },
   ];
 
   return (
@@ -45,7 +41,6 @@ const Partners = ({ partners }) => {
             {/* Header */}
             <div className="mb-10">
 
-              {/* Kemitraan Global */}
               <span className="inline-block mb-3 text-xs font-bold tracking-widest text-gray-400 uppercase">
                 Kemitraan Global
               </span>
@@ -85,10 +80,10 @@ const Partners = ({ partners }) => {
                   <div className="flex items-center justify-center mb-3 h-14">
                     {partner.logo ? (
                       <img
-                        src={`/storage/${partner.logo}`}
+                        src={logoUrl(partner.logo)}
                         alt={partner.name}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         className="max-h-14 max-w-[100px] w-auto object-contain
-                          grayscale group-hover:grayscale-0
                           transition-all duration-400"
                       />
                     ) : (
@@ -119,8 +114,6 @@ const Partners = ({ partners }) => {
           {/* ================= RIGHT SIDE ================= */}
           <div className="lg:-mt-5">
 
-            {/* Statistics */}
-
             {stats.map((stat, i) => (
 
               <div
@@ -132,12 +125,10 @@ const Partners = ({ partners }) => {
                 `}
               >
 
-                {/* Label */}
                 <div className="mb-1 text-xs font-bold tracking-widest text-gray-400 uppercase">
                   {stat.label}
                 </div>
 
-                {/* Number */}
                 <div className="text-3xl font-black sm:text-4xl md:text-5xl text-primary-600">
                   {stat.number}
                 </div>

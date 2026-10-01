@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaHome, FaNewspaper, FaUsers, FaCog, FaImages, FaBars, FaTimes, FaSignOutAlt, FaChartBar, FaEdit, FaBuilding, FaFileAlt, FaQuestionCircle } from 'react-icons/fa';
+import { FaHome, FaNewspaper, FaUsers, FaCog, FaImages, FaBars, FaTimes, FaSignOutAlt, FaChartBar, FaEdit, FaBuilding, FaFileAlt, FaQuestionCircle, FaShieldAlt  } from 'react-icons/fa';
 
 const AdminLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -16,6 +16,7 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/sliders', icon: FaImages, label: 'Sliders' },
     { path: '/admin/partners', icon: FaUsers, label: 'Partners' },
     { path: '/admin/faq', icon: FaQuestionCircle, label: 'FAQ' },
+    { path: '/admin/legal', icon: FaShieldAlt, label: 'Halaman Legal' },
     { path: '/admin/settings', icon: FaCog, label: 'Settings' },
 ];
 

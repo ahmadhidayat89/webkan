@@ -43,6 +43,9 @@ const DocumentManagement = () => {
 
     const [deleteConfirm, setDeleteConfirm] = useState(null);
 
+    // ID kategori/subkategori yang sedang dibuka
+    const [expandedIds, setExpandedIds] = useState(new Set());
+
     const token = localStorage.getItem('token');
 
     const headers = {
@@ -55,6 +58,11 @@ const DocumentManagement = () => {
         fetchData();
     }, []);
 
+    /*
+     * =========================================================
+     * FETCH DATA
+     * =========================================================
+     */
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -120,6 +128,13 @@ const DocumentManagement = () => {
             setLoading(false);
         }
     };
+
+    /*
+     * =========================================================
+     * CATEGORIES
+     * =========================================================
+     */
+
     /*
      * Semua kategori yang bisa dijadikan parent.
      */
@@ -129,15 +144,20 @@ const DocumentManagement = () => {
 
     /*
      * Mencari semua turunan dari suatu item.
-     * Dipakai supaya saat edit kategori, kategori tersebut
-     * tidak bisa dipindahkan ke bawah dirinya sendiri.
+     *
+     * Dipakai supaya saat edit kategori,
+     * kategori tersebut tidak bisa dipindahkan
+     * ke bawah dirinya sendiri.
      */
     const getDescendantIds = (itemId) => {
         const descendants = [];
 
         const findChildren = (parentId) => {
             data
-                .filter((item) => Number(item.parent_id) === Number(parentId))
+                .filter(
+                    (item) =>
+                        Number(item.parent_id) === Number(parentId)
+                )
                 .forEach((child) => {
                     descendants.push(child.id);
                     findChildren(child.id);
@@ -151,12 +171,6 @@ const DocumentManagement = () => {
 
     /*
      * Parent yang tersedia untuk form.
-     *
-     * Saat tambah:
-     * semua category bisa dipilih.
-     *
-     * Saat edit:
-     * dirinya sendiri + semua turunannya dikeluarkan.
      */
     const availableParents = useMemo(() => {
         if (!editItem) {
@@ -174,7 +188,8 @@ const DocumentManagement = () => {
     }, [categories, editItem, data]);
 
     /*
-     * Membuat nama parent dengan indentasi berdasarkan level.
+     * Membuat nama parent dengan indentasi
+     * berdasarkan level.
      */
     const getParentLabel = (item) => {
         const level = getLevel(item);
@@ -186,9 +201,13 @@ const DocumentManagement = () => {
         let level = 0;
         let currentParentId = item.parent_id;
 
-        while (currentParentId !== null && currentParentId !== undefined) {
+        while (
+            currentParentId !== null &&
+            currentParentId !== undefined
+        ) {
             const parent = data.find(
-                (dataItem) => Number(dataItem.id) === Number(currentParentId)
+                (dataItem) =>
+                    Number(dataItem.id) === Number(currentParentId)
             );
 
             if (!parent) break;
@@ -203,8 +222,18 @@ const DocumentManagement = () => {
     };
 
     /*
-     * Membuat data menjadi struktur tree agar tampilan admin
-     * mengikuti hierarki parent -> child.
+     * =========================================================
+     * TREE
+     * =========================================================
+     */
+
+    /*
+     * Membuat data menjadi struktur tree:
+     *
+     * parent
+     * ├── child
+     * │   └── child
+     * └── child
      */
     const buildTree = (items) => {
         const itemMap = {};
@@ -223,7 +252,9 @@ const DocumentManagement = () => {
                 item.parent_id !== undefined &&
                 itemMap[item.parent_id]
             ) {
-                itemMap[item.parent_id].children.push(itemMap[item.id]);
+                itemMap[item.parent_id].children.push(
+                    itemMap[item.id]
+                );
             } else {
                 roots.push(itemMap[item.id]);
             }
@@ -251,28 +282,130 @@ const DocumentManagement = () => {
         return roots;
     };
 
+    /*
+     * =========================================================
+     * SEARCH
+     * =========================================================
+     */
+
     const treeData = useMemo(() => {
-        let filtered = [...data];
-
-        if (search.trim()) {
-            const keyword = search.toLowerCase();
-
-            filtered = filtered.filter((item) => {
-                return (
-                    item.name?.toLowerCase().includes(keyword) ||
-                    item.description?.toLowerCase().includes(keyword) ||
-                    item.file_type?.toLowerCase().includes(keyword) ||
-                    item.language?.toLowerCase().includes(keyword)
-                );
-            });
+        if (!search.trim()) {
+            return buildTree([...data]);
         }
 
+        const keyword = search.toLowerCase();
+
         /*
-         * Kalau sedang search, tampilkan hasil yang cocok saja.
-         * Kalau tidak search, tampilkan seluruh tree.
+         * Saat search aktif, cari item yang cocok.
          */
+        const matchedItems = data.filter((item) => {
+            return (
+                item.name?.toLowerCase().includes(keyword) ||
+                item.description?.toLowerCase().includes(keyword) ||
+                item.file_type?.toLowerCase().includes(keyword) ||
+                item.language?.toLowerCase().includes(keyword)
+            );
+        });
+
+        /*
+         * Agar hasil search tetap punya konteks parent,
+         * tambahkan seluruh parent dari item yang ditemukan.
+         */
+        const resultIds = new Set(
+            matchedItems.map((item) => item.id)
+        );
+
+        matchedItems.forEach((item) => {
+            let currentParentId = item.parent_id;
+
+            while (
+                currentParentId !== null &&
+                currentParentId !== undefined
+            ) {
+                const parent = data.find(
+                    (dataItem) =>
+                        Number(dataItem.id) ===
+                        Number(currentParentId)
+                );
+
+                if (!parent) break;
+
+                resultIds.add(parent.id);
+                currentParentId = parent.parent_id;
+            }
+        });
+
+        const filtered = data.filter((item) =>
+            resultIds.has(item.id)
+        );
+
         return buildTree(filtered);
     }, [data, search]);
+
+    /*
+     * =========================================================
+     * EXPAND / COLLAPSE
+     * =========================================================
+     */
+
+    const toggleExpanded = (id) => {
+        setExpandedIds((current) => {
+            const next = new Set(current);
+
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+
+            return next;
+        });
+    };
+
+    const isExpanded = (id) => {
+        return expandedIds.has(id);
+    };
+
+    /*
+     * Buka semua parent ketika search aktif,
+     * supaya hasil pencarian langsung terlihat.
+     */
+    useEffect(() => {
+        if (!search.trim()) {
+            return;
+        }
+
+        const idsToExpand = new Set();
+
+        const collectParentIds = (items) => {
+            items.forEach((item) => {
+                if (
+                    item.type === 'category' &&
+                    item.children &&
+                    item.children.length > 0
+                ) {
+                    idsToExpand.add(item.id);
+                    collectParentIds(item.children);
+                }
+            });
+        };
+
+        collectParentIds(treeData);
+
+        setExpandedIds((current) => {
+            const next = new Set(current);
+
+            idsToExpand.forEach((id) => next.add(id));
+
+            return next;
+        });
+    }, [search, treeData]);
+
+    /*
+     * =========================================================
+     * ADD / EDIT
+     * =========================================================
+     */
 
     const openAdd = () => {
         setEditItem(null);
@@ -292,6 +425,15 @@ const DocumentManagement = () => {
 
         setSaveMsg(null);
         setModalOpen(true);
+
+        /*
+         * Pastikan parent terbuka setelah menambah child.
+         */
+        setExpandedIds((current) => {
+            const next = new Set(current);
+            next.add(parent.id);
+            return next;
+        });
     };
 
     const openEdit = (item) => {
@@ -299,7 +441,8 @@ const DocumentManagement = () => {
 
         setForm({
             parent_id:
-                item.parent_id !== null && item.parent_id !== undefined
+                item.parent_id !== null &&
+                    item.parent_id !== undefined
                     ? String(item.parent_id)
                     : '',
             name: item.name || '',
@@ -337,6 +480,12 @@ const DocumentManagement = () => {
         }));
     };
 
+    /*
+     * =========================================================
+     * SAVE
+     * =========================================================
+     */
+
     const handleSave = async () => {
         try {
             setSaving(true);
@@ -355,20 +504,35 @@ const DocumentManagement = () => {
             }
 
             const payload = {
-                parent_id: form.parent_id ? Number(form.parent_id) : null,
+                parent_id: form.parent_id
+                    ? Number(form.parent_id)
+                    : null,
+
                 name: form.name.trim(),
-                description: form.description?.trim() || null,
+
+                description:
+                    form.description?.trim() || null,
+
                 type: form.type,
+
                 file_type:
                     form.type === 'document'
                         ? form.file_type?.trim() || null
                         : null,
+
                 language:
                     form.type === 'document'
                         ? form.language?.trim() || null
                         : null,
-                link: form.type === 'document' ? link : null,
-                sort_order: Number(form.sort_order) || 0,
+
+                link:
+                    form.type === 'document'
+                        ? link
+                        : null,
+
+                sort_order:
+                    Number(form.sort_order) || 0,
+
                 is_active: Boolean(form.is_active),
             };
 
@@ -383,7 +547,9 @@ const DocumentManagement = () => {
             if (res.ok && json.success) {
                 setSaveMsg({
                     type: 'success',
-                    text: json.message || 'Data berhasil disimpan.',
+                    text:
+                        json.message ||
+                        'Data berhasil disimpan.',
                 });
 
                 await fetchData();
@@ -394,8 +560,11 @@ const DocumentManagement = () => {
                 }, 1000);
             } else {
                 const errMsg = json.errors
-                    ? Object.values(json.errors).flat().join(', ')
-                    : json.message || 'Gagal menyimpan data.';
+                    ? Object.values(json.errors)
+                        .flat()
+                        .join(', ')
+                    : json.message ||
+                    'Gagal menyimpan data.';
 
                 setSaveMsg({
                     type: 'error',
@@ -407,57 +576,149 @@ const DocumentManagement = () => {
 
             setSaveMsg({
                 type: 'error',
-                text: 'Gagal terhubung ke server. Pastikan backend Laravel sedang berjalan.',
+                text:
+                    'Gagal terhubung ke server. Pastikan backend Laravel sedang berjalan.',
             });
         } finally {
             setSaving(false);
         }
     };
 
+    /*
+     * =========================================================
+     * DELETE
+     * =========================================================
+     */
+
     const handleDelete = async (id) => {
         try {
-            const res = await fetch(`/api/v1/admin/documents/${id}`, {
-                method: 'DELETE',
-                headers,
-            });
+            const res = await fetch(
+                `/api/v1/admin/documents/${id}`,
+                {
+                    method: 'DELETE',
+                    headers,
+                }
+            );
 
             const json = await res.json();
 
             if (res.ok && json.success) {
                 await fetchData();
                 setDeleteConfirm(null);
+
+                /*
+                 * Bersihkan expanded state kalau diperlukan.
+                 */
+                setExpandedIds((current) => {
+                    const next = new Set(current);
+                    next.delete(id);
+                    return next;
+                });
             } else {
-                alert(json.message || 'Gagal menghapus data.');
+                alert(
+                    json.message ||
+                    'Gagal menghapus data.'
+                );
             }
         } catch (error) {
-            console.error('Delete document error:', error);
+            console.error(
+                'Delete document error:',
+                error
+            );
+
             alert('Gagal terhubung ke server.');
         }
     };
 
     /*
-     * Recursive row untuk tabel.
+     * =========================================================
+     * RENDER TREE
+     * =========================================================
      */
+
     const renderRows = (items, level = 0) => {
         return items.flatMap((item) => {
+            const hasChildren =
+                item.children &&
+                item.children.length > 0;
+
+            const expanded =
+                item.type === 'category' &&
+                isExpanded(item.id);
+
+            const isClickable =
+                item.type === 'category' &&
+                hasChildren;
+
             const rows = [
                 <tr
                     key={item.id}
-                    className="transition-colors hover:bg-gray-50"
+                    onClick={() => {
+                        if (isClickable) {
+                            toggleExpanded(item.id);
+                        }
+                    }}
+                    className={`transition-colors ${isClickable
+                            ? 'cursor-pointer hover:bg-gray-50'
+                            : ''
+                        }`}
                 >
+                    {/* Nama */}
                     <td className="px-5 py-4">
                         <div
                             className="flex items-center"
-                            style={{ paddingLeft: `${level * 28}px` }}
+                            style={{
+                                paddingLeft: `${level * 28}px`,
+                            }}
                         >
+                            {/* Chevron */}
+                            {item.type === 'category' ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+
+                                        if (hasChildren) {
+                                            toggleExpanded(
+                                                item.id
+                                            );
+                                        }
+                                    }}
+                                    disabled={!hasChildren}
+                                    className={`flex items-center justify-center flex-shrink-0 w-6 h-6 mr-1 rounded-md transition-colors ${hasChildren
+                                            ? 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 cursor-pointer'
+                                            : 'text-transparent cursor-default'
+                                        }`}
+                                    title={
+                                        hasChildren
+                                            ? expanded
+                                                ? 'Tutup'
+                                                : 'Buka'
+                                            : undefined
+                                    }
+                                >
+                                    <FaChevronRight
+                                        className={`text-xs transition-transform duration-200 ${expanded
+                                                ? 'rotate-90'
+                                                : ''
+                                            }`}
+                                    />
+                                </button>
+                            ) : (
+                                <div className="w-6 mr-1" />
+                            )}
+
+                            {/* Icon */}
                             <div
-                                className={`flex items-center justify-center flex-shrink-0 w-9 h-9 rounded-lg mr-3 ${item.type === 'category'
-                                    ? 'bg-primary-50 text-primary-700'
-                                    : 'bg-gray-100 text-gray-600'
+                                className={`flex items-center justify-center flex-shrink-0 w-9 h-9 rounded-lg mr-3 ${item.type ===
+                                        'category'
+                                        ? 'bg-primary-50 text-primary-700'
+                                        : 'bg-gray-100 text-gray-600'
                                     }`}
                             >
-                                {item.type === 'category' ? (
-                                    level === 0 ? (
+                                {item.type ===
+                                    'category' ? (
+                                    expanded ? (
                                         <FaFolderOpen className="text-sm" />
                                     ) : (
                                         <FaFolder className="text-sm" />
@@ -467,6 +728,7 @@ const DocumentManagement = () => {
                                 )}
                             </div>
 
+                            {/* Nama + deskripsi */}
                             <div className="min-w-0">
                                 <div className="font-semibold text-gray-900">
                                     {item.name}
@@ -481,43 +743,62 @@ const DocumentManagement = () => {
                         </div>
                     </td>
 
+                    {/* Tipe */}
                     <td className="px-5 py-4">
                         <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${item.type === 'category'
-                                ? 'bg-primary-50 text-primary-700'
-                                : 'bg-gray-100 text-gray-700'
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${item.type ===
+                                    'category'
+                                    ? 'bg-primary-50 text-primary-700'
+                                    : 'bg-gray-100 text-gray-700'
                                 }`}
                         >
-                            {item.type === 'category' ? 'Kategori' : 'Dokumen'}
+                            {item.type ===
+                                'category'
+                                ? 'Kategori'
+                                : 'Dokumen'}
                         </span>
                     </td>
 
+                    {/* Info */}
                     <td className="px-5 py-4">
-                        {item.type === 'document' ? (
+                        {item.type ===
+                            'document' ? (
                             <div className="space-y-1">
                                 {item.file_type && (
                                     <span className="inline-block px-2 py-1 mr-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-md">
-                                        {item.file_type}
+                                        {
+                                            item.file_type
+                                        }
                                     </span>
                                 )}
 
                                 {item.language && (
                                     <span className="inline-block px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-md">
-                                        {item.language}
+                                        {
+                                            item.language
+                                        }
                                     </span>
                                 )}
                             </div>
                         ) : (
-                            <span className="text-gray-400">—</span>
+                            <span className="text-gray-400">
+                                —
+                            </span>
                         )}
                     </td>
 
+                    {/* Link */}
                     <td className="px-5 py-4">
-                        {item.type === 'document' && item.link ? (
+                        {item.type ===
+                            'document' &&
+                            item.link ? (
                             <a
                                 href={item.link}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={(e) =>
+                                    e.stopPropagation()
+                                }
                                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-800 hover:underline"
                             >
                                 <FaLink className="text-xs" />
@@ -525,35 +806,50 @@ const DocumentManagement = () => {
                                 <FaExternalLinkAlt className="text-[10px]" />
                             </a>
                         ) : (
-                            <span className="text-gray-400">—</span>
+                            <span className="text-gray-400">
+                                —
+                            </span>
                         )}
                     </td>
 
+                    {/* Status */}
                     <td className="px-5 py-4">
                         <span
                             className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${item.is_active
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-gray-100 text-gray-500'
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-gray-100 text-gray-500'
                                 }`}
                         >
-                            {item.is_active ? 'Aktif' : 'Nonaktif'}
+                            {item.is_active
+                                ? 'Aktif'
+                                : 'Nonaktif'}
                         </span>
                     </td>
 
+                    {/* Aksi */}
                     <td className="px-5 py-4">
                         <div className="flex items-center justify-end gap-1">
-                            {item.type === 'category' && (
-                                <button
-                                    onClick={() => openAddChild(item)}
-                                    title="Tambah isi"
-                                    className="p-2 transition-colors rounded-lg text-emerald-600 hover:bg-emerald-50"
-                                >
-                                    <FaPlus className="text-sm" />
-                                </button>
-                            )}
+                            {item.type ===
+                                'category' && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openAddChild(
+                                                item
+                                            );
+                                        }}
+                                        title="Tambah isi"
+                                        className="p-2 transition-colors rounded-lg text-emerald-600 hover:bg-emerald-50"
+                                    >
+                                        <FaPlus className="text-sm" />
+                                    </button>
+                                )}
 
                             <button
-                                onClick={() => openEdit(item)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEdit(item);
+                                }}
                                 title="Edit"
                                 className="p-2 transition-colors rounded-lg text-primary-600 hover:bg-primary-50"
                             >
@@ -561,7 +857,12 @@ const DocumentManagement = () => {
                             </button>
 
                             <button
-                                onClick={() => setDeleteConfirm(item)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteConfirm(
+                                        item
+                                    );
+                                }}
                                 title="Hapus"
                                 className="p-2 text-red-500 transition-colors rounded-lg hover:bg-red-50"
                             >
@@ -572,19 +873,38 @@ const DocumentManagement = () => {
                 </tr>,
             ];
 
-            if (item.children && item.children.length > 0) {
-                rows.push(...renderRows(item.children, level + 1));
+            /*
+             * HANYA render children kalau parent sedang dibuka.
+             */
+            if (
+                hasChildren &&
+                expanded
+            ) {
+                rows.push(
+                    ...renderRows(
+                        item.children,
+                        level + 1
+                    )
+                );
             }
 
             return rows;
         });
     };
 
+    /*
+     * =========================================================
+     * UI
+     * =========================================================
+     */
+
     return (
         <AdminLayout>
             <div className="space-y-6">
 
-                {/* Header */}
+                {/* =================================================
+                    HEADER
+                ================================================== */}
                 <div className="relative overflow-hidden text-white shadow-xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7">
                     <div className="absolute w-56 h-56 rounded-full pointer-events-none -top-10 -right-10 bg-white/5 blur-3xl" />
 
@@ -600,7 +920,10 @@ const DocumentManagement = () => {
                                 </h2>
 
                                 <p className="text-sm mt-0.5 text-white/70">
-                                    Kelola kategori, subkategori, dan dokumen yang tersedia untuk diunduh
+                                    Kelola kategori,
+                                    subkategori, dan
+                                    dokumen yang tersedia
+                                    untuk diunduh
                                 </p>
                             </div>
                         </div>
@@ -615,7 +938,9 @@ const DocumentManagement = () => {
                     </div>
                 </div>
 
-                {/* Search */}
+                {/* =================================================
+                    SEARCH
+                ================================================== */}
                 <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
                     <div className="relative">
                         <FaSearch className="absolute text-sm text-gray-400 -translate-y-1/2 left-3 top-1/2" />
@@ -624,13 +949,19 @@ const DocumentManagement = () => {
                             type="text"
                             placeholder="Cari kategori atau dokumen..."
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(e) =>
+                                setSearch(
+                                    e.target.value
+                                )
+                            }
                             className="w-full pl-9 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
 
                         {search && (
                             <button
-                                onClick={() => setSearch('')}
+                                onClick={() =>
+                                    setSearch('')
+                                }
                                 className="absolute p-1 text-gray-400 -translate-y-1/2 right-3 top-1/2 hover:text-gray-600"
                             >
                                 <FaTimes className="text-xs" />
@@ -639,7 +970,9 @@ const DocumentManagement = () => {
                     </div>
                 </div>
 
-                {/* Table */}
+                {/* =================================================
+                    TABLE
+                ================================================== */}
                 <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
                     {loading ? (
                         <div className="flex justify-center py-20">
@@ -696,34 +1029,48 @@ const DocumentManagement = () => {
                                 </thead>
 
                                 <tbody className="divide-y divide-gray-50">
-                                    {renderRows(treeData)}
+                                    {renderRows(
+                                        treeData
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     )}
                 </div>
 
-                {/* Info */}
-                {!loading && data.length > 0 && (
-                    <div className="flex items-start gap-3 p-4 border border-primary-100 bg-primary-50 rounded-xl">
-                        <FaFolderOpen className="flex-shrink-0 mt-0.5 text-primary-600" />
+                {/* =================================================
+                    INFO
+                ================================================== */}
+                {!loading &&
+                    data.length > 0 && (
+                        <div className="flex items-start gap-3 p-4 border border-primary-100 bg-primary-50 rounded-xl">
+                            <FaFolderOpen className="flex-shrink-0 mt-0.5 text-primary-600" />
 
-                        <div className="text-sm text-primary-800">
-                            <p className="font-bold">
-                                Struktur dokumen
-                            </p>
+                            <div className="text-sm text-primary-800">
+                                <p className="font-bold">
+                                    Struktur dokumen
+                                </p>
 
-                            <p className="mt-1 text-primary-700">
-                                Gunakan tombol <strong>+</strong> pada kategori untuk
-                                menambahkan subkategori atau dokumen di dalamnya.
-                                Struktur dapat dibuat bertingkat sesuai kebutuhan.
-                            </p>
+                                <p className="mt-1 text-primary-700">
+                                    Klik baris kategori atau
+                                    ikon panah untuk
+                                    membuka dan menutup
+                                    isinya. Gunakan tombol{' '}
+                                    <strong>
+                                        +
+                                    </strong>{' '}
+                                    untuk menambahkan
+                                    subkategori atau
+                                    dokumen.
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
             </div>
 
-            {/* Modal Form */}
+            {/* =====================================================
+                MODAL FORM
+            ====================================================== */}
             {modalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -747,7 +1094,11 @@ const DocumentManagement = () => {
                             </div>
 
                             <button
-                                onClick={() => setModalOpen(false)}
+                                onClick={() =>
+                                    setModalOpen(
+                                        false
+                                    )
+                                }
                                 className="p-2 text-gray-500 rounded-lg hover:bg-gray-100"
                             >
                                 <FaTimes />
@@ -760,9 +1111,10 @@ const DocumentManagement = () => {
                             {/* Message */}
                             {saveMsg && (
                                 <div
-                                    className={`px-4 py-3 rounded-xl text-sm font-semibold ${saveMsg.type === 'success'
-                                        ? 'bg-emerald-50 text-emerald-700'
-                                        : 'bg-red-50 text-red-700'
+                                    className={`px-4 py-3 rounded-xl text-sm font-semibold ${saveMsg.type ===
+                                            'success'
+                                            ? 'bg-emerald-50 text-emerald-700'
+                                            : 'bg-red-50 text-red-700'
                                         }`}
                                 >
                                     {saveMsg.text}
@@ -772,29 +1124,55 @@ const DocumentManagement = () => {
                             {/* Parent */}
                             <div>
                                 <label className="block mb-1 text-sm font-bold text-gray-700">
-                                    Parent / Kategori
+                                    Parent /
+                                    Kategori
                                 </label>
 
                                 <select
-                                    value={form.parent_id}
+                                    value={
+                                        form.parent_id
+                                    }
                                     onChange={(e) =>
-                                        handleFormChange('parent_id', e.target.value)
+                                        handleFormChange(
+                                            'parent_id',
+                                            e.target
+                                                .value
+                                        )
                                     }
                                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                                 >
                                     <option value="">
-                                        -- Tidak ada parent / Kategori Utama --
+                                        -- Tidak ada
+                                        parent /
+                                        Kategori
+                                        Utama --
                                     </option>
 
-                                    {availableParents.map((category) => (
-                                        <option key={category.id} value={category.id}>
-                                            {getParentLabel(category)}
-                                        </option>
-                                    ))}
+                                    {availableParents.map(
+                                        (
+                                            category
+                                        ) => (
+                                            <option
+                                                key={
+                                                    category.id
+                                                }
+                                                value={
+                                                    category.id
+                                                }
+                                            >
+                                                {getParentLabel(
+                                                    category
+                                                )}
+                                            </option>
+                                        )
+                                    )}
                                 </select>
 
                                 <p className="mt-1.5 text-xs text-gray-400">
-                                    Pilih kategori tempat data ini akan berada.
+                                    Pilih kategori
+                                    tempat data
+                                    ini akan
+                                    berada.
                                 </p>
                             </div>
 
@@ -805,14 +1183,20 @@ const DocumentManagement = () => {
                                 </label>
 
                                 <select
-                                    value={form.type}
+                                    value={
+                                        form.type
+                                    }
                                     onChange={(e) =>
-                                        handleTypeChange(e.target.value)
+                                        handleTypeChange(
+                                            e.target
+                                                .value
+                                        )
                                     }
                                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                                 >
                                     <option value="category">
-                                        Kategori / Subkategori
+                                        Kategori /
+                                        Subkategori
                                     </option>
 
                                     <option value="document">
@@ -824,17 +1208,29 @@ const DocumentManagement = () => {
                             {/* Name */}
                             <div>
                                 <label className="block mb-1 text-sm font-bold text-gray-700">
-                                    Nama {form.type === 'document' ? 'Dokumen' : 'Kategori'} *
+                                    Nama{' '}
+                                    {form.type ===
+                                        'document'
+                                        ? 'Dokumen'
+                                        : 'Kategori'}{' '}
+                                    *
                                 </label>
 
                                 <input
                                     type="text"
-                                    value={form.name}
+                                    value={
+                                        form.name
+                                    }
                                     onChange={(e) =>
-                                        handleFormChange('name', e.target.value)
+                                        handleFormChange(
+                                            'name',
+                                            e.target
+                                                .value
+                                        )
                                     }
                                     placeholder={
-                                        form.type === 'document'
+                                        form.type ===
+                                            'document'
                                             ? 'Contoh: SNI ISO/IEC 17025:2017'
                                             : 'Contoh: Persyaratan Umum'
                                     }
@@ -849,9 +1245,15 @@ const DocumentManagement = () => {
                                 </label>
 
                                 <textarea
-                                    value={form.description}
+                                    value={
+                                        form.description
+                                    }
                                     onChange={(e) =>
-                                        handleFormChange('description', e.target.value)
+                                        handleFormChange(
+                                            'description',
+                                            e.target
+                                                .value
+                                        )
                                     }
                                     rows={3}
                                     placeholder="Deskripsi singkat..."
@@ -860,86 +1262,154 @@ const DocumentManagement = () => {
                             </div>
 
                             {/* Document-specific fields */}
-                            {form.type === 'document' && (
-                                <>
-                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            {form.type ===
+                                'document' && (
+                                    <>
+                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
-                                        {/* File Type */}
+                                            {/* File Type */}
+                                            <div>
+                                                <label className="block mb-1 text-sm font-bold text-gray-700">
+                                                    Tipe File
+                                                </label>
+
+                                                <select
+                                                    value={
+                                                        form.file_type
+                                                    }
+                                                    onChange={(
+                                                        e
+                                                    ) =>
+                                                        handleFormChange(
+                                                            'file_type',
+                                                            e
+                                                                .target
+                                                                .value
+                                                        )
+                                                    }
+                                                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+                                                >
+                                                    <option value="">
+                                                        -- Pilih
+                                                        Tipe
+                                                        File
+                                                        --
+                                                    </option>
+                                                    <option value="PDF">
+                                                        PDF
+                                                    </option>
+                                                    <option value="DOC">
+                                                        DOC
+                                                    </option>
+                                                    <option value="DOCX">
+                                                        DOCX
+                                                    </option>
+                                                    <option value="XLS">
+                                                        XLS
+                                                    </option>
+                                                    <option value="XLSX">
+                                                        XLSX
+                                                    </option>
+                                                    <option value="PPT">
+                                                        PPT
+                                                    </option>
+                                                    <option value="PPTX">
+                                                        PPTX
+                                                    </option>
+                                                    <option value="ZIP">
+                                                        ZIP
+                                                    </option>
+                                                    <option value="Other">
+                                                        Lainnya
+                                                    </option>
+                                                </select>
+                                            </div>
+
+                                            {/* Language */}
+                                            <div>
+                                                <label className="block mb-1 text-sm font-bold text-gray-700">
+                                                    Bahasa
+                                                </label>
+
+                                                <select
+                                                    value={
+                                                        form.language
+                                                    }
+                                                    onChange={(
+                                                        e
+                                                    ) =>
+                                                        handleFormChange(
+                                                            'language',
+                                                            e
+                                                                .target
+                                                                .value
+                                                        )
+                                                    }
+                                                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+                                                >
+                                                    <option value="">
+                                                        -- Pilih
+                                                        Bahasa
+                                                        --
+                                                    </option>
+                                                    <option value="Indonesia">
+                                                        Indonesia
+                                                    </option>
+                                                    <option value="English">
+                                                        English
+                                                    </option>
+                                                    <option value="Indonesia & English">
+                                                        Indonesia
+                                                        &
+                                                        English
+                                                    </option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Link */}
                                         <div>
                                             <label className="block mb-1 text-sm font-bold text-gray-700">
-                                                Tipe File
+                                                Link Dokumen
+                                                *
                                             </label>
 
-                                            <select
-                                                value={form.file_type}
-                                                onChange={(e) =>
-                                                    handleFormChange('file_type', e.target.value)
-                                                }
-                                                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
-                                            >
-                                                <option value="">-- Pilih Tipe File --</option>
-                                                <option value="PDF">PDF</option>
-                                                <option value="DOC">DOC</option>
-                                                <option value="DOCX">DOCX</option>
-                                                <option value="XLS">XLS</option>
-                                                <option value="XLSX">XLSX</option>
-                                                <option value="PPT">PPT</option>
-                                                <option value="PPTX">PPTX</option>
-                                                <option value="ZIP">ZIP</option>
-                                                <option value="Other">Lainnya</option>
-                                            </select>
+                                            <div className="relative">
+                                                <FaLink className="absolute text-xs text-gray-400 -translate-y-1/2 left-3 top-1/2" />
+
+                                                <input
+                                                    type="url"
+                                                    value={
+                                                        form.link
+                                                    }
+                                                    onChange={(
+                                                        e
+                                                    ) =>
+                                                        handleFormChange(
+                                                            'link',
+                                                            e
+                                                                .target
+                                                                .value
+                                                        )
+                                                    }
+                                                    placeholder="https://..."
+                                                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                />
+                                            </div>
+
+                                            <p className="mt-1.5 text-xs text-gray-400">
+                                                Link akan
+                                                dibuka
+                                                ketika
+                                                pengunjung
+                                                menekan
+                                                tombol
+                                                "Buka
+                                                Dokumen".
+                                            </p>
                                         </div>
-
-                                        {/* Language */}
-                                        <div>
-                                            <label className="block mb-1 text-sm font-bold text-gray-700">
-                                                Bahasa
-                                            </label>
-
-                                            <select
-                                                value={form.language}
-                                                onChange={(e) =>
-                                                    handleFormChange('language', e.target.value)
-                                                }
-                                                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
-                                            >
-                                                <option value="">-- Pilih Bahasa --</option>
-                                                <option value="Indonesia">Indonesia</option>
-                                                <option value="English">English</option>
-                                                <option value="Indonesia & English">
-                                                    Indonesia & English
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {/* Link */}
-                                    <div>
-                                        <label className="block mb-1 text-sm font-bold text-gray-700">
-                                            Link Dokumen *
-                                        </label>
-
-                                        <div className="relative">
-                                            <FaLink className="absolute text-xs text-gray-400 -translate-y-1/2 left-3 top-1/2" />
-
-                                            <input
-                                                type="url"
-                                                value={form.link}
-                                                onChange={(e) =>
-                                                    handleFormChange('link', e.target.value)
-                                                }
-                                                placeholder="https://..."
-                                                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            />
-                                        </div>
-
-                                        <p className="mt-1.5 text-xs text-gray-400">
-                                            Link akan dibuka ketika pengunjung menekan
-                                            tombol "Buka Dokumen".
-                                        </p>
-                                    </div>
-                                </>
-                            )}
+                                    </>
+                                )}
 
                             {/* Sort Order */}
                             <div>
@@ -952,8 +1422,12 @@ const DocumentManagement = () => {
                                     min="0"
                                     value={form.sort_order}
                                     onChange={(e) =>
-                                        handleFormChange('sort_order', e.target.value)
+                                        handleFormChange(
+                                            'sort_order',
+                                            e.target.value
+                                        )
                                     }
+                                    onWheel={(e) => e.currentTarget.blur()}
                                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 />
 
@@ -970,7 +1444,10 @@ const DocumentManagement = () => {
                                     </p>
 
                                     <p className="mt-0.5 text-xs text-gray-400">
-                                        Data nonaktif tidak akan ditampilkan di website publik.
+                                        Data nonaktif
+                                        tidak akan
+                                        ditampilkan di
+                                        website publik.
                                     </p>
                                 </div>
 
@@ -983,14 +1460,14 @@ const DocumentManagement = () => {
                                         )
                                     }
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.is_active
-                                        ? 'bg-primary-600'
-                                        : 'bg-gray-300'
+                                            ? 'bg-primary-600'
+                                            : 'bg-gray-300'
                                         }`}
                                 >
                                     <span
                                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.is_active
-                                            ? 'translate-x-6'
-                                            : 'translate-x-1'
+                                                ? 'translate-x-6'
+                                                : 'translate-x-1'
                                             }`}
                                     />
                                 </button>
@@ -1000,15 +1477,24 @@ const DocumentManagement = () => {
                         {/* Modal Footer */}
                         <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
                             <button
-                                onClick={() => setModalOpen(false)}
+                                onClick={() =>
+                                    setModalOpen(
+                                        false
+                                    )
+                                }
                                 className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-800 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
                             >
                                 Batal
                             </button>
 
                             <button
-                                onClick={handleSave}
-                                disabled={saving || !form.name.trim()}
+                                onClick={
+                                    handleSave
+                                }
+                                disabled={
+                                    saving ||
+                                    !form.name.trim()
+                                }
                                 className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50"
                             >
                                 {saving ? (
@@ -1017,14 +1503,18 @@ const DocumentManagement = () => {
                                     <FaSave className="text-xs" />
                                 )}
 
-                                {saving ? 'Menyimpan...' : 'Simpan'}
+                                {saving
+                                    ? 'Menyimpan...'
+                                    : 'Simpan'}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Delete Confirm */}
+            {/* =====================================================
+                DELETE CONFIRM
+            ====================================================== */}
             {deleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
                     <div className="w-full max-w-sm p-6 text-center bg-white shadow-2xl rounded-2xl">
@@ -1039,28 +1529,42 @@ const DocumentManagement = () => {
 
                         <p className="mb-6 text-sm text-gray-500">
                             <span className="font-semibold text-gray-700">
-                                {deleteConfirm.name}
+                                {
+                                    deleteConfirm.name
+                                }
                             </span>{' '}
-                            akan dihapus permanen.
+                            akan dihapus
+                            permanen.
                         </p>
 
-                        {deleteConfirm.type === 'category' && (
-                            <p className="px-3 py-2 mb-5 text-xs rounded-lg text-amber-600 bg-amber-50">
-                                Kategori yang masih memiliki isi tidak dapat dihapus.
-                            </p>
-                        )}
+                        {deleteConfirm.type ===
+                            'category' && (
+                                <p className="px-3 py-2 mb-5 text-xs rounded-lg text-amber-600 bg-amber-50">
+                                    Kategori yang masih
+                                    memiliki isi tidak
+                                    dapat dihapus.
+                                </p>
+                            )}
 
                         <div className="flex gap-3">
                             <button
-                                onClick={() => setDeleteConfirm(null)}
+                                onClick={() =>
+                                    setDeleteConfirm(
+                                        null
+                                    )
+                                }
                                 className="flex-1 py-2.5 text-sm font-bold border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
                             >
                                 Batal
                             </button>
 
                             <button
-                                onClick={() => handleDelete(deleteConfirm.id)}
-                                className="flex-1 py-2.5 text-sm font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors"
+                                onClick={() =>
+                                    handleDelete(
+                                        deleteConfirm.id
+                                    )
+                                }
+                                className="flex-1 py-2.5 text-sm font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl"
                             >
                                 Hapus
                             </button>

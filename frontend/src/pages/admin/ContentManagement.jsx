@@ -207,7 +207,11 @@ const colorMap = {
 };
 
 // ── Editor teks (Quill) + fitur tabel ──
-Quill.register({ 'modules/table-better': QuillTableBetter }, true);
+// Didaftarkan ke SUBCLASS (TableQuill), bukan ke Quill global, supaya
+// modul tabel ini tidak memengaruhi editor Quill lain di aplikasi
+// (mis. editor FAQ) yang tidak membutuhkan fitur tabel.
+class TableQuill extends Quill {}
+TableQuill.register({ 'modules/table-better': QuillTableBetter }, true);
 
 const quillModules = {
   toolbar: [
@@ -306,7 +310,8 @@ const QuillEditor = ({ value, onChange, placeholder }) => {
 
     wrapper.appendChild(editorElement);
 
-    const quill = new Quill(editorElement, {
+    // Dipakai sebagai TableQuill (subclass), bukan Quill global,
+    const quill = new TableQuill(editorElement, {
       theme: 'snow',
       placeholder,
       modules: quillModules,
@@ -343,8 +348,8 @@ const QuillEditor = ({ value, onChange, placeholder }) => {
     };
   }, [placeholder]);
 
-  return (
-    <div className="bg-white [&_.ql-toolbar]:rounded-t-xl [&_.ql-container]:rounded-b-xl [&_.ql-editor]:min-h-[320px] [&_.ql-editor]:text-sm">
+    return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden [&_.ql-toolbar]:!border-0 [&_.ql-toolbar]:!border-b [&_.ql-toolbar]:!border-gray-200 [&_.ql-container]:!border-0 [&_.ql-editor]:min-h-[320px] [&_.ql-editor]:text-sm">
       <div ref={wrapperRef} />
     </div>
   );
