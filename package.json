@@ -1,0 +1,10 @@
+{
+  "name": "kan-remake-workspace",
+  "private": true,
+  "scripts": {
+    "dev:all": "concurrently -k -n BACKEND,FRONTEND,E-TRAINING-LARAVEL,E-TRAINING-VITE -c green,cyan,magenta,yellow \"php apps/backend/artisan serve --host=127.0.0.1 --port=8000\" \"npm run dev --prefix apps/frontend\" \"php apps/e-training/artisan serve --host=127.0.0.1 --port=8002 --no-reload\" \"npm run dev --prefix apps/e-training -- --host 127.0.0.1 --port 5174\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

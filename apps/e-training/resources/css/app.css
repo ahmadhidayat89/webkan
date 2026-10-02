@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+    body {
+        @apply bg-kan-bg text-gray-800;
+    }
+}
+
+@layer components {
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-navy-600 text-white font-medium rounded-lg
+               hover:bg-navy-700 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2
+               transition-all duration-200 ease-in-out;
+    }
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white text-navy-600 font-medium rounded-lg
+               border border-navy-200 hover:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2
+               transition-all duration-200 ease-in-out;
+    }
+    .btn-gold {
+        @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gold-500 text-white font-semibold rounded-lg
+               hover:bg-gold-600 focus:outline-none focus:ring-2 focus:ring-gold-400 focus:ring-offset-2
+               transition-all duration-200 ease-in-out shadow-md hover:shadow-lg;
+    }
+    .card {
+        @apply bg-white rounded-xl border border-gray-100 shadow-card transition-all duration-300;
+    }
+    .card-hover {
+        @apply hover:shadow-card-hover hover:-translate-y-1;
+    }
+    .glass {
+        @apply bg-white/80 backdrop-blur-md border border-white/20;
+    }
+}
+
+@layer utilities {
+    .text-gradient-navy {
+        @apply bg-gradient-to-r from-navy-600 to-navy-800 bg-clip-text text-transparent;
+    }
+    .text-gradient-gold {
+        @apply bg-gradient-to-r from-gold-500 to-gold-700 bg-clip-text text-transparent;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-full;
+}
+::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}
+
+/* Radix Accordion animations */
+[data-state="open"] > .accordion-chevron {
+    transform: rotate(180deg);
+}
+.accordion-chevron {
+    transition: transform 200ms ease;
+}
+
+[data-state="open"].accordion-content {
+    animation: slideDown 200ms ease-out;
+}
+[data-state="closed"].accordion-content {
+    animation: slideUp 200ms ease-out;
+}
+
+@keyframes slideDown {
+    from { height: 0; opacity: 0; }
+    to { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+@keyframes slideUp {
+    from { height: var(--radix-accordion-content-height); opacity: 1; }
+    to { height: 0; opacity: 0; }
+}

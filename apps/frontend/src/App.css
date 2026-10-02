@@ -1,0 +1,169 @@
+/* App specific styles */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+  animation: slideIn 0.6s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Premium Animations */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animation-delay-200 {
+  animation-delay: 0.2s;
+  animation-fill-mode: both;
+}
+
+.animation-delay-400 {
+  animation-delay: 0.4s;
+  animation-fill-mode: both;
+}
+
+.animation-delay-600 {
+  animation-delay: 0.6s;
+  animation-fill-mode: both;
+}
+
+/* Floating Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.6;
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 8s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+/* Glow Effect */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
+  }
+}
+
+.animate-glow {
+  animation: glow 3s ease-in-out infinite;
+}
+
+/* Scale on Hover */
+.hover-scale {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* ===== Accreditation Timeline Animations ===== */
+
+/* Card: tersembunyi saat belum visible */
+.tl-row .tl-card {
+  opacity: 0;
+  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tl-row.tl-left .tl-card  { transform: translateX(36px); }
+.tl-row.tl-right .tl-card { transform: translateX(-36px); }
+
+/* Circle: tersembunyi saat belum visible */
+.tl-circle-wrap .tl-circle-num {
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Visible state */
+.tl-row.tl-visible .tl-card {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.1s;
+}
+.tl-row.tl-visible .tl-circle-wrap .tl-circle-num {
+  opacity: 1;
+  transform: scale(1);
+  transition-delay: 0s;
+}
+
+/* Pulse rings */
+.tl-circle-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+
+.tl-circle-wrap::before,
+.tl-circle-wrap::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.25);
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 0;
+  pointer-events: none;
+}
+.tl-circle-wrap.tl-pulse::before {
+  animation: tl-pulse-ring 1.6s ease-out 0.05s forwards;
+}
+.tl-circle-wrap.tl-pulse::after {
+  animation: tl-pulse-ring 1.6s ease-out 0.4s forwards;
+}
+
+@keyframes tl-pulse-ring {
+  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.7; }
+  100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+}

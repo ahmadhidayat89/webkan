@@ -1,137 +1,76 @@
-# KAN Remake — Website Komite Akreditasi Nasional
+# KAN Remake Workspace
 
-Proyek remake website **Komite Akreditasi Nasional (KAN)** menggunakan stack modern: **Laravel 10** sebagai backend API dan **React + Vite** sebagai frontend.
-
----
-
-## Tech Stack
-
-| Layer    | Teknologi                                     |
-| -------- | --------------------------------------------- |
-| Backend  | PHP 8.1+, Laravel 10, Laravel Sanctum         |
-| Frontend | React 18, Vite, Tailwind CSS, React Router v6 |
-| Database | PostgreeSQL                                   |
-| Auth     | JWT via Laravel Sanctum                       |
-| i18n     | i18next (Bahasa Indonesia & English)          |
-
----
-
-## Fitur Utama
-
-### Publik
-
-- **Beranda** — Hero slider, quick links, berita terbaru, mitra internasional
-- **Tentang KAN** — Visi, misi, sejarah
-- **Direktori LPK** — Tabel semua lembaga penilaian kesesuaian (terakreditasi, dibekukan, dicabut) dengan pencarian dan filter
-- **Berita & Pengumuman** — Daftar berita dengan detail
-- **Halaman Dinamis** — Konten halaman dikelola dari admin (misal: Layanan, Kontak, dll)
-- **Bilingual** — Semua konten mendukung Bahasa Indonesia dan English
-
-### Admin Panel
-
-- **Dashboard** — Ringkasan statistik
-- **Manajemen Berita** — CRUD berita
-- **Manajemen Slider** — Upload & kelola hero slider
-- **Direktori LPK** — CRUD data lembaga penilaian kesesuaian
-- **Halaman & Konten** — Kelola konten halaman dinamis
-- **Mitra** — Kelola logo partner/mitra internasional
-- **Pengaturan Website** — Logo, nama, kontak, media sosial, SEO
-
----
+Workspace ini berisi 3 aplikasi:
+- `apps/backend` (Laravel API utama)
+- `apps/frontend` (React + Vite utama)
+- `apps/e-training` (Laravel + Inertia untuk E-Training)
 
 ## Struktur Folder
 
-```
-kan-remake/
-├── backend/        # Laravel 10 API
-│   ├── app/
-│   │   ├── Http/Controllers/Api/
-│   │   └── Models/
-│   ├── database/
-│   │   ├── migrations/
-│   │   └── seeders/
-│   └── routes/api.php
-└── frontend/       # React + Vite
-    ├── src/
-    │   ├── components/   # Header, Footer, AdminLayout, dll
-    │   ├── pages/        # Halaman publik & admin
-    │   └── locales/      # File terjemahan i18n
-    └── public/
+```text
+remake-kan/
+├── apps/
+│   ├── backend/
+│   ├── frontend/
+│   └── e-training/
+├── package.json
+└── README.md
 ```
 
----
+## Jalankan Semua Dengan Satu Command
 
-## Cara Menjalankan
-
-### Prasyarat
-
-- PHP 8.1+
-- Composer
-- Node.js 18+
-- PostgreeSQL
-
-### Backend (Laravel)
+### 1. Install dependency root (sekali saja)
 
 ```bash
-cd backend
+npm install
+```
+
+### 2. Jalankan semua service sekaligus
+
+```bash
+npm run dev:all
+```
+
+Service yang akan jalan:
+- Backend API: `http://127.0.0.1:8000`
+- Frontend: `http://localhost:5173`
+- E-Training: `http://127.0.0.1:8002/login`
+- Vite E-Training (asset dev server): `http://127.0.0.1:5174`
+
+## Setup Per App (Sekali Saja)
+
+### Backend
+
+```bash
+cd apps/backend
 cp .env.example .env
 composer install
 php artisan key:generate
-```
-
-Atur koneksi database di `.env`:
-
-```env
-DB_DATABASE=kan_remake
-DB_USERNAME=root
-DB_PASSWORD=
-```
-
-```bash
 php artisan migrate --seed
 php artisan storage:link
-php artisan serve
 ```
 
-Backend berjalan di `http://localhost:8000`
-
-### Frontend (React)
+### Frontend
 
 ```bash
-cd frontend
+cd apps/frontend
 npm install
-npm run dev
 ```
 
-Frontend berjalan di `http://localhost:5173`
+Tambahkan env berikut di `apps/frontend/.env`:
 
----
+```env
+VITE_API_URL=http://127.0.0.1:8000/api/v1
+VITE_E_TRAINING_URL=http://127.0.0.1:8002/login
+```
 
-## API Endpoints (Publik)
-
-| Method | Endpoint                     | Keterangan             |
-| ------ | ---------------------------- | ---------------------- |
-| GET    | `/api/v1/settings`           | Pengaturan website     |
-| GET    | `/api/v1/home`               | Data beranda           |
-| GET    | `/api/v1/news`               | Daftar berita          |
-| GET    | `/api/v1/news/{slug}`        | Detail berita          |
-| GET    | `/api/v1/directory/{status}` | Direktori LPK          |
-| GET    | `/api/v1/pages/{slug}`       | Konten halaman dinamis |
-
----
-
-## Push ke GitHub (Hanya backend & frontend)
-
-Untuk hanya menyertakan folder `backend/` dan `frontend/` saat commit:
+### E-Training
 
 ```bash
-git add backend/ frontend/
-git commit -m "pesan commit"
-git push
+cd apps/e-training
+cp .env.example .env
+composer install
+npm install
+php artisan key:generate
+php artisan migrate --seed
 ```
-
----
-
-## Lisensi
-
-Proyek ini dikembangkan untuk keperluan internal BSN / KAN.
