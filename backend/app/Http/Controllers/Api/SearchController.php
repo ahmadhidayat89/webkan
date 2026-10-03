@@ -90,37 +90,37 @@ class SearchController extends Controller
      */
     private function searchNews(string $q): array
     {
-    try {
-        $query = News::query()
-            ->where(function ($query) use ($q) {
-                $query->where('title_id', 'like', "%{$q}%")
-                    ->orWhere('title_en', 'like', "%{$q}%")
-                    ->orWhere('excerpt_id', 'like', "%{$q}%")
-                    ->orWhere('excerpt_en', 'like', "%{$q}%");
-            });
+        try {
+            $query = News::query()
+                ->where(function ($query) use ($q) {
+                    $query->where('title_id', 'ilike', "%{$q}%")
+                        ->orWhere('title_en', 'ilike', "%{$q}%")
+                        ->orWhere('excerpt_id', 'ilike', "%{$q}%")
+                        ->orWhere('excerpt_en', 'ilike', "%{$q}%");
+                });
 
-        if (Schema::hasColumn('news', 'is_published')) {
-            $query->where('is_published', true);
+            if (Schema::hasColumn('news', 'is_published')) {
+                $query->where('is_published', true);
+            }
+
+            $items = $query
+                ->orderByDesc('id')
+                ->limit(5)
+                ->get();
+        } catch (\Throwable $e) {
+            return [];
         }
 
-        $items = $query
-            ->orderByDesc('id')
-            ->limit(5)
-            ->get();
-    } catch (\Throwable $e) {
-        return [];
-    }
-
-    return $items->map(function ($news) use ($q) {
-        return [
-            'title' => $news->title_id,
-            'url' => '/berita/' . $news->slug,
-            'snippet' => $this->makeSnippet(
-                $news->excerpt_id ?? $news->title_id,
-                $q
-            ),
-        ];
-    })->all();
+        return $items->map(function ($news) use ($q) {
+            return [
+                'title' => $news->title_id,
+                'url' => '/berita/' . $news->slug,
+                'snippet' => $this->makeSnippet(
+                    $news->excerpt_id ?? $news->title_id,
+                    $q
+                ),
+            ];
+        })->all();
     }
 
     /**
@@ -131,8 +131,8 @@ class SearchController extends Controller
         try {
             $items = PageContent::query()
                 ->where(function ($query) use ($q) {
-                    $query->where('content_id', 'like', "%{$q}%")
-                        ->orWhere('title', 'like', "%{$q}%");
+                    $query->where('content_id', 'ilike', "%{$q}%")
+                        ->orWhere('title', 'ilike', "%{$q}%");
                 })
                 ->limit(8)
                 ->get();
@@ -174,8 +174,8 @@ class SearchController extends Controller
         try {
             $items = Faq::query()
                 ->where(function ($query) use ($q) {
-                    $query->where('question', 'like', "%{$q}%")
-                        ->orWhere('answer', 'like', "%{$q}%");
+                    $query->where('question', 'ilike', "%{$q}%")
+                        ->orWhere('answer', 'ilike', "%{$q}%");
                 })
                 ->limit(5)
                 ->get();

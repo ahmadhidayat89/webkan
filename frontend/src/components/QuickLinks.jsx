@@ -1,18 +1,17 @@
 import { FaArrowRight, FaFileAlt, FaUsers, FaCog } from 'react-icons/fa';
 
 const QuickLinks = ({ links }) => {
-
   const iconMap = {
     0: <FaUsers className="text-3xl md:text-4xl lg:text-5xl" />,
     1: <FaFileAlt className="text-3xl md:text-4xl lg:text-5xl" />,
     2: <FaCog className="text-3xl md:text-4xl lg:text-5xl" />,
   };
 
-  const gradients = [
-    'from-blue-500 to-blue-700',
-    'from-purple-500 to-purple-700',
-    'from-orange-500 to-orange-700',
-  ];
+  // Gradient untuk icon
+  const iconGradient = 'from-primary-600 to-primary-700';
+
+  // Gradient untuk card saat hover
+  const cardHoverGradient = 'from-primary-400 to-primary-500';
 
   return (
     <section
@@ -22,7 +21,7 @@ const QuickLinks = ({ links }) => {
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-40">
         <div className="absolute top-0 left-0 w-64 h-64 rounded-full md:w-96 md:h-96 bg-primary-200/30 blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full md:w-96 md:h-96 bg-accent-200/30 blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full md:w-96 md:h-96 bg-primary-200/30 blur-3xl"></div>
       </div>
 
       <div className="container relative z-10 px-4 sm:px-6">
@@ -43,7 +42,7 @@ const QuickLinks = ({ links }) => {
 
           {/* Lihat Semua Layanan */}
           <a
-            href="/layanan"
+            href="/layanan-akreditasi"
             className="inline-flex items-center gap-2 mt-4 text-sm font-semibold transition-colors duration-300 md:mt-5 text-primary-600 hover:text-primary-700 sm:text-base group"
           >
             <span>Lihat Semua Layanan</span>
@@ -65,13 +64,11 @@ const QuickLinks = ({ links }) => {
 
                   {/* Gradient Background on Hover */}
                   <div
-                    className={`absolute inset-0 bg-gradient-to-br ${
-                      gradients[index % 3]
-                    } opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                    className={`absolute inset-0 bg-gradient-to-br ${cardHoverGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
                   ></div>
 
                   {/* Glow Effect */}
-                  <div className="absolute transition-opacity duration-500 opacity-0 -inset-1 bg-gradient-to-r from-primary-600 to-accent-600 rounded-2xl md:rounded-3xl blur-xl group-hover:opacity-20"></div>
+                  <div className="absolute transition-opacity duration-500 opacity-0 -inset-1 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl md:rounded-3xl blur-xl group-hover:opacity-20"></div>
 
                   {/* Content */}
                   <div className="relative z-10 flex flex-col flex-1">
@@ -79,9 +76,7 @@ const QuickLinks = ({ links }) => {
                     {/* Icon Container */}
                     <div className="relative mb-4 md:mb-6">
                       <div
-                        className={`w-14 h-14 sm:w-16 sm:h-16 md:w-18 lg:w-20 md:h-18 lg:h-20 rounded-xl md:rounded-2xl bg-gradient-to-br ${
-                          gradients[index % 3]
-                        } flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+                        className={`w-14 h-14 sm:w-16 sm:h-16 md:w-18 lg:w-20 md:h-18 lg:h-20 rounded-xl md:rounded-2xl bg-gradient-to-br ${iconGradient} flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
                       >
                         {iconMap[index] ||
                           link.icon || (
@@ -150,15 +145,13 @@ const QuickLinks = ({ links }) => {
                 >
                   <div className="relative flex flex-col flex-1 p-6 overflow-hidden transition-all duration-500 bg-white border border-gray-100 shadow-xl rounded-2xl md:rounded-3xl md:p-8 hover:-translate-y-2 hover:shadow-2xl">
 
-                    {/* Gradient Background */}
+                    {/* Gradient Background on Hover */}
                     <div
-                      className={`absolute inset-0 bg-gradient-to-br ${
-                        gradients[item.index]
-                      } opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                      className={`absolute inset-0 bg-gradient-to-br ${cardHoverGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
                     ></div>
 
                     {/* Glow Effect */}
-                    <div className="absolute transition-opacity duration-500 opacity-0 -inset-1 bg-gradient-to-r from-primary-600 to-accent-600 rounded-2xl md:rounded-3xl blur-xl group-hover:opacity-20"></div>
+                    <div className="absolute transition-opacity duration-500 opacity-0 -inset-1 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl md:rounded-3xl blur-xl group-hover:opacity-20"></div>
 
                     {/* Content */}
                     <div className="relative z-10 flex flex-col flex-1">
@@ -166,9 +159,7 @@ const QuickLinks = ({ links }) => {
                       {/* Icon Container */}
                       <div className="relative mb-4 md:mb-6">
                         <div
-                          className={`w-14 h-14 sm:w-16 sm:h-16 md:w-18 lg:w-20 md:h-18 lg:h-20 rounded-xl md:rounded-2xl bg-gradient-to-br ${
-                            gradients[item.index]
-                          } flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+                          className={`w-14 h-14 sm:w-16 sm:h-16 md:w-18 lg:w-20 md:h-18 lg:h-20 rounded-xl md:rounded-2xl bg-gradient-to-br ${iconGradient} flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
                         >
                           {iconMap[item.index]}
                         </div>

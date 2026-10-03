@@ -9,7 +9,9 @@ const FAQSection = () => {
   useEffect(() => {
     fetch('/api/v1/faqs')
       .then((r) => r.json())
-      .then((d) => { if (d.success) setFaqs(d.data); })
+      .then((d) => {
+        if (d.success) setFaqs(d.data);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -22,21 +24,25 @@ const FAQSection = () => {
   if (!loading && faqs.length === 0) return null;
 
   return (
-    <section id="faq"
-  className="py-20 text-white bg-gradient-to-br from-primary-600 to-primary-900 scroll-mt-24">
+    <section
+      id="faq"
+      className="py-20 text-white bg-gradient-to-br from-primary-600 to-primary-900 scroll-mt-24"
+    >
       <div className="container max-w-4xl px-4 mx-auto">
         <div className="text-center">
           <h2 className="mb-4 text-4xl font-black md:text-5xl">
             FAQs
           </h2>
-          <p className="mb-6 text-base text-white/80">
+
+          <p className="mb-4 text-base text-white/80">
             Temukan jawaban atas berbagai pertanyaan seputar layanan dan proses akreditasi dengan cepat dan mudah.
           </p>
+
           <a
-            href="/proses-akreditasi"
-            className="inline-flex items-center gap-2 px-6 py-3 mb-10 text-sm transition-all bg-white rounded-full shadow-lg hover:bg-gray-100 text-primary-600"
+            href="/faq"
+            className="inline-flex items-center gap-2 mb-10 text-sm font-semibold text-white transition-all hover:underline underline-offset-4"
           >
-            Panduan Akreditasi
+            Lihat Semua FAQ
             <span aria-hidden="true">→</span>
           </a>
         </div>
@@ -47,7 +53,7 @@ const FAQSection = () => {
           </div>
         ) : (
           <div className="border-t border-white/20">
-            {faqs.map((faq, index) => (
+            {faqs.slice(0, 3).map((faq, index) => (
               <div key={faq.id} className="border-b border-white/20">
                 <button
                   onClick={() => toggleFaq(index)}
@@ -57,20 +63,29 @@ const FAQSection = () => {
                     <span className="flex-shrink-0 font-semibold text-white/60">
                       {String(index + 1).padStart(2, '0')}.
                     </span>
-                    <span className="text-lg font-semibold">{faq.question}</span>
+
+                    <span className="text-lg font-semibold">
+                      {faq.question}
+                    </span>
                   </span>
+
                   <span className="flex-shrink-0 w-6 text-2xl font-light text-center">
                     {openFaq === index ? '−' : '+'}
                   </span>
                 </button>
+
                 <div
                   className={`overflow-hidden transition-all duration-500 ease-in-out ${
-                    openFaq === index ? 'max-h-[2000px] pb-6' : 'max-h-0'
+                    openFaq === index
+                      ? 'max-h-[2000px] pb-6'
+                      : 'max-h-0'
                   }`}
                 >
                   <div
                     className="text-white/80 pl-0 md:pl-14 space-y-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:space-y-2 [&_a]:underline [&_strong]:font-bold"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(faq.answer) }}
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(faq.answer),
+                    }}
                   />
                 </div>
               </div>

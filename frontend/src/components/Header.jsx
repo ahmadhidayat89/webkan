@@ -152,6 +152,11 @@ const Header = () => {
         },
       ]
     },
+    {
+      label: 'E-Training',
+      href: 'http://127.0.0.1:8001',
+      external: true,
+    },
   ];
 
   const activeLang = (i18n.resolvedLanguage || i18n.language || 'id').startsWith('en') ? 'en' : 'id';
@@ -184,7 +189,7 @@ const Header = () => {
 
                 {/* FAQ */}
                 <a
-                  href="/#faq"
+                  href="/faq"
                   className="font-medium text-white transition-none hover:text-white hover:underline underline-offset-4"
                 >
                   FAQ
@@ -278,6 +283,8 @@ const Header = () => {
 
                   <a
                     href={item.href}
+                    target={item.external ? '_blank' : undefined}
+                    rel={item.external ? 'noopener noreferrer' : undefined}
                     className={`${isScrolled
                       ? 'text-gray-700 hover:text-primary-600'
                       : 'text-white/90 hover:text-white'

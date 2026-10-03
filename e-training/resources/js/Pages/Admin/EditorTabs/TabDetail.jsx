@@ -1,0 +1,242 @@
+import { useForm } from '@inertiajs/react';
+import { useState } from 'react';
+import { Image, Save, CheckCircle2, Upload, Plus, X } from 'lucide-react';
+
+export default function TabDetail({ course, categories }) {
+    const { data, setData, patch, post, processing, recentlySuccessful, errors } = useForm({
+        title: course.title,
+        description: course.description || '',
+        short_description: course.short_description || '',
+        category_id: course.category_id || '',
+        level: course.level || 'pemula',
+        duration_hours: course.duration_hours || '',
+        status: course.status || 'draft',
+        _method: 'PATCH', // for thumbnail upload
+    });
+
+    const [isAddingCategory, setIsAddingCategory] = useState(false);
+    const { data: catData, setData: setCatData, post: postCat, processing: processingCat, reset: resetCat, errors: catErrors } = useForm({
+        name: '',
+    });
+
+    const handleCategoryChange = (e) => {
+        if (e.target.value === 'add_new') {
+            setIsAddingCategory(true);
+        } else {
+            setData('category_id', e.target.value);
+        }
+    };
+
+    const submitCategory = (e) => {
+        e.preventDefault();
+        postCat(route('admin.categories.store'), {
+            onSuccess: () => {
+                setIsAddingCategory(false);
+                resetCat();
+            },
+        });
+    };
+
+    const submit = (e) => {
+        e.preventDefault();
+        patch(route('admin.courses.update', course.id), {
+            preserveScroll: true,
+        });
+    };
+
+    const handleThumbnailChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const form = new FormData();
+            form.append('thumbnail', e.target.files[0]);
+            form.append('_method', 'POST'); // In Laravel, file uploads need POST with _method spoofing if not PATCH
+
+            // We'll use a separate endpoint or just submit with post
+            // Actually, patch doesn't support multipart form data directly in older Inertia without specific config.
+            // Inertia supports it now: we can just use `post` with `_method: 'PATCH'`
+        }
+    };
+
+    const submitWithFile = (e) => {
+        const fileInput = document.getElementById('thumbnail-upload');
+        if (fileInput.files.length > 0) {
+            setData('thumbnail', fileInput.files[0]);
+            post(route('admin.courses.update', course.id), {
+                forceFormData: true,
+                preserveScroll: true,
+            });
+        } else {
+            submit(e);
+        }
+    };
+
+    return (
+        <form id="course-detail-form" onSubmit={submitWithFile} className="card p-6 space-y-5 animate-fade-in">
+            <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-gray-900">Detail Pelatihan</h2>
+                {recentlySuccessful && (
+                    <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-lg text-sm font-bold">
+                        <CheckCircle2 className="w-4 h-4" /> Berhasil disimpan!
+                    </div>
+                )}
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Judul Pelatihan</label>
+                <input
+                    type="text"
+                    value={data.title}
+                    onChange={(e) => setData('title', e.target.value)}
+                    className="w-full text-sm border-gray-200 rounded-xl bg-gray-50 px-4 py-3 focus:border-navy-500 focus:ring-navy-500"
+                />
+                {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Deskripsi Lengkap</label>
+                <textarea
+                    value={data.description}
+                    onChange={(e) => setData('description', e.target.value)}
+                    rows={4}
+                    className="w-full text-sm border-gray-200 rounded-xl bg-gray-50 px-4 py-3 focus:border-navy-500 focus:ring-navy-500 resize-none"
+                />
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Deskripsi Singkat (Katalog)</label>
+                <textarea
+                    value={data.short_description}
+                    onChange={(e) => setData('short_description', e.target.value)}
+                    rows={2}
+                    className="w-full text-sm border-gray-200 rounded-xl bg-gray-50 px-4 py-3 focus:border-navy-500 focus:ring-navy-500 resize-none"
+                />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Kategori</label>
+                    {!isAddingCategory ? (
+                        <select
+                            value={data.category_id}
+                            onChange={handleCategoryChange}
+                            className="w-full text-sm border-gray-200 rounded-xl bg-gray-50 px-4 py-3"
+                        >
+                            <option value="">Pilih...</option>
+                            {categories.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                            <option value="add_new" className="text-navy-600 font-bold">+ Tambah Kategori Baru</option>
+                        </select>
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            <div className="flex gap-2">
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    placeholder="Nama kategori..."
+                                    value={catData.name}
+                                    onChange={e => setCatData('name', e.target.value)}
+                                    className="flex-1 text-sm border-gray-200 rounded-xl bg-gray-50 px-3 py-2 focus:border-navy-500 focus:ring-navy-500"
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            submitCategory(e);
+                                        }
+                                        if (e.key === 'Escape') {
+                                            setIsAddingCategory(false);
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={submitCategory}
+                                    disabled={processingCat}
+                                    className="p-2 bg-navy-600 text-white rounded-xl hover:bg-navy-700 disabled:opacity-50"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddingCategory(false)}
+                                    className="p-2 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                            {catErrors.name && <p className="text-red-500 text-[10px] font-medium">{catErrors.name}</p>}
+                        </div>
+                    )}
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Level</label>
+                    <select
+                        value={data.level}
+                        onChange={(e) => setData('level', e.target.value)}
+                        className="w-full text-sm border-gray-200 rounded-xl bg-gray-50 px-4 py-3"
+                    >
+                        <option value="pemula">Pemula</option>
+                        <option value="menengah">Menengah</option>
+                        <option value="lanjutan">Lanjutan</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Durasi (Jam)</label>
+                    <input
+                        type="number"
+                        value={data.duration_hours}
+                        onChange={(e) => setData('duration_hours', e.target.value)}
+                        className="w-full text-sm border-gray-200 rounded-xl bg-gray-50 px-4 py-3"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                    <select
+                        value={data.status}
+                        onChange={(e) => setData('status', e.target.value)}
+                        className={`w-full text-sm border-gray-200 rounded-xl px-4 py-3 font-bold ${
+                            data.status === 'published' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'
+                        }`}
+                    >
+                        <option value="draft">DRAFT</option>
+                        <option value="published">PUBLISHED</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Thumbnail</label>
+                <div className="relative border-2 border-dashed border-gray-200 rounded-xl overflow-hidden hover:border-navy-300 transition-all">
+                    <input 
+                        id="thumbnail-upload"
+                        type="file" 
+                        accept="image/png, image/jpeg, image/jpg"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                        onChange={(e) => {
+                            if(e.target.files.length > 0) {
+                                // preview can be handled, but simple approach is just setting data
+                                setData('thumbnail', e.target.files[0]);
+                            }
+                        }}
+                    />
+                    {data.thumbnail instanceof File ? (
+                        <div className="p-8 text-center bg-navy-50">
+                            <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                            <p className="text-sm font-bold text-navy-700">{data.thumbnail.name}</p>
+                            <p className="text-xs text-gray-500">Akan diupload saat disimpan</p>
+                        </div>
+                    ) : course.thumbnail ? (
+                        <img src={course.thumbnail} className="w-full h-48 object-cover opacity-80 group-hover:opacity-100" />
+                    ) : (
+                        <div className="p-8 text-center bg-gray-50">
+                            <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center mx-auto mb-3">
+                                <Image className="w-6 h-6 text-gray-400" />
+                            </div>
+                            <p className="text-sm text-gray-600 font-medium">Klik atau drop untuk upload thumbnail</p>
+                            <p className="text-xs text-gray-400 mt-1">PNG, JPG hingga 2MB • Rasio 16:9</p>
+                        </div>
+                    )}
+                </div>
+                {errors.thumbnail && <p className="text-red-500 text-xs mt-1">{errors.thumbnail}</p>}
+            </div>
+        </form>
+    );
+}

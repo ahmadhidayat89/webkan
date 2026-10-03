@@ -27,6 +27,7 @@ import AutoPageTranslator from './components/AutoPageTranslator';
 import ProtectedRoute from './components/admin/ProtectedRoute';
 import LegalManagement from './pages/admin/LegalManagement';
 import LegalPage from './pages/LegalPage';
+import FAQPage from './pages/FAQPage';
 import SearchResults from './pages/SearchResults';
 
 import './App.css';
@@ -164,7 +165,7 @@ function App() {
         ========================================================= */}
 
         <Route path="/unduh/*" element={<DocumentPage />} />
-        
+
         <Route path="/cari" element={<SearchResults />} />
 
         {/* =========================================================
@@ -209,11 +210,11 @@ function App() {
           }
         />
 
-        <Route path="/admin/faq" 
-        element={
-          <ProtectedRoute>
-            <FaqManagement />
-          </ProtectedRoute>} />
+        <Route path="/admin/faq"
+          element={
+            <ProtectedRoute>
+              <FaqManagement />
+            </ProtectedRoute>} />
 
         <Route
           path="/admin/pages"
@@ -254,7 +255,7 @@ function App() {
           }
         />
 
-         <Route
+        <Route
           path="/admin/legal"
           element={
             <ProtectedRoute>
@@ -271,6 +272,9 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* FAQ Route */}
+        <Route path="/faq" element={<FAQPage />} />
 
       </Routes>
     </Router>
