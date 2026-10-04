@@ -20,24 +20,30 @@ const keyLabels = {
   contact_address: 'Alamat',
   contact_phone: 'Telepon',
   contact_email: 'Email',
+  contact_inbox_email: 'Email penerima pesan masuk',
   social_facebook: 'Facebook',
   social_twitter: 'Twitter / X',
   social_instagram: 'Instagram',
   social_youtube: 'YouTube',
 };
 
-const SettingsManagement = () => {
+const SettingsManagement = ({ socialOnly = false }) => {
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState(null);
-  const [activeGroup, setActiveGroup] = useState('general');
+  const [activeGroup, setActiveGroup] = useState(socialOnly ? 'social' : 'general');
   const [groups, setGroups] = useState([]);
 
   useEffect(() => {
-    fetchGroups();
+    if (socialOnly) {
+      setGroups(['social']);
+      setActiveGroup('social');
+    } else {
+      fetchGroups();
+    }
     fetchSettings();
-  }, []);
+  }, [socialOnly]);
 
   const fetchGroups = async () => {
     try {
@@ -59,7 +65,7 @@ const SettingsManagement = () => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/v1/admin/settings', {
+      const response = await fetch(socialOnly ? '/api/v1/admin/social-settings' : '/api/v1/admin/settings', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       });
       const data = await response.json();
@@ -117,14 +123,17 @@ const SettingsManagement = () => {
           value_en: s.value_en || null,
         }));
 
-      const response = await fetch('/api/v1/admin/settings/bulk-update', {
+      const response = await fetch(
+        socialOnly ? '/api/v1/admin/social-settings/bulk-update' : '/api/v1/admin/settings/bulk-update',
+        {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ settings: settingsToUpdate }),
-      });
+        },
+      );
 
       const data = await response.json();
       if (data.success) {
@@ -158,8 +167,8 @@ const SettingsManagement = () => {
                 <FaCog className="text-white text-xl" />
               </div>
               <div>
-                <h2 className="text-2xl font-black">Pengaturan Website</h2>
-                <p className="text-white/70 text-sm mt-0.5">Konfigurasi tampilan dan informasi website KAN</p>
+                <h2 className="text-2xl font-black">{socialOnly ? 'Media Sosial' : 'Pengaturan Website'}</h2>
+                <p className="text-white/70 text-sm mt-0.5">{socialOnly ? 'Kelola tautan media sosial KAN' : 'Konfigurasi tampilan dan informasi website KAN'}</p>
               </div>
             </div>
             <button
@@ -310,7 +319,7 @@ const SettingsManagement = () => {
                             <div>
                               <div className="text-xs text-gray-400 font-semibold mb-1.5">🇮🇩 Indonesia</div>
                               <input
-                                type="text"
+                                    type={setting.key.endsWith('_email') ? 'email' : 'text'}
                                 value={setting.value_id || ''}
                                 onChange={(e) => handleChange(setting.key, 'value_id', e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors"

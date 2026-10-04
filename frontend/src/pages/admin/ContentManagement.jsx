@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import QuillTableBetter from 'quill-table-better';
@@ -356,6 +357,8 @@ const QuillEditor = ({ value, onChange, placeholder }) => {
 };
 
 const ContentManagement = () => {
+  const [searchParams] = useSearchParams();
+  const requestedSection = searchParams.get('section');
   const [dbContents, setDbContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
@@ -367,7 +370,16 @@ const ContentManagement = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState(null);
-  const [activeSection, setActiveSection] = useState('tentang');
+  const [activeSection, setActiveSection] = useState(
+    sections.some((section) => section.key === requestedSection) ? requestedSection : 'tentang',
+  );
+
+  useEffect(() => {
+    setActiveSection(
+      sections.some((section) => section.key === requestedSection) ? requestedSection : 'tentang',
+    );
+    setSelectedId(null);
+  }, [requestedSection]);
   const [removeImage, setRemoveImage] = useState(false);
   const [draftYears, setDraftYears] = useState([]);
   const [newYear, setNewYear] = useState('');

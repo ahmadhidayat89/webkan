@@ -21,22 +21,26 @@ class PageController extends Controller
             if ($request->status === 'published') {
                 $query->published();
             } elseif ($request->status === 'draft') {
-                $query->where('published_at', null);
+                $query->where('is_published', false);
             }
         }
 
         // Search
-        if ($request->has('search')) {
-            $search = $request->search;
+        if ($request->filled('search')) {
+            $search = $request->string('search');
             $query->where(function($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('content', 'like', "%{$search}%");
+                $q->where('title_id', 'like', "%{$search}%")
+                  ->orWhere('title_en', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%");
             });
         }
 
         // Sort
         $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
+        if (!in_array($sortBy, ['created_at', 'title_id', 'slug', 'is_published'], true)) {
+            $sortBy = 'created_at';
+        }
+        $sortOrder = $request->get('sort_order', 'desc') === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
         $pages = $query->paginate($request->get('per_page', 15));
@@ -55,6 +59,7 @@ class PageController extends Controller
         $validated = $request->validate([
             'title_id' => 'required|string|max:255',
             'title_en' => 'nullable|string|max:255',
+            'slug' => 'nullable|string|max:255|alpha_dash|unique:pages,slug',
             'content_id' => 'required|string',
             'content_en' => 'nullable|string',
             'meta_title_id' => 'nullable|string|max:255',
@@ -64,8 +69,8 @@ class PageController extends Controller
             'is_published' => 'nullable|boolean',
         ]);
 
-        // Auto-generate slug from title_id
-        $validated['slug'] = Str::slug($validated['title_id']);
+        // Generate a route from the title when no explicit slug is provided.
+        $validated['slug'] = Str::slug($validated['slug'] ?? $validated['title_id']);
         
         // Ensure unique slug
         $originalSlug = $validated['slug'];
@@ -112,6 +117,7 @@ class PageController extends Controller
         $validated = $request->validate([
             'title_id' => 'sometimes|required|string|max:255',
             'title_en' => 'nullable|string|max:255',
+            'slug' => ['sometimes', 'required', 'string', 'max:255', 'alpha_dash', \Illuminate\Validation\Rule::unique('pages', 'slug')->ignore($id)],
             'content_id' => 'sometimes|required|string',
             'content_en' => 'nullable|string',
             'meta_title_id' => 'nullable|string|max:255',
@@ -121,8 +127,8 @@ class PageController extends Controller
             'is_published' => 'nullable|boolean',
         ]);
 
-        // Update slug if title_id changed
-        if (isset($validated['title_id']) && $validated['title_id'] !== $page->title_id) {
+        // Regenerate the route only when the title changes and no slug was supplied.
+        if (!isset($validated['slug']) && isset($validated['title_id']) && $validated['title_id'] !== $page->title_id) {
             $slug = Str::slug($validated['title_id']);
             $originalSlug = $slug;
             $count = 1;

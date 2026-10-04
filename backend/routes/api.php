@@ -22,6 +22,10 @@ use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
+use App\Http\Controllers\Api\Admin\ContactSubmissionController;
+use App\Http\Controllers\Api\CustomPageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +50,8 @@ Route::prefix('v1')->group(function () {
 
     // FAQ (public)
     Route::get('/faqs', [FaqController::class, 'index']);
+    Route::get('/menus', [AdminMenuController::class, 'publicIndex']);
+    Route::get('/pages/{slug}', [CustomPageController::class, 'show']);
 
     // Auto-translate plain UI text for EN toggle
     Route::post('/translate/texts', [TranslateController::class, 'texts']);
@@ -88,49 +94,59 @@ Route::prefix('v1/admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
-    // Sliders
-    Route::apiResource('sliders', AdminSliderController::class);
-    Route::post('sliders/reorder', [AdminSliderController::class, 'reorder']);
+    // Content available to all three admin roles.
+    Route::middleware('admin.role:super_admin,admin,adminsosmed')->group(function () {
+        Route::apiResource('sliders', AdminSliderController::class);
+        Route::post('sliders/reorder', [AdminSliderController::class, 'reorder']);
 
-    // News Management
-    Route::apiResource('news', NewsController::class);
-    Route::post('news/bulk-delete', [NewsController::class, 'bulkDelete']);
-    Route::post('news/{id}/toggle-publish', [NewsController::class, 'togglePublish']);
+        Route::apiResource('news', NewsController::class);
+        Route::post('news/bulk-delete', [NewsController::class, 'bulkDelete']);
+        Route::post('news/{id}/toggle-publish', [NewsController::class, 'togglePublish']);
 
-    // Partners Management
-    Route::apiResource('partners', PartnerController::class);
-    Route::post('partners/reorder', [PartnerController::class, 'reorder']);
-    Route::post('partners/{id}/toggle-active', [PartnerController::class, 'toggleActive']);
+        Route::get('page-contents', [PageContentController::class, 'index']);
+        Route::get('page-contents/{pageId}', [PageContentController::class, 'getByPageId'])
+            ->where('pageId', '.*');
+        Route::post('page-contents', [PageContentController::class, 'store']);
+        Route::delete('page-contents/{pageId}', [PageContentController::class, 'destroy'])
+            ->where('pageId', '.*');
+    });
 
-    // FAQ Management
-    Route::apiResource('faqs', AdminFaqController::class);
-    Route::post('faqs/reorder', [AdminFaqController::class, 'reorder']);
+    // Content and media available to admins and the super admin.
+    Route::middleware('admin.role:super_admin,admin')->group(function () {
+        Route::apiResource('menus', AdminMenuController::class)->except(['show']);
+        Route::apiResource('pages', PageController::class);
+        Route::post('pages/{id}/toggle-publish', [PageController::class, 'togglePublish']);
 
-    // Pages Management
-    Route::apiResource('pages', PageController::class);
-    Route::post('pages/{id}/toggle-publish', [PageController::class, 'togglePublish']);
+        Route::apiResource('partners', PartnerController::class);
+        Route::post('partners/reorder', [PartnerController::class, 'reorder']);
+        Route::post('partners/{id}/toggle-active', [PartnerController::class, 'toggleActive']);
 
-    // Page Contents Management
-    Route::get('page-contents', [PageContentController::class, 'index']);
-    Route::get('page-contents/{pageId}', [PageContentController::class, 'getByPageId'])
-        ->where('pageId', '.*');
-    Route::post('page-contents', [PageContentController::class, 'store']);
-    Route::delete('page-contents/{pageId}', [PageContentController::class, 'destroy'])
-        ->where('pageId', '.*');
+        Route::apiResource('faqs', AdminFaqController::class);
+        Route::post('faqs/reorder', [AdminFaqController::class, 'reorder']);
 
-    // Direktori LPK Management
-    Route::apiResource('directory', AccreditedOrganizationController::class);
-    Route::get('directory-types', [AccreditedOrganizationController::class, 'types']);
+        Route::apiResource('directory', AccreditedOrganizationController::class);
+        Route::get('directory-types', [AccreditedOrganizationController::class, 'types']);
 
-    // Documents Management
-    Route::apiResource('documents', AdminDocumentController::class);
+        Route::apiResource('contact-submissions', ContactSubmissionController::class)
+            ->only(['index', 'update', 'destroy']);
+        Route::apiResource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
+    });
 
-    // Settings Management
-    Route::get('settings', [AdminSettingController::class, 'index']);
-    Route::get('settings/group/{group}', [AdminSettingController::class, 'getByGroup']);
-    Route::get('settings/groups', [AdminSettingController::class, 'groups']);
-    Route::post('settings/upsert', [AdminSettingController::class, 'upsert']);
-    Route::post('settings/bulk-update', [AdminSettingController::class, 'bulkUpdate']);
-    Route::post('settings/upload-image', [AdminSettingController::class, 'uploadImage']);
-    Route::delete('settings/{key}', [AdminSettingController::class, 'destroy']);
+    // Social media settings are shared with adminsosmed; website settings remain super-admin only.
+    Route::middleware('admin.role:super_admin,adminsosmed')->group(function () {
+        Route::get('social-settings', [AdminSettingController::class, 'socialIndex']);
+        Route::post('social-settings/bulk-update', [AdminSettingController::class, 'socialBulkUpdate']);
+    });
+
+    Route::middleware('admin.role:super_admin')->group(function () {
+        Route::apiResource('documents', AdminDocumentController::class);
+
+        Route::get('settings', [AdminSettingController::class, 'index']);
+        Route::get('settings/group/{group}', [AdminSettingController::class, 'getByGroup']);
+        Route::get('settings/groups', [AdminSettingController::class, 'groups']);
+        Route::post('settings/upsert', [AdminSettingController::class, 'upsert']);
+        Route::post('settings/bulk-update', [AdminSettingController::class, 'bulkUpdate']);
+        Route::post('settings/upload-image', [AdminSettingController::class, 'uploadImage']);
+        Route::delete('settings/{key}', [AdminSettingController::class, 'destroy']);
+    });
 });

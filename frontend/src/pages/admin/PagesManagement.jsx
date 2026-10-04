@@ -11,6 +11,7 @@ const PagesManagement = () => {
   const [formData, setFormData] = useState({
     title_id: '',
     title_en: '',
+    slug: '',
     content_id: '',
     content_en: '',
     meta_title_id: '',
@@ -50,6 +51,7 @@ const PagesManagement = () => {
       setFormData({
         title_id: page.title_id || '',
         title_en: page.title_en || '',
+        slug: page.slug || '',
         content_id: page.content_id || '',
         content_en: page.content_en || '',
         meta_title_id: page.meta_title_id || '',
@@ -63,6 +65,7 @@ const PagesManagement = () => {
       setFormData({
         title_id: '',
         title_en: '',
+        slug: '',
         content_id: '',
         content_en: '',
         meta_title_id: '',
@@ -81,6 +84,7 @@ const PagesManagement = () => {
     setFormData({
       title_id: '',
       title_en: '',
+      slug: '',
       content_id: '',
       content_en: '',
       meta_title_id: '',
@@ -183,15 +187,15 @@ const PagesManagement = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-black text-gray-900">Pages Management</h2>
-            <p className="text-gray-600 mt-1">Manage static pages</p>
+            <h2 className="text-2xl font-black text-gray-900">Kelola Halaman</h2>
+            <p className="text-gray-600 mt-1">Buat halaman website dan tentukan route/URL-nya.</p>
           </div>
           <button
             onClick={() => handleOpenModal()}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg"
           >
             <FaPlus />
-            <span>Add Page</span>
+            <span>Tambah Halaman</span>
           </button>
         </div>
 
@@ -246,7 +250,7 @@ const PagesManagement = () => {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <code className="px-2 py-1 bg-gray-100 rounded text-sm">{page.slug}</code>
+                        <a href={`/${page.slug}`} target="_blank" rel="noreferrer" className="px-2 py-1 bg-gray-100 rounded text-sm text-primary-700 hover:underline">/{page.slug}</a>
                       </td>
                       <td className="px-6 py-4">
                         {page.is_published ? (
@@ -333,6 +337,23 @@ const PagesManagement = () => {
                   onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Route / URL *</label>
+                <div className="flex items-center rounded-xl border border-gray-300 px-4 focus-within:ring-2 focus-within:ring-primary-500">
+                  <span className="text-gray-400">/</span>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="halaman-baru"
+                    pattern="[A-Za-z0-9_-]+"
+                    className="w-full border-0 px-2 py-3 focus:ring-0"
+                    required
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Gunakan huruf, angka, tanda hubung, atau garis bawah. Contoh: /layanan-baru</p>
               </div>
 
               <div>

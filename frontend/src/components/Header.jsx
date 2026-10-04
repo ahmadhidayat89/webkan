@@ -16,6 +16,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [logoUrl, setLogoUrl] = useState(null);
+  const [customMenus, setCustomMenus] = useState([]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,6 +37,18 @@ const Header = () => {
         }
       })
       .catch(() => { });
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/v1/menus')
+      .then((response) => {
+        if (!response.ok) throw new Error('Unable to load navigation menus.');
+        return response.json();
+      })
+      .then((data) => {
+        if (data.success) setCustomMenus(data.data);
+      })
+      .catch((error) => console.error('Error loading navigation menus:', error));
   }, []);
 
   const handleSearchSubmit = (e) => {
@@ -160,6 +173,24 @@ const Header = () => {
   ];
 
   const activeLang = (i18n.resolvedLanguage || i18n.language || 'id').startsWith('en') ? 'en' : 'id';
+  const allNavItems = [
+    ...navItems,
+    ...customMenus
+      .filter((menu) => !menu.parent_id && menu.is_active)
+      .map((menu) => {
+        const children = (menu.children || []).map((child) => ({
+          label: activeLang === 'en' ? child.title_en || child.title_id : child.title_id,
+          href: child.url,
+          external: /^https?:\/\//i.test(child.url),
+        }));
+        return {
+          label: activeLang === 'en' ? menu.title_en || menu.title_id : menu.title_id,
+          href: menu.url,
+          external: /^https?:\/\//i.test(menu.url),
+          dropdown: children.length ? children : undefined,
+        };
+      }),
+  ];
 
   return (
     <header
@@ -269,7 +300,7 @@ const Header = () => {
                 ================================================= */}
             <nav className="hidden xl:flex items-center flex-nowrap gap-0.5 ml-auto">
 
-              {navItems.map((item, index) => (
+              {allNavItems.map((item, index) => (
                 <div
                   key={index}
                   className="relative flex-shrink-0 group"
@@ -325,6 +356,8 @@ const Header = () => {
                             <a
                               key={dropIndex}
                               href={dropItem.href}
+                              target={dropItem.external ? '_blank' : undefined}
+                              rel={dropItem.external ? 'noopener noreferrer' : undefined}
                               className="block px-6 py-3 text-sm font-medium text-gray-700 transition-all border-b hover:bg-gradient-to-r hover:from-primary-50 hover:to-primary-100 hover:text-primary-700 border-gray-50 last:border-0"
                             >
                               {dropItem.label}
@@ -429,7 +462,7 @@ const Header = () => {
 
               <div className="p-3 space-y-1 md:p-4">
 
-                {navItems.map((item, index) => (
+                {allNavItems.map((item, index) => (
                   <div key={index}>
 
                     <a
@@ -451,6 +484,8 @@ const Header = () => {
                             <a
                               key={dropIndex}
                               href={dropItem.href}
+                              target={dropItem.external ? '_blank' : undefined}
+                              rel={dropItem.external ? 'noopener noreferrer' : undefined}
                               className="block text-gray-600 hover:text-primary-600 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm"
                               onClick={() =>
                                 setIsMobileMenuOpen(false)

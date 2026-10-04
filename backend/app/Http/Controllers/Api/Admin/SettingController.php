@@ -9,6 +9,35 @@ use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
 {
+    public function socialIndex()
+    {
+        return response()->json([
+            'success' => true,
+            'data' => Setting::where('group', 'social')->orderBy('key')->get(),
+        ]);
+    }
+
+    public function socialBulkUpdate(Request $request)
+    {
+        $validated = $request->validate([
+            'settings' => 'required|array|min:1',
+            'settings.*.key' => ['required', 'string', 'max:255', 'regex:/^social_[a-z0-9_]+$/'],
+            'settings.*.value_id' => 'nullable|string|max:2048',
+            'settings.*.value_en' => 'nullable|string|max:2048',
+        ]);
+
+        foreach ($validated['settings'] as $item) {
+            $setting = Setting::where('key', $item['key'])->where('group', 'social')->firstOrFail();
+            $setting->update([
+                'value_id' => $item['value_id'] ?? null,
+                'value_en' => $item['value_en'] ?? null,
+            ]);
+            cache()->forget("setting_{$setting->key}");
+        }
+
+        return response()->json(['success' => true, 'message' => 'Social media settings updated successfully.']);
+    }
+
     /**
      * Display all settings.
      */
@@ -59,6 +88,7 @@ class SettingController extends Controller
             ['key' => $validated['key']],
             $validated
         );
+        cache()->forget("setting_{$setting->key}");
 
         // Clear cache
         cache()->forget('settings');
@@ -87,6 +117,7 @@ class SettingController extends Controller
                 'value_id' => $item['value_id'],
                 'value_en' => $item['value_en'] ?? null,
             ]);
+            cache()->forget("setting_{$item['key']}");
         }
 
         // Clear cache

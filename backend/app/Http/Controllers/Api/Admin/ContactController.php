@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ContactSubmission;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -22,9 +24,11 @@ class ContactController extends Controller
             'message' => 'required|string|max:5000',
         ]);
 
+        ContactSubmission::create($validated);
+
         try {
             // Send email notification to admin
-            $adminEmail = env('MAIL_TO_ADDRESS', 'info@kan.go.id');
+            $adminEmail = Setting::get('contact_inbox_email') ?: env('MAIL_TO_ADDRESS', 'info@kan.go.id');
             
             Mail::send('emails.contact', [
                 'name' => $validated['name'],
@@ -36,7 +40,8 @@ class ContactController extends Controller
             ], function ($message) use ($validated, $adminEmail) {
                 $message->to($adminEmail)
                         ->subject('New Contact Form Submission: ' . $validated['subject'])
-                        ->from(config('mail.from.address'), config('mail.from.name'));
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                        ->replyTo($validated['email'], $validated['name']);
             });
 
             // Optional: Store in database for records
@@ -57,7 +62,6 @@ class ContactController extends Controller
         } catch (\Exception $e) {
             Log::error('Contact form submission failed', [
                 'error' => $e->getMessage(),
-                'data' => $validated,
             ]);
 
             return response()->json([

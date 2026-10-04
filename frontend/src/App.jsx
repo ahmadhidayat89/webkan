@@ -29,6 +29,10 @@ import LegalManagement from './pages/admin/LegalManagement';
 import LegalPage from './pages/LegalPage';
 import FAQPage from './pages/FAQPage';
 import SearchResults from './pages/SearchResults';
+import UserManagement from './pages/admin/UserManagement';
+import ContactInbox from './pages/admin/ContactInbox';
+import MenuManagement from './pages/admin/MenuManagement';
+import CustomPage from './pages/CustomPage';
 
 import './App.css';
 
@@ -177,7 +181,7 @@ function App() {
         <Route
           path="/admin/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin', 'admin', 'adminsosmed', 'sosmed_admin']}>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -186,7 +190,7 @@ function App() {
         <Route
           path="/admin/sliders"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin', 'admin', 'adminsosmed', 'sosmed_admin']}>
               <SlidersManagement />
             </ProtectedRoute>
           }
@@ -195,7 +199,7 @@ function App() {
         <Route
           path="/admin/news"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin', 'admin', 'adminsosmed', 'sosmed_admin']}>
               <NewsManagement />
             </ProtectedRoute>
           }
@@ -204,7 +208,7 @@ function App() {
         <Route
           path="/admin/partners"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <PartnersManagement />
             </ProtectedRoute>
           }
@@ -212,14 +216,14 @@ function App() {
 
         <Route path="/admin/faq"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <FaqManagement />
             </ProtectedRoute>} />
 
         <Route
           path="/admin/pages"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <PagesManagement />
             </ProtectedRoute>
           }
@@ -228,7 +232,7 @@ function App() {
         <Route
           path="/admin/content"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin', 'admin', 'adminsosmed', 'sosmed_admin']}>
               <Suspense fallback={<div className="p-10 text-center text-gray-400">Memuat editor...</div>}>
                 <ContentManagement />
               </Suspense>
@@ -239,7 +243,7 @@ function App() {
         <Route
           path="/admin/directory"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <DirectoryManagement />
             </ProtectedRoute>
           }
@@ -249,7 +253,7 @@ function App() {
         <Route
           path="/admin/documents"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin']}>
               <DocumentManagement />
             </ProtectedRoute>
           }
@@ -258,7 +262,7 @@ function App() {
         <Route
           path="/admin/legal"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <LegalManagement />
             </ProtectedRoute>
           }
@@ -267,14 +271,51 @@ function App() {
         <Route
           path="/admin/settings"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['super_admin']}>
               <SettingsManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/social-media"
+          element={
+            <ProtectedRoute roles={['super_admin', 'adminsosmed', 'sosmed_admin']}>
+              <SettingsManagement socialOnly />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/menus"
+          element={
+            <ProtectedRoute roles={['super_admin', 'admin']}>
+              <MenuManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute roles={['super_admin', 'admin']}>
+              <UserManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/contact-submissions"
+          element={
+            <ProtectedRoute roles={['super_admin', 'admin']}>
+              <ContactInbox />
             </ProtectedRoute>
           }
         />
 
         {/* FAQ Route */}
         <Route path="/faq" element={<FAQPage />} />
+        <Route path="/:slug" element={<CustomPage />} />
 
       </Routes>
     </Router>

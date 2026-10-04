@@ -37,6 +37,16 @@ Proyek remake website **Komite Akreditasi Nasional (KAN)** menggunakan stack mod
 - **Mitra** — Kelola logo partner/mitra internasional
 - **Pengaturan Website** — Logo, nama, kontak, media sosial, SEO
 
+### Peran Admin
+
+| Peran | Akses |
+| ----- | ----- |
+| `super_admin` | Semua konten dan media; kelola halaman dan menu; pesan masuk, kelola user, serta seluruh pengaturan website termasuk email tujuan pesan. |
+| `admin` | Berita, konten halaman, halaman/menu, slider, direktori LPK, partners, FAQ, proses akreditasi, pesan masuk, dan kelola user. |
+| `adminsosmed` | Berita, konten halaman, slider, dan pengaturan media sosial. |
+
+Untuk menambahkan halaman publik, buat halaman dan route-nya di **Kelola Halaman**, lalu tambahkan tautan route tersebut di **Kelola Menu**.
+
 ---
 
 ## Struktur Folder

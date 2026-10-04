@@ -1,154 +1,514 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaHome, FaNewspaper, FaUsers, FaCog, FaImages, FaBars, FaTimes, FaSignOutAlt, FaChartBar, FaEdit, FaBuilding, FaFileAlt, FaQuestionCircle, FaShieldAlt  } from 'react-icons/fa';
+import {
+  FaHome,
+  FaNewspaper,
+  FaUsers,
+  FaCog,
+  FaImages,
+  FaSignOutAlt,
+  FaChartBar,
+  FaEdit,
+  FaBuilding,
+  FaFileAlt,
+  FaQuestionCircle,
+  FaShieldAlt,
+  FaChevronDown,
+  FaEnvelope,
+  FaUserCog,
+  FaLink,
+} from 'react-icons/fa';
+import { getMe, logout } from '../../services/api';
+import kanLogo from '../../assets/kan.png';
 
-const AdminLayout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const menuItems = [
-    { path: '/admin/dashboard', icon: FaChartBar, label: 'Dashboard' },
-    { path: '/admin/news', icon: FaNewspaper, label: 'Berita & Pengumuman' },
-    { path: '/admin/content', icon: FaEdit, label: 'Konten Halaman' },
-    { path: '/admin/directory', icon: FaBuilding, label: 'Direktori LPK' },
-    { path: '/admin/documents', icon: FaFileAlt, label: 'Unduh Dokumen' },
-    { path: '/admin/sliders', icon: FaImages, label: 'Sliders' },
-    { path: '/admin/partners', icon: FaUsers, label: 'Partners' },
-    { path: '/admin/faq', icon: FaQuestionCircle, label: 'FAQ' },
-    { path: '/admin/legal', icon: FaShieldAlt, label: 'Halaman Legal' },
-    { path: '/admin/settings', icon: FaCog, label: 'Settings' },
+const MENU_GROUPS = [
+  {
+    key: 'utama',
+    label: 'Utama',
+    items: [
+      {
+        path: '/admin/dashboard',
+        icon: FaChartBar,
+        label: 'Dashboard',
+        roles: ['super_admin', 'admin', 'adminsosmed', 'sosmed_admin'],
+      },
+    ],
+  },
+  {
+    key: 'konten',
+    label: 'Konten',
+    items: [
+      {
+        path: '/admin/news',
+        icon: FaNewspaper,
+        label: 'Berita & Pengumuman',
+        roles: ['super_admin', 'admin', 'adminsosmed', 'sosmed_admin'],
+      },
+      {
+        path: '/admin/content',
+        icon: FaEdit,
+        label: 'Konten Halaman',
+        roles: ['super_admin', 'admin', 'adminsosmed', 'sosmed_admin'],
+      },
+      {
+        path: '/admin/pages',
+        icon: FaFileAlt,
+        label: 'Kelola Halaman',
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        path: '/admin/menus',
+        icon: FaLink,
+        label: 'Kelola Menu',
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        path: '/admin/sliders',
+        icon: FaImages,
+        label: 'Sliders',
+        roles: ['super_admin', 'admin', 'adminsosmed', 'sosmed_admin'],
+      },
+    ],
+  },
+  {
+    key: 'media',
+    label: 'Media & Mitra',
+    items: [
+      {
+        path: '/admin/directory',
+        icon: FaBuilding,
+        label: 'Direktori LPK',
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        path: '/admin/content?section=proses',
+        icon: FaEdit,
+        label: 'Proses Akreditasi',
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        path: '/admin/documents',
+        icon: FaFileAlt,
+        label: 'Unduh Dokumen',
+        roles: ['super_admin'],
+      },
+      {
+        path: '/admin/partners',
+        icon: FaUsers,
+        label: 'Partners',
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        path: '/admin/faq',
+        icon: FaQuestionCircle,
+        label: 'FAQ',
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        path: '/admin/legal',
+        icon: FaShieldAlt,
+        label: 'Halaman Legal',
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        path: '/admin/social-media',
+        icon: FaUsers,
+        label: 'Media Sosial',
+        roles: ['super_admin', 'adminsosmed', 'sosmed_admin'],
+      },
+    ],
+  },
+  {
+    key: 'sistem',
+    label: 'Sistem',
+    items: [
+      {
+        path: '/admin/settings',
+        icon: FaCog,
+        label: 'Settings',
+        roles: ['super_admin'],
+      },
+      {
+        path: '/admin/contact-submissions',
+        icon: FaEnvelope,
+        label: 'Pesan Masuk',
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        path: '/admin/users',
+        icon: FaUserCog,
+        label: 'Kelola User',
+        roles: ['super_admin', 'admin'],
+      },
+    ],
+  },
 ];
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/v1/admin/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
+const AdminLayout = ({ children }) => {
+  const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState(null);
+  const [openGroups, setOpenGroups] = useState({
+    utama: true,
+    konten: true,
+    media: true,
+    sistem: true,
+  });
+  const [headerDropdown, setHeaderDropdown] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const normalizedRole = userRole === 'sosmed_admin' ? 'adminsosmed' : userRole;
+  const visibleMenuGroups = MENU_GROUPS
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => item.roles.includes(userRole)),
+    }))
+    .filter((group) => group.items.length > 0);
+  const itemIsActive = (item) =>
+    item.path === `${location.pathname}${location.search}` ||
+    (!item.path.includes('?') && item.path === location.pathname);
+
+  // Ambil informasi user yang sedang login
+  useEffect(() => {
+    getMe()
+      .then((res) => {
+        const user = res.data?.data;
+
+        setUserName(user?.name || '');
+        setUserRole(user?.role || null);
+      })
+      .catch((error) => {
+        console.error('Unable to load the current admin user:', error);
       });
+  }, []);
+
+  // Tutup dropdown profile ketika klik di luar
+  useEffect(() => {
+    if (!headerDropdown) return;
+
+    const closeDropdown = () => {
+      setHeaderDropdown(false);
+    };
+
+    document.addEventListener('click', closeDropdown);
+
+    return () => {
+      document.removeEventListener('click', closeDropdown);
+    };
+  }, [headerDropdown]);
+
+  // Buka group yang sedang memiliki halaman aktif
+  useEffect(() => {
+    MENU_GROUPS
+      .filter((group) => group.items.some((item) => item.roles.includes(userRole)))
+      .forEach((group) => {
+      const hasActiveItem = group.items.some(
+        (item) => itemIsActive(item)
+      );
+
+      if (hasActiveItem) {
+        setOpenGroups((prev) => ({
+          ...prev,
+          [group.key]: true,
+        }));
+      }
+      });
+  }, [location.pathname, location.search, userRole]);
+
+  const toggleGroup = (key) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+
+    setLoggingOut(true);
+
+    try {
+      await logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       navigate('/admin/login');
     }
   };
 
-  const isActive = (path) => location.pathname === path;
+  const currentLabel =
+    MENU_GROUPS
+      .flatMap((group) => group.items)
+      .find((item) => itemIsActive(item))?.label ||
+    'Dashboard';
+
+  const roleDisplay = {
+    super_admin: 'Super Admin',
+    admin: 'Admin',
+    sosmed_admin: 'Sosmed Admin',
+    adminsosmed: 'Admin Sosial Media',
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside
-        className={`${sidebarOpen ? 'w-64' : 'w-20'
-          } bg-gradient-to-b from-primary-900 via-primary-800 to-primary-900 text-white transition-all duration-300 fixed h-screen z-40 shadow-2xl`}
-      >
+
+      {/* ================= SIDEBAR ================= */}
+      <aside className="w-64 bg-gradient-to-b from-[#1e3a8a] via-[#1e40af] to-[#1e3a8a] text-white fixed h-screen z-40 shadow-2xl flex flex-col">
+
         {/* Logo */}
-        <div className="p-6 border-b border-white/10">
-          <div className="flex items-center justify-between">
-            {sidebarOpen ? (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 text-xl font-black rounded-lg bg-white/10 backdrop-blur-xl">
-                  KAN
-                </div>
-                <div>
-                  <div className="text-lg font-black">Admin Panel</div>
-                  <div className="text-xs text-white/60">Komite Akreditasi</div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center w-10 h-10 font-black rounded-lg bg-white/10">
-                K
-              </div>
-            )}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="ml-2 transition-colors text-white/80 hover:text-white"
-            >
-              {sidebarOpen ? <FaTimes size={18} /> : <FaBars size={18} />}
-            </button>
+        <div className="flex items-center flex-shrink-0 gap-3 px-4 py-4 border-b border-white/10">
+
+          <div className="flex items-center justify-center flex-shrink-0 overflow-hidden bg-white rounded-lg shadow-md w-9 h-9">
+            <img
+              src={kanLogo}
+              alt="Logo KAN"
+              className="object-contain w-full h-full p-1"
+            />
+          </div>
+
+          <div className="min-w-0">
+            <div className="text-sm font-black leading-tight">
+              Admin Panel
+            </div>
+
+            <div className="text-[10px] text-white/50 truncate">
+              Komite Akreditasi
+            </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-2 overflow-y-auto h-[calc(100vh-180px)]">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
+        <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
+
+          {visibleMenuGroups.map((group) => {
+            const isUtama = group.key === 'utama';
 
             return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${active
-                    ? 'bg-white/20 text-white shadow-lg'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                  }`}
-              >
-                <Icon className={`text-xl ${active ? 'scale-110' : 'group-hover:scale-110'} transition-transform`} />
-                {sidebarOpen && (
-                  <span className="font-semibold">{item.label}</span>
+              <div key={group.key}>
+
+                {/* Dashboard / Utama */}
+                {isUtama ? (
+                  <div>
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const active = itemIsActive(item);
+
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
+                            active
+                              ? 'bg-white/20 text-white'
+                              : 'text-white/80 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          <Icon className="flex-shrink-0 text-sm" />
+
+                          <span className="text-[11px] font-semibold flex-1">
+                            {item.label}
+                          </span>
+
+                          {active && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <>
+                    {/* Group Header */}
+                    <button
+                      onClick={() => toggleGroup(group.key)}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all"
+                    >
+                      <span className="text-[9px] font-bold tracking-widest uppercase text-white/70 flex-1 text-left">
+                        {group.label}
+                      </span>
+
+                      <FaChevronDown
+                        className={`text-white/50 text-[9px] flex-shrink-0 transition-transform duration-200 ${
+                          openGroups[group.key]
+                            ? 'rotate-180'
+                            : ''
+                        }`}
+                      />
+                    </button>
+
+                    {/* Group Items */}
+                    {openGroups[group.key] && (
+                      <div className="pl-2 mt-0.5 space-y-0.5">
+                        {group.items.map((item) => {
+                          const Icon = item.icon;
+                          const active = itemIsActive(item);
+
+                          return (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
+                                active
+                                  ? 'bg-white/20 text-white'
+                                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              <Icon className="flex-shrink-0 text-sm" />
+
+                              <span className="text-[11px] font-medium flex-1 truncate">
+                                {item.label}
+                              </span>
+
+                              {active && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />
+                              )}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
-                {active && sidebarOpen && (
-                  <span className="w-2 h-2 ml-auto rounded-full bg-accent-400 animate-pulse"></span>
-                )}
-              </Link>
+              </div>
             );
           })}
         </nav>
 
-        {/* Bottom Actions */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-primary-900/50 backdrop-blur-xl">
-          <Link
-            to="/"
-            target="_blank"
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:bg-white/10 hover:text-white transition-all mb-2 ${!sidebarOpen && 'justify-center'
-              }`}
-          >
-            <FaHome className="text-xl" />
-            {sidebarOpen && <span className="font-semibold">Lihat Website</span>}
-          </Link>
+        {/* Profile + Actions */}
+        <div className="flex-shrink-0 p-3 space-y-2 border-t border-white/10">
 
-          <button
-            onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:bg-red-500/20 hover:text-red-300 transition-all ${!sidebarOpen && 'justify-center'
-              }`}
-          >
-            <FaSignOutAlt className="text-xl" />
-            {sidebarOpen && <span className="font-semibold">Logout</span>}
-          </button>
+          {/* User Profile */}
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/10">
+            <div className="flex items-center justify-center flex-shrink-0 text-xs font-bold text-white rounded-full w-7 h-7 bg-primary-600">
+              {userName
+                ? userName.charAt(0).toUpperCase()
+                : 'A'}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-bold text-white truncate">
+                {userName || 'Admin'}
+              </div>
+
+              <div className="text-[9px] text-white/40">
+                {userRole
+                  ? roleDisplay[normalizedRole] ?? roleDisplay[userRole] ?? userRole
+                  : '...'}
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2">
+
+            <Link
+              to="/"
+              target="_blank"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-all text-[10px] font-semibold"
+            >
+              <FaHome className="text-xs" />
+              Lihat Web
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-white/60 hover:bg-red-500/20 hover:text-red-300 transition-all text-[10px] font-semibold"
+            >
+              <FaSignOutAlt className="text-xs" />
+
+              {loggingOut ? 'Keluar...' : 'Logout'}
+            </button>
+
+          </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div
-        className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'
-          } transition-all duration-300`}
-      >
+      {/* ================= MAIN CONTENT ================= */}
+      <div className="flex-1 ml-64">
+
         {/* Top Bar */}
         <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+
           <div className="flex items-center justify-between px-6 py-4">
+
             <div>
-              <h1 className="text-2xl font-black text-gray-900">
-                {menuItems.find(item => item.path === location.pathname)?.label || 'Dashboard'}
+              <h1 className="text-xl font-black text-gray-900">
+                {currentLabel}
               </h1>
-              <p className="mt-1 text-sm text-gray-500">Manage your content and settings</p>
+
+              <p className="text-xs text-gray-400 mt-0.5">
+                Panel administrasi KAN
+              </p>
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* User Info */}
-              <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-xl">
-                <div className="flex items-center justify-center w-10 h-10 font-bold text-white rounded-full bg-gradient-to-br from-primary-600 to-primary-700">
-                  A
+            {/* User Dropdown */}
+            <div className="relative">
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setHeaderDropdown((prev) => !prev);
+                }}
+                className="flex items-center gap-2.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all"
+              >
+                <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 text-xs font-bold text-white rounded-full bg-gradient-to-br from-primary-600 to-primary-700">
+                  {userName
+                    ? userName.charAt(0).toUpperCase()
+                    : 'A'}
                 </div>
-                <div>
-                  <div className="text-sm font-bold text-gray-900">Admin</div>
-                  <div className="text-xs text-gray-500">Super Admin</div>
+
+                <div className="min-w-0 text-left">
+                  <div className="text-xs font-bold text-gray-900 truncate max-w-[120px]">
+                    {userName || 'Admin'}
+                  </div>
+
+                  <div className="text-[10px] text-gray-400">
+                    {userRole
+                      ? roleDisplay[normalizedRole] ?? roleDisplay[userRole] ?? userRole
+                      : '...'}
+                  </div>
                 </div>
-              </div>
+
+                <FaChevronDown
+                  className={`text-gray-400 text-[9px] flex-shrink-0 transition-transform duration-200 ${
+                    headerDropdown ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {/* Dropdown */}
+              {headerDropdown && (
+                <div className="absolute right-0 z-50 mt-2 overflow-hidden bg-white border border-gray-100 shadow-lg top-full w-44 rounded-xl">
+
+                  <Link
+                    to="/"
+                    target="_blank"
+                    onClick={() => setHeaderDropdown(false)}
+                    className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <FaHome className="text-xs text-gray-400" />
+                    Lihat Website
+                  </Link>
+
+                  <div className="mx-3 border-t border-gray-100" />
+
+                  <button
+                    onClick={() => {
+                      setHeaderDropdown(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <FaSignOutAlt className="text-xs" />
+
+                    {loggingOut ? 'Keluar...' : 'Logout'}
+                  </button>
+
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -157,6 +517,7 @@ const AdminLayout = ({ children }) => {
         <main className="p-6">
           {children}
         </main>
+
       </div>
     </div>
   );
