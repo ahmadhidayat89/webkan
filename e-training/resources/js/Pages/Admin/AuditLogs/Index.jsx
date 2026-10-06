@@ -88,7 +88,7 @@ export default function Index({ auth, logs, filters }) {
                                 >
                                     <option value="">Semua Peran</option>
                                     <option value="admin">Admin</option>
-                                    <option value="pelajar">Pelajar</option>
+                                    <option value="pelajar">Peserta</option>
                                 </select>
                             </div>
                             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
@@ -157,7 +157,7 @@ export default function Index({ auth, logs, filters }) {
                                                             <div className="flex items-center gap-1.5">
                                                                 <p className="text-gray-900 font-medium text-sm">{log.user.name}</p>
                                                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${log.user.role === 'admin' ? 'bg-gold-100 text-gold-700' : 'bg-navy-50 text-navy-600'}`}>
-                                                                    {log.user.role === 'admin' ? 'Admin' : 'Pelajar'}
+                                                                    {log.user.role === 'admin' ? 'Admin' : 'Peserta'}
                                                                 </span>
                                                             </div>
                                                             <p className="text-xs text-gray-500">{log.user.email}</p>

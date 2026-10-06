@@ -61,7 +61,7 @@ class UserController extends Controller
             'phone'        => $request->phone,
         ]);
 
-        $roleLabel = $request->role === 'admin' ? 'Admin' : 'Pelajar';
+        $roleLabel = $request->role === 'admin' ? 'Admin' : 'Peserta';
         return back()->with('success', "Akun {$roleLabel} berhasil dibuat.");
     }
 

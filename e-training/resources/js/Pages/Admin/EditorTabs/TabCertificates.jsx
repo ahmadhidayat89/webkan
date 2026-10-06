@@ -154,13 +154,13 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                 </div>
             </div>
 
-            {/* Tabel Pelajar */}
+            {/* Tabel Peserta */}
             <div className="card overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-medium">
                             <tr>
-                                <th className="px-6 py-4">Nama Pelajar</th>
+                                <th className="px-6 py-4">Nama Peserta</th>
                                 <th className="px-6 py-4">Status & Progress</th>
                                 <th className="px-6 py-4">No. Sertifikat</th>
                                 <th className="px-6 py-4 text-right">Aksi</th>
@@ -243,7 +243,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                             {enrolledStudents.length === 0 && (
                                 <tr>
                                     <td colSpan="4" className="px-6 py-8 text-center text-gray-500 text-sm">
-                                        Belum ada pelajar yang terdaftar di pelatihan ini.
+                                        Belum ada peserta yang terdaftar di pelatihan ini.
                                     </td>
                                 </tr>
                             )}

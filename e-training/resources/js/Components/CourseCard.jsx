@@ -130,7 +130,7 @@ export default function CourseCard({ course, role = 'pelajar', index = 0 }) {
                     <div className="flex items-center gap-3">
                         <span className="text-[11px] text-gray-500 flex items-center gap-1">
                             <Users className="w-3 h-3" />
-                            {course.enrolled_students || 0} pelajar
+                            {course.enrolled_students || 0} peserta
                         </span>
                         <span className="text-[11px] text-gray-500 flex items-center gap-1">
                             <Star className="w-3 h-3 text-gold-500" />

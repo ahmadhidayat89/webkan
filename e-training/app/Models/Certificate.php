@@ -35,7 +35,7 @@ class Certificate extends Model
     }
 
     /**
-     * Pelajar pemilik sertifikat.
+     * Peserta pemilik sertifikat.
      */
     public function user(): BelongsTo
     {

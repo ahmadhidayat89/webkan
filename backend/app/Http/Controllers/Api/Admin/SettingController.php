@@ -27,13 +27,21 @@ class SettingController extends Controller
         ]);
 
         foreach ($validated['settings'] as $item) {
-            $setting = Setting::where('key', $item['key'])->where('group', 'social')->firstOrFail();
-            $setting->update([
-                'value_id' => $item['value_id'] ?? null,
-                'value_en' => $item['value_en'] ?? null,
-            ]);
+            // updateOrCreate: platform baru (TikTok, LinkedIn) otomatis dibuat saat pertama disimpan
+            $setting = Setting::updateOrCreate(
+                ['key' => $item['key']],
+                [
+                    'group' => 'social',
+                    'type' => 'text',
+                    'value_id' => $item['value_id'] ?? null,
+                    'value_en' => $item['value_en'] ?? null,
+                ]
+            );
             cache()->forget("setting_{$setting->key}");
         }
+
+        // Clear cache
+        cache()->forget('settings');
 
         return response()->json(['success' => true, 'message' => 'Social media settings updated successfully.']);
     }

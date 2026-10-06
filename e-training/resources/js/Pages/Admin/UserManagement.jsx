@@ -9,7 +9,7 @@ import {
 
 const ROLE_CONFIG = {
     admin:   { label: 'Admin',   icon: Shield,        bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
-    pelajar: { label: 'Pelajar', icon: GraduationCap, bg: 'bg-blue-100',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
+    pelajar: { label: 'Peserta', icon: GraduationCap, bg: 'bg-blue-100',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
 };
 
 function RoleBadge({ role }) {
@@ -247,7 +247,7 @@ export default function UserManagement({ users = [], flash = {} }) {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Kelola User</h1>
-                        <p className="text-sm text-gray-500 mt-1">Kelola semua akun admin dan pelajar di platform E-Training KAN</p>
+                        <p className="text-sm text-gray-500 mt-1">Kelola semua akun admin dan peserta di platform E-Training KAN</p>
                     </div>
                     <button onClick={() => setShowAddModal(true)}
                         className="flex items-center gap-2 px-5 py-2.5 bg-navy-600 hover:bg-navy-700 rounded-xl text-sm font-semibold text-white transition-all shadow-sm w-fit">
@@ -273,7 +273,7 @@ export default function UserManagement({ users = [], flash = {} }) {
                     {[
                         { role: 'all',    label: 'Semua',   count: users.length,         icon: Users,        color: 'text-gray-600',   bg: 'bg-gray-50'   },
                         { role: 'admin',  label: 'Admin',   count: countByRole('admin'),  icon: Shield,       color: 'text-purple-600', bg: 'bg-purple-50' },
-                        { role: 'pelajar',label: 'Pelajar', count: countByRole('pelajar'),icon: GraduationCap,color: 'text-blue-600',   bg: 'bg-blue-50'   },
+                        { role: 'pelajar',label: 'Peserta', count: countByRole('pelajar'),icon: GraduationCap,color: 'text-blue-600',   bg: 'bg-blue-50'   },
                     ].map(({ role, label, count, icon: Icon, color, bg }) => (
                         <button key={role} onClick={() => setFilterRole(role)}
                             className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left

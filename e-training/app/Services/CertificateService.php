@@ -51,8 +51,8 @@ class CertificateService
             'qr_is_svg'          => $qrIsSvg,
             'bg_base64'          => $bgBase64,
             'sig_base64'         => $sigBase64,
-            'signer_name'        => $course->instructor->name ?? 'Kepala KAN',
-            'signer_role'        => 'Kepala Pusat Pengembangan SDM',
+            'signer_name'        => config('app.certificate_signer_name'),
+            'signer_role'        => config('app.certificate_signer_title'),
         ])->render();
 
         // 5. Generate PDF via DOMPDF
@@ -121,8 +121,10 @@ class CertificateService
             return null;
         }
 
-        $raw  = Storage::disk('public')->get($storagePath);
-        $mime = Storage::disk('public')->mimeType($storagePath);
+        $raw = Storage::disk('public')->get($storagePath);
+
+        $fullPath = Storage::disk('public')->path($storagePath);
+        $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
 
         return 'data:' . $mime . ';base64,' . base64_encode($raw);
     }

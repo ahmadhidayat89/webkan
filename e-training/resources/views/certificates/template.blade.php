@@ -212,7 +212,7 @@
         {{-- Diberikan kepada --}}
         <div class="given-to-label">Diberikan kepada:</div>
 
-        {{-- Nama Pelajar (besar & emas, underline via CSS) --}}
+        {{-- Nama Peserta (besar & emas, underline via CSS) --}}
         <div class="student-name">{{ $student_name }}</div>
 
         {{-- Teks penyelesaian --}}

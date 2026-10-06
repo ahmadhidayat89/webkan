@@ -19,7 +19,7 @@ import {
     Wifi,
 } from 'lucide-react';
 
-// ─── Dashboard Pelajar ────────────────────────────────────────────────────────
+// ─── Dashboard Peserta ────────────────────────────────────────────────────────
 function PelajarDashboard() {
     const { auth, upcomingEvents = [], calendarEvents = [], enrolledCourses = [], availableCourses = [], studentStats = {}, onlineUsers = [] } = usePage().props;
     const user = auth?.user;
@@ -36,7 +36,7 @@ function PelajarDashboard() {
                 <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl sm:text-3xl font-bold mb-1">
-                            Selamat Datang, {user?.name?.split(' ')[0] || 'Pelajar'}! 👋
+                            Selamat Datang, {user?.name?.split(' ')[0] || 'Peserta'}! 👋
                         </h1>
                         <p className="text-navy-200 text-sm sm:text-base">
                             Lanjutkan perjalanan belajar Anda di platform E-Training KAN.
@@ -84,12 +84,12 @@ function PelajarDashboard() {
                     <EventCalendar events={calendarEvents} />
                     <UpcomingEvents events={upcomingEvents} />
 
-                    {/* Pelajar Online */}
+                    {/* Peserta Online */}
                     {onlineUsers.length > 0 && (
                         <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <Wifi className="w-4 h-4 text-emerald-500" />
-                                <h3 className="text-sm font-bold text-gray-900">Pelajar Online</h3>
+                                <h3 className="text-sm font-bold text-gray-900">Peserta Online</h3>
                                 <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full ml-auto">
                                     {onlineUsers.length} aktif
                                 </span>
@@ -106,7 +106,7 @@ function PelajarDashboard() {
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-semibold text-gray-800 truncate">{u.name}</p>
                                             <p className="text-[10px] text-gray-400 truncate">
-                                                {u.username ? `@${u.username}` : u.organization || 'Pelajar'}
+                                                {u.username ? `@${u.username}` : u.organization || 'Peserta'}
                                             </p>
                                         </div>
                                         <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full whitespace-nowrap">Online</span>
@@ -146,7 +146,7 @@ function AdminDashboard() {
                             Halo, {user?.name?.split(' ')[0] || 'Admin'}!
                         </h1>
                         <p className="text-gray-300 text-sm">
-                            Kelola konten pelatihan dan pantau perkembangan pelajar.
+                            Kelola konten pelatihan dan pantau perkembangan peserta.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -164,7 +164,7 @@ function AdminDashboard() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-                <StatsCard icon={Users} label="Total Pelajar" value={(stats.totalStudents || 0).toLocaleString()} gradient="from-blue-500 to-blue-700" index={0} />
+                <StatsCard icon={Users} label="Total Peserta" value={(stats.totalStudents || 0).toLocaleString()} gradient="from-blue-500 to-blue-700" index={0} />
                 <StatsCard icon={BookOpen} label="Pelatihan Aktif" value={stats.activeCourses || 0} gradient="from-navy-500 to-navy-700" index={1} />
                 <StatsCard icon={TrendingUp} label="Penyelesaian" value={`${stats.completionRate || 0}%`} gradient="from-green-500 to-green-700" index={2} />
                 <StatsCard icon={Award} label="Sertifikat" value={(stats.totalCertificates || 0).toLocaleString()} gradient="from-gold-500 to-gold-700" index={3} />
@@ -214,7 +214,7 @@ function AdminDashboard() {
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-semibold text-gray-800 truncate">{u.name}</p>
                                             <p className="text-[10px] text-gray-400 truncate">
-                                                {u.username ? `@${u.username}` : u.organization || 'Pelajar'}
+                                                {u.username ? `@${u.username}` : u.organization || 'Peserta'}
                                             </p>
                                         </div>
                                         <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full whitespace-nowrap">Online</span>
@@ -235,7 +235,7 @@ function AdminDashboard() {
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-gray-900">Log Aktivitas</p>
-                                <p className="text-xs text-gray-400">Lihat semua aktivitas pelajar</p>
+                                <p className="text-xs text-gray-400">Lihat semua aktivitas peserta</p>
                             </div>
                         </div>
                         <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-navy-500 group-hover:translate-x-0.5 transition-all" />

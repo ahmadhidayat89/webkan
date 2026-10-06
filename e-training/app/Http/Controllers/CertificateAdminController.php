@@ -38,7 +38,9 @@ class CertificateAdminController extends Controller
         // Buat nomor sertifikat jika belum ada
         if (! $cert->certificate_number) {
             $courseCode = strtoupper(Str::limit(
-                preg_replace('/[^A-Za-z0-9]/', '', $course->slug), 8, ''
+                preg_replace('/[^A-Za-z0-9]/', '', $course->slug),
+                8,
+                ''
             ));
             $count = Certificate::whereYear('issued_at', now()->year)->count() + 1;
             $cert->certificate_number = sprintf(
@@ -119,9 +121,14 @@ class CertificateAdminController extends Controller
             abort(404, 'File sertifikat tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download(
-            $certificate->file_path,
-            "Sertifikat-{$certificate->certificate_number}.pdf"
+        $path = Storage::disk('public')->path($certificate->file_path);
+
+        return response()->download(
+            $path,
+            "Sertifikat-{$certificate->certificate_number}.pdf",
+            [
+                'Content-Type' => 'application/pdf',
+            ]
         );
     }
 
@@ -152,8 +159,8 @@ class CertificateAdminController extends Controller
             'qr_is_svg'          => str_starts_with($qrBase64, 'data:image/svg'),
             'bg_base64'          => $bgBase64,
             'sig_base64'         => $sigBase64,
-            'signer_name'        => $course->instructor->name ?? 'Kepala KAN',
-            'signer_role'        => 'Kepala Pusat Pengembangan SDM',
+            'signer_name'        => config('app.certificate_signer_name'),
+            'signer_role'        => config('app.certificate_signer_title'),
         ]);
     }
 
@@ -168,7 +175,7 @@ class CertificateAdminController extends Controller
         $sigBase64 = $this->certService->imageToBase64($course->certificate_signature);
 
         return view('certificates.template', [
-            'student_name'       => 'Nama Pelajar Contoh',
+            'student_name'       => 'Nama Peserta Contoh',
             'student_org'        => 'Instansi / Organisasi',
             'course_title'       => $course->title,
             'course_level'       => ucfirst($course->level ?? 'Umum'),
@@ -180,8 +187,8 @@ class CertificateAdminController extends Controller
             'qr_is_svg'          => str_starts_with($qrBase64, 'data:image/svg'),
             'bg_base64'          => $bgBase64,
             'sig_base64'         => $sigBase64,
-            'signer_name'        => $course->instructor->name ?? 'Kepala KAN',
-            'signer_role'        => 'Kepala Pusat Pengembangan SDM',
+            'signer_name'        => config('app.certificate_signer_name'),
+            'signer_role'        => config('app.certificate_signer_title'),
         ]);
     }
 }

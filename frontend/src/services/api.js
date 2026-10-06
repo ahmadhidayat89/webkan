@@ -88,4 +88,27 @@ export const reorderSliders = (sliders) => {
   return api.post('/admin/sliders/reorder', { sliders });
 };
 
+// ─── Accreditation Steps (Public) ────────────────────────────────────────────
+export const getAccreditationSteps = () =>
+  api.get('/accreditation-steps');
+
+// ─── Accreditation Steps (Admin) ─────────────────────────────────────────────
+export const getAdminAccreditationSteps = () =>
+  api.get('/admin/accreditation-steps');
+
+export const createAccreditationStep = (data) =>
+  api.post('/admin/accreditation-steps', data);
+
+export const updateAccreditationStep = (id, data) =>
+  api.put(`/admin/accreditation-steps/${id}`, data);
+
+export const deleteAccreditationStep = (id) =>
+  api.delete(`/admin/accreditation-steps/${id}`);
+
+export const moveAccreditationStepUp = (id) =>
+  api.post(`/admin/accreditation-steps/${id}/move-up`);
+
+export const moveAccreditationStepDown = (id) =>
+  api.post(`/admin/accreditation-steps/${id}/move-down`);
+
 export default api;

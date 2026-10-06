@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\Admin\AccreditationStepController;
 use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
 use App\Http\Controllers\Api\Admin\ContactSubmissionController;
 use App\Http\Controllers\Api\CustomPageController;
@@ -50,7 +51,14 @@ Route::prefix('v1')->group(function () {
 
     // FAQ (public)
     Route::get('/faqs', [FaqController::class, 'index']);
+
+    // Accreditation Steps (public)
+    Route::get('/accreditation-steps', [AccreditationStepController::class, 'publicIndex']);
+
+    // Menu (public)
     Route::get('/menus', [AdminMenuController::class, 'publicIndex']);
+
+    // Custom Pages
     Route::get('/pages/{slug}', [CustomPageController::class, 'show']);
 
     // Auto-translate plain UI text for EN toggle
@@ -70,10 +78,10 @@ Route::prefix('v1')->group(function () {
     // Daftar tahun Survei Kepuasan Pelanggan (public)
     Route::get('/survey-years', [PageContentController::class, 'surveyYears']);
 
-    // Daftar sub-halaman Laboratorium (public)
+    // Daftar sub-halaman Laboratorium
     Route::get('/layanan-services/{category}', [PageContentController::class, 'subPages']);
 
-    // Daftar sub-halaman Laboratorium (public)
+    // Daftar sub-halaman Laboratorium
     Route::get('/lab-subpages', [PageContentController::class, 'labSubPages']);
 
     // Documents (public)
@@ -90,6 +98,7 @@ Route::prefix('v1')->group(function () {
 
 // Protected routes (Admin)
 Route::prefix('v1/admin')->middleware('auth:sanctum')->group(function () {
+
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -114,6 +123,7 @@ Route::prefix('v1/admin')->middleware('auth:sanctum')->group(function () {
     // Content and media available to admins and the super admin.
     Route::middleware('admin.role:super_admin,admin')->group(function () {
         Route::apiResource('menus', AdminMenuController::class)->except(['show']);
+
         Route::apiResource('pages', PageController::class);
         Route::post('pages/{id}/toggle-publish', [PageController::class, 'togglePublish']);
 
@@ -123,16 +133,29 @@ Route::prefix('v1/admin')->middleware('auth:sanctum')->group(function () {
 
         Route::apiResource('faqs', AdminFaqController::class);
         Route::post('faqs/reorder', [AdminFaqController::class, 'reorder']);
+        Route::post('faqs/{id}/toggle-active', [AdminFaqController::class, 'toggleActive']);
+        Route::post('faqs/{id}/toggle-show-home', [AdminFaqController::class, 'toggleShowHome']);
+
+        // Accreditation Steps Management
+        Route::get('accreditation-steps', [AccreditationStepController::class, 'index']);
+        Route::post('accreditation-steps', [AccreditationStepController::class, 'store']);
+        Route::put('accreditation-steps/{id}', [AccreditationStepController::class, 'update']);
+        Route::delete('accreditation-steps/{id}', [AccreditationStepController::class, 'destroy']);
+        Route::post('accreditation-steps/{id}/move-up', [AccreditationStepController::class, 'moveUp']);
+        Route::post('accreditation-steps/{id}/move-down', [AccreditationStepController::class, 'moveDown']);
 
         Route::apiResource('directory', AccreditedOrganizationController::class);
         Route::get('directory-types', [AccreditedOrganizationController::class, 'types']);
 
         Route::apiResource('contact-submissions', ContactSubmissionController::class)
             ->only(['index', 'update', 'destroy']);
-        Route::apiResource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        Route::apiResource('users', UserController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
     });
 
-    // Social media settings are shared with adminsosmed; website settings remain super-admin only.
+    // Social media settings are shared with adminsosmed;
+    // website settings remain super-admin only.
     Route::middleware('admin.role:super_admin,adminsosmed')->group(function () {
         Route::get('social-settings', [AdminSettingController::class, 'socialIndex']);
         Route::post('social-settings/bulk-update', [AdminSettingController::class, 'socialBulkUpdate']);

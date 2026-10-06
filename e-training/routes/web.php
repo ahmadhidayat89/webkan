@@ -47,11 +47,11 @@ Route::middleware(['auth'])->prefix('lessons/{lesson}/discussions')->name('discu
     Route::delete('/{discussion}',[DiscussionController::class, 'destroy'])->name('destroy');
 });
 
-// Pelajar: self-enroll via referral code
+// Peserta: self-enroll via referral code
 Route::post('/courses/join', [CourseEnrollmentController::class, 'joinByReferral'])
     ->middleware(['auth'])->name('courses.join');
 
-// Pelajar: Sertifikat
+// Peserta: Sertifikat
 Route::get('/certificates', [\App\Http\Controllers\CertificateController::class, 'index'])
     ->middleware(['auth'])->name('certificates.index');
 Route::get('/certificates/{id}/download', [\App\Http\Controllers\CertificateController::class, 'download'])

@@ -4,6 +4,8 @@ import {
   FaTwitter,
   FaInstagram,
   FaYoutube,
+  FaTiktok,
+  FaLinkedinIn,
   FaPhone,
   FaEnvelope,
   FaMapMarkerAlt,
@@ -12,8 +14,18 @@ import {
 import logoKan from '../assets/kan.png';
 import { Link } from 'react-router-dom';
 
+const SOCIAL_PLATFORMS = [
+  { key: 'social_facebook',  icon: FaFacebook,   label: 'Facebook',  hover: 'hover:bg-blue-600' },
+  { key: 'social_twitter',   icon: FaTwitter,    label: 'Twitter',   hover: 'hover:bg-sky-500' },
+  { key: 'social_instagram', icon: FaInstagram,  label: 'Instagram', hover: 'hover:bg-pink-600' },
+  { key: 'social_youtube',   icon: FaYoutube,    label: 'YouTube',   hover: 'hover:bg-red-600' },
+  { key: 'social_tiktok',    icon: FaTiktok,     label: 'TikTok',    hover: 'hover:bg-gray-900' },
+  { key: 'social_linkedin',  icon: FaLinkedinIn, label: 'LinkedIn',  hover: 'hover:bg-blue-700' },
+];
+
 const Footer = () => {
   const [logoUrl, setLogoUrl] = useState(null);
+  const [socialLinks, setSocialLinks] = useState({});
 
   useEffect(() => {
     fetch('/api/v1/settings?group=general')
@@ -21,6 +33,15 @@ const Footer = () => {
       .then(data => {
         if (data.success && data.data?.site_logo) {
           setLogoUrl(data.data.site_logo);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/v1/settings?group=social')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setSocialLinks(prev => ({ ...prev, ...data.data }));
         }
       })
       .catch(() => {});
@@ -62,59 +83,26 @@ const Footer = () => {
               internasional untuk mendukung daya saing nasional.
             </p>
 
-            {/* Social Media */}
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-                className="relative flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg group bg-white/10 backdrop-blur-sm hover:bg-primary-600"
-              >
-                <FaFacebook
-                  size={18}
-                  className="transition-transform group-hover:scale-110"
-                />
-              </a>
-
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Twitter"
-                className="relative flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg group bg-white/10 backdrop-blur-sm hover:bg-primary-600"
-              >
-                <FaTwitter
-                  size={18}
-                  className="transition-transform group-hover:scale-110"
-                />
-              </a>
-
-              <a
-                href="https://instagram.com/kan_akreditasi"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-                className="relative flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg group bg-white/10 backdrop-blur-sm hover:bg-primary-600"
-              >
-                <FaInstagram
-                  size={18}
-                  className="transition-transform group-hover:scale-110"
-                />
-              </a>
-
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="YouTube"
-                className="relative flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg group bg-white/10 backdrop-blur-sm hover:bg-primary-600"
-              >
-                <FaYoutube
-                  size={18}
-                  className="transition-transform group-hover:scale-110"
-                />
-              </a>
+            {/* Social Media — hanya tampil jika URL diisi di admin */}
+            <div className="grid grid-cols-3 gap-2 w-fit">
+              {SOCIAL_PLATFORMS.filter(p => socialLinks[p.key]?.trim()).map(p => {
+                const Icon = p.icon;
+                return (
+                  <a
+                    key={p.key}
+                    href={socialLinks[p.key]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={p.label}
+                    className={`relative flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg group bg-white/10 backdrop-blur-sm ${p.hover}`}
+                  >
+                    <Icon
+                      size={18}
+                      className="transition-transform group-hover:scale-110"
+                    />
+                  </a>
+                );
+              })}
             </div>
           </div>
 

@@ -33,7 +33,7 @@ class CourseController extends Controller
                 'thumbnail'        => $c->thumbnail ? Storage::url($c->thumbnail) : null,
                 'category'         => $c->category?->name,
                 'modules_count'    => $c->modules_count,
-                'enrollments_count'=> $c->enrollments_count,
+                'enrollments_count' => $c->enrollments_count,
                 'created_at'       => $c->created_at->format('d M Y'),
                 'referral_code'    => $c->referral_code,
             ]);
@@ -96,7 +96,7 @@ class CourseController extends Controller
             'title'       => $m->title,
             'description' => $m->description,
             'sort_order'  => $m->sort_order,
-            'is_published'=> $m->is_published,
+            'is_published' => $m->is_published,
             'lessons'     => $m->lessons->map(fn($l) => [
                 'id'               => $l->id,
                 'title'            => $l->title,
@@ -104,6 +104,9 @@ class CourseController extends Controller
                 'description'      => $l->description,
                 'video_url'        => $l->video_url,
                 'duration_minutes' => $l->duration_minutes,
+                'start_datetime'   => $l->start_datetime
+                    ? \Carbon\Carbon::parse($l->start_datetime)->format('Y-m-d\TH:i')
+                    : null,
                 'sort_order'       => $l->sort_order,
                 'is_published'     => $l->is_published,
                 'files'            => $l->files->map(fn($f) => [
@@ -119,7 +122,7 @@ class CourseController extends Controller
                     'passing_score'       => $l->quiz->passing_score,
                     'max_attempts'        => $l->quiz->max_attempts,
                     'shuffle_questions'   => $l->quiz->shuffle_questions,
-                    'show_correct_answers'=> $l->quiz->show_correct_answers,
+                    'show_correct_answers' => $l->quiz->show_correct_answers,
                     'deadline_at'         => $l->quiz->deadline_at?->format('Y-m-d\TH:i'),
                     'quiz_mode'           => $l->quiz->quiz_mode,
                     'questions'           => $l->quiz->questions->map(fn($q) => [
@@ -132,7 +135,7 @@ class CourseController extends Controller
                         'image_path'  => $q->image_path ? Storage::url($q->image_path) : null,
                         'options'     => $q->options->map(fn($o) => [
                             'id'         => $o->id,
-                            'option_text'=> $o->option_text,
+                            'option_text' => $o->option_text,
                             'is_correct' => $o->is_correct,
                             'sort_order' => $o->sort_order,
                         ])->values(),
@@ -148,7 +151,7 @@ class CourseController extends Controller
             'name'            => $e->user->name,
             'email'           => $e->user->email,
             'organization'    => $e->user->organization,
-            'progress_percent'=> $e->progress_percent,
+            'progress_percent' => $e->progress_percent,
             'status'          => $e->status,
             'enrolled_at'     => $e->enrolled_at->format('d M Y'),
         ])->values();
@@ -180,6 +183,7 @@ class CourseController extends Controller
                 'thumbnail'                    => $course->thumbnail ? Storage::url($course->thumbnail) : null,
                 'level'                        => $course->level,
                 'duration_hours'               => $course->duration_hours,
+                'deadline_at'                  => $course->deadline_at?->format('Y-m-d\TH:i'),
                 'status'                       => $course->status,
                 'category_id'                  => $course->category_id,
                 'referral_code'                => $course->referral_code,
@@ -207,6 +211,7 @@ class CourseController extends Controller
             'level'             => 'required|in:pemula,menengah,lanjutan',
             'duration_hours'    => 'nullable|integer|min:1',
             'status'            => 'required|in:draft,published',
+            'deadline_at'       => 'nullable|date',
         ]);
 
         // Handle thumbnail upload

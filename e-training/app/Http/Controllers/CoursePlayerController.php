@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 
@@ -29,7 +30,10 @@ class CoursePlayerController extends Controller
                 $query->orderBy('sort_order', 'asc');
             },
             'modules.lessons.quiz.attempts' => function ($query) {
-                $query->where('user_id', auth()->id())->orderBy('created_at', 'desc');
+                // Terbaru dulu (attempts[0] dipakai frontend sebagai attempt terakhir)
+                $query->where('user_id', auth()->id())
+                    ->orderBy('created_at', 'desc')
+                    ->orderBy('id', 'desc');
             }
         ])->findOrFail($id);
 
@@ -49,6 +53,8 @@ class CoursePlayerController extends Controller
             'title' => $course->title,
             'description' => $course->description,
             'certificate_id' => $certificate ? $certificate->id : null,
+            'isExpired' => $course->isExpired(),
+            'deadline_at' => $course->deadline_at?->format('d M Y, H:i'),
             'modules' => $course->modules->map(function ($module) use ($lessonProgresses) {
                 return [
                     'id' => $module->id,
@@ -88,11 +94,12 @@ class CoursePlayerController extends Controller
                                         'points' => $q->points,
                                         'explanation' => $q->explanation,
                                         'image_path' => $q->image_path ? Storage::url($q->image_path) : null,
+                                        // 'is_correct' sengaja TIDAK dikirim ke browser agar kunci jawaban
+                                        // tidak bisa dilihat peserta. Penilaian dilakukan di server.
                                         'options' => $q->options->map(function ($opt) {
                                             return [
                                                 'id' => $opt->id,
                                                 'option_text' => $opt->option_text,
-                                                'is_correct' => (bool) $opt->is_correct,
                                             ];
                                         })->values(),
                                     ];
@@ -128,85 +135,106 @@ class CoursePlayerController extends Controller
             'answers.*' => 'nullable', // answer can be string (essay) or int (option ID)
         ]);
 
-        $quiz = \App\Models\Quiz::with('questions.options')->findOrFail($quizId);
         $user = auth()->user();
 
-        // Cek limit attempts jika ada
-        if ($quiz->max_attempts) {
-            $attemptsCount = \App\Models\QuizAttempt::where('user_id', $user->id)
-                ->where('quiz_id', $quiz->id)
-                ->count();
-            if ($attemptsCount >= $quiz->max_attempts) {
-                return back()->withErrors(['message' => 'Anda telah mencapai batas maksimum percobaan untuk kuis ini.']);
-            }
-        }
-
-        $totalQuestions = $quiz->questions->count();
-        $correctCount = 0;
-        $totalScore = 0;
-
-        // Siapkan data attempt (akan diupdate scornya nanti)
-        $attempt = \App\Models\QuizAttempt::create([
-            'user_id' => $user->id,
-            'quiz_id' => $quiz->id,
-            'score' => 0,
-            'correct_answers' => 0,
-            'total_questions' => $totalQuestions,
-            'is_passed' => null, // Default
-            'started_at' => now(), // TODO: Ambil dari state jika ada tracking durasi real
-            'finished_at' => now(),
-        ]);
-
-        foreach ($quiz->questions as $question) {
-            $userAnswer = $validated['answers'][$question->id] ?? null;
-            $isCorrect = false;
-            $selectedOptionId = null;
-            $essayAnswer = null;
-
-            if ($question->type === 'multiple_choice') {
-                $selectedOptionId = $userAnswer;
-                $correctOption = $question->options->firstWhere('is_correct', true);
-                if ($correctOption && $correctOption->id == $selectedOptionId) {
-                    $isCorrect = true;
-                    $correctCount++;
-                }
-            } else {
-                $essayAnswer = $userAnswer;
-            }
-
-            \App\Models\QuizAttemptAnswer::create([
-                'attempt_id' => $attempt->id,
-                'question_id' => $question->id,
-                'selected_option_id' => $selectedOptionId,
-                'is_correct' => $isCorrect,
-                'essay_answer' => $essayAnswer,
+        // Kursus sudah lewat deadline: peserta hanya boleh melihat
+        $course = Course::findOrFail($courseId);
+        if ($course->isExpired()) {
+            return back()->withErrors([
+                'message' => 'Masa kursus telah berakhir. Kamu hanya dapat melihat materi.',
             ]);
         }
 
-        // Kalkulasi nilai
-        if ($totalQuestions > 0) {
-            $totalScore = round(($correctCount / $totalQuestions) * 100);
-        }
+        // Seluruh proses dalam satu transaksi + lock pada baris kuis,
+        // sehingga cek batas percobaan dan pembuatan attempt tidak bisa
+        // dijalankan bersamaan (mencegah submit ganda).
+        $limitError = DB::transaction(function () use ($validated, $user, $quizId, $courseId) {
+            $quiz = \App\Models\Quiz::with('questions.options')
+                ->lockForUpdate()
+                ->findOrFail($quizId);
 
-        // Update score attempt
-        $attempt->score = $totalScore;
-        $attempt->correct_answers = $correctCount;
-        
-        if ($quiz->quiz_mode === 'essay' || $quiz->quiz_mode === 'custom') {
-            $attempt->is_passed = null; // Menunggu penilaian instruktur
-        } else {
-            $attempt->is_passed = $totalScore >= $quiz->passing_score;
-        }
-        
-        $attempt->save();
+            // Cek limit attempts jika ada
+            if ($quiz->max_attempts) {
+                $attemptsCount = \App\Models\QuizAttempt::where('user_id', $user->id)
+                    ->where('quiz_id', $quiz->id)
+                    ->count();
+                if ($attemptsCount >= $quiz->max_attempts) {
+                    return 'Anda telah mencapai batas maksimum percobaan untuk kuis ini.';
+                }
+            }
 
-        // Tandai lesson quiz sebagai selesai saat submit (baik lulus, gagal, atau pending essay)
-        if ($quiz->lesson_id) {
-            \App\Models\LessonProgress::updateOrCreate(
-                ['user_id' => $user->id, 'lesson_id' => $quiz->lesson_id],
-                ['is_completed' => true, 'completed_at' => now(), 'last_accessed_at' => now()]
-            );
-            $this->updateCourseProgress($user, $courseId);
+            $totalQuestions = $quiz->questions->count();
+            $correctCount = 0;
+            $totalScore = 0;
+
+            $attempt = \App\Models\QuizAttempt::create([
+                'user_id' => $user->id,
+                'quiz_id' => $quiz->id,
+                'score' => 0,
+                'correct_answers' => 0,
+                'total_questions' => $totalQuestions,
+                'is_passed' => null, // Default
+                'started_at' => now(), // TODO: Ambil dari state jika ada tracking durasi real
+                'finished_at' => now(),
+            ]);
+
+            foreach ($quiz->questions as $question) {
+                $userAnswer = $validated['answers'][$question->id] ?? null;
+                $isCorrect = false;
+                $selectedOptionId = null;
+                $essayAnswer = null;
+
+                if ($question->type === 'multiple_choice') {
+                    $selectedOptionId = $userAnswer;
+                    $correctOption = $question->options->firstWhere('is_correct', true);
+                    if ($correctOption && $correctOption->id == $selectedOptionId) {
+                        $isCorrect = true;
+                        $correctCount++;
+                    }
+                } else {
+                    $essayAnswer = $userAnswer;
+                }
+
+                \App\Models\QuizAttemptAnswer::create([
+                    'attempt_id' => $attempt->id,
+                    'question_id' => $question->id,
+                    'selected_option_id' => $selectedOptionId,
+                    'is_correct' => $isCorrect,
+                    'essay_answer' => $essayAnswer,
+                ]);
+            }
+
+            // Kalkulasi nilai
+            if ($totalQuestions > 0) {
+                $totalScore = round(($correctCount / $totalQuestions) * 100);
+            }
+
+            // Update score attempt
+            $attempt->score = $totalScore;
+            $attempt->correct_answers = $correctCount;
+
+            if ($quiz->quiz_mode === 'essay' || $quiz->quiz_mode === 'custom') {
+                $attempt->is_passed = null; // Menunggu penilaian instruktur
+            } else {
+                $attempt->is_passed = $totalScore >= $quiz->passing_score;
+            }
+
+            $attempt->save();
+
+            // Tandai lesson quiz sebagai selesai saat submit (baik lulus, gagal, atau pending essay)
+            if ($quiz->lesson_id) {
+                \App\Models\LessonProgress::updateOrCreate(
+                    ['user_id' => $user->id, 'lesson_id' => $quiz->lesson_id],
+                    ['is_completed' => true, 'completed_at' => now(), 'last_accessed_at' => now()]
+                );
+                $this->updateCourseProgress($user, $courseId);
+            }
+
+            return null; // sukses
+        });
+
+        if ($limitError) {
+            return back()->withErrors(['message' => $limitError]);
         }
 
         return back();
@@ -219,6 +247,14 @@ class CoursePlayerController extends Controller
     {
         $user = auth()->user();
         
+        // Kursus sudah lewat deadline: tidak bisa menandai selesai
+        $course = Course::findOrFail($courseId);
+        if ($course->isExpired()) {
+            return back()->withErrors([
+                'message' => 'Masa kursus telah berakhir. Kamu hanya dapat melihat materi.',
+            ]);
+        }
+
         // 1. Mark lesson as completed
         \App\Models\LessonProgress::updateOrCreate(
             ['user_id' => $user->id, 'lesson_id' => $lessonId],

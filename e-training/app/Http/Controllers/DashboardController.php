@@ -130,7 +130,7 @@ class DashboardController extends Controller
                 'onlineUsers'    => $onlineUsers,
             ]);
         } else {
-            // Pelajar
+            // Peserta
             $enrollments = Enrollment::with(['course.instructor', 'course.category'])
                 ->where('user_id', $user->id)
                 ->get();

@@ -56,7 +56,7 @@ export default function TabStudents({ course, allStudents }) {
                     </div>
                     <div className="relative z-10">
                         <h3 className="text-lg font-bold mb-1">Kode Referral Pelatihan</h3>
-                        <p className="text-xs text-navy-200 mb-4">Bagikan kode ini ke pelajar agar mereka bisa bergabung mandiri.</p>
+                        <p className="text-xs text-navy-200 mb-4">Bagikan kode ini ke peserta agar mereka bisa bergabung mandiri.</p>
                         
                         <div className="flex items-center gap-2 mb-4">
                             <div className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 font-mono text-xl tracking-widest text-gold-400 font-bold text-center">
@@ -82,7 +82,7 @@ export default function TabStudents({ course, allStudents }) {
                     </h3>
                     <form onSubmit={enrollStudent} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Pilih Pelajar</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Pilih Peserta</label>
                             <select 
                                 value={selectedUserId}
                                 onChange={e => setSelectedUserId(e.target.value)}
@@ -105,7 +105,7 @@ export default function TabStudents({ course, allStudents }) {
             <div className="w-full lg:w-2/3">
                 <div className="card h-full flex flex-col">
                     <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <h3 className="font-bold text-gray-900">Pelajar Terdaftar <span className="text-gray-400 font-normal">({course.enrolled_students.length})</span></h3>
+                        <h3 className="font-bold text-gray-900">Peserta Terdaftar <span className="text-gray-400 font-normal">({course.enrolled_students.length})</span></h3>
                         
                         <div className="relative w-full sm:w-64">
                             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -123,7 +123,7 @@ export default function TabStudents({ course, allStudents }) {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-gray-50 border-b border-gray-100 text-gray-600">
                                 <tr>
-                                    <th className="px-4 py-3 font-medium">Pelajar</th>
+                                    <th className="px-4 py-3 font-medium">Peserta</th>
                                     <th className="px-4 py-3 font-medium">Progress</th>
                                     <th className="px-4 py-3 font-medium text-right">Aksi</th>
                                 </tr>
@@ -162,7 +162,7 @@ export default function TabStudents({ course, allStudents }) {
                                 {filteredEnrolled.length === 0 && (
                                     <tr>
                                         <td colSpan="3" className="px-4 py-8 text-center text-gray-500 text-sm">
-                                            Belum ada pelajar yang terdaftar atau cocok dengan pencarian.
+                                            Belum ada peserta yang terdaftar atau cocok dengan pencarian.
                                         </td>
                                     </tr>
                                 )}

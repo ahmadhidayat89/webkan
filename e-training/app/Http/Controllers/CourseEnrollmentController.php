@@ -22,7 +22,7 @@ class CourseEnrollmentController extends Controller
         $user = User::findOrFail($request->user_id);
 
         if ($user->role !== 'pelajar') {
-            return back()->with('error', 'Hanya user dengan role pelajar yang bisa didaftarkan.');
+            return back()->with('error', 'Hanya user dengan role peserta yang bisa didaftarkan.');
         }
 
         $already = Enrollment::where('user_id', $user->id)
@@ -43,7 +43,7 @@ class CourseEnrollmentController extends Controller
     }
 
     /**
-     * Pelajar enroll mandiri via kode referral.
+     * Peserta enroll mandiri via kode referral.
      * Route: POST /courses/join
      */
     public function joinByReferral(Request $request): RedirectResponse

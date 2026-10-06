@@ -17,6 +17,7 @@ import {
   FaEnvelope,
   FaUserCog,
   FaLink,
+  FaClipboardCheck,
 } from 'react-icons/fa';
 import { getMe, logout } from '../../services/api';
 import kanLogo from '../../assets/kan.png';
@@ -81,8 +82,8 @@ const MENU_GROUPS = [
         roles: ['super_admin', 'admin'],
       },
       {
-        path: '/admin/content?section=proses',
-        icon: FaEdit,
+        path: '/admin/accreditation-steps',
+        icon: FaClipboardCheck,
         label: 'Proses Akreditasi',
         roles: ['super_admin', 'admin'],
       },
@@ -144,20 +145,36 @@ const MENU_GROUPS = [
   },
 ];
 
+// Cek apakah sebuah item menu sedang aktif berdasarkan URL
+const isItemActive = (item, pathname, search) =>
+  item.path === `${pathname}${search}` ||
+  (!item.path.includes('?') && item.path === pathname);
+
+// Hanya group yang berisi halaman aktif yang terbuka, sisanya tertutup
+const getInitialOpenGroups = (pathname, search) => {
+  const result = {};
+
+  MENU_GROUPS.forEach((group) => {
+    result[group.key] = group.items.some((item) =>
+      isItemActive(item, pathname, search)
+    );
+  });
+
+  return result;
+};
+
 const AdminLayout = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [userName, setUserName] = useState('');
   const [userRole, setUserRole] = useState(null);
-  const [openGroups, setOpenGroups] = useState({
-    utama: true,
-    konten: true,
-    media: true,
-    sistem: true,
-  });
+  const [openGroups, setOpenGroups] = useState(() =>
+    getInitialOpenGroups(location.pathname, location.search)
+  );
   const [headerDropdown, setHeaderDropdown] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const navigate = useNavigate();
-  const location = useLocation();
   const normalizedRole = userRole === 'sosmed_admin' ? 'adminsosmed' : userRole;
   const visibleMenuGroups = MENU_GROUPS
     .map((group) => ({
@@ -166,8 +183,7 @@ const AdminLayout = ({ children }) => {
     }))
     .filter((group) => group.items.length > 0);
   const itemIsActive = (item) =>
-    item.path === `${location.pathname}${location.search}` ||
-    (!item.path.includes('?') && item.path === location.pathname);
+    isItemActive(item, location.pathname, location.search);
 
   // Ambil informasi user yang sedang login
   useEffect(() => {
@@ -198,23 +214,23 @@ const AdminLayout = ({ children }) => {
     };
   }, [headerDropdown]);
 
-  // Buka group yang sedang memiliki halaman aktif
+  // Saat pindah halaman, pastikan group yang berisi halaman aktif terbuka
+  // (group lain tidak ditutup paksa)
   useEffect(() => {
-    MENU_GROUPS
-      .filter((group) => group.items.some((item) => item.roles.includes(userRole)))
-      .forEach((group) => {
-      const hasActiveItem = group.items.some(
-        (item) => itemIsActive(item)
-      );
+    const activeGroup = MENU_GROUPS.find((group) =>
+      group.items.some((item) =>
+        isItemActive(item, location.pathname, location.search)
+      )
+    );
 
-      if (hasActiveItem) {
-        setOpenGroups((prev) => ({
-          ...prev,
-          [group.key]: true,
-        }));
-      }
-      });
-  }, [location.pathname, location.search, userRole]);
+    if (activeGroup) {
+      setOpenGroups((prev) =>
+        prev[activeGroup.key]
+          ? prev
+          : { ...prev, [activeGroup.key]: true }
+      );
+    }
+  }, [location.pathname, location.search]);
 
   const toggleGroup = (key) => {
     setOpenGroups((prev) => ({
@@ -300,11 +316,10 @@ const AdminLayout = ({ children }) => {
                         <Link
                           key={item.path}
                           to={item.path}
-                          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
-                            active
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${active
                               ? 'bg-white/20 text-white'
                               : 'text-white/80 hover:bg-white/10 hover:text-white'
-                          }`}
+                            }`}
                         >
                           <Icon className="flex-shrink-0 text-sm" />
 
@@ -331,11 +346,10 @@ const AdminLayout = ({ children }) => {
                       </span>
 
                       <FaChevronDown
-                        className={`text-white/50 text-[9px] flex-shrink-0 transition-transform duration-200 ${
-                          openGroups[group.key]
+                        className={`text-white/50 text-[9px] flex-shrink-0 transition-transform duration-200 ${openGroups[group.key]
                             ? 'rotate-180'
                             : ''
-                        }`}
+                          }`}
                       />
                     </button>
 
@@ -350,11 +364,10 @@ const AdminLayout = ({ children }) => {
                             <Link
                               key={item.path}
                               to={item.path}
-                              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
-                                active
+                              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${active
                                   ? 'bg-white/20 text-white'
                                   : 'text-white/80 hover:bg-white/10 hover:text-white'
-                              }`}
+                                }`}
                             >
                               <Icon className="flex-shrink-0 text-sm" />
 
@@ -473,9 +486,8 @@ const AdminLayout = ({ children }) => {
                 </div>
 
                 <FaChevronDown
-                  className={`text-gray-400 text-[9px] flex-shrink-0 transition-transform duration-200 ${
-                    headerDropdown ? 'rotate-180' : ''
-                  }`}
+                  className={`text-gray-400 text-[9px] flex-shrink-0 transition-transform duration-200 ${headerDropdown ? 'rotate-180' : ''
+                    }`}
                 />
               </button>
 

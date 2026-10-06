@@ -13,7 +13,7 @@ class CourseEventController extends Controller
     public function getUpcoming()
     {
         $user = auth()->user();
-        
+
         $enrolledCourseIds = [];
         if ($user && $user->role === 'pelajar') {
             $enrolledCourseIds = \App\Models\Enrollment::where('user_id', $user->id)->pluck('course_id')->toArray();
@@ -23,17 +23,17 @@ class CourseEventController extends Controller
         $quizzesQuery = \App\Models\Quiz::with('lesson.module.course')
             ->whereNotNull('deadline_at')
             ->where('deadline_at', '>=', now());
-            
+
         if ($user && $user->role === 'pelajar') {
-            $quizzesQuery->whereHas('lesson.module.course', function($q) use ($enrolledCourseIds) {
+            $quizzesQuery->whereHas('lesson.module.course', function ($q) use ($enrolledCourseIds) {
                 $q->whereIn('id', $enrolledCourseIds);
             });
         }
-        
-        $quizzes = $quizzesQuery->get()->map(function($quiz) {
+
+        $quizzes = $quizzesQuery->get()->map(function ($quiz) {
             $course = $quiz->lesson->module->course;
             return [
-                'id' => 'q_'.$quiz->id,
+                'id' => 'q_' . $quiz->id,
                 'title' => 'Tenggat Waktu: ' . $quiz->lesson->title,
                 'description' => 'Batas waktu pengerjaan kuis/tugas.',
                 'start_datetime' => $quiz->deadline_at->toISOString(),
@@ -51,17 +51,17 @@ class CourseEventController extends Controller
             ->where('type', 'zoom')
             ->whereNotNull('start_datetime')
             ->where('start_datetime', '>=', now());
-            
+
         if ($user && $user->role === 'pelajar') {
-            $zoomQuery->whereHas('module.course', function($q) use ($enrolledCourseIds) {
+            $zoomQuery->whereHas('module.course', function ($q) use ($enrolledCourseIds) {
                 $q->whereIn('id', $enrolledCourseIds);
             });
         }
-        
-        $zooms = $zoomQuery->get()->map(function($lesson) {
+
+        $zooms = $zoomQuery->get()->map(function ($lesson) {
             $course = $lesson->module->course;
             return [
-                'id' => 'l_'.$lesson->id,
+                'id' => 'l_' . $lesson->id,
                 'title' => 'Sesi Zoom: ' . $lesson->title,
                 'description' => 'Sesi tatap muka online untuk materi ini.',
                 'start_datetime' => $lesson->start_datetime->toISOString(),
@@ -74,7 +74,30 @@ class CourseEventController extends Controller
             ];
         });
 
-        $events = $quizzes->concat($zooms)->sortBy('start_datetime')->values()->take(5);
+        // Deadline penyelesaian kursus
+        $courseDeadlineQuery = \App\Models\Course::whereNotNull('deadline_at')
+            ->where('deadline_at', '>=', now());
+
+        if ($user && $user->role === 'pelajar') {
+            $courseDeadlineQuery->whereIn('id', $enrolledCourseIds);
+        }
+
+        $courseDeadlines = $courseDeadlineQuery->get()->map(function ($course) {
+            return [
+                'id' => 'c_' . $course->id,
+                'title' => 'Batas Penyelesaian: ' . $course->title,
+                'description' => 'Batas waktu penyelesaian kursus.',
+                'start_datetime' => \Carbon\Carbon::parse($course->deadline_at)->toISOString(),
+                'end_datetime' => null,
+                'event_type' => 'deadline',
+                'course_title' => $course->title,
+                'course_slug' => $course->slug,
+                'course_id' => $course->id,
+                'lesson_id' => null,
+            ];
+        });
+
+        $events = $quizzes->concat($zooms)->concat($courseDeadlines)->sortBy('start_datetime')->values()->take(5);
 
         return $events;
     }
@@ -85,7 +108,7 @@ class CourseEventController extends Controller
     public function getCalendarEvents(Request $request)
     {
         $user = auth()->user();
-        
+
         $enrolledCourseIds = [];
         if ($user && $user->role === 'pelajar') {
             $enrolledCourseIds = \App\Models\Enrollment::where('user_id', $user->id)->pluck('course_id')->toArray();
@@ -103,18 +126,18 @@ class CourseEventController extends Controller
         }
 
         if ($user && $user->role === 'pelajar') {
-            $quizzesQuery->whereHas('lesson.module.course', function($q) use ($enrolledCourseIds) {
+            $quizzesQuery->whereHas('lesson.module.course', function ($q) use ($enrolledCourseIds) {
                 $q->whereIn('id', $enrolledCourseIds);
             });
-            $zoomQuery->whereHas('module.course', function($q) use ($enrolledCourseIds) {
+            $zoomQuery->whereHas('module.course', function ($q) use ($enrolledCourseIds) {
                 $q->whereIn('id', $enrolledCourseIds);
             });
         }
 
-        $quizzes = $quizzesQuery->get()->map(function($quiz) {
+        $quizzes = $quizzesQuery->get()->map(function ($quiz) {
             $course = $quiz->lesson->module->course;
             return [
-                'id' => 'q_'.$quiz->id,
+                'id' => 'q_' . $quiz->id,
                 'title' => 'Tenggat Waktu: ' . $quiz->lesson->title,
                 'description' => 'Batas waktu pengerjaan kuis/tugas.',
                 'start_datetime' => $quiz->deadline_at->toISOString(),
@@ -128,10 +151,10 @@ class CourseEventController extends Controller
             ];
         });
 
-        $zooms = $zoomQuery->get()->map(function($lesson) {
+        $zooms = $zoomQuery->get()->map(function ($lesson) {
             $course = $lesson->module->course;
             return [
-                'id' => 'l_'.$lesson->id,
+                'id' => 'l_' . $lesson->id,
                 'title' => 'Sesi Zoom: ' . $lesson->title,
                 'description' => 'Sesi tatap muka online.',
                 'start_datetime' => $lesson->start_datetime->toISOString(),
@@ -145,7 +168,35 @@ class CourseEventController extends Controller
             ];
         });
 
-        $events = $quizzes->concat($zooms)->sortBy('start_datetime')->values();
+        // Deadline penyelesaian kursus
+        $courseDeadlineQuery = \App\Models\Course::whereNotNull('deadline_at');
+
+        if ($request->has('month') && $request->has('year')) {
+            $courseDeadlineQuery->whereMonth('deadline_at', (int) $request->month)
+                                ->whereYear('deadline_at', (int) $request->year);
+        }
+
+        if ($user && $user->role === 'pelajar') {
+            $courseDeadlineQuery->whereIn('id', $enrolledCourseIds);
+        }
+
+        $courseDeadlines = $courseDeadlineQuery->get()->map(function ($course) {
+            return [
+                'id' => 'c_' . $course->id,
+                'title' => 'Batas Penyelesaian: ' . $course->title,
+                'description' => 'Batas waktu penyelesaian kursus.',
+                'start_datetime' => \Carbon\Carbon::parse($course->deadline_at)->toISOString(),
+                'end_datetime' => null,
+                'event_type' => 'deadline',
+                'course_title' => $course->title,
+                'course_slug' => $course->slug,
+                'course_id' => $course->id,
+                'lesson_id' => null,
+                'date' => \Carbon\Carbon::parse($course->deadline_at)->format('Y-m-d'),
+            ];
+        });
+
+        $events = $quizzes->concat($zooms)->concat($courseDeadlines)->sortBy('start_datetime')->values();
 
         return $events;
     }

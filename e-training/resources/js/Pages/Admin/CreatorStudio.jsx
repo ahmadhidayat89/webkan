@@ -24,7 +24,7 @@ function DeleteModal({ course, onConfirm, onCancel }) {
                 </div>
                 <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-5">
                     <p className="text-sm text-red-700 font-medium">"{course.title}"</p>
-                    <p className="text-xs text-red-500 mt-1">Semua modul, materi, kuis, dan data pelajar terkait akan dihapus permanen.</p>
+                    <p className="text-xs text-red-500 mt-1">Semua modul, materi, kuis, dan data peserta terkait akan dihapus permanen.</p>
                 </div>
                 <div className="flex gap-3">
                     <button onClick={onCancel} className="flex-1 btn-secondary text-sm py-2.5">
@@ -172,7 +172,7 @@ export default function CreatorStudio({ courses }) {
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <Users className="w-3.5 h-3.5" />
-                                        {course.enrollments_count} Pelajar
+                                        {course.enrollments_count} Peserta
                                     </div>
                                     <div className="ml-auto text-[10px] text-gray-400">{course.created_at}</div>
                                 </div>
