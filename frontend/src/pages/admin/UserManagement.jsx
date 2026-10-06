@@ -256,15 +256,20 @@ const UserManagement = () => {
     <AdminLayout>
       <div className="space-y-6">
 
-        {/* Header */}
-        <div className="relative overflow-hidden text-white shadow-xl rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 p-7">
-          <div className="absolute w-56 h-56 rounded-full pointer-events-none -right-10 -top-10 bg-white/10 blur-3xl" />
+        {/* =========================
+            HEADER
+        ========================= */}
+        <div className="relative overflow-hidden text-white shadow-xl rounded-2xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 p-7">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute w-56 h-56 rounded-full -right-10 -top-10 bg-white/5 blur-3xl" />
+          </div>
 
-          <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
 
+            {/* Title */}
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20">
-                <FaUserShield className="text-xl" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/15">
+                <FaUserShield className="text-xl text-white" />
               </div>
 
               <div>
@@ -272,51 +277,63 @@ const UserManagement = () => {
                   Kelola User
                 </h2>
 
-                <p className="mt-0.5 text-sm text-white/75">
+                <p className="mt-0.5 text-sm text-white/70">
                   Manajemen akun admin dan hak akses
                 </p>
               </div>
             </div>
 
+            {/* Stats + Button */}
             <div className="flex items-center gap-3">
 
               {isSuperAdmin && (
-                <div className="px-4 py-2 text-center border rounded-xl border-white/20 bg-white/15">
+                <div className="hidden text-center px-4 py-2.5 bg-white/15 rounded-xl border border-white/20 sm:block">
                   <div className="text-xl font-black">
                     {totalByRole('super_admin')}
                   </div>
 
-                  <div className="text-xs text-white/70">
+                  <div className="text-xs font-semibold text-white/70">
                     Super Admin
                   </div>
                 </div>
               )}
 
-              <div className="px-4 py-2 text-center border rounded-xl border-white/20 bg-white/15">
+              <div className="hidden text-center px-4 py-2.5 bg-white/15 rounded-xl border border-white/20 sm:block">
                 <div className="text-xl font-black">
                   {totalByRole('admin')}
                 </div>
 
-                <div className="text-xs text-white/70">
+                <div className="text-xs font-semibold text-white/70">
                   Admin
                 </div>
               </div>
 
-              <div className="px-4 py-2 text-center border rounded-xl border-white/20 bg-white/15">
+              <div className="hidden text-center px-4 py-2.5 bg-white/15 rounded-xl border border-white/20 sm:block">
                 <div className="text-xl font-black">
                   {totalByRole('adminsosmed')}
                 </div>
 
-                <div className="text-xs text-white/70">
+                <div className="text-xs font-semibold text-white/70">
                   Sosmed
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={openAdd}
+                className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold shadow-md transition-all bg-white rounded-xl text-primary-700 hover:bg-white/90"
+              >
+                <FaPlus />
+                Tambah User
+              </button>
 
             </div>
           </div>
         </div>
 
-        {/* Flash message */}
+        {/* =========================
+            FLASH MESSAGE
+        ========================= */}
         {msg && (
           <div
             className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold ${
@@ -335,7 +352,9 @@ const UserManagement = () => {
           </div>
         )}
 
-        {/* Table */}
+        {/* =========================
+            TABLE
+        ========================= */}
         <div className="bg-white border border-gray-200 shadow-sm rounded-2xl">
 
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -344,20 +363,11 @@ const UserManagement = () => {
               Daftar User ({users.length})
             </h3>
 
-            <button
-              type="button"
-              onClick={openAdd}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white transition-colors bg-indigo-600 rounded-xl hover:bg-indigo-700"
-            >
-              <FaPlus />
-              Tambah User
-            </button>
-
           </div>
 
           {loading ? (
             <div className="flex justify-center py-16">
-              <div className="w-8 h-8 border-4 border-indigo-500 rounded-full animate-spin border-t-transparent" />
+              <div className="w-8 h-8 border-4 rounded-full border-primary-600 border-t-transparent animate-spin" />
             </div>
           ) : users.length === 0 ? (
             <div className="py-16 text-center text-gray-400">
@@ -416,10 +426,9 @@ const UserManagement = () => {
 
                         {/* Nama */}
                         <td className="px-6 py-4">
-
                           <div className="flex items-center gap-3">
 
-                            <div className="flex items-center justify-center font-bold text-indigo-700 bg-indigo-100 rounded-full h-9 w-9 shrink-0">
+                            <div className="flex items-center justify-center font-bold rounded-full text-primary-700 bg-primary-100 h-9 w-9 shrink-0">
                               {user.name
                                 ?.charAt(0)
                                 .toUpperCase()}
@@ -436,7 +445,6 @@ const UserManagement = () => {
                             )}
 
                           </div>
-
                         </td>
 
                         {/* Email */}
@@ -446,18 +454,15 @@ const UserManagement = () => {
 
                         {/* Role */}
                         <td className="px-6 py-4">
-
                           <span
                             className={`inline-block rounded-full border px-3 py-0.5 text-xs font-bold ${roleInfo.color}`}
                           >
                             {roleInfo.label}
                           </span>
-
                         </td>
 
                         {/* Dibuat */}
                         <td className="px-6 py-4 text-gray-500">
-
                           {user.created_at
                             ? new Date(
                                 user.created_at
@@ -470,12 +475,10 @@ const UserManagement = () => {
                                 }
                               )
                             : '-'}
-
                         </td>
 
                         {/* Aksi */}
                         <td className="px-6 py-4">
-
                           <div className="flex items-center justify-end gap-2">
 
                             {modifiable ? (
@@ -485,7 +488,7 @@ const UserManagement = () => {
                                   onClick={() =>
                                     openEdit(user)
                                   }
-                                  className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-100"
+                                  className="flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-600 transition-colors hover:bg-primary-100"
                                 >
                                   <FaEdit />
                                   Edit
@@ -516,7 +519,6 @@ const UserManagement = () => {
                             )}
 
                           </div>
-
                         </td>
 
                       </tr>
@@ -531,35 +533,65 @@ const UserManagement = () => {
           )}
 
         </div>
-
       </div>
 
-      {/* Modal */}
+      {/* =========================
+          MODAL
+      ========================= */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
 
-          <div className="w-full max-w-md bg-white shadow-2xl rounded-2xl">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-2xl">
 
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between py-5 border-b border-gray-100 px-7">
 
-              <h3 className="text-lg font-black text-gray-800">
-                {editingUser
-                  ? 'Edit User'
-                  : 'Tambah User Baru'}
-              </h3>
+              <div>
+                <h3 className="text-lg font-black text-gray-900">
+                  {editingUser
+                    ? 'Edit User'
+                    : 'Tambah User Baru'}
+                </h3>
+
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {editingUser
+                    ? 'Perbarui detail user'
+                    : 'Isi detail user baru'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                className="p-2 text-gray-400 transition-colors rounded-xl hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
 
             </div>
 
             {/* Form */}
             <form onSubmit={saveUser}>
 
-              <div className="px-6 py-5 space-y-4">
+              <div className="py-6 space-y-5 px-7">
 
                 {/* Nama */}
                 <div>
-                  <label className="block mb-1 text-xs font-bold text-gray-600">
-                    Nama
+                  <label className="block mb-2 text-sm font-bold text-gray-800">
+                    Nama <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -574,14 +606,14 @@ const UserManagement = () => {
                       }))
                     }
                     placeholder="Nama lengkap"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
                   />
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block mb-1 text-xs font-bold text-gray-600">
-                    Email
+                  <label className="block mb-2 text-sm font-bold text-gray-800">
+                    Email <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -596,20 +628,24 @@ const UserManagement = () => {
                       }))
                     }
                     placeholder="email@domain.com"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
                   />
                 </div>
 
                 {/* Password */}
                 <div>
-                  <label className="block mb-1 text-xs font-bold text-gray-600">
+                  <label className="block mb-2 text-sm font-bold text-gray-800">
 
-                    Password{' '}
+                    Password
 
                     {editingUser && (
-                      <span className="font-normal text-gray-400">
+                      <span className="ml-1 font-normal text-gray-400">
                         (kosongkan jika tidak diubah)
                       </span>
+                    )}
+
+                    {!editingUser && (
+                      <span className="text-red-500"> *</span>
                     )}
 
                   </label>
@@ -632,15 +668,14 @@ const UserManagement = () => {
                         ? '••••••••'
                         : 'Min. 8 karakter'
                     }
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
                   />
-
                 </div>
 
                 {/* Role */}
                 <div>
-                  <label className="block mb-1 text-xs font-bold text-gray-600">
-                    Role
+                  <label className="block mb-2 text-sm font-bold text-gray-800">
+                    Role <span className="text-red-500">*</span>
                   </label>
 
                   <select
@@ -651,7 +686,7 @@ const UserManagement = () => {
                         role: event.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
                   >
                     {allowedRoles.map((role) => (
                       <option key={role} value={role}>
@@ -659,18 +694,18 @@ const UserManagement = () => {
                       </option>
                     ))}
                   </select>
-
                 </div>
 
               </div>
 
               {/* Modal Footer */}
-              <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 py-4 border-t border-gray-100 px-7">
 
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-5 py-2 text-sm font-bold text-gray-600 transition-colors border border-gray-200 rounded-xl hover:bg-gray-50"
+                  disabled={saving}
+                  className="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50 transition-all disabled:opacity-50"
                 >
                   Batal
                 </button>
@@ -678,7 +713,7 @@ const UserManagement = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 text-sm font-bold text-white transition-colors bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-60"
+                  className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-bold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving
                     ? 'Menyimpan...'
@@ -692,9 +727,9 @@ const UserManagement = () => {
             </form>
 
           </div>
-
         </div>
       )}
+
     </AdminLayout>
   );
 };

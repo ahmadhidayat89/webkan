@@ -36,16 +36,14 @@ const ToggleSwitch = ({ checked, onClick }) => (
     type="button"
     onClick={onClick}
     aria-pressed={checked}
-    className={`relative h-8 w-16 shrink-0 rounded-full border-2 transition-colors ${
-      checked
+    className={`relative h-8 w-16 shrink-0 rounded-full border-2 transition-colors ${checked
         ? 'border-primary-700 bg-primary-600'
         : 'border-gray-300 bg-gray-300'
-    }`}
+      }`}
   >
     <span
-      className={`absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-        checked ? 'translate-x-8' : 'translate-x-0'
-      }`}
+      className={`absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? 'translate-x-8' : 'translate-x-0'
+        }`}
     />
   </button>
 );
@@ -442,11 +440,10 @@ const FAQManagement = () => {
                   </div>
 
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${
-                      faq.is_active
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${faq.is_active
                         ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
                         : 'border border-gray-200 bg-gray-100 text-gray-500'
-                    }`}
+                      }`}
                   >
                     {faq.is_active ? (
                       <FaCheckCircle />
@@ -461,11 +458,10 @@ const FAQManagement = () => {
                 {/* HOME STATUS */}
                 <div className="mb-3">
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${
-                      faq.show_on_home
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${faq.show_on_home
                         ? 'border border-blue-200 bg-blue-50 text-blue-700'
                         : 'border border-slate-200 bg-slate-100 text-slate-500'
-                    }`}
+                      }`}
                   >
                     {faq.show_on_home ? <FaEye /> : <FaEyeSlash />}
 
@@ -489,11 +485,10 @@ const FAQManagement = () => {
                     type="button"
                     onClick={() => handleToggleShowOnHome(faq.id)}
                     disabled={actionLoading === `home-${faq.id}`}
-                    className={`flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
-                      faq.show_on_home
+                    className={`flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${faq.show_on_home
                         ? 'text-blue-700 hover:bg-blue-50'
                         : 'text-slate-600 hover:bg-slate-100'
-                    }`}
+                      }`}
                   >
                     {faq.show_on_home ? <FaEyeSlash /> : <FaEye />}
 
@@ -506,11 +501,10 @@ const FAQManagement = () => {
                     type="button"
                     onClick={() => handleToggleActive(faq.id)}
                     disabled={actionLoading === `active-${faq.id}`}
-                    className={`flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
-                      faq.is_active
+                    className={`flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${faq.is_active
                         ? 'text-amber-600 hover:bg-amber-50'
                         : 'text-emerald-600 hover:bg-emerald-50'
-                    }`}
+                      }`}
                   >
                     {faq.is_active ? <FaEyeSlash /> : <FaEye />}
 
@@ -543,56 +537,46 @@ const FAQManagement = () => {
       </div>
 
       {/* =========================
-          MODAL
-      ========================= */}
+    MODAL
+========================= */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
+
             {/* MODAL HEADER */}
-            <div className="relative py-5 overflow-hidden rounded-t-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 px-7">
-              <div className="absolute w-24 h-24 rounded-full pointer-events-none -right-6 -top-6 bg-white/10" />
-              <div className="absolute w-16 h-16 rounded-full pointer-events-none -bottom-4 left-16 bg-white/10" />
+            <div className="flex items-center justify-between py-5 border-b border-gray-100 px-7">
+              <div>
+                <h3 className="text-lg font-black text-gray-900">
+                  {editingFaq ? 'Edit FAQ' : 'Tambah FAQ Baru'}
+                </h3>
 
-              <div className="relative flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/25">
-                    <FaQuestionCircle className="text-lg text-white" />
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-black text-white">
-                      {editingFaq ? 'Edit FAQ' : 'Tambah FAQ Baru'}
-                    </h3>
-
-                    <p className="text-xs text-white/80">
-                      {editingFaq
-                        ? 'Perbarui pertanyaan dan jawaban'
-                        : 'Buat pasangan pertanyaan & jawaban baru'}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  disabled={saving}
-                  className="p-2 transition-colors rounded-xl text-white/70 hover:bg-white/20 hover:text-white disabled:opacity-50"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {editingFaq
+                    ? 'Perbarui pertanyaan dan jawaban'
+                    : 'Isi data pertanyaan dan jawaban FAQ baru'}
+                </p>
               </div>
+
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                className="p-2 text-gray-400 transition-colors rounded-xl hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
             </div>
 
             {/* FORM */}
@@ -600,13 +584,13 @@ const FAQManagement = () => {
               onSubmit={handleSubmit}
               className="py-6 space-y-5 px-7"
             >
+              {/* SAVE MESSAGE */}
               {saveMessage && (
                 <div
-                  className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ${
-                    saveMessage.type === 'success'
+                  className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ${saveMessage.type === 'success'
                       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                       : 'border-red-200 bg-red-50 text-red-700'
-                  }`}
+                    }`}
                 >
                   {saveMessage.type === 'success' ? (
                     <FaCheckCircle />
@@ -619,9 +603,8 @@ const FAQManagement = () => {
               )}
 
               {/* QUESTION */}
-              <div className="p-4 border rounded-2xl border-amber-100 bg-amber-50">
-                <label className="flex items-center gap-2 mb-2 text-sm font-bold text-amber-800">
-                  <FaCommentDots className="text-amber-500" />
+              <div>
+                <label className="block mb-2 text-sm font-bold text-gray-800">
                   Pertanyaan <span className="text-red-500">*</span>
                 </label>
 
@@ -634,16 +617,15 @@ const FAQManagement = () => {
                       question: event.target.value,
                     }))
                   }
-                  className="w-full px-4 py-3 text-sm font-medium transition-colors bg-white border rounded-xl border-amber-200 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-300"
+                  className="w-full px-4 py-3 text-sm font-medium transition-colors border border-gray-200 bg-gray-50 rounded-xl focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Contoh: Berapa lama proses akreditasi?"
                   required
                 />
               </div>
 
-              {/* ANSWER - QUILL */}
-              <div className="p-4 border border-blue-100 rounded-2xl bg-blue-50">
-                <label className="flex items-center gap-2 mb-2 text-sm font-bold text-blue-800">
-                  <FaLightbulb className="text-blue-500" />
+              {/* ANSWER */}
+              <div>
+                <label className="block mb-2 text-sm font-bold text-gray-800">
                   Jawaban <span className="text-red-500">*</span>
                 </label>
 
@@ -662,9 +644,11 @@ const FAQManagement = () => {
               </div>
 
               {/* SETTINGS */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="space-y-3">
+
+                {/* ORDER */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-600">
+                  <label className="block mb-2 text-sm font-bold text-gray-800">
                     Urutan Tampil
                   </label>
 
@@ -678,19 +662,20 @@ const FAQManagement = () => {
                         order: event.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm transition-colors focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-200"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="Otomatis"
                   />
                 </div>
 
-                <div className="flex select-none items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5">
+                {/* ACTIVE STATUS */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                   <div>
-                    <div className="text-xs font-bold text-gray-700">
+                    <div className="text-sm font-bold text-gray-800">
                       Status Aktif
                     </div>
 
-                    <div className="text-[10px] text-gray-400">
-                      Tampil di website
+                    <div className="text-xs text-gray-500">
+                      Tampilkan FAQ di halaman publik
                     </div>
                   </div>
 
@@ -705,14 +690,15 @@ const FAQManagement = () => {
                   />
                 </div>
 
-                <div className="flex select-none items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5">
+                {/* SHOW ON HOME */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                   <div>
-                    <div className="text-xs font-bold text-gray-700">
-                      Di Beranda
+                    <div className="text-sm font-bold text-gray-800">
+                      Tampil di Beranda
                     </div>
 
-                    <div className="text-[10px] text-gray-400">
-                      Tampil di homepage
+                    <div className="text-xs text-gray-500">
+                      Tampilkan FAQ di homepage
                     </div>
                   </div>
 
@@ -734,7 +720,7 @@ const FAQManagement = () => {
                   type="button"
                   onClick={closeModal}
                   disabled={saving}
-                  className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-600 transition-all hover:bg-gray-50 disabled:opacity-50"
+                  className="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50 transition-all disabled:opacity-50"
                 >
                   Batal
                 </button>
@@ -742,13 +728,13 @@ const FAQManagement = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:from-amber-600 hover:to-yellow-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-bold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving
                     ? 'Menyimpan...'
                     : editingFaq
-                    ? 'Simpan Perubahan'
-                    : 'Tambah FAQ'}
+                      ? 'Simpan Perubahan'
+                      : 'Tambah FAQ'}
                 </button>
               </div>
             </form>

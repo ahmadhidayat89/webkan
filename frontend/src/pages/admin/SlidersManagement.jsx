@@ -178,14 +178,14 @@ const SlidersManagement = () => {
       <div className="space-y-6">
 
         {/* Header Banner */}
-        <div className="relative bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7 text-white shadow-xl overflow-hidden">
+        <div className="relative overflow-hidden text-white shadow-xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-10 -right-10 w-56 h-56 bg-white/5 rounded-full blur-3xl"></div>
+            <div className="absolute w-56 h-56 rounded-full -top-10 -right-10 bg-white/5 blur-3xl"></div>
           </div>
-          <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center">
-                <FaImages className="text-white text-xl" />
+              <div className="flex items-center justify-center w-12 h-12 bg-white/15 rounded-xl">
+                <FaImages className="text-xl text-white" />
               </div>
               <div>
                 <h2 className="text-2xl font-black">Kelola Slider</h2>
@@ -193,14 +193,14 @@ const SlidersManagement = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex gap-2">
+              <div className="hidden gap-2 sm:flex">
                 <div className="text-center px-4 py-2.5 bg-white/15 rounded-xl border border-white/20">
                   <div className="text-xl font-black">{activeCount}</div>
-                  <div className="text-white/70 text-xs font-semibold">Aktif</div>
+                  <div className="text-xs font-semibold text-white/70">Aktif</div>
                 </div>
                 <div className="text-center px-4 py-2.5 bg-white/10 rounded-xl border border-white/20">
                   <div className="text-xl font-black">{sliders.length}</div>
-                  <div className="text-white/70 text-xs font-semibold">Total</div>
+                  <div className="text-xs font-semibold text-white/70">Total</div>
                 </div>
               </div>
               <button
@@ -215,18 +215,18 @@ const SlidersManagement = () => {
         </div>
 
         {/* Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {loading ? (
-            <div className="col-span-full flex justify-center py-16">
-              <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="flex justify-center py-16 col-span-full">
+              <div className="w-8 h-8 border-4 rounded-full border-primary-600 border-t-transparent animate-spin"></div>
             </div>
           ) : sliders.length === 0 ? (
-            <div className="col-span-full text-center py-20">
-              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <FaImages className="text-gray-400 text-2xl" />
+            <div className="py-20 text-center col-span-full">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-2xl">
+                <FaImages className="text-2xl text-gray-400" />
               </div>
-              <p className="text-gray-500 font-semibold mb-1">Belum ada slider</p>
-              <button onClick={() => handleOpenModal()} className="text-sm text-primary-600 font-bold hover:underline">
+              <p className="mb-1 font-semibold text-gray-500">Belum ada slider</p>
+              <button onClick={() => handleOpenModal()} className="text-sm font-bold text-primary-600 hover:underline">
                 Buat slider pertama
               </button>
             </div>
@@ -234,18 +234,18 @@ const SlidersManagement = () => {
             sliders.map((slider) => (
               <div
                 key={slider.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all group"
+                className="overflow-hidden transition-all bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md group"
               >
                 {/* Image */}
-                <div className="relative h-44 bg-gray-100">
+                <div className="relative bg-gray-100 h-44">
                   {slider.image ? (
                     <img
                       src={`/storage/${slider.image}`}
                       alt={slider.title_id}
-                      className="w-full h-full object-cover"
+                      className="object-cover w-full h-full"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div className="flex items-center justify-center w-full h-full">
                       <FaImage className="text-5xl text-gray-300" />
                     </div>
                   )}
@@ -266,8 +266,8 @@ const SlidersManagement = () => {
 
                 {/* Content */}
                 <div className="p-5">
-                  <h3 className="font-black text-gray-900 text-sm line-clamp-1 mb-1">
-                    {slider.title_id || <span className="text-gray-400 italic">Tanpa judul</span>}
+                  <h3 className="mb-1 text-sm font-black text-gray-900 line-clamp-1">
+                    {slider.title_id || <span className="italic text-gray-400">Tanpa judul</span>}
                   </h3>
                   {slider.subtitle_id && (
                     <p className="text-xs text-gray-500 line-clamp-2">{slider.subtitle_id}</p>
@@ -297,10 +297,10 @@ const SlidersManagement = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8 shadow-2xl">
             {/* Modal Header */}
-            <div className="px-7 py-5 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center justify-between py-5 border-b border-gray-100 px-7">
               <div>
                 <h3 className="text-lg font-black text-gray-900">
                   {editingSlider ? 'Edit Slider' : 'Tambah Slider Baru'}
@@ -309,17 +309,17 @@ const SlidersManagement = () => {
                   {editingSlider ? 'Perbarui informasi slider' : 'Isi detail slider baru'}
                 </p>
               </div>
-              <button onClick={handleCloseModal} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400">
+              <button onClick={handleCloseModal} className="p-2 text-gray-400 transition-colors hover:bg-gray-100 rounded-xl">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="px-7 py-6 space-y-5">
+            <form onSubmit={handleSubmit} className="py-6 space-y-5 px-7">
               {submitError && (
-                <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-semibold">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center gap-3 p-4 text-sm font-semibold text-red-700 border border-red-200 bg-red-50 rounded-xl">
+                  <svg className="flex-shrink-0 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                   {submitError}
@@ -328,34 +328,34 @@ const SlidersManagement = () => {
 
               {/* Image Upload */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-2">Gambar Banner <span className="text-red-500">*</span></label>
+                <label className="block mb-2 text-sm font-bold text-gray-800">Gambar Banner <span className="text-red-500">*</span></label>
                 {imagePreview ? (
-                  <div className="relative rounded-xl overflow-hidden border border-gray-200 group w-full">
-                    <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="relative w-full overflow-hidden border border-gray-200 rounded-xl group">
+                    <img src={imagePreview} alt="Preview" className="object-cover w-full h-48" />
+                    <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-black/40 group-hover:opacity-100">
                       <button
                         type="button"
                         onClick={() => { setImageFile(null); setImagePreview(null); setRemoveImage(true); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-lg"
                       >
                         <FaTrash /> Hapus Gambar
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-all group">
-                    <FaImage className="text-3xl text-gray-300 group-hover:text-primary-400 mb-2 transition-colors" />
-                    <span className="text-sm text-gray-500 font-semibold group-hover:text-primary-600">Klik untuk upload gambar</span>
-                    <span className="text-xs text-gray-400 mt-1">JPG, PNG — Disarankan 1920×600px</span>
+                  <label className="flex flex-col items-center justify-center w-full transition-all border-2 border-gray-300 border-dashed cursor-pointer h-44 rounded-xl hover:border-primary-400 hover:bg-primary-50 group">
+                    <FaImage className="mb-2 text-3xl text-gray-300 transition-colors group-hover:text-primary-400" />
+                    <span className="text-sm font-semibold text-gray-500 group-hover:text-primary-600">Klik untuk upload gambar</span>
+                    <span className="mt-1 text-xs text-gray-400">JPG, PNG — Disarankan 1920×600px</span>
                     <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" required={!editingSlider} />
                   </label>
                 )}
               </div>
 
               {/* Titles */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">Judul (Indonesia) <span className="text-red-500">*</span></label>
+                  <label className="block mb-2 text-sm font-bold text-gray-800">Judul (Indonesia) <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={formData.title_id}
@@ -363,61 +363,61 @@ const SlidersManagement = () => {
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors ${errors.title_id ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                     required
                   />
-                  {errors.title_id && <p className="text-red-500 text-xs mt-1">{errors.title_id[0]}</p>}
+                  {errors.title_id && <p className="mt-1 text-xs text-red-500">{errors.title_id[0]}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">Judul (Inggris)</label>
+                  <label className="block mb-2 text-sm font-bold text-gray-800">Judul (Inggris)</label>
                   <input
                     type="text"
                     value={formData.title_en}
                     onChange={(e) => setFormData({...formData, title_en: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
                   />
                 </div>
               </div>
 
               {/* Subtitles */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">Subjudul (Indonesia)</label>
+                  <label className="block mb-2 text-sm font-bold text-gray-800">Subjudul (Indonesia)</label>
                   <textarea
                     value={formData.subtitle_id}
                     onChange={(e) => setFormData({...formData, subtitle_id: e.target.value})}
                     rows="2"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors resize-none"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 resize-none rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">Subjudul (Inggris)</label>
+                  <label className="block mb-2 text-sm font-bold text-gray-800">Subjudul (Inggris)</label>
                   <textarea
                     value={formData.subtitle_en}
                     onChange={(e) => setFormData({...formData, subtitle_en: e.target.value})}
                     rows="2"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors resize-none"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 resize-none rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
                   />
                 </div>
               </div>
 
               {/* Link + Order + Active */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-2">URL Tautan <span className="text-gray-400 font-normal">(Opsional)</span></label>
+                <label className="block mb-2 text-sm font-bold text-gray-800">URL Tautan <span className="font-normal text-gray-400">(Opsional)</span></label>
                 <input
                   type="text"
                   value={formData.link}
                   onChange={(e) => setFormData({...formData, link: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors"
+                  className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
                   placeholder="/proses-akreditasi atau https://example.com"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 items-end">
+              <div className="grid items-end grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">Urutan Tampil</label>
+                  <label className="block mb-2 text-sm font-bold text-gray-800">Urutan Tampil</label>
                   <input
                     type="number"
                     value={formData.order}
                     onChange={(e) => setFormData({...formData, order: parseInt(e.target.value)})}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
                     min="0"
                   />
                 </div>

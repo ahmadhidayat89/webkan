@@ -74,7 +74,7 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2048000) { // 2MB
-        setErrors(prev => ({ ...prev, image: 'Image size must be less than 2MB' }));
+        setErrors(prev => ({ ...prev, image: 'Ukuran gambar harus kurang dari 2MB' }));
         return;
       }
       setImageFile(file);
@@ -181,21 +181,23 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-black/50">
       <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto my-8">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between z-10">
+        <div className="sticky top-0 z-10 flex items-center justify-between p-6 bg-white border-b border-gray-200">
           <div>
             <h3 className="text-2xl font-black text-gray-900">
-              {news ? 'Edit News' : 'Add News'}
+              {news ? 'Edit Berita' : 'Tambah Berita'}
             </h3>
-            <p className="text-gray-600 text-sm mt-1">
-              Fill in the form below to {news ? 'update' : 'create'} news
+            <p className="mt-1 text-sm text-gray-600">
+              {news
+                ? 'Lengkapi formulir di bawah ini untuk memperbarui berita'
+                : 'Lengkapi formulir di bawah ini untuk menambahkan berita'}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 transition-colors rounded-lg hover:bg-gray-100"
           >
             <FaTimes className="text-xl text-gray-600" />
           </button>
@@ -205,8 +207,8 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Category */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Category *
+            <label className="block mb-2 text-sm font-bold text-gray-700">
+              Kategori *
             </label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -218,7 +220,7 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
                   onChange={handleChange}
                   className="w-4 h-4 text-primary-600 focus:ring-primary-500"
                 />
-                <span className="font-semibold">News</span>
+                <span className="font-semibold">Berita</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -229,15 +231,15 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
                   onChange={handleChange}
                   className="w-4 h-4 text-primary-600 focus:ring-primary-500"
                 />
-                <span className="font-semibold">Announcement</span>
+                <span className="font-semibold">Pengumuman</span>
               </label>
             </div>
           </div>
 
           {/* Image Upload */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Featured Image
+            <label className="block mb-2 text-sm font-bold text-gray-700">
+              Gambar Utama
             </label>
             <div className="space-y-3">
               {imagePreview ? (
@@ -245,21 +247,21 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
                   <img
                     src={imagePreview}
                     alt="Preview"
-                    className="w-full max-w-md h-48 object-cover rounded-xl border-2 border-gray-200"
+                    className="object-cover w-full h-48 max-w-md border-2 border-gray-200 rounded-xl"
                   />
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    className="absolute p-2 text-white transition-colors bg-red-600 rounded-lg top-2 right-2 hover:bg-red-700"
                   >
                     <FaTrash />
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                  <FaImage className="text-4xl text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-600 font-semibold">Click to upload image</span>
-                  <span className="text-xs text-gray-500 mt-1">Max 2MB (JPG, PNG, WEBP)</span>
+                <label className="flex flex-col items-center justify-center w-full h-48 transition-colors border-2 border-gray-300 border-dashed cursor-pointer rounded-xl hover:bg-gray-50">
+                  <FaImage className="mb-2 text-4xl text-gray-400" />
+                  <span className="text-sm font-semibold text-gray-600">Klik untuk mengunggah gambar</span>
+                  <span className="mt-1 text-xs text-gray-500">Maks. 2MB (JPG, PNG, WEBP)</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -269,15 +271,15 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
                 </label>
               )}
               {errors.image && (
-                <p className="text-red-600 text-sm">{errors.image}</p>
+                <p className="text-sm text-red-600">{errors.image}</p>
               )}
             </div>
           </div>
 
           {/* Title - Indonesian */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Title (Indonesian) *
+            <label className="block mb-2 text-sm font-bold text-gray-700">
+              Judul (Bahasa Indonesia) *
             </label>
             <input
               type="text"
@@ -285,18 +287,18 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
               value={formData.title}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="Enter news title in Indonesian"
+              placeholder="Masukkan judul berita dalam Bahasa Indonesia"
               required
             />
             {errors.title && (
-              <p className="text-red-600 text-sm mt-1">{errors.title}</p>
+              <p className="mt-1 text-sm text-red-600">{errors.title}</p>
             )}
           </div>
 
           {/* Title - English */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Title (English)
+            <label className="block mb-2 text-sm font-bold text-gray-700">
+              Judul (Bahasa Inggris)
             </label>
             <input
               type="text"
@@ -304,14 +306,14 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
               value={formData.title_en}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="Enter news title in English"
+              placeholder="Masukkan judul berita dalam Bahasa Inggris"
             />
           </div>
 
           {/* Excerpt - Indonesian */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Excerpt (Indonesian)
+            <label className="block mb-2 text-sm font-bold text-gray-700">
+              Ringkasan (Bahasa Indonesia)
             </label>
             <textarea
               name="excerpt"
@@ -319,14 +321,14 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
               onChange={handleChange}
               rows="3"
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="Short summary of the news"
+              placeholder="Ringkasan singkat berita"
             />
           </div>
 
           {/* Excerpt - English */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Excerpt (English)
+            <label className="block mb-2 text-sm font-bold text-gray-700">
+              Ringkasan (Bahasa Inggris)
             </label>
             <textarea
               name="excerpt_en"
@@ -334,48 +336,48 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
               onChange={handleChange}
               rows="3"
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="Short summary in English"
+              placeholder="Ringkasan singkat dalam Bahasa Inggris"
             />
           </div>
 
           {/* Content - Indonesian */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Content (Indonesian) *
+            <label className="block mb-2 text-sm font-bold text-gray-700">
+              Konten (Bahasa Indonesia) *
             </label>
             <textarea
               name="content"
               value={formData.content}
               onChange={handleChange}
               rows="10"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
-              placeholder="Full content in Indonesian"
+              className="w-full px-4 py-3 font-mono text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Isi lengkap berita dalam Bahasa Indonesia"
               required
             />
             {errors.content && (
-              <p className="text-red-600 text-sm mt-1">{errors.content}</p>
+              <p className="mt-1 text-sm text-red-600">{errors.content}</p>
             )}
           </div>
 
           {/* Content - English */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Content (English)
+            <label className="block mb-2 text-sm font-bold text-gray-700">
+              Konten (Bahasa Inggris)
             </label>
             <textarea
               name="content_en"
               value={formData.content_en}
               onChange={handleChange}
               rows="10"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
-              placeholder="Full content in English"
+              className="w-full px-4 py-3 font-mono text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Isi lengkap berita dalam Bahasa Inggris"
             />
           </div>
 
           {/* Published Date */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Publish Date
+            <label className="block mb-2 text-sm font-bold text-gray-700">
+              Tanggal Publikasi
             </label>
             <input
               type="date"
@@ -384,16 +386,16 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
-            <p className="text-xs text-gray-500 mt-1">Leave empty to save as draft</p>
+            <p className="mt-1 text-xs text-gray-500">Kosongkan untuk menyimpan sebagai draft</p>
           </div>
 
           {/* SEO Section */}
-          <div className="border-t pt-6">
-            <h4 className="text-lg font-black text-gray-900 mb-4">SEO Settings</h4>
+          <div className="pt-6 border-t">
+            <h4 className="mb-4 text-lg font-black text-gray-900">Pengaturan SEO</h4>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-bold text-gray-700">
                   Meta Title
                 </label>
                 <input
@@ -402,12 +404,12 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
                   value={formData.meta_title}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="SEO title for search engines"
+                  placeholder="Judul SEO untuk mesin pencari"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-bold text-gray-700">
                   Meta Description
                 </label>
                 <textarea
@@ -416,12 +418,12 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
                   onChange={handleChange}
                   rows="3"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="SEO description"
+                  placeholder="Deskripsi SEO"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-bold text-gray-700">
                   Meta Keywords
                 </label>
                 <input
@@ -437,21 +439,21 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
           </div>
 
           {/* Footer Actions */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 -mx-6 -mb-6 px-6 py-4 flex justify-end gap-3">
+          <div className="sticky bottom-0 flex justify-end gap-3 px-6 py-4 -mx-6 -mb-6 bg-white border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all"
+              className="px-6 py-3 font-bold text-gray-700 transition-all border-2 border-gray-300 rounded-xl hover:bg-gray-50"
               disabled={loading}
             >
-              Cancel
+              Batal
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg hover:shadow-primary-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 font-bold text-white transition-all shadow-lg bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl hover:scale-105 hover:shadow-primary-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Saving...' : (news ? 'Update' : 'Create')}
+              {loading ? 'Menyimpan...' : (news ? 'Perbarui' : 'Simpan')}
             </button>
           </div>
         </form>

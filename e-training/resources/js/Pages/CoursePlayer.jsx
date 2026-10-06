@@ -281,7 +281,7 @@ function formatTime(totalSeconds) {
     return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-function QuizContent({ lesson, courseId, isExpired }) {
+function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
     const quiz = lesson.quiz;
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState({});
@@ -379,6 +379,7 @@ function QuizContent({ lesson, courseId, isExpired }) {
             }, {
                 preserveScroll: true,
                 onSuccess: (page) => {
+                    onQuizActiveChange(false);
                     // Baca attempt terbaru dari props yang BARU diterima dari server.
                     // Tidak bergantung pada kapan React me-render ulang, jadi tidak bisa basi.
                     const freshLesson = page?.props?.courseData?.modules
@@ -421,6 +422,7 @@ function QuizContent({ lesson, courseId, isExpired }) {
         setDeadline(hasLimit ? Date.now() + minutes * 60 * 1000 : null);
         setTimeLeft(hasLimit ? minutes * 60 : null);
         setStarted(true);
+        onQuizActiveChange(true);
     };
 
     const handleReset = () => {
@@ -738,6 +740,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
     const [activeLessonId, setActiveLessonId] = useState(
         initialLesson?.id ?? allLessons[0]?.id ?? null
     );
+    const [quizActive, setQuizActive] = useState(false);
     const activeLesson = allLessons.find((l) => l.id === activeLessonId) || null;
 
     if (!activeLesson) {
@@ -768,6 +771,9 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
         if (currentIndex < allLessons.length - 1) setActiveLessonId(allLessons[currentIndex + 1].id);
     };
 
+    const isQuizActive =
+        activeLesson?.type === 'quiz' && quizActive;
+
     const renderContent = () => {
         switch (activeLesson.type) {
             case 'video':
@@ -776,7 +782,14 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
             case 'document':
                 return <PdfContent lesson={activeLesson} />;
             case 'quiz':
-                return <QuizContent lesson={activeLesson} courseId={course.id} isExpired={isExpired} />;
+                return (
+                    <QuizContent
+                        lesson={activeLesson}
+                        courseId={course.id}
+                        isExpired={isExpired}
+                        onQuizActiveChange={setQuizActive}
+                    />
+                );
             default:
                 return <VideoContent lesson={activeLesson} />;
         }
@@ -789,7 +802,17 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                 course={course}
                 modules={course.modules}
                 activeLesson={activeLesson}
-                onSelectLesson={(lesson) => setActiveLessonId(lesson.id)}
+                onSelectLesson={(lesson) => {
+                    if (quizActive && lesson.id !== activeLesson.id) {
+                        alert(
+                            '⚠️ Kuis sedang berlangsung.\n\n' +
+                            'Anda tidak dapat berpindah ke materi lain sebelum menyelesaikan dan mengirim kuis.'
+                        );
+                        return;
+                    }
+
+                    setActiveLessonId(lesson.id);
+                }}
             >
                 <div className="max-w-4xl p-4 pb-24 mx-auto sm:p-6 lg:p-8">
                     {isExpired && (
@@ -826,8 +849,8 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                                 }}
                                 disabled={activeLesson.isCompleted || isExpired}
                                 className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors border w-full sm:w-auto ${(activeLesson.isCompleted || isExpired)
-                                        ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
-                                        : 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200'
+                                    ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
+                                    : 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200'
                                     }`}
                             >
                                 <CheckCircle2 className="w-4 h-4" />

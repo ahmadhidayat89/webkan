@@ -316,7 +316,15 @@ const DirectoryManagement = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-              <h3 className="font-black text-gray-900">{editItem ? 'Edit Data LPK' : 'Tambah LPK Baru'}</h3>
+              <div>
+                <h3 className="text-lg font-black text-gray-900">
+                  {editItem ? 'Edit Data LPK' : 'Tambah LPK Baru'}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {editItem ? 'Perbarui informasi LPK' : 'Isi detail LPK baru'}
+                </p>
+              </div>
+
               <button onClick={() => setModalOpen(false)} className="p-2 text-gray-500 rounded-lg hover:bg-gray-100">
                 <FaTimes />
               </button>

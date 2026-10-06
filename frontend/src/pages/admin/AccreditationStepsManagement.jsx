@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { FaPlus, FaEdit, FaTrash, FaArrowUp, FaArrowDown, FaListOl } from 'react-icons/fa';
+import {
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaArrowUp,
+  FaArrowDown,
+  FaListOl,
+} from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { useConfirm } from '../../hooks/useConfirm';
 import {
@@ -27,6 +34,7 @@ const AccreditationStepsManagement = () => {
   const [saving, setSaving] = useState(false);
   const [movingId, setMovingId] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+
   const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
@@ -36,7 +44,9 @@ const AccreditationStepsManagement = () => {
   const fetchSteps = async () => {
     try {
       setLoading(true);
+
       const { data } = await getAdminAccreditationSteps();
+
       if (data.success) {
         setSteps(data.data);
       }
@@ -51,6 +61,7 @@ const AccreditationStepsManagement = () => {
   const openModal = (step = null) => {
     if (step) {
       setEditingStep(step);
+
       setFormData({
         icon: step.icon || '',
         title: step.title || '',
@@ -61,6 +72,7 @@ const AccreditationStepsManagement = () => {
       setEditingStep(null);
       setFormData(initialFormData);
     }
+
     setShowModal(true);
   };
 
@@ -73,11 +85,21 @@ const AccreditationStepsManagement = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
     const { icon, title, tag, description } = formData;
-    if (!icon.trim() || !title.trim() || !tag.trim() || !description.trim()) return;
+
+    if (
+      !icon.trim() ||
+      !title.trim() ||
+      !tag.trim() ||
+      !description.trim()
+    ) {
+      return;
+    }
 
     try {
       setSaving(true);
+
       const payload = {
         icon: icon.trim(),
         title: title.trim(),
@@ -86,6 +108,7 @@ const AccreditationStepsManagement = () => {
       };
 
       let result;
+
       if (editingStep) {
         result = await updateAccreditationStep(editingStep.id, payload);
       } else {
@@ -93,11 +116,18 @@ const AccreditationStepsManagement = () => {
       }
 
       if (result.data.success) {
-        toast.success(editingStep ? 'Langkah berhasil diperbarui' : 'Langkah berhasil ditambahkan');
+        toast.success(
+          editingStep
+            ? 'Langkah berhasil diperbarui'
+            : 'Langkah berhasil ditambahkan'
+        );
+
         await fetchSteps();
         closeModal();
       } else {
-        toast.error(result.data.message || 'Gagal menyimpan langkah');
+        toast.error(
+          result.data.message || 'Gagal menyimpan langkah'
+        );
       }
     } catch (err) {
       console.error('AccreditationStep save error:', err);
@@ -108,9 +138,17 @@ const AccreditationStepsManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!(await confirm('Hapus langkah ini? Tindakan ini tidak dapat dibatalkan.'))) return;
+    if (
+      !(await confirm(
+        'Hapus langkah ini? Tindakan ini tidak dapat dibatalkan.'
+      ))
+    ) {
+      return;
+    }
+
     try {
       const { data } = await deleteAccreditationStep(id);
+
       if (data.success) {
         toast.success('Langkah berhasil dihapus');
         await fetchSteps();
@@ -125,9 +163,15 @@ const AccreditationStepsManagement = () => {
 
   const handleMove = async (id, direction) => {
     setMovingId(id);
+
     try {
-      const fn = direction === 'up' ? moveAccreditationStepUp : moveAccreditationStepDown;
+      const fn =
+        direction === 'up'
+          ? moveAccreditationStepUp
+          : moveAccreditationStepDown;
+
       const { data } = await fn(id);
+
       if (data.success) {
         await fetchSteps();
       } else {
@@ -144,6 +188,7 @@ const AccreditationStepsManagement = () => {
   return (
     <AdminLayout>
       <ConfirmDialog />
+
       <div className="space-y-6">
 
         {/* Header */}
@@ -151,23 +196,35 @@ const AccreditationStepsManagement = () => {
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute w-56 h-56 rounded-full -right-10 -top-10 bg-white/5 blur-3xl" />
           </div>
+
           <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/15">
                 <FaListOl className="text-xl text-white" />
               </div>
+
               <div>
-                <h2 className="text-2xl font-black">Proses Akreditasi</h2>
+                <h2 className="text-2xl font-black">
+                  Proses Akreditasi
+                </h2>
+
                 <p className="mt-0.5 text-sm text-white/70">
                   Kelola tahapan proses akreditasi yang tampil di halaman publik
                 </p>
               </div>
             </div>
+
             <div className="flex items-center gap-3">
               <div className="rounded-xl border border-white/20 bg-white/15 px-4 py-2.5 text-center">
-                <div className="text-xl font-black">{steps.length}</div>
-                <div className="text-xs font-semibold text-white/70">Total Langkah</div>
+                <div className="text-xl font-black">
+                  {steps.length}
+                </div>
+
+                <div className="text-xs font-semibold text-white/70">
+                  Total Langkah
+                </div>
               </div>
+
               <button
                 type="button"
                 onClick={() => openModal()}
@@ -191,7 +248,11 @@ const AccreditationStepsManagement = () => {
               <div className="flex items-center justify-center w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-2xl">
                 <FaListOl className="text-2xl text-gray-400" />
               </div>
-              <p className="mb-1 font-semibold text-gray-500">Belum ada langkah</p>
+
+              <p className="mb-1 font-semibold text-gray-500">
+                Belum ada langkah
+              </p>
+
               <button
                 type="button"
                 onClick={() => openModal()}
@@ -219,12 +280,18 @@ const AccreditationStepsManagement = () => {
                 {/* Konten */}
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <h3 className="text-sm font-black text-gray-900">{step.title}</h3>
+                    <h3 className="text-sm font-black text-gray-900">
+                      {step.title}
+                    </h3>
+
                     <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
                       {step.tag}
                     </span>
                   </div>
-                  <p className="text-xs leading-relaxed text-gray-500 line-clamp-2">{step.description}</p>
+
+                  <p className="text-xs leading-relaxed text-gray-500 line-clamp-2">
+                    {step.description}
+                  </p>
                 </div>
 
                 {/* Tombol aksi */}
@@ -232,21 +299,28 @@ const AccreditationStepsManagement = () => {
                   <button
                     type="button"
                     onClick={() => handleMove(step.id, 'up')}
-                    disabled={index === 0 || movingId === step.id}
+                    disabled={
+                      index === 0 || movingId === step.id
+                    }
                     className="flex items-center justify-center w-8 h-8 text-xs transition-all rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Naikan urutan"
                   >
                     <FaArrowUp />
                   </button>
+
                   <button
                     type="button"
                     onClick={() => handleMove(step.id, 'down')}
-                    disabled={index === steps.length - 1 || movingId === step.id}
+                    disabled={
+                      index === steps.length - 1 ||
+                      movingId === step.id
+                    }
                     className="flex items-center justify-center w-8 h-8 text-xs transition-all rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Turunkan urutan"
                   >
                     <FaArrowDown />
                   </button>
+
                   <button
                     type="button"
                     onClick={() => openModal(step)}
@@ -255,6 +329,7 @@ const AccreditationStepsManagement = () => {
                     <FaEdit />
                     Edit
                   </button>
+
                   <button
                     type="button"
                     onClick={() => handleDelete(step.id)}
@@ -272,50 +347,70 @@ const AccreditationStepsManagement = () => {
 
       {/* Modal Form */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-black/60 backdrop-blur-sm">
 
-            {/* Header modal */}
-            <div className="relative py-5 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 px-7">
-              <div className="absolute w-24 h-24 rounded-full pointer-events-none -right-6 -top-6 bg-white/10" />
-              <div className="relative flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/25">
-                    <FaListOl className="text-lg text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-white">
-                      {editingStep ? 'Edit Langkah' : 'Tambah Langkah Baru'}
-                    </h3>
-                    <p className="text-xs text-white/80">
-                      {editingStep ? 'Perbarui informasi langkah akreditasi' : 'Tambahkan langkah baru ke alur akreditasi'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="p-2 transition-colors rounded-xl text-white/70 hover:bg-white/20 hover:text-white"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8 shadow-2xl">
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between py-5 border-b border-gray-100 px-7">
+              <div>
+                <h3 className="text-lg font-black text-gray-900">
+                  {editingStep
+                    ? 'Edit Langkah'
+                    : 'Tambah Langkah Baru'}
+                </h3>
+
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {editingStep
+                    ? 'Perbarui informasi langkah akreditasi'
+                    : 'Isi detail langkah baru'}
+                </p>
               </div>
+
+              <button
+                type="button"
+                onClick={closeModal}
+                className="p-2 text-gray-400 transition-colors hover:bg-gray-100 rounded-xl"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="py-6 space-y-4 px-7">
+            {/* Form */}
+            <form
+              onSubmit={handleSubmit}
+              className="py-6 space-y-5 px-7"
+            >
 
               {/* Icon */}
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-gray-700 uppercase tracking-wide">
-                  Icon (Emoji) <span className="text-red-500">*</span>
+                <label className="block mb-2 text-sm font-bold text-gray-800">
+                  Icon (Emoji)
+                  <span className="text-red-500"> *</span>
                 </label>
+
                 <input
                   type="text"
                   value={formData.icon}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, icon: e.target.value }))}
-                  className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      icon: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
                   placeholder="Contoh: 📝"
                   maxLength={20}
                   required
@@ -324,14 +419,21 @@ const AccreditationStepsManagement = () => {
 
               {/* Judul */}
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-gray-700 uppercase tracking-wide">
-                  Judul Langkah <span className="text-red-500">*</span>
+                <label className="block mb-2 text-sm font-bold text-gray-800">
+                  Judul Langkah
+                  <span className="text-red-500"> *</span>
                 </label>
+
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      title: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
                   placeholder="Contoh: Permohonan Akreditasi"
                   required
                 />
@@ -339,14 +441,21 @@ const AccreditationStepsManagement = () => {
 
               {/* Tag */}
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-gray-700 uppercase tracking-wide">
-                  Tag / Label <span className="text-red-500">*</span>
+                <label className="block mb-2 text-sm font-bold text-gray-800">
+                  Tag / Label
+                  <span className="text-red-500"> *</span>
                 </label>
+
                 <input
                   type="text"
                   value={formData.tag}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, tag: e.target.value }))}
-                  className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      tag: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
                   placeholder="Contoh: Via Portal KAN"
                   maxLength={100}
                   required
@@ -355,35 +464,49 @@ const AccreditationStepsManagement = () => {
 
               {/* Deskripsi */}
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-gray-700 uppercase tracking-wide">
-                  Deskripsi <span className="text-red-500">*</span>
+                <label className="block mb-2 text-sm font-bold text-gray-800">
+                  Deskripsi
+                  <span className="text-red-500"> *</span>
                 </label>
+
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   rows={5}
-                  className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 resize-y rounded-xl bg-gray-50 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 resize-y rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
                   placeholder="Tuliskan penjelasan langkah ini secara lengkap..."
                   required
                 />
               </div>
 
+              {/* Buttons */}
               <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
+                  className="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50 transition-all"
                 >
                   Batal
                 </button>
+
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-6 py-2.5 text-sm font-bold text-white shadow-md hover:from-blue-800 hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
+                  className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-bold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {saving ? 'Menyimpan...' : editingStep ? 'Simpan Perubahan' : 'Tambah Langkah'}
+                  {saving
+                    ? 'Menyimpan...'
+                    : editingStep
+                    ? 'Simpan Perubahan'
+                    : 'Tambah Langkah'}
                 </button>
               </div>
+
             </form>
           </div>
         </div>
