@@ -14,6 +14,7 @@ import {
   FaEyeSlash,
   FaTimesCircle,
   FaTrash,
+  FaPlus,
 } from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
 
@@ -59,6 +60,87 @@ const mailFieldDefs = [
   },
 ];
 
+// Key kontak yang dikelola lewat editor khusus (bukan input biasa)
+const CONTACT_LIST_KEYS = [
+  'contact_email',
+  'contact_phone',
+  'contact_emails',
+  'contact_phones',
+  'contact_hours',
+];
+
+const parseList = (raw) => {
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+};
+
+const ContactListEditor = ({
+  title,
+  items,
+  onChange,
+  valuePlaceholder,
+  inputType,
+  addLabel,
+}) => {
+  const update = (i, field, v) =>
+    onChange(items.map((it, idx) => (idx === i ? { ...it, [field]: v } : it)));
+  const remove = (i) => onChange(items.filter((_, idx) => idx !== i));
+  const add = () => onChange([...items, { label: '', value: '' }]);
+
+  return (
+    <div className="border-b border-gray-100 pb-7">
+      <label className="block mb-3 text-sm font-bold text-gray-800">
+        {title}
+      </label>
+
+      <div className="space-y-3">
+        {items.map((item, i) => (
+          <div
+            key={i}
+            className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr_auto]"
+          >
+            <input
+              type="text"
+              value={item.label}
+              onChange={(e) => update(i, 'label', e.target.value)}
+              placeholder="Label (contoh: Direktorat Lab)"
+              className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+            />
+            <input
+              type={inputType}
+              value={item.value}
+              onChange={(e) => update(i, 'value', e.target.value)}
+              placeholder={valuePlaceholder}
+              className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+            />
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="flex items-center justify-center text-red-500 transition border border-red-200 w-11 h-11 rounded-xl hover:bg-red-50"
+              aria-label="Hapus"
+            >
+              <FaTrash className="text-xs" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={add}
+        className="inline-flex items-center gap-2 px-4 py-2 mt-3 text-sm font-bold transition border border-dashed rounded-xl border-primary-300 text-primary-700 hover:bg-primary-50"
+      >
+        <FaPlus className="text-xs" />
+        {addLabel}
+      </button>
+    </div>
+  );
+};
+
 const SettingsManagement = () => {
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +160,13 @@ const SettingsManagement = () => {
   const [mailMsg, setMailMsg] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+
+  const [contactLists, setContactLists] = useState({
+    emails: [],
+    phones: [],
+  });
+
+  const [contactHours, setContactHours] = useState({ id: '', en: '' });
 
   const isMailGroup = activeGroup === 'mail';
 
@@ -115,6 +204,8 @@ const SettingsManagement = () => {
         if (!nextGroups.includes(activeGroup)) {
           setActiveGroup(nextGroups[0] || 'general');
         }
+      } else {
+        console.error('Gagal memuat grup:', data);
       }
     } catch (error) {
       console.error('Error fetching groups:', error);
@@ -140,6 +231,34 @@ const SettingsManagement = () => {
         );
 
         setSettings(filteredData);
+
+        // Isi daftar email & telepon (data lama jadi baris pertama)
+        const find = (k) => filteredData.find((s) => s.key === k)?.value_id;
+
+        const emails = parseList(find('contact_emails'));
+        const phones = parseList(find('contact_phones'));
+
+        setContactLists({
+          emails: emails.length
+            ? emails
+            : find('contact_email')
+              ? [{ label: '', value: find('contact_email') }]
+              : [],
+          phones: phones.length
+            ? phones
+            : find('contact_phone')
+              ? [{ label: '', value: find('contact_phone') }]
+              : [],
+        });
+
+        // Isi jam operasional
+        const hours = filteredData.find((s) => s.key === 'contact_hours');
+        setContactHours({
+          id: hours?.value_id || '',
+          en: hours?.value_en || '',
+        });
+      } else {
+        console.error('Gagal memuat pengaturan:', data);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -233,11 +352,65 @@ const SettingsManagement = () => {
 
       const settingsToUpdate = settings
         .filter((setting) => setting.group === activeGroup)
+        .filter(
+          (setting) =>
+            !(
+              activeGroup === 'contact' &&
+              CONTACT_LIST_KEYS.includes(setting.key)
+            )
+        )
         .map((setting) => ({
           key: setting.key,
           value_id: setting.value_id,
           value_en: setting.value_en || null,
         }));
+
+      if (activeGroup === 'contact') {
+        const clean = (list) =>
+          list
+            .map((it) => ({
+              label: (it.label || '').trim(),
+              value: (it.value || '').trim(),
+            }))
+            .filter((it) => it.value);
+
+        const emails = clean(contactLists.emails);
+        const phones = clean(contactLists.phones);
+
+        settingsToUpdate.push(
+          {
+            key: 'contact_emails',
+            value_id: JSON.stringify(emails),
+            value_en: null,
+            group: 'contact',
+          },
+          {
+            key: 'contact_phones',
+            value_id: JSON.stringify(phones),
+            value_en: null,
+            group: 'contact',
+          },
+          // dua key lama tetap diisi item pertama, supaya yang lama tidak rusak
+          {
+            key: 'contact_email',
+            value_id: emails[0]?.value || '',
+            value_en: null,
+            group: 'contact',
+          },
+          {
+            key: 'contact_phone',
+            value_id: phones[0]?.value || '',
+            value_en: null,
+            group: 'contact',
+          },
+          {
+            key: 'contact_hours',
+            value_id: contactHours.id.trim(),
+            value_en: contactHours.en.trim() || null,
+            group: 'contact',
+          }
+        );
+      }
 
       const response = await fetch(
         '/api/v1/admin/settings/bulk-update',
@@ -402,7 +575,11 @@ const SettingsManagement = () => {
   const filteredSettings = settings.filter(
     (setting) =>
       setting.group === activeGroup &&
-      activeGroup !== 'mail'
+      activeGroup !== 'mail' &&
+      !(
+        activeGroup === 'contact' &&
+        CONTACT_LIST_KEYS.includes(setting.key)
+      )
   );
 
   const renderSaveMessage = () => {
@@ -604,7 +781,7 @@ const SettingsManagement = () => {
       );
     }
 
-    if (filteredSettings.length === 0) {
+    if (filteredSettings.length === 0 && activeGroup !== 'contact') {
       return (
         <div className="py-16 text-center text-gray-500">
           <FaCog className="mx-auto mb-3 text-4xl text-gray-300" />
@@ -638,6 +815,76 @@ const SettingsManagement = () => {
             {renderSettingInput(setting)}
           </div>
         ))}
+
+        {activeGroup === 'contact' && (
+          <>
+            <ContactListEditor
+              title="Email"
+              items={contactLists.emails}
+              onChange={(emails) =>
+                setContactLists((p) => ({ ...p, emails }))
+              }
+              valuePlaceholder="nama@bsn.go.id"
+              inputType="email"
+              addLabel="Tambah email"
+            />
+
+            <ContactListEditor
+              title="Telepon"
+              items={contactLists.phones}
+              onChange={(phones) =>
+                setContactLists((p) => ({ ...p, phones }))
+              }
+              valuePlaceholder="081234567890"
+              inputType="tel"
+              addLabel="Tambah telepon"
+            />
+
+            <div className="pb-7">
+              <label className="block mb-3 text-sm font-bold text-gray-800">
+                Jam Operasional
+              </label>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <div className="text-xs text-gray-400 font-semibold mb-1.5">
+                    🇮🇩 Indonesia
+                  </div>
+                  <input
+                    type="text"
+                    value={contactHours.id}
+                    onChange={(e) =>
+                      setContactHours((p) => ({
+                        ...p,
+                        id: e.target.value,
+                      }))
+                    }
+                    placeholder="Senin - Jumat: 08:00 - 17:00 WIB"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <div className="text-xs text-gray-400 font-semibold mb-1.5">
+                    🇬🇧 English
+                  </div>
+                  <input
+                    type="text"
+                    value={contactHours.en}
+                    onChange={(e) =>
+                      setContactHours((p) => ({
+                        ...p,
+                        en: e.target.value,
+                      }))
+                    }
+                    placeholder="Monday - Friday: 08:00 - 17:00 WIB"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     );
   };

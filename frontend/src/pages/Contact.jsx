@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import {
@@ -7,9 +8,38 @@ import {
   FaMapMarkerAlt,
   FaClock,
   FaPaperPlane,
+  FaExternalLinkAlt,
 } from "react-icons/fa";
+import useContactSettings, {
+  phoneLink,
+  mapsLink,
+  gmailLink,
+} from "../hooks/useContactSettings";
+
+// ===== Lokasi KAN (peta) =====
+// Link Google Maps resmi KAN
+const MAP_LINK = "https://maps.app.goo.gl/nkwPBRbDZqYUqEnd6";
+// ID tempat "Komite Akreditasi Nasional" -> menampilkan pin + kartu tempat
+const MAP_EMBED =
+  "https://www.google.com/maps?cid=5281982118987187889&hl=id&output=embed";
+// Cadangan kalau pin di atas belum pas (pakai koordinat):
+// const MAP_EMBED = "https://www.google.com/maps?q=-6.236362,106.8233071&z=18&hl=id&output=embed";
+
+// Kotak abu-abu yang tampil selama data dari admin dimuat
+const CardSkeleton = () => (
+  <div className="space-y-2 animate-pulse">
+    <div className="w-11/12 h-4 bg-gray-200 rounded"></div>
+    <div className="w-2/3 h-4 bg-gray-200 rounded"></div>
+  </div>
+);
 
 const Contact = () => {
+  const { i18n } = useTranslation();
+  const lang = (i18n.resolvedLanguage || i18n.language || "id").startsWith("en")
+    ? "en"
+    : "id";
+  const contact = useContactSettings(lang);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,13 +62,6 @@ const Contact = () => {
       submit: "Kirim Pesan",
       submitting: "Mengirim...",
       success: "Pesan berhasil dikirim! Kami akan menghubungi Anda segera.",
-    },
-    info: {
-      address:
-        "Gedung I BPPT Lt. 20, Jl. M.H. Thamrin No. 8, Jakarta Pusat 10340",
-      phone: "+62 21 316 0735",
-      email: "info@kan.go.id",
-      hours: "Senin - Jumat: 08:00 - 17:00 WIB",
     },
   };
 
@@ -91,30 +114,97 @@ const Contact = () => {
     }
   };
 
+  const { loaded, address, hours, emails, phones } = contact;
+
+  const linkClass = "block transition-colors hover:text-primary-600";
+
+  const labelEl = (label) =>
+    label ? (
+      <span className="block text-xs font-semibold text-gray-400">
+        {label}
+      </span>
+    ) : null;
+
   const contactInfo = [
     {
       icon: FaMapMarkerAlt,
       title: "Alamat",
       titleEn: "Address",
-      content: t.info.address,
+      content: !loaded ? (
+        <CardSkeleton />
+      ) : address ? (
+        <a
+          href={mapsLink(address)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={linkClass}
+        >
+          {address}
+        </a>
+      ) : (
+        <span>-</span>
+      ),
     },
     {
       icon: FaPhone,
       title: "Telepon",
       titleEn: "Phone",
-      content: t.info.phone,
+      content: !loaded ? (
+        <CardSkeleton />
+      ) : phones.length ? (
+        phones.map((p, i) => {
+          const { href, isWa } = phoneLink(p.value);
+          return (
+            <div key={i}>
+              {labelEl(p.label)}
+              <a
+                href={href}
+                target={isWa ? "_blank" : undefined}
+                rel={isWa ? "noopener noreferrer" : undefined}
+                className={linkClass}
+              >
+                {p.value}
+              </a>
+            </div>
+          );
+        })
+      ) : (
+        <span>-</span>
+      ),
     },
     {
       icon: FaEnvelope,
       title: "Email",
       titleEn: "Email",
-      content: t.info.email,
+      content: !loaded ? (
+        <CardSkeleton />
+      ) : emails.length ? (
+        emails.map((m, i) => (
+          <div key={i}>
+            {labelEl(m.label)}
+            <a
+              href={gmailLink(m.value)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${linkClass} break-all`}
+            >
+              {m.value}
+            </a>
+          </div>
+        ))
+      ) : (
+        <span>-</span>
+      ),
     },
     {
       icon: FaClock,
       title: "Jam Operasional",
       titleEn: "Operating Hours",
-      content: t.info.hours,
+      content: !loaded ? (
+        <CardSkeleton />
+      ) : (
+        <span>{hours || "-"}</span>
+      ),
     },
   ];
 
@@ -164,7 +254,9 @@ const Contact = () => {
                       {item.title}
                     </h3>
 
-                    <p className="text-gray-600">{item.content}</p>
+                    <div className="space-y-2 text-gray-600">
+                      {item.content}
+                    </div>
                   </div>
                 );
               })}
@@ -290,15 +382,26 @@ const Contact = () => {
 
                 <div className="rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-200 h-[600px]">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.6664849803897!2d106.82288931476895!3d-6.176104995527208!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f42b33e1b4c3%3A0x7a6e6f7a6f7a6f7a!2sGedung%20BPPT%20I!5e0!3m2!1sen!2sid!4v1234567890123!5m2!1sen!2sid"
+                    title="Lokasi Komite Akreditasi Nasional"
+                    src={MAP_EMBED}
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}
-                    allowFullScreen=""
+                    allowFullScreen
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                   ></iframe>
                 </div>
+
+                <a
+                  href={MAP_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 mt-4 font-bold transition-colors text-primary-700 hover:text-primary-900"
+                >
+                  <FaExternalLinkAlt className="text-sm" />
+                  Buka di Google Maps
+                </a>
               </div>
             </div>
           </div>

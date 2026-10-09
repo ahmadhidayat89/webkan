@@ -659,8 +659,8 @@ const DocumentManagement = () => {
                         }
                     }}
                     className={`transition-colors ${isClickable
-                            ? 'cursor-pointer hover:bg-gray-50'
-                            : ''
+                        ? 'cursor-pointer hover:bg-gray-50'
+                        : ''
                         }`}
                 >
                     {/* Nama */}
@@ -686,8 +686,8 @@ const DocumentManagement = () => {
                                     }}
                                     disabled={!hasChildren}
                                     className={`flex items-center justify-center flex-shrink-0 w-6 h-6 mr-1 rounded-md transition-colors ${hasChildren
-                                            ? 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 cursor-pointer'
-                                            : 'text-transparent cursor-default'
+                                        ? 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 cursor-pointer'
+                                        : 'text-transparent cursor-default'
                                         }`}
                                     title={
                                         hasChildren
@@ -699,8 +699,8 @@ const DocumentManagement = () => {
                                 >
                                     <FaChevronRight
                                         className={`text-xs transition-transform duration-200 ${expanded
-                                                ? 'rotate-90'
-                                                : ''
+                                            ? 'rotate-90'
+                                            : ''
                                             }`}
                                     />
                                 </button>
@@ -711,9 +711,9 @@ const DocumentManagement = () => {
                             {/* Icon */}
                             <div
                                 className={`flex items-center justify-center flex-shrink-0 w-9 h-9 rounded-lg mr-3 ${item.type ===
-                                        'category'
-                                        ? 'bg-primary-50 text-primary-700'
-                                        : 'bg-gray-100 text-gray-600'
+                                    'category'
+                                    ? 'bg-primary-50 text-primary-700'
+                                    : 'bg-gray-100 text-gray-600'
                                     }`}
                             >
                                 {item.type ===
@@ -747,9 +747,9 @@ const DocumentManagement = () => {
                     <td className="px-5 py-4">
                         <span
                             className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${item.type ===
-                                    'category'
-                                    ? 'bg-primary-50 text-primary-700'
-                                    : 'bg-gray-100 text-gray-700'
+                                'category'
+                                ? 'bg-primary-50 text-primary-700'
+                                : 'bg-gray-100 text-gray-700'
                                 }`}
                         >
                             {item.type ===
@@ -816,8 +816,8 @@ const DocumentManagement = () => {
                     <td className="px-5 py-4">
                         <span
                             className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${item.is_active
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'bg-gray-100 text-gray-500'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-gray-100 text-gray-500'
                                 }`}
                         >
                             {item.is_active
@@ -1112,9 +1112,9 @@ const DocumentManagement = () => {
                             {saveMsg && (
                                 <div
                                     className={`px-4 py-3 rounded-xl text-sm font-semibold ${saveMsg.type ===
-                                            'success'
-                                            ? 'bg-emerald-50 text-emerald-700'
-                                            : 'bg-red-50 text-red-700'
+                                        'success'
+                                        ? 'bg-emerald-50 text-emerald-700'
+                                        : 'bg-red-50 text-red-700'
                                         }`}
                                 >
                                     {saveMsg.text}
@@ -1179,7 +1179,7 @@ const DocumentManagement = () => {
                             {/* Type */}
                             <div>
                                 <label className="block mb-1 text-sm font-bold text-gray-700">
-                                    Tipe Data *
+                                    Tipe Data <span className="text-red-500">*</span>
                                 </label>
 
                                 <select
@@ -1208,12 +1208,8 @@ const DocumentManagement = () => {
                             {/* Name */}
                             <div>
                                 <label className="block mb-1 text-sm font-bold text-gray-700">
-                                    Nama{' '}
-                                    {form.type ===
-                                        'document'
-                                        ? 'Dokumen'
-                                        : 'Kategori'}{' '}
-                                    *
+                                    Nama {form.type === 'document' ? 'Dokumen' : 'Kategori'}{' '}
+                                    <span className="text-red-500">*</span>
                                 </label>
 
                                 <input
@@ -1370,8 +1366,7 @@ const DocumentManagement = () => {
                                         {/* Link */}
                                         <div>
                                             <label className="block mb-1 text-sm font-bold text-gray-700">
-                                                Link Dokumen
-                                                *
+                                                Link Dokumen <span className="text-red-500">*</span>
                                             </label>
 
                                             <div className="relative">
@@ -1460,14 +1455,14 @@ const DocumentManagement = () => {
                                         )
                                     }
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.is_active
-                                            ? 'bg-primary-600'
-                                            : 'bg-gray-300'
+                                        ? 'bg-primary-600'
+                                        : 'bg-gray-300'
                                         }`}
                                 >
                                     <span
                                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.is_active
-                                                ? 'translate-x-6'
-                                                : 'translate-x-1'
+                                            ? 'translate-x-6'
+                                            : 'translate-x-1'
                                             }`}
                                     />
                                 </button>
