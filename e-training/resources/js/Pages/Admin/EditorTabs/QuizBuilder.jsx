@@ -124,8 +124,9 @@ export default function QuizBuilder({ quiz }) {
             <div className="p-4 border border-gray-200 bg-gray-50 rounded-xl">
                 <div className="grid items-end grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
                     <div>
-                        <label className="block mb-1 text-xs font-bold text-gray-600 uppercase">Mode Kuis</label>
+                        <label htmlFor="quiz_mode" className="block mb-1 text-xs font-bold text-gray-600 uppercase">Mode Kuis</label>
                         <select
+                            id="quiz_mode"
                             value={settings.quiz_mode}
                             onChange={e => setSettings({ ...settings, quiz_mode: e.target.value })}
                             className="w-full py-2 text-sm border-gray-300 rounded-lg"
@@ -136,8 +137,9 @@ export default function QuizBuilder({ quiz }) {
                         </select>
                     </div>
                     <div>
-                        <label className="block mb-1 text-xs font-bold text-gray-600 uppercase">Durasi (Menit)</label>
+                        <label htmlFor="duration_minutes" className="block mb-1 text-xs font-bold text-gray-600 uppercase">Durasi (Menit)</label>
                         <input
+                            id="duration_minutes"
                             type="number"
                             value={settings.duration_minutes}
                             onChange={e => setSettings({ ...settings, duration_minutes: e.target.value })}
@@ -146,8 +148,9 @@ export default function QuizBuilder({ quiz }) {
                         />
                     </div>
                     <div>
-                        <label className="block mb-1 text-xs font-bold text-gray-600 uppercase">Passing Score</label>
+                        <label htmlFor="passing_score" className="block mb-1 text-xs font-bold text-gray-600 uppercase">Passing Score</label>
                         <input
+                            id="passing_score"
                             type="number"
                             value={settings.passing_score}
                             onChange={e => setSettings({ ...settings, passing_score: e.target.value })}
@@ -155,8 +158,9 @@ export default function QuizBuilder({ quiz }) {
                         />
                     </div>
                     <div>
-                        <label className="block mb-1 text-xs font-bold text-gray-600 uppercase">Maks. Attempt</label>
+                        <label htmlFor="max_attempts" className="block mb-1 text-xs font-bold text-gray-600 uppercase">Maks. Attempt</label>
                         <input
+                            id="max_attempts"
                             type="number"
                             min="1"
                             value={settings.max_attempts}
@@ -165,8 +169,9 @@ export default function QuizBuilder({ quiz }) {
                         />
                     </div>
                     <div>
-                        <label className="block mb-1 text-xs font-bold text-gray-600 uppercase">Deadline</label>
+                        <label htmlFor="deadline_at" className="block mb-1 text-xs font-bold text-gray-600 uppercase">Deadline</label>
                         <input
+                            id="deadline_at"
                             type="datetime-local"
                             value={settings.deadline_at}
                             onChange={e => setSettings({ ...settings, deadline_at: e.target.value })}
@@ -213,8 +218,9 @@ export default function QuizBuilder({ quiz }) {
                                 </h3>
                                 <div className="flex items-center gap-3">
                                     <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
-                                        <span className="text-xs font-bold text-gray-500 uppercase">Poin:</span>
+                                        <label htmlFor="question_points" className="text-xs font-bold text-gray-500 uppercase">Poin:</label>
                                         <input
+                                            id="question_points"
                                             type="number"
                                             className="w-16 px-2 py-1 text-sm font-bold text-center border-gray-300 rounded"
                                             value={activeQ.points}
@@ -224,9 +230,9 @@ export default function QuizBuilder({ quiz }) {
                                 </div>
                             </div>
 
-                            {/* Pertanyaan RTE */}
+                            {/* Pertanyaan RTE (bukan kontrol native, jadi memakai <p>) */}
                             <div>
-                                <label className="block mb-2 text-sm font-bold text-gray-700">Teks Pertanyaan</label>
+                                <p className="block mb-2 text-sm font-bold text-gray-700">Teks Pertanyaan</p>
                                 <RichTextEditor
                                     key={`q-${activeQ.id || 'new'}-${activeQIndex}`}
                                     content={activeQ.question}
@@ -236,12 +242,13 @@ export default function QuizBuilder({ quiz }) {
 
                             {/* Image Upload */}
                             <div className="p-4 border border-gray-100 bg-gray-50 rounded-xl">
-                                <label className="block mb-2 text-sm font-bold text-gray-700">Gambar Pendukung (Opsional)</label>
+                                <p className="block mb-2 text-sm font-bold text-gray-700">Gambar Pendukung (Opsional)</p>
                                 {activeQ.image_path ? (
                                     <div className="relative inline-block">
                                         <img src={activeQ.image_path} className="border rounded-lg shadow-sm max-h-48" alt="Ilustrasi Soal" />
-                                        <label className="absolute p-2 transition-colors bg-white border rounded-full shadow-md cursor-pointer -bottom-3 -right-3 hover:bg-gray-50">
+                                        <label className="absolute p-2 transition-colors bg-white border rounded-full shadow-md cursor-pointer -bottom-3 -right-3 hover:bg-gray-50" title="Ganti gambar">
                                             <ImageIcon className="w-4 h-4 text-gray-600" />
+                                            <span className="sr-only">Ganti gambar</span>
                                             <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
                                         </label>
                                     </div>
@@ -257,7 +264,7 @@ export default function QuizBuilder({ quiz }) {
                             {activeQ.type === 'multiple_choice' ? (
                                 <div>
                                     <div className="flex items-center justify-between mb-3">
-                                        <label className="block text-sm font-bold text-gray-700">Pilihan Jawaban</label>
+                                        <p className="block text-sm font-bold text-gray-700">Pilihan Jawaban</p>
                                         <span className="text-xs font-medium text-gray-500">{activeQ.options.length}/8 Opsi</span>
                                     </div>
                                     <div className="space-y-3">
@@ -270,17 +277,20 @@ export default function QuizBuilder({ quiz }) {
                                                     }}
                                                     className={`w-8 h-8 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${opt.is_correct ? 'border-green-500 bg-green-500 text-white shadow-sm' : 'border-gray-300 hover:border-green-400 bg-gray-50'}`}
                                                     title={opt.is_correct ? "Jawaban Benar" : "Tandai sebagai Benar"}
+                                                    aria-label={opt.is_correct ? `Opsi ${String.fromCharCode(65 + oIdx)} adalah jawaban benar` : `Tandai opsi ${String.fromCharCode(65 + oIdx)} sebagai benar`}
                                                 >
                                                     {opt.is_correct ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-xs font-bold text-gray-400">{String.fromCharCode(65 + oIdx)}</span>}
                                                 </button>
                                                 <input
                                                     type="text"
+                                                    aria-label={`Teks opsi ${String.fromCharCode(65 + oIdx)}`}
                                                     className={`flex-1 border-gray-300 rounded-lg py-2.5 px-4 text-sm focus:ring-navy-500 focus:border-navy-500 transition-colors ${opt.is_correct ? 'bg-green-50 border-green-200' : 'bg-white'}`}
                                                     value={opt.option_text}
                                                     placeholder={`Opsi ${String.fromCharCode(65 + oIdx)}`}
                                                     onChange={e => {
-                                                        const newOpts = [...activeQ.options];
-                                                        newOpts[oIdx].option_text = e.target.value;
+                                                        const newOpts = activeQ.options.map((o, i) =>
+                                                            i === oIdx ? { ...o, option_text: e.target.value } : o
+                                                        );
                                                         updateQuestion({ options: newOpts });
                                                     }}
                                                 />
@@ -291,6 +301,7 @@ export default function QuizBuilder({ quiz }) {
                                                     }}
                                                     className="flex items-center justify-center w-10 h-10 text-red-400 transition-colors border border-transparent rounded-lg hover:text-red-600 hover:bg-red-50 hover:border-red-100"
                                                     title="Hapus Opsi"
+                                                    aria-label={`Hapus opsi ${String.fromCharCode(65 + oIdx)}`}
                                                 >
                                                     <Trash2 className="w-5 h-5" />
                                                 </button>
@@ -312,8 +323,9 @@ export default function QuizBuilder({ quiz }) {
                                 </div>
                             ) : (
                                 <div>
-                                    <label className="block mb-2 text-sm font-bold text-gray-700">Panduan Jawaban Benar (Info Admin)</label>
+                                    <label htmlFor="question_explanation" className="block mb-2 text-sm font-bold text-gray-700">Panduan Jawaban Benar (Info Admin)</label>
                                     <textarea
+                                        id="question_explanation"
                                         className="w-full p-4 text-sm border-gray-300 rounded-xl bg-gray-50 focus:ring-navy-500 focus:border-navy-500"
                                         rows="4"
                                         placeholder="Ketik referensi/panduan jawaban benar untuk mempermudah admin saat mengoreksi..."
