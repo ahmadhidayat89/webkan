@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import DOMPurify from 'dompurify';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import {
@@ -17,6 +16,7 @@ import {
   FaPlay,
   FaImage,
 } from 'react-icons/fa';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 
 const SURVEY_BASE = 'survey-kepuasan-pelanggan';
 const SURVEY_LIST = 'hasil-survei';
@@ -219,9 +219,8 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
           onLoad={() => setIsLoading(false)}
           className="object-contain max-w-full max-h-full transition-transform duration-200"
           style={{
-            transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${
-              offset.y / zoom
-            }px)`,
+            transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${offset.y / zoom
+              }px)`,
             opacity: isLoading ? 0 : 1,
             transition: dragging
               ? 'none'
@@ -273,11 +272,10 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
                 setOffset({ x: 0, y: 0 });
                 setIsLoading(true);
               }}
-              className={`flex-shrink-0 w-14 h-10 rounded-lg overflow-hidden border-2 transition-all ${
-                i === current
+              className={`flex-shrink-0 w-14 h-10 rounded-lg overflow-hidden border-2 transition-all ${i === current
                   ? 'border-white scale-110'
                   : 'border-white/20 opacity-50 hover:opacity-80'
-              }`}
+                }`}
             >
               <img
                 src={im.src}
@@ -414,8 +412,8 @@ const DynamicPage = () => {
     surveyYear || isSurveyList
       ? SURVEY_BASE
       : currentHub
-      ? currentHub.base
-      : pageId;
+        ? currentHub.base
+        : pageId;
 
   // ─── Section pages ─────────────────────────────────────────────────────────
   const sectionPages = {
@@ -849,7 +847,7 @@ const DynamicPage = () => {
           setSurveyYears(d.data);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setSurveyLoading(false));
   }, [isSurveyList, surveyYear]);
 
@@ -871,7 +869,7 @@ const DynamicPage = () => {
           }));
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setSubpagesLoading(false));
   }, [currentHub?.base]);
 
@@ -887,28 +885,28 @@ const DynamicPage = () => {
   // ─── Meta ──────────────────────────────────────────────────────────────────
   const meta = surveyYear
     ? {
-        label: `Survei Kepuasan Pelanggan ${surveyYear}`,
-        section: 'Proses Akreditasi',
-      }
+      label: `Survei Kepuasan Pelanggan ${surveyYear}`,
+      section: 'Proses Akreditasi',
+    }
     : isSurveyList
-    ? {
+      ? {
         label: 'Hasil Survei per Tahun',
         section: 'Proses Akreditasi',
       }
-    : hubSlug
-    ? {
-        label:
-          currentSubpage?.title ||
-          pageContent?.title ||
-          humanizeSlug(hubSlug),
-        section: 'Layanan Akreditasi',
-      }
-    : isHubList
-    ? {
-        label: currentHub.listHeading,
-        section: 'Layanan Akreditasi',
-      }
-    : pageMeta[pageId];
+      : hubSlug
+        ? {
+          label:
+            currentSubpage?.title ||
+            pageContent?.title ||
+            humanizeSlug(hubSlug),
+          section: 'Layanan Akreditasi',
+        }
+        : isHubList
+          ? {
+            label: currentHub.listHeading,
+            section: 'Layanan Akreditasi',
+          }
+          : pageMeta[pageId];
 
   const title = meta ? meta.label : pageId;
   const sectionKey = meta?.section || null;
@@ -924,8 +922,8 @@ const DynamicPage = () => {
 
   const yearIndex = surveyYear
     ? sortedYears.findIndex(
-        (s) => String(s.year) === String(surveyYear)
-      )
+      (s) => String(s.year) === String(surveyYear)
+    )
     : -1;
 
   const prevYear =
@@ -942,13 +940,13 @@ const DynamicPage = () => {
 
   const updatedAt = pageContent?.updated_at
     ? new Date(pageContent.updated_at).toLocaleDateString(
-        'id-ID',
-        {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }
-      )
+      'id-ID',
+      {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }
+    )
     : null;
 
   // ─── Enhance rendered content ──────────────────────────────────────────────
@@ -1379,11 +1377,10 @@ const DynamicPage = () => {
                               onClick={() =>
                                 navigate(`/${page.id}`)
                               }
-                              className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                                isActive
+                              className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${isActive
                                   ? 'bg-primary-50 text-primary-700 font-bold border-l-4 border-primary-600 pl-3'
                                   : 'text-gray-600 hover:bg-gray-50 hover:text-primary-600'
-                              }`}
+                                }`}
                             >
                               <span>{page.label}</span>
                             </button>
@@ -1561,11 +1558,10 @@ const DynamicPage = () => {
                     {/* Featured Image */}
                     {pageContent?.image && (
                       <div
-                        className={`relative mb-8 rounded-2xl overflow-hidden group cursor-zoom-in ${
-                          surveyYear || hubSlug
+                        className={`relative mb-8 rounded-2xl overflow-hidden group cursor-zoom-in ${surveyYear || hubSlug
                             ? 'bg-white border border-gray-200'
                             : 'shadow-2xl'
-                        }`}
+                          }`}
                         style={{ maxHeight: '480px' }}
                         onClick={() =>
                           setLightbox({
@@ -1641,21 +1637,7 @@ const DynamicPage = () => {
                               [&_.ql-align-justify]:text-justify
                             "
                             dangerouslySetInnerHTML={{
-                              __html: DOMPurify.sanitize(
-                                content,
-                                {
-                                  ADD_TAGS: ['iframe'],
-                                  ADD_ATTR: [
-                                    'allow',
-                                    'allowfullscreen',
-                                    'frameborder',
-                                    'scrolling',
-                                  ],
-                                }
-                              ).replace(
-                                /&nbsp;/g,
-                                ' '
-                              ),
+                              __html: sanitizeHtml(content).replace(/&nbsp;/g, ' '),
                             }}
                           />
                         </div>
@@ -1820,11 +1802,10 @@ const DynamicPage = () => {
                             onClick={() =>
                               navigate(`/${page.id}`)
                             }
-                            className={`text-left px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                              isActive
+                            className={`text-left px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${isActive
                                 ? 'bg-primary-50 text-primary-700 font-bold'
                                 : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                              }`}
                           >
                             {page.label}
                           </button>

@@ -56,6 +56,10 @@ class HtmlAutoTranslator
 
         $cache = [];
         foreach ($nodes as $node) {
+            if (!$node instanceof \DOMText) {
+                continue;
+            }
+
             $original = $node->nodeValue;
             if ($original === null) {
                 continue;
@@ -261,7 +265,7 @@ class HtmlAutoTranslator
 
     private function cacheKey(string $text, string $from, string $to): string
     {
-        return 'auto_translate:' . $from . ':' . $to . ':' . sha1($text);
+        return 'auto_translate:' . $from . ':' . $to . ':' . hash('sha256', $text);
     }
 
     private function parseTranslationResponse($response): ?string
