@@ -309,7 +309,12 @@ const SlidersManagement = () => {
                   {editingSlider ? 'Perbarui informasi slider' : 'Isi detail slider baru'}
                 </p>
               </div>
-              <button onClick={handleCloseModal} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400">
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                aria-label="Tutup"
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
+              >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -328,7 +333,7 @@ const SlidersManagement = () => {
 
               {/* Image Upload */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-2">Gambar Banner <span className="text-red-500">*</span></label>
+                <p className="block text-sm font-bold text-gray-800 mb-2">Gambar Banner <span className="text-red-500">*</span></p>
                 {imagePreview ? (
                   <div className="relative rounded-xl overflow-hidden border border-gray-200 group w-full">
                     <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
@@ -355,8 +360,9 @@ const SlidersManagement = () => {
               {/* Titles */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">Judul (Indonesia) <span className="text-red-500">*</span></label>
+                  <label htmlFor="slider_title_id" className="block text-sm font-bold text-gray-800 mb-2">Judul (Indonesia) <span className="text-red-500">*</span></label>
                   <input
+                    id="slider_title_id"
                     type="text"
                     value={formData.title_id}
                     onChange={(e) => setFormData({...formData, title_id: e.target.value})}
@@ -366,8 +372,9 @@ const SlidersManagement = () => {
                   {errors.title_id && <p className="text-red-500 text-xs mt-1">{errors.title_id[0]}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">Judul (Inggris)</label>
+                  <label htmlFor="slider_title_en" className="block text-sm font-bold text-gray-800 mb-2">Judul (Inggris)</label>
                   <input
+                    id="slider_title_en"
                     type="text"
                     value={formData.title_en}
                     onChange={(e) => setFormData({...formData, title_en: e.target.value})}
@@ -379,8 +386,9 @@ const SlidersManagement = () => {
               {/* Subtitles */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">Subjudul (Indonesia)</label>
+                  <label htmlFor="slider_subtitle_id" className="block text-sm font-bold text-gray-800 mb-2">Subjudul (Indonesia)</label>
                   <textarea
+                    id="slider_subtitle_id"
                     value={formData.subtitle_id}
                     onChange={(e) => setFormData({...formData, subtitle_id: e.target.value})}
                     rows="2"
@@ -388,8 +396,9 @@ const SlidersManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">Subjudul (Inggris)</label>
+                  <label htmlFor="slider_subtitle_en" className="block text-sm font-bold text-gray-800 mb-2">Subjudul (Inggris)</label>
                   <textarea
+                    id="slider_subtitle_en"
                     value={formData.subtitle_en}
                     onChange={(e) => setFormData({...formData, subtitle_en: e.target.value})}
                     rows="2"
@@ -400,8 +409,9 @@ const SlidersManagement = () => {
 
               {/* Link + Order + Active */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-2">URL Tautan <span className="text-gray-400 font-normal">(Opsional)</span></label>
+                <label htmlFor="slider_link" className="block text-sm font-bold text-gray-800 mb-2">URL Tautan <span className="text-gray-400 font-normal">(Opsional)</span></label>
                 <input
+                  id="slider_link"
                   type="text"
                   value={formData.link}
                   onChange={(e) => setFormData({...formData, link: e.target.value})}
@@ -412,11 +422,12 @@ const SlidersManagement = () => {
 
               <div className="grid grid-cols-2 gap-4 items-end">
                 <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">Urutan Tampil</label>
+                  <label htmlFor="slider_order" className="block text-sm font-bold text-gray-800 mb-2">Urutan Tampil</label>
                   <input
+                    id="slider_order"
                     type="number"
                     value={formData.order}
-                    onChange={(e) => setFormData({...formData, order: parseInt(e.target.value)})}
+                    onChange={(e) => setFormData({...formData, order: Number.parseInt(e.target.value, 10)})}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors"
                     min="0"
                   />
