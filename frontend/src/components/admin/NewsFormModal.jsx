@@ -196,7 +196,9 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Tutup"
             className="p-2 transition-colors rounded-lg hover:bg-gray-100"
           >
             <FaTimes className="text-xl text-gray-600" />
@@ -205,12 +207,12 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Category */}
+          {/* Category (grup radio, bukan satu kontrol, jadi memakai <p> + radiogroup) */}
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700">
+            <p id="news_category_label" className="block mb-2 text-sm font-bold text-gray-700">
               Kategori *
-            </label>
-            <div className="flex gap-4">
+            </p>
+            <div className="flex gap-4" role="radiogroup" aria-labelledby="news_category_label">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -238,9 +240,9 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
 
           {/* Image Upload */}
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700">
+            <p className="block mb-2 text-sm font-bold text-gray-700">
               Gambar Utama
-            </label>
+            </p>
             <div className="space-y-3">
               {imagePreview ? (
                 <div className="relative inline-block">
@@ -252,6 +254,7 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
                   <button
                     type="button"
                     onClick={handleRemoveImage}
+                    aria-label="Hapus gambar"
                     className="absolute p-2 text-white transition-colors bg-red-600 rounded-lg top-2 right-2 hover:bg-red-700"
                   >
                     <FaTrash />
@@ -278,10 +281,11 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
 
           {/* Title - Indonesian */}
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700">
+            <label htmlFor="news_title" className="block mb-2 text-sm font-bold text-gray-700">
               Judul (Bahasa Indonesia) *
             </label>
             <input
+              id="news_title"
               type="text"
               name="title"
               value={formData.title}
@@ -297,10 +301,11 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
 
           {/* Title - English */}
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700">
+            <label htmlFor="news_title_en" className="block mb-2 text-sm font-bold text-gray-700">
               Judul (Bahasa Inggris)
             </label>
             <input
+              id="news_title_en"
               type="text"
               name="title_en"
               value={formData.title_en}
@@ -312,10 +317,11 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
 
           {/* Excerpt - Indonesian */}
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700">
+            <label htmlFor="news_excerpt" className="block mb-2 text-sm font-bold text-gray-700">
               Ringkasan (Bahasa Indonesia)
             </label>
             <textarea
+              id="news_excerpt"
               name="excerpt"
               value={formData.excerpt}
               onChange={handleChange}
@@ -327,10 +333,11 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
 
           {/* Excerpt - English */}
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700">
+            <label htmlFor="news_excerpt_en" className="block mb-2 text-sm font-bold text-gray-700">
               Ringkasan (Bahasa Inggris)
             </label>
             <textarea
+              id="news_excerpt_en"
               name="excerpt_en"
               value={formData.excerpt_en}
               onChange={handleChange}
@@ -342,10 +349,11 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
 
           {/* Content - Indonesian */}
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700">
+            <label htmlFor="news_content" className="block mb-2 text-sm font-bold text-gray-700">
               Konten (Bahasa Indonesia) *
             </label>
             <textarea
+              id="news_content"
               name="content"
               value={formData.content}
               onChange={handleChange}
@@ -361,10 +369,11 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
 
           {/* Content - English */}
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700">
+            <label htmlFor="news_content_en" className="block mb-2 text-sm font-bold text-gray-700">
               Konten (Bahasa Inggris)
             </label>
             <textarea
+              id="news_content_en"
               name="content_en"
               value={formData.content_en}
               onChange={handleChange}
@@ -376,10 +385,11 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
 
           {/* Published Date */}
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700">
+            <label htmlFor="news_published_at" className="block mb-2 text-sm font-bold text-gray-700">
               Tanggal Publikasi
             </label>
             <input
+              id="news_published_at"
               type="date"
               name="published_at"
               value={formData.published_at}
@@ -395,10 +405,11 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
             
             <div className="space-y-4">
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">
+                <label htmlFor="news_meta_title" className="block mb-2 text-sm font-bold text-gray-700">
                   Meta Title
                 </label>
                 <input
+                  id="news_meta_title"
                   type="text"
                   name="meta_title"
                   value={formData.meta_title}
@@ -409,10 +420,11 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">
+                <label htmlFor="news_meta_description" className="block mb-2 text-sm font-bold text-gray-700">
                   Meta Description
                 </label>
                 <textarea
+                  id="news_meta_description"
                   name="meta_description"
                   value={formData.meta_description}
                   onChange={handleChange}
@@ -423,10 +435,11 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">
+                <label htmlFor="news_meta_keywords" className="block mb-2 text-sm font-bold text-gray-700">
                   Meta Keywords
                 </label>
                 <input
+                  id="news_meta_keywords"
                   type="text"
                   name="meta_keywords"
                   value={formData.meta_keywords}
