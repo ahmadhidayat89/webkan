@@ -88,27 +88,30 @@ export default function TabGrading({ courseId, modules }) {
                             ) : (
                                 <ul className="divide-y divide-gray-100">
                                     {attempts.map(attempt => (
-                                        <li
-                                            key={attempt.id}
-                                            onClick={() => setSelectedAttempt(attempt)}
-                                            className={`p-3 cursor-pointer hover:bg-navy-50 transition-colors ${selectedAttempt?.id === attempt.id ? 'bg-navy-50 border-l-4 border-navy-500' : ''}`}
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-bold text-sm text-gray-900">{attempt.user_name}</p>
-                                                    <p className="text-[10px] text-gray-500">{attempt.started_at}</p>
+                                        <li key={attempt.id}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedAttempt(attempt)}
+                                                aria-pressed={selectedAttempt?.id === attempt.id}
+                                                className={`w-full text-left p-3 cursor-pointer hover:bg-navy-50 transition-colors ${selectedAttempt?.id === attempt.id ? 'bg-navy-50 border-l-4 border-navy-500' : ''}`}
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="font-bold text-sm text-gray-900">{attempt.user_name}</p>
+                                                        <p className="text-[10px] text-gray-500">{attempt.started_at}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${attempt.is_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                            {attempt.score}%
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${attempt.is_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                        {attempt.score}%
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            {attempt.pending_grading && (
-                                                <div className="mt-2 text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded inline-flex items-center gap-1 font-medium">
-                                                    <AlertCircle className="w-3 h-3" /> Butuh Koreksi Essay
-                                                </div>
-                                            )}
+                                                {attempt.pending_grading && (
+                                                    <div className="mt-2 text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded inline-flex items-center gap-1 font-medium">
+                                                        <AlertCircle className="w-3 h-3" /> Butuh Koreksi Essay
+                                                    </div>
+                                                )}
+                                            </button>
                                         </li>
                                     ))}
                                 </ul>
