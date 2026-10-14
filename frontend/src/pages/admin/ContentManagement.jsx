@@ -137,6 +137,13 @@ const slugify = (str) =>
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
 
+// FIX: pengganti regex /-+$/ (backtracking super-linear)
+const trimTrailingHyphens = (str) => {
+  let end = str.length;
+  while (end > 0 && str[end - 1] === '-') end -= 1;
+  return str.slice(0, end);
+};
+
 // layanan/{kategori}/{slug} -> { cat, slug } (hanya untuk kategori di SUB_CATS)
 const subOf = (pageId) => {
   if (!pageId) return null;
@@ -235,19 +242,18 @@ const quillModules = {
   },
 };
 
+// FIX: regex /<[^>]*>/g dan /<(img|...)\b/i diganti DOMParser (tanpa backtracking)
 const hasMeaningfulContent = (html) => {
   if (!html) return false;
 
-  if (/<(img|iframe|video|table|blockquote)\b/i.test(html)) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  if (doc.body.querySelector('img, iframe, video, table, blockquote')) {
     return true;
   }
 
-  const textOnly = html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .trim();
-
-  return textOnly.length > 0;
+  // &nbsp; menjadi \u00a0 setelah di-parse, dan trim() ikut membuangnya
+  return doc.body.textContent.trim().length > 0;
 };
 
 const parseApiJson = (rawText) => {
@@ -306,9 +312,27 @@ const toPreviewUrl = (imagePath) => {
   return `/storage/${imagePath}`;
 };
 
+// FIX: regex dengan nested quantifier diganti loop endsWith (tanpa backtracking)
+const EMPTY_TAILS = ['<p><br></p>', '<p><br/></p>', '<p><br /></p>', '<p></p>'];
+
 // Buang paragraf kosong di akhir supaya tidak bertambah setiap konten dibuka dan disimpan
-const trimEmptyTail = (html) =>
-  html.replace(/(?:\s*<p>(?:<br\s*\/?>)?<\/p>)+\s*$/i, '');
+const trimEmptyTail = (html) => {
+  let out = html.trimEnd();
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+
+    for (const tail of EMPTY_TAILS) {
+      if (out.endsWith(tail)) {
+        out = out.slice(0, -tail.length).trimEnd();
+        changed = true;
+      }
+    }
+  }
+
+  return out;
+};
 
 const QuillEditor = ({ value, onChange, placeholder }) => {
   const wrapperRef = useRef(null);
@@ -369,7 +393,7 @@ const QuillEditor = ({ value, onChange, placeholder }) => {
     };
   }, [placeholder]);
 
-    return (
+  return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden [&_.ql-toolbar]:!border-0 [&_.ql-toolbar]:!border-b [&_.ql-toolbar]:!border-gray-200 [&_.ql-container]:!border-0 [&_.ql-editor]:min-h-[320px] [&_.ql-editor]:text-sm">
       <div ref={wrapperRef} />
     </div>
@@ -616,9 +640,12 @@ const ContentManagement = () => {
     const maxSlug =
       100 - prefix.length - 4;
 
-    let slug = baseSlug
-      .slice(0, maxSlug)
-      .replace(/-+$/, '');
+    // FIX: pemotongan dihitung sekali, tanpa regex /-+$/
+    const truncatedBase = trimTrailingHyphens(
+      baseSlug.slice(0, maxSlug)
+    );
+
+    let slug = truncatedBase;
 
     // Kalau alamat bentrok
     // (nama berbeda tapi hasil potongan sama),
@@ -642,9 +669,7 @@ const ContentManagement = () => {
         return;
       }
 
-      slug = `${baseSlug
-        .slice(0, maxSlug)
-        .replace(/-+$/, '')}-${n}`;
+      slug = `${truncatedBase}-${n}`;
 
       n += 1;
     }
