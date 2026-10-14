@@ -144,8 +144,9 @@ const FAQManagement = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    // [^<>]* (bukan [^>]*) supaya waktu prosesnya linear dan tidak backtracking
     const answerText = (formData.answer || '')
-      .replace(/<[^>]*>/g, '')
+      .replace(/<[^<>]*>/g, '')
       .replace(/&nbsp;/g, ' ')
       .trim();
 
@@ -604,11 +605,12 @@ const FAQManagement = () => {
 
               {/* QUESTION */}
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-800">
+                <label htmlFor="faq-question" className="block mb-2 text-sm font-bold text-gray-800">
                   Pertanyaan <span className="text-red-500">*</span>
                 </label>
 
                 <input
+                  id="faq-question"
                   type="text"
                   value={formData.question}
                   onChange={(event) =>
@@ -625,9 +627,10 @@ const FAQManagement = () => {
 
               {/* ANSWER */}
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-800">
+                {/* Pakai <p>, bukan <label>: QuillEditor bukan <input> sehingga tidak bisa dihubungkan lewat htmlFor */}
+                <p id="faq-answer-label" className="block mb-2 text-sm font-bold text-gray-800">
                   Jawaban <span className="text-red-500">*</span>
-                </label>
+                </p>
 
                 <QuillEditor
                   key={editingFaq ? `edit-${editingFaq.id}` : 'new'}
@@ -648,11 +651,12 @@ const FAQManagement = () => {
 
                 {/* ORDER */}
                 <div>
-                  <label className="block mb-2 text-sm font-bold text-gray-800">
+                  <label htmlFor="faq-order" className="block mb-2 text-sm font-bold text-gray-800">
                     Urutan Tampil
                   </label>
 
                   <input
+                    id="faq-order"
                     type="number"
                     min="0"
                     value={formData.order}
