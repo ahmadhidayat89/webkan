@@ -34,7 +34,8 @@ export default function AccreditationTimeline() {
             row.classList.add('tl-visible');
             if (circleWrap) {
               circleWrap.classList.remove('tl-pulse');
-              void circleWrap.offsetWidth;
+              // Paksa reflow supaya animasi pulse bisa diulang
+              circleWrap.getBoundingClientRect();
               circleWrap.classList.add('tl-pulse');
               const id = setTimeout(() => circleWrap.classList.remove('tl-pulse'), 2000);
               timers.current.push(id);
