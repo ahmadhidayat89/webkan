@@ -184,6 +184,7 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
 
       {/* Image area */}
       <div
+        role="presentation"
         className="flex-1 flex items-center justify-center relative overflow-hidden select-none"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
