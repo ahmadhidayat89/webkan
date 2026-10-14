@@ -106,17 +106,17 @@ class SurveyController extends Controller
             if ($error === null && $ans !== null && $ans !== '') {
                 if (in_array($q->type, ['short', 'para'], true) && is_string($ans)) {
                     $length = mb_strlen(trim($ans));
-                    if (isset($rules['min_length']) && $length < $rules['min_length']) $error = 'Jawaban terlalu pendek (minimal ' . $rules['min_length'] . ' karakter).';
-                    if ($error === null && isset($rules['max_length']) && $length > $rules['max_length']) $error = 'Jawaban terlalu panjang (maksimal ' . $rules['max_length'] . ' karakter).';
+                    if (isset($rules['min_length']) && $length < $rules['min_length']) { $error = 'Jawaban terlalu pendek (minimal ' . $rules['min_length'] . ' karakter).'; }
+                    if ($error === null && isset($rules['max_length']) && $length > $rules['max_length']) { $error = 'Jawaban terlalu panjang (maksimal ' . $rules['max_length'] . ' karakter).'; }
                     $answerType = $q->type === 'short' ? ($rules['answer_type'] ?? 'text') : $q->type;
-                    if ($error === null && $answerType === 'email' && !filter_var($ans, FILTER_VALIDATE_EMAIL)) $error = 'Masukkan alamat email yang valid.';
-                    if ($error === null && $answerType === 'phone' && (!preg_match('/^\+?[0-9() .-]{7,20}$/', $ans) || strlen(preg_replace('/\D/', '', $ans)) < 7 || strlen(preg_replace('/\D/', '', $ans)) > 15)) $error = 'Masukkan nomor telepon yang valid (7–15 digit).';
-                    if ($error === null && $answerType === 'number' && !is_numeric(str_replace(',', '.', $ans))) $error = 'Masukkan angka yang valid.';
-                    if ($error === null && $answerType === 'text_number' && !preg_match('/^[\p{L}\p{N}\s.,\'-]+$/u', $ans)) $error = 'Gunakan huruf dan angka saja.';
+                    if ($error === null && $answerType === 'email' && !filter_var($ans, FILTER_VALIDATE_EMAIL)) { $error = 'Masukkan alamat email yang valid.'; }
+                    if ($error === null && $answerType === 'phone' && (!preg_match('/^\+?[0-9() .-]{7,20}$/', $ans) || strlen(preg_replace('/\D/', '', $ans)) < 7 || strlen(preg_replace('/\D/', '', $ans)) > 15)) { $error = 'Masukkan nomor telepon yang valid (7–15 digit).'; }
+                    if ($error === null && $answerType === 'number' && !is_numeric(str_replace(',', '.', $ans))) { $error = 'Masukkan angka yang valid.'; }
+                    if ($error === null && $answerType === 'text_number' && !preg_match('/^[\p{L}\p{N}\s.,\'-]+$/u', $ans)) { $error = 'Gunakan huruf dan angka saja.'; }
                 } elseif ($q->type === 'check' && is_array($ans)) {
-                    if (isset($rules['min_selections']) && count($ans) < $rules['min_selections']) $error = 'Pilih minimal ' . $rules['min_selections'] . ' opsi.';
-                    if ($error === null && isset($rules['max_selections']) && count($ans) > $rules['max_selections']) $error = 'Pilih maksimal ' . $rules['max_selections'] . ' opsi.';
-                    if ($error === null && array_diff($ans, $q->options ?? [])) $error = 'Pilihan jawaban tidak valid.';
+                    if (isset($rules['min_selections']) && count($ans) < $rules['min_selections']) { $error = 'Pilih minimal ' . $rules['min_selections'] . ' opsi.'; }
+                    if ($error === null && isset($rules['max_selections']) && count($ans) > $rules['max_selections']) { $error = 'Pilih maksimal ' . $rules['max_selections'] . ' opsi.'; }
+                    if ($error === null && array_diff($ans, $q->options ?? [])) { $error = 'Pilihan jawaban tidak valid.'; }
                 } elseif (in_array($q->type, ['choice', 'drop'], true) && !in_array($ans, $q->options ?? [], true)) {
                     $error = 'Silakan pilih opsi yang tersedia.';
                 } elseif ($q->type === 'email' && (!is_string($ans) || !filter_var($ans, FILTER_VALIDATE_EMAIL))) {

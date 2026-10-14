@@ -194,10 +194,10 @@ class LpkController extends Controller
             $filled = false;
             foreach ($map as $col => $field) {
                 $v = $this->cell($row[$col] ?? null);
-                if ($v !== null) $filled = true;
+                if ($v !== null) { $filled = true; }
                 $rec[$field] = $v;
             }
-            if (!$filled) continue; // baris kosong
+            if (!$filled) { continue; } // baris kosong
 
             $rowLabel = 'Baris ' . ($i + 1);
             if (!$rec['certificate_number'] || !$rec['name']) {
@@ -272,7 +272,7 @@ class LpkController extends Controller
         });
 
         $message = "Import selesai: $new data baru, $updated data diperbarui.";
-        if ($errors) $message .= ' ' . count($errors) . ' baris dilewati.';
+        if ($errors) { $message .= ' ' . count($errors) . ' baris dilewati.'; }
 
         return response()->json(['success' => true, 'message' => $message, 'data' => [
             'total' => count($records),
@@ -413,11 +413,11 @@ class LpkController extends Controller
             $filled = false;
             foreach ($map as $col => $field) {
                 $v = $this->cell($row[$col] ?? null);
-                if (in_array($v, ['-', '–', '—'], true)) $v = null;
-                if ($v !== null) $filled = true;
+                if (in_array($v, ['-', '–', '—'], true)) { $v = null; }
+                if ($v !== null) { $filled = true; }
                 $rec[$field] = $v;
             }
-            if (!$filled) continue; // baris kosong
+            if (!$filled) { continue; } // baris kosong
 
             $label = 'Baris ' . ($i + 1);
             if (!$rec['certificate_number'] || !$rec['name']) {
@@ -556,7 +556,7 @@ class LpkController extends Controller
         });
 
         $message = "Import selesai: $new data baru, $updated data diperbarui.";
-        if ($errors) $message .= ' ' . count($errors) . ' baris dilewati.';
+        if ($errors) { $message .= ' ' . count($errors) . ' baris dilewati.'; }
 
         return response()->json(['success' => true, 'message' => $message, 'data' => [
             'total' => count($records),
@@ -628,7 +628,7 @@ class LpkController extends Controller
     {
         $lookup = [];
         foreach ($headers as $field => $aliases) {
-            foreach ($aliases as $a) $lookup[$this->norm($a)] = $field;
+            foreach ($aliases as $a) { $lookup[$this->norm($a)] = $field; }
         }
 
         foreach (array_slice($rows, 0, 15, true) as $i => $row) {
@@ -648,8 +648,8 @@ class LpkController extends Controller
 
     private function cell(mixed $v): ?string
     {
-        if ($v === null) return null;
-        if (is_float($v) && floor($v) == $v) $v = (int) $v;
+        if ($v === null) { return null; }
+        if (is_float($v) && floor($v) == $v) { $v = (int) $v; }
         $v = trim((string) $v);
         return $v === '' ? null : $v;
     }
@@ -679,7 +679,7 @@ class LpkController extends Controller
         foreach (['d/m/Y', 'd-m-Y', 'd.m.Y', 'Y-m-d', 'Y/m/d', 'j/n/Y', 'j-n-Y', 'd F Y', 'j F Y', 'd M Y', 'j M Y'] as $f) {
             try {
                 $d = Carbon::createFromFormat('!' . $f, $s);
-                if ($d && $d->year >= 1900 && $d->year <= 2200) return $d->toDateString();
+                if ($d && $d->year >= 1900 && $d->year <= 2200) { return $d->toDateString(); }
             } catch (\Throwable $e) {
                 // coba format berikutnya
             }

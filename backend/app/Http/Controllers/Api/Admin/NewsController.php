@@ -155,17 +155,17 @@ class NewsController extends Controller
         // Map frontend field names to model field names
         $data = [];
 
-        if ($request->has('title'))     $data['title_id']   = $request->input('title');
-        if ($request->has('title_en'))  $data['title_en']   = $request->input('title_en');
-        if ($request->has('excerpt'))   $data['excerpt_id'] = $request->input('excerpt');
-        if ($request->has('excerpt_en')) $data['excerpt_en'] = $request->input('excerpt_en');
-        if ($request->has('content'))   $data['content_id'] = $request->input('content');
-        if ($request->has('content_en')) $data['content_en'] = $request->input('content_en');
-        if ($request->has('category'))  $data['category']   = $request->input('category');
-        if ($request->has('published_at')) $data['published_at'] = $request->input('published_at') ?: null;
-        if ($request->has('meta_title')) $data['meta_title'] = $request->input('meta_title');
-        if ($request->has('meta_description')) $data['meta_description'] = $request->input('meta_description');
-        if ($request->has('meta_keywords')) $data['meta_keywords'] = $request->input('meta_keywords');
+        if ($request->has('title')) {     $data['title_id']   = $request->input('title'); }
+        if ($request->has('title_en')) {  $data['title_en']   = $request->input('title_en'); }
+        if ($request->has('excerpt')) {   $data['excerpt_id'] = $request->input('excerpt'); }
+        if ($request->has('excerpt_en')) { $data['excerpt_en'] = $request->input('excerpt_en'); }
+        if ($request->has('content')) {   $data['content_id'] = $request->input('content'); }
+        if ($request->has('content_en')) { $data['content_en'] = $request->input('content_en'); }
+        if ($request->has('category')) {  $data['category']   = $request->input('category'); }
+        if ($request->has('published_at')) { $data['published_at'] = $request->input('published_at') ?: null; }
+        if ($request->has('meta_title')) { $data['meta_title'] = $request->input('meta_title'); }
+        if ($request->has('meta_description')) { $data['meta_description'] = $request->input('meta_description'); }
+        if ($request->has('meta_keywords')) { $data['meta_keywords'] = $request->input('meta_keywords'); }
 
         // Handle image upload
         if ($request->hasFile('image')) {
