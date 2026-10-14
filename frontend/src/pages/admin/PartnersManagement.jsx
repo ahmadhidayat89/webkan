@@ -325,7 +325,8 @@ const PartnersManagement = () => {
             <form onSubmit={handleSubmit} className="px-7 py-6 space-y-5">
               {/* Logo Upload */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-2">Logo Mitra</label>
+                {/* FIX: bukan <label> karena tidak ada satu kontrol tetap (input file hilang saat ada preview) */}
+                <span className="block text-sm font-bold text-gray-800 mb-2">Logo Mitra</span>
                 {logoPreview ? (
                   <div className="relative inline-block rounded-xl overflow-hidden border border-gray-200 group">
                     <img src={logoPreview} alt="Preview" className="w-32 h-32 object-contain p-3 bg-gray-50" />
@@ -334,6 +335,7 @@ const PartnersManagement = () => {
                         type="button"
                         onClick={() => { setLogoFile(null); setLogoPreview(null); }}
                         className="p-2 bg-red-600 text-white rounded-lg"
+                        aria-label="Hapus logo"
                       >
                         <FaTrash className="text-xs" />
                       </button>
@@ -343,15 +345,24 @@ const PartnersManagement = () => {
                   <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-all group">
                     <FaImage className="text-2xl text-gray-300 group-hover:text-primary-400 mb-1 transition-colors" />
                     <span className="text-xs text-gray-400 group-hover:text-primary-600 font-semibold">Upload Logo</span>
-                    <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                      aria-label="Upload logo mitra"
+                    />
                   </label>
                 )}
               </div>
 
               {/* Name */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-2">Nama Mitra <span className="text-red-500">*</span></label>
+                <label htmlFor="partner-name" className="block text-sm font-bold text-gray-800 mb-2">
+                  Nama Mitra <span className="text-red-500">*</span>
+                </label>
                 <input
+                  id="partner-name"
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -363,8 +374,11 @@ const PartnersManagement = () => {
 
               {/* URL */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-2">URL Website</label>
+                <label htmlFor="partner-url" className="block text-sm font-bold text-gray-800 mb-2">
+                  URL Website
+                </label>
                 <input
+                  id="partner-url"
                   type="url"
                   value={formData.url}
                   onChange={(e) => setFormData({...formData, url: e.target.value})}
@@ -375,8 +389,11 @@ const PartnersManagement = () => {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-2">Deskripsi</label>
+                <label htmlFor="partner-description" className="block text-sm font-bold text-gray-800 mb-2">
+                  Deskripsi
+                </label>
                 <textarea
+                  id="partner-description"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   rows="3"
