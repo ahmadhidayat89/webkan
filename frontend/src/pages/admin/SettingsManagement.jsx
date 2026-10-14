@@ -79,6 +79,7 @@ const parseList = (raw) => {
 };
 
 const ContactListEditor = ({
+  id,
   title,
   items,
   onChange,
@@ -93,11 +94,16 @@ const ContactListEditor = ({
 
   return (
     <div className="border-b border-gray-100 pb-7">
-      <label className="block mb-3 text-sm font-bold text-gray-800">
+      {/* FIX: judul grup input, bukan <label> tunggal */}
+      <p id={`${id}-title`} className="block mb-3 text-sm font-bold text-gray-800">
         {title}
-      </label>
+      </p>
 
-      <div className="space-y-3">
+      <div
+        role="group"
+        aria-labelledby={`${id}-title`}
+        className="space-y-3"
+      >
         {items.map((item, i) => (
           <div
             key={i}
@@ -108,6 +114,7 @@ const ContactListEditor = ({
               value={item.label}
               onChange={(e) => update(i, 'label', e.target.value)}
               placeholder="Label (contoh: Direktorat Lab)"
+              aria-label={`${title} ${i + 1}: label`}
               className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
             />
             <input
@@ -115,6 +122,7 @@ const ContactListEditor = ({
               value={item.value}
               onChange={(e) => update(i, 'value', e.target.value)}
               placeholder={valuePlaceholder}
+              aria-label={`${title} ${i + 1}: nilai`}
               className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
             />
             <button
@@ -604,7 +612,12 @@ const SettingsManagement = () => {
     );
   };
 
+  // FIX: id kontrol utama tiap setting, dipakai oleh htmlFor pada label judulnya
+  const settingInputId = (setting) => `setting-${setting.key}`;
+
   const renderSettingInput = (setting) => {
+    const inputId = settingInputId(setting);
+
     if (setting.type === 'image') {
       return (
         <div className="space-y-3">
@@ -616,7 +629,10 @@ const SettingsManagement = () => {
             />
           )}
 
-          <label className="flex items-center gap-3 px-4 py-3 transition-all border border-gray-300 border-dashed cursor-pointer w-fit rounded-xl hover:border-primary-400 hover:bg-primary-50 group">
+          <label
+            htmlFor={inputId}
+            className="flex items-center gap-3 px-4 py-3 transition-all border border-gray-300 border-dashed cursor-pointer w-fit rounded-xl hover:border-primary-400 hover:bg-primary-50 group"
+          >
             <FaImage className="text-gray-300 transition-colors group-hover:text-primary-400" />
 
             <span className="text-sm font-semibold text-gray-500 group-hover:text-primary-600">
@@ -626,6 +642,7 @@ const SettingsManagement = () => {
             </span>
 
             <input
+              id={inputId}
               type="file"
               accept="image/*"
               onChange={(e) => {
@@ -651,6 +668,7 @@ const SettingsManagement = () => {
             </div>
 
             <textarea
+              id={inputId}
               value={setting.value_id || ''}
               onChange={(e) =>
                 handleChange(
@@ -679,6 +697,7 @@ const SettingsManagement = () => {
                 )
               }
               rows="4"
+              aria-label={`${setting.key} (English)`}
               className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 resize-none rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
             />
           </div>
@@ -700,6 +719,7 @@ const SettingsManagement = () => {
           </span>
 
           <button
+            id={inputId}
             type="button"
             role="switch"
             aria-checked={isEnabled}
@@ -737,6 +757,7 @@ const SettingsManagement = () => {
           </div>
 
           <input
+            id={inputId}
             type={
               setting.key.endsWith('_email')
                 ? 'email'
@@ -769,6 +790,7 @@ const SettingsManagement = () => {
                 e.target.value
               )
             }
+            aria-label={`${setting.key} (English)`}
             className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
           />
         </div>
@@ -804,7 +826,11 @@ const SettingsManagement = () => {
             key={setting.key}
             className="border-b border-gray-100 pb-7 last:border-0 last:pb-0"
           >
-            <label className="block mb-3 text-sm font-bold text-gray-800">
+            {/* FIX: label dihubungkan ke kontrol utama lewat htmlFor */}
+            <label
+              htmlFor={settingInputId(setting)}
+              className="block mb-3 text-sm font-bold text-gray-800"
+            >
               {keyLabels[setting.key] ||
                 setting.key
                   .split('_')
@@ -823,6 +849,7 @@ const SettingsManagement = () => {
         {activeGroup === 'contact' && (
           <>
             <ContactListEditor
+              id="contact-emails"
               title="Email"
               items={contactLists.emails}
               onChange={(emails) =>
@@ -834,6 +861,7 @@ const SettingsManagement = () => {
             />
 
             <ContactListEditor
+              id="contact-phones"
               title="Telepon"
               items={contactLists.phones}
               onChange={(phones) =>
@@ -845,7 +873,11 @@ const SettingsManagement = () => {
             />
 
             <div className="pb-7">
-              <label className="block mb-3 text-sm font-bold text-gray-800">
+              {/* FIX: htmlFor ke input versi Indonesia */}
+              <label
+                htmlFor="contact-hours-id"
+                className="block mb-3 text-sm font-bold text-gray-800"
+              >
                 Jam Operasional
               </label>
 
@@ -855,6 +887,7 @@ const SettingsManagement = () => {
                     🇮🇩 Indonesia
                   </div>
                   <input
+                    id="contact-hours-id"
                     type="text"
                     value={contactHours.id}
                     onChange={(e) =>
@@ -882,6 +915,7 @@ const SettingsManagement = () => {
                       }))
                     }
                     placeholder="Monday - Friday: 08:00 - 17:00 WIB"
+                    aria-label="Jam Operasional (English)"
                     className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
                   />
                 </div>
@@ -937,6 +971,7 @@ const SettingsManagement = () => {
               };
 
               const Icon = iconMap[key] || FaCog;
+              const fieldId = `mail-${key}`;
 
               return (
                 <div
@@ -947,7 +982,11 @@ const SettingsManagement = () => {
                       : ''
                   }
                 >
-                  <label className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                  {/* FIX: htmlFor + id pada input */}
+                  <label
+                    htmlFor={fieldId}
+                    className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5"
+                  >
                     <Icon className="text-slate-400 text-[11px]" />
                     {label}
                   </label>
@@ -955,6 +994,7 @@ const SettingsManagement = () => {
                   {key === 'mail_password' ? (
                     <div className="relative">
                       <input
+                        id={fieldId}
                         type={
                           showPassword
                             ? 'text'
@@ -984,6 +1024,11 @@ const SettingsManagement = () => {
                             ? 'Sembunyikan'
                             : 'Tampilkan'
                         }
+                        aria-label={
+                          showPassword
+                            ? 'Sembunyikan password'
+                            : 'Tampilkan password'
+                        }
                       >
                         {showPassword ? (
                           <FaEyeSlash />
@@ -994,6 +1039,7 @@ const SettingsManagement = () => {
                     </div>
                   ) : (
                     <input
+                      id={fieldId}
                       type={type}
                       value={mailSettings[key]}
                       onChange={(e) =>
