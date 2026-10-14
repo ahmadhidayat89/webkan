@@ -396,12 +396,17 @@ const AccreditationStepsManagement = () => {
 
               {/* Icon */}
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-800">
+                {/* FIX: label dihubungkan ke input lewat htmlFor + id */}
+                <label
+                  htmlFor="step-icon"
+                  className="block mb-2 text-sm font-bold text-gray-800"
+                >
                   Icon (Emoji)
                   <span className="text-red-500"> *</span>
                 </label>
 
                 <input
+                  id="step-icon"
                   type="text"
                   value={formData.icon}
                   onChange={(e) =>
@@ -419,12 +424,16 @@ const AccreditationStepsManagement = () => {
 
               {/* Judul */}
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-800">
+                <label
+                  htmlFor="step-title"
+                  className="block mb-2 text-sm font-bold text-gray-800"
+                >
                   Judul Langkah
                   <span className="text-red-500"> *</span>
                 </label>
 
                 <input
+                  id="step-title"
                   type="text"
                   value={formData.title}
                   onChange={(e) =>
@@ -441,12 +450,16 @@ const AccreditationStepsManagement = () => {
 
               {/* Tag */}
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-800">
+                <label
+                  htmlFor="step-tag"
+                  className="block mb-2 text-sm font-bold text-gray-800"
+                >
                   Tag / Label
                   <span className="text-red-500"> *</span>
                 </label>
 
                 <input
+                  id="step-tag"
                   type="text"
                   value={formData.tag}
                   onChange={(e) =>
@@ -464,12 +477,16 @@ const AccreditationStepsManagement = () => {
 
               {/* Deskripsi */}
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-800">
+                <label
+                  htmlFor="step-description"
+                  className="block mb-2 text-sm font-bold text-gray-800"
+                >
                   Deskripsi
                   <span className="text-red-500"> *</span>
                 </label>
 
                 <textarea
+                  id="step-description"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData((prev) => ({
