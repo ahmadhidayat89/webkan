@@ -151,8 +151,10 @@ const AutoPageTranslator = () => {
       if (!original) continue;
       const translated = translatedCacheRef.current.get(normalizeText(original));
       if (!translated) continue;
-      const match = original.match(/^(\s*)([\s\S]*?)(\s*)$/);
-      node.nodeValue = match ? `${match[1]}${translated}${match[3]}` : translated;
+      const trimmedStart = original.trimStart();
+      const leading = original.slice(0, original.length - trimmedStart.length);
+      const trailing = trimmedStart.slice(trimmedStart.trimEnd().length);
+      node.nodeValue = `${leading}${translated}${trailing}`;
     }
   };
 
