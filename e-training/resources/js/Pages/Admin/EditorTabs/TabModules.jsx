@@ -8,7 +8,7 @@ import QuizBuilder from './QuizBuilder';
 function ConfirmDeleteModal({ message, onConfirm, onCancel }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <button type="button" aria-label="Tutup dialog hapus modul" className="absolute inset-0 border-0 bg-black/40 p-0 backdrop-blur-sm" onClick={onCancel} />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
             <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
                 <div className="flex items-start gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
@@ -48,7 +48,7 @@ export default function TabModules({ courseId, modules }) {
         if (!deleteTarget) return;
         const target = deleteTarget;
         setDeleteTarget(null); // tutup modal dulu sebelum request
-        
+
         if (target.type === 'module') {
             router.delete(route('admin.modules.destroy', target.id), { preserveScroll: true });
         } else if (target.type === 'lesson') {
@@ -65,12 +65,12 @@ export default function TabModules({ courseId, modules }) {
         const items = Array.from(modules);
         const [reorderedItem] = items.splice(result.source.index, 1);
         items.splice(result.destination.index, 0, reorderedItem);
-        
+
         const reorderedData = items.map((item, index) => ({
             id: item.id,
             sort_order: index + 1
         }));
-        
+
         router.post(route('admin.modules.reorder'), { modules: reorderedData }, {
             preserveScroll: true
         });
@@ -84,12 +84,12 @@ export default function TabModules({ courseId, modules }) {
         const items = Array.from(module.lessons);
         const [reorderedItem] = items.splice(result.source.index, 1);
         items.splice(result.destination.index, 0, reorderedItem);
-        
+
         const reorderedData = items.map((item, index) => ({
             id: item.id,
             sort_order: index + 1
         }));
-        
+
         router.post(route('admin.lessons.reorder'), { lessons: reorderedData }, {
             preserveScroll: true
         });
@@ -109,7 +109,7 @@ export default function TabModules({ courseId, modules }) {
                 <DragDropContext onDragEnd={onDragEndModules}>
                     <Droppable droppableId="modules">
                         {(provided) => (
-                            <div 
+                            <div
                                 {...provided.droppableProps}
                                 ref={provided.innerRef}
                                 className="space-y-4"
@@ -346,10 +346,11 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                 <div className="p-4 bg-white border-t border-gray-100 space-y-4">
                     {/* Deskripsi */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        <label htmlFor={`lesson-${lesson.id}-description`} className="block text-xs font-bold text-gray-500 uppercase mb-1">
                             Deskripsi / Perintah <span className="font-normal normal-case text-gray-400">(opsional)</span>
                         </label>
                         <textarea
+                            id={`lesson-${lesson.id}-description`}
                             value={description}
                             onChange={e => setDescription(e.target.value)}
                             rows="2"
@@ -373,13 +374,14 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                                     className="w-full text-sm border-gray-300 rounded focus:border-navy-500 focus:ring-navy-500"
                                 />
                             </div>
-                            
+
                             {lesson.type === 'zoom' && (
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                    <label htmlFor={`lesson-${lesson.id}-start`} className="block text-xs font-bold text-gray-500 uppercase mb-1">
                                         Waktu Pelaksanaan Zoom
                                     </label>
                                     <input
+                                        id={`lesson-${lesson.id}-start`}
                                         type="datetime-local"
                                         value={startDatetime}
                                         onChange={e => setStartDatetime(e.target.value)}
@@ -393,7 +395,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                     {/* DOCUMENT FILES */}
                     {lesson.type === 'document' && (
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">File Dokumen (PDF, PPT, Word — Maks 50MB)</label>
+                            <p className="block text-xs font-bold text-gray-500 uppercase mb-2">File Dokumen (PDF, PPT, Word — Maks 50MB)</p>
                             <div className="flex flex-wrap gap-2 mb-2">
                                 {lesson.files && lesson.files.map(f => (
                                     <div key={f.id} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm">
@@ -434,11 +436,10 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                                 type="button"
                                 onClick={saveLesson}
                                 disabled={!isDirty || isSaving}
-                                className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                                    isDirty
-                                        ? 'bg-navy-600 hover:bg-navy-700 text-white shadow-sm'
-                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                }`}
+                                className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${isDirty
+                                    ? 'bg-navy-600 hover:bg-navy-700 text-white shadow-sm'
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    }`}
                             >
                                 <Save className="w-3.5 h-3.5" />
                                 {isSaving ? 'Menyimpan...' : 'Simpan Materi'}
