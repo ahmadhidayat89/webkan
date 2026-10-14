@@ -17,10 +17,16 @@ export const phoneLink = (raw = '') => {
   return { href: `tel:+${n}`, isWa: false };
 };
 
-export const mapsLink = (address = '') =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    address.replace(/\s*\n\s*/g, ', ')
-  )}`;
+// FIX: regex /\s*\n\s*/g diganti split per baris (tanpa backtracking)
+export const mapsLink = (address = '') => {
+  const query = address
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(', ');
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+};
 
 export const gmailLink = (email = '') =>
   `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`;
