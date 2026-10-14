@@ -223,7 +223,7 @@ class CourseController extends Controller
         // Handle thumbnail upload
         if ($request->hasFile('thumbnail')) {
             $request->validate(['thumbnail' => 'image|max:2048']);
-            if ($course->thumbnail) Storage::delete($course->thumbnail);
+            if ($course->thumbnail) { Storage::delete($course->thumbnail); }
             $validated['thumbnail'] = $request->file('thumbnail')
                 ->store('thumbnails', 'public');
         }

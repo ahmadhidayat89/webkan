@@ -158,7 +158,7 @@ class DashboardController extends Controller
 
             $enrolledCourses = $enrollments->map(function ($enrollment) use ($certificates) {
                 $course = $enrollment->course;
-                if (!$course) return null;
+                if (!$course) { return null; }
                 return [
                     'id' => $course->id,
                     'title' => $course->title,

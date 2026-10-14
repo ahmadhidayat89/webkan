@@ -273,7 +273,7 @@ class CoursePlayerController extends Controller
     private function updateCourseProgress($user, $courseId)
     {
         $course = Course::with('modules.lessons')->find($courseId);
-        if (!$course) return;
+        if (!$course) { return; }
 
         $allLessonIds = $course->modules->flatMap->lessons->pluck('id');
         $totalLessons = $allLessonIds->count();
