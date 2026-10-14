@@ -82,8 +82,9 @@ export default function TabDetail({ course, categories }) {
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Judul Pelatihan</label>
+                <label htmlFor="detail-title" className="block text-sm font-medium text-gray-700 mb-1.5">Judul Pelatihan</label>
                 <input
+                    id="detail-title"
                     type="text"
                     value={data.title}
                     onChange={(e) => setData('title', e.target.value)}
@@ -93,8 +94,9 @@ export default function TabDetail({ course, categories }) {
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Deskripsi Lengkap</label>
+                <label htmlFor="detail-description" className="block text-sm font-medium text-gray-700 mb-1.5">Deskripsi Lengkap</label>
                 <textarea
+                    id="detail-description"
                     value={data.description}
                     onChange={(e) => setData('description', e.target.value)}
                     rows={4}
@@ -103,8 +105,9 @@ export default function TabDetail({ course, categories }) {
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Deskripsi Singkat (Katalog)</label>
+                <label htmlFor="detail-short-description" className="block text-sm font-medium text-gray-700 mb-1.5">Deskripsi Singkat (Katalog)</label>
                 <textarea
+                    id="detail-short-description"
                     value={data.short_description}
                     onChange={(e) => setData('short_description', e.target.value)}
                     rows={2}
@@ -114,9 +117,10 @@ export default function TabDetail({ course, categories }) {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Kategori</label>
+                    <label htmlFor="detail-category" className="block text-sm font-medium text-gray-700 mb-1.5">Kategori</label>
                     {!isAddingCategory ? (
                         <select
+                            id="detail-category"
                             value={data.category_id}
                             onChange={handleCategoryChange}
                             className="w-full px-4 py-3 text-sm border-gray-200 rounded-xl bg-gray-50"
@@ -131,6 +135,7 @@ export default function TabDetail({ course, categories }) {
                         <div className="flex flex-col gap-2">
                             <div className="flex gap-2">
                                 <input
+                                    id="detail-category"
                                     autoFocus
                                     type="text"
                                     placeholder="Nama kategori..."
@@ -168,8 +173,9 @@ export default function TabDetail({ course, categories }) {
                     )}
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Level</label>
+                    <label htmlFor="detail-level" className="block text-sm font-medium text-gray-700 mb-1.5">Level</label>
                     <select
+                        id="detail-level"
                         value={data.level}
                         onChange={(e) => setData('level', e.target.value)}
                         className="w-full px-4 py-3 text-sm border-gray-200 rounded-xl bg-gray-50"
@@ -180,8 +186,9 @@ export default function TabDetail({ course, categories }) {
                     </select>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Durasi (Jam)</label>
+                    <label htmlFor="detail-duration" className="block text-sm font-medium text-gray-700 mb-1.5">Durasi (Jam)</label>
                     <input
+                        id="detail-duration"
                         type="number"
                         value={data.duration_hours}
                         onChange={(e) => setData('duration_hours', e.target.value)}
@@ -189,8 +196,9 @@ export default function TabDetail({ course, categories }) {
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                    <label htmlFor="detail-status" className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
                     <select
+                        id="detail-status"
                         value={data.status}
                         onChange={(e) => setData('status', e.target.value)}
                         className={`w-full text-sm border-gray-200 rounded-xl px-4 py-3 font-bold ${data.status === 'published' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'
@@ -202,19 +210,21 @@ export default function TabDetail({ course, categories }) {
                 </div>
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="detail-deadline" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Batas Penyelesaian Kursus <span className="font-normal text-gray-400">(opsional)</span>
                 </label>
                 <input
+                    id="detail-deadline"
                     type="datetime-local"
                     value={data.deadline_at}
                     onChange={(e) => setData('deadline_at', e.target.value)}
                     className="w-full px-4 py-3 text-sm border-gray-200 sm:w-72 rounded-xl bg-gray-50 focus:border-navy-500 focus:ring-navy-500"
                 />
-                <p className="mt-1 text-xs text-gray-400">Setelah batas ini lewat, peserta masih bisa membuka materi tapi hanya bisa melihat (tidak bisa mengerjakan kuis atau menandai selesai).</p>                {errors.deadline_at && <p className="mt-1 text-xs text-red-500">{errors.deadline_at}</p>}
+                <p className="mt-1 text-xs text-gray-400">Setelah batas ini lewat, peserta masih bisa membuka materi tapi hanya bisa melihat (tidak bisa mengerjakan kuis atau menandai selesai).</p>
+                {errors.deadline_at && <p className="mt-1 text-xs text-red-500">{errors.deadline_at}</p>}
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Thumbnail</label>
+                <label htmlFor="thumbnail-upload" className="block text-sm font-medium text-gray-700 mb-1.5">Thumbnail</label>
                 <div className="relative overflow-hidden transition-all border-2 border-gray-200 border-dashed rounded-xl hover:border-navy-300">
                     <input
                         id="thumbnail-upload"
@@ -235,7 +245,7 @@ export default function TabDetail({ course, categories }) {
                             <p className="text-xs text-gray-500">Akan diupload saat disimpan</p>
                         </div>
                     ) : course.thumbnail ? (
-                        <img src={course.thumbnail} className="object-cover w-full h-48 opacity-80 group-hover:opacity-100" />
+                        <img src={course.thumbnail} alt="Thumbnail pelatihan" className="object-cover w-full h-48 opacity-80 group-hover:opacity-100" />
                     ) : (
                         <div className="p-8 text-center bg-gray-50">
                             <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-gray-200 rounded-xl">
