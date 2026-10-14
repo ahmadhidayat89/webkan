@@ -346,8 +346,9 @@ const PagesManagement = () => {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">Judul (Bahasa Indonesia) <span className="text-red-500">*</span></label>
+                <label htmlFor="page-title-id" className="block mb-2 text-sm font-bold text-gray-700">Judul (Bahasa Indonesia) <span className="text-red-500">*</span></label>
                 <input
+                  id="page-title-id"
                   type="text"
                   value={formData.title_id}
                   onChange={(e) => setFormData({ ...formData, title_id: e.target.value })}
@@ -357,8 +358,9 @@ const PagesManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">Judul (Bahasa Inggris)</label>
+                <label htmlFor="page-title-en" className="block mb-2 text-sm font-bold text-gray-700">Judul (Bahasa Inggris)</label>
                 <input
+                  id="page-title-en"
                   type="text"
                   value={formData.title_en}
                   onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
@@ -367,10 +369,11 @@ const PagesManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">Route / URL <span className="text-red-500">*</span></label>
+                <label htmlFor="page-slug" className="block mb-2 text-sm font-bold text-gray-700">Route / URL <span className="text-red-500">*</span></label>
                 <div className="flex items-center px-4 border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-primary-500">
                   <span className="text-gray-400">/</span>
                   <input
+                    id="page-slug"
                     type="text"
                     value={formData.slug}
                     onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
@@ -384,8 +387,9 @@ const PagesManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">Konten (Bahasa Indonesia) <span className="text-red-500">*</span></label>
+                <label htmlFor="page-content-id" className="block mb-2 text-sm font-bold text-gray-700">Konten (Bahasa Indonesia) <span className="text-red-500">*</span></label>
                 <textarea
+                  id="page-content-id"
                   value={formData.content_id}
                   onChange={(e) => setFormData({ ...formData, content_id: e.target.value })}
                   rows="10"
@@ -395,8 +399,9 @@ const PagesManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">Konten (Bahasa Inggris)</label>
+                <label htmlFor="page-content-en" className="block mb-2 text-sm font-bold text-gray-700">Konten (Bahasa Inggris)</label>
                 <textarea
+                  id="page-content-en"
                   value={formData.content_en}
                   onChange={(e) => setFormData({ ...formData, content_en: e.target.value })}
                   rows="10"
@@ -420,8 +425,9 @@ const PagesManagement = () => {
                 <h4 className="mb-4 text-lg font-black text-gray-900">Pengaturan SEO</h4>
                 <div className="space-y-4">
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-700">Meta Title (Bahasa Indonesia)</label>
+                    <label htmlFor="page-meta-title-id" className="block mb-2 text-sm font-bold text-gray-700">Meta Title (Bahasa Indonesia)</label>
                     <input
+                      id="page-meta-title-id"
                       type="text"
                       value={formData.meta_title_id}
                       onChange={(e) => setFormData({ ...formData, meta_title_id: e.target.value })}
@@ -429,8 +435,9 @@ const PagesManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-700">Meta Title (Bahasa Inggris)</label>
+                    <label htmlFor="page-meta-title-en" className="block mb-2 text-sm font-bold text-gray-700">Meta Title (Bahasa Inggris)</label>
                     <input
+                      id="page-meta-title-en"
                       type="text"
                       value={formData.meta_title_en}
                       onChange={(e) => setFormData({ ...formData, meta_title_en: e.target.value })}
@@ -438,8 +445,9 @@ const PagesManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-700">Meta Description (Bahasa Indonesia)</label>
+                    <label htmlFor="page-meta-description-id" className="block mb-2 text-sm font-bold text-gray-700">Meta Description (Bahasa Indonesia)</label>
                     <textarea
+                      id="page-meta-description-id"
                       value={formData.meta_description_id}
                       onChange={(e) => setFormData({ ...formData, meta_description_id: e.target.value })}
                       rows="3"
@@ -447,8 +455,9 @@ const PagesManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-700">Meta Description (Bahasa Inggris)</label>
+                    <label htmlFor="page-meta-description-en" className="block mb-2 text-sm font-bold text-gray-700">Meta Description (Bahasa Inggris)</label>
                     <textarea
+                      id="page-meta-description-en"
                       value={formData.meta_description_en}
                       onChange={(e) => setFormData({ ...formData, meta_description_en: e.target.value })}
                       rows="3"
