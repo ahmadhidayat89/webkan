@@ -8,7 +8,7 @@ export default function TabStudents({ course, allStudents }) {
     const [selectedUserId, setSelectedUserId] = useState('');
 
     const generateNewReferral = () => {
-        if(confirm('Ubah kode referral? Kode lama tidak akan bisa digunakan lagi.')) {
+        if (confirm('Ubah kode referral? Kode lama tidak akan bisa digunakan lagi.')) {
             router.post(route('admin.courses.referral.regenerate', course.id), {}, {
                 preserveScroll: true,
                 onSuccess: (page) => setReferralCode(page.props.course.referral_code)
@@ -23,7 +23,7 @@ export default function TabStudents({ course, allStudents }) {
 
     const enrollStudent = (e) => {
         e.preventDefault();
-        if(!selectedUserId) return;
+        if (!selectedUserId) return;
         router.post(route('admin.courses.enroll', course.id), {
             user_id: selectedUserId
         }, {
@@ -33,15 +33,15 @@ export default function TabStudents({ course, allStudents }) {
     };
 
     const unenrollStudent = (userId, name) => {
-        if(confirm(`Keluarkan ${name} dari pelatihan ini?`)) {
+        if (confirm(`Keluarkan ${name} dari pelatihan ini?`)) {
             router.delete(route('admin.courses.unenroll', [course.id, userId]), {
                 preserveScroll: true
             });
         }
     };
 
-    const filteredEnrolled = course.enrolled_students.filter(s => 
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const filteredEnrolled = course.enrolled_students.filter(s =>
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -57,7 +57,7 @@ export default function TabStudents({ course, allStudents }) {
                     <div className="relative z-10">
                         <h3 className="text-lg font-bold mb-1">Kode Referral Pelatihan</h3>
                         <p className="text-xs text-navy-200 mb-4">Bagikan kode ini ke peserta agar mereka bisa bergabung mandiri.</p>
-                        
+
                         <div className="flex items-center gap-2 mb-4">
                             <div className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 font-mono text-xl tracking-widest text-gold-400 font-bold text-center">
                                 {referralCode}
@@ -82,8 +82,9 @@ export default function TabStudents({ course, allStudents }) {
                     </h3>
                     <form onSubmit={enrollStudent} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Pilih Peserta</label>
-                            <select 
+                            <label htmlFor="enroll-student" className="block text-xs font-medium text-gray-600 mb-1">Pilih Peserta</label>
+                            <select
+                                id="enroll-student"
                                 value={selectedUserId}
                                 onChange={e => setSelectedUserId(e.target.value)}
                                 className="w-full text-sm border-gray-200 rounded-lg bg-gray-50 focus:border-navy-500"
@@ -106,15 +107,15 @@ export default function TabStudents({ course, allStudents }) {
                 <div className="card h-full flex flex-col">
                     <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                         <h3 className="font-bold text-gray-900">Peserta Terdaftar <span className="text-gray-400 font-normal">({course.enrolled_students.length})</span></h3>
-                        
+
                         <div className="relative w-full sm:w-64">
                             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input 
-                                type="text" 
-                                placeholder="Cari nama/email..." 
+                            <input
+                                type="text"
+                                placeholder="Cari nama/email..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full text-xs pl-9 py-2 border-gray-200 rounded-lg bg-gray-50" 
+                                className="w-full text-xs pl-9 py-2 border-gray-200 rounded-lg bg-gray-50"
                             />
                         </div>
                     </div>
@@ -139,7 +140,7 @@ export default function TabStudents({ course, allStudents }) {
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1 h-1.5 bg-gray-100 rounded-full w-20">
-                                                    <div 
+                                                    <div
                                                         className={`h-full rounded-full ${student.progress_percent === 100 ? 'bg-green-500' : 'bg-gold-400'}`}
                                                         style={{ width: `${student.progress_percent}%` }}
                                                     ></div>
@@ -148,7 +149,7 @@ export default function TabStudents({ course, allStudents }) {
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 text-right">
-                                            <button 
+                                            <button
                                                 onClick={() => unenrollStudent(student.user_id, student.name)}
                                                 className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                                                 title="Keluarkan dari pelatihan"
