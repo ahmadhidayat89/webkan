@@ -154,6 +154,7 @@ class CourseController extends Controller
             'progress_percent' => $e->progress_percent,
             'status'          => $e->status,
             'enrolled_at'     => $e->enrolled_at->format('d M Y'),
+            'completed_at'     => $e->completed_at?->format('Y-m-d'),
         ])->values();
 
         // Certificates
@@ -162,8 +163,13 @@ class CourseController extends Controller
             'user_id'            => $cert->user_id,
             'name'               => $cert->user->name,
             'certificate_number' => $cert->certificate_number,
-            'issued_at'          => $cert->issued_at->format('d M Y'),
+            'issued_at'          => $cert->issued_at?->format('d M Y'),
             'file_path'          => $cert->file_path ? Storage::url($cert->file_path) : null,
+            'recipient_name'     => $cert->recipient_name,
+            'status'             => $cert->status,
+            'event_text'         => $cert->event_text,
+            'signer_name'        => $cert->signer_name,
+            'signer_title'       => $cert->signer_title,
         ])->values();
 
         // All pelajar (for enroll dropdown)

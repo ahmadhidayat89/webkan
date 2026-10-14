@@ -16,6 +16,11 @@ class Certificate extends Model
         'expired_at',
         'file_path',
         'template_path',
+        'recipient_name',   // baru
+        'status',           // baru
+        'event_text',       // baru
+        'signer_name',      // baru
+        'signer_title',
     ];
 
     protected function casts(): array

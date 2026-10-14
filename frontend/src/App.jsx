@@ -35,6 +35,9 @@ import ContactInbox from './pages/admin/ContactInbox';
 import MenuManagement from './pages/admin/MenuManagement';
 import AccreditationStepsManagement from './pages/admin/AccreditationStepsManagement';
 
+import SurveyManagement from './pages/admin/SurveyManagement';
+import PublicSurvey from './pages/PublicSurvey';
+
 // Proses Akreditasi
 import ProsesAkreditasi from './pages/ProsesAkreditasi';
 
@@ -91,40 +94,13 @@ function App() {
             TENTANG KAN
         ========================================================= */}
 
-        <Route
-          path="/sejarah-fungsi"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/struktur-organisasi"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/ketidakberpihakan"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/pengakuan-internasional"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/anggota-kan"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/maklumat-layanan"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/standar-layanan"
-          element={<DynamicPage />}
-        />
+        <Route path="/sejarah-fungsi" element={<DynamicPage />} />
+        <Route path="/struktur-organisasi" element={<DynamicPage />} />
+        <Route path="/ketidakberpihakan" element={<DynamicPage />} />
+        <Route path="/pengakuan-internasional" element={<DynamicPage />} />
+        <Route path="/anggota-kan" element={<DynamicPage />} />
+        <Route path="/maklumat-layanan" element={<DynamicPage />} />
+        <Route path="/standar-layanan" element={<DynamicPage />} />
 
 
         {/* =========================================================
@@ -132,188 +108,71 @@ function App() {
         ========================================================= */}
 
         {/* Khusus Proses Akreditasi menggunakan halaman dedicated */}
-        <Route
-          path="/proses-akreditasi"
-          element={<ProsesAkreditasi />}
-        />
+        <Route path="/proses-akreditasi" element={<ProsesAkreditasi />} />
 
-        <Route
-          path="/tarif-akreditasi"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/penanganan-komplain"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/penanganan-banding"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/survey-kepuasan-pelanggan"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/survey-kepuasan-pelanggan/:year"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/hasil-survei"
-          element={<DynamicPage />}
-        />
+        <Route path="/tarif-akreditasi" element={<DynamicPage />} />
+        <Route path="/penanganan-komplain" element={<DynamicPage />} />
+        <Route path="/penanganan-banding" element={<DynamicPage />} />
+        <Route path="/survey-kepuasan-pelanggan" element={<DynamicPage />} />
+        <Route path="/survey-kepuasan-pelanggan/:year" element={<DynamicPage />} />
+        <Route path="/hasil-survei" element={<DynamicPage />} />
 
 
         {/* =========================================================
             LAYANAN AKREDITASI
         ========================================================= */}
 
-        <Route
-          path="/layanan-akreditasi"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/laboratorium"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/laboratorium/:slug"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/daftar-laboratorium"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/lembaga-inspeksi"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/lembaga-verifikasi-validasi-grk"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/penyelenggara-uji-profisiensi"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/produsen-bahan-acuan"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/sistem-manajemen"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/sertifikasi-person"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/sertifikasi-sni-iso-iec-17065"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/sertifikasi-pembangunan-berkelanjutan"
-          element={<DynamicPage />}
-        />
+        <Route path="/layanan-akreditasi" element={<DynamicPage />} />
+        <Route path="/layanan/laboratorium" element={<DynamicPage />} />
+        <Route path="/layanan/laboratorium/:slug" element={<DynamicPage />} />
+        <Route path="/daftar-laboratorium" element={<DynamicPage />} />
+        <Route path="/layanan/lembaga-inspeksi" element={<DynamicPage />} />
+        <Route path="/layanan/lembaga-verifikasi-validasi-grk" element={<DynamicPage />} />
+        <Route path="/layanan/penyelenggara-uji-profisiensi" element={<DynamicPage />} />
+        <Route path="/layanan/produsen-bahan-acuan" element={<DynamicPage />} />
+        <Route path="/layanan/sistem-manajemen" element={<DynamicPage />} />
+        <Route path="/layanan/sertifikasi-person" element={<DynamicPage />} />
+        <Route path="/layanan/sertifikasi-sni-iso-iec-17065" element={<DynamicPage />} />
+        <Route path="/layanan/sertifikasi-pembangunan-berkelanjutan" element={<DynamicPage />} />
 
         {/* Dynamic service routes */}
-        <Route
-          path="/daftar-layanan/:cat"
-          element={<DynamicPage />}
-        />
-
-        <Route
-          path="/layanan/:cat/:slug"
-          element={<DynamicPage />}
-        />
+        <Route path="/daftar-layanan/:cat" element={<DynamicPage />} />
+        <Route path="/layanan/:cat/:slug" element={<DynamicPage />} />
 
 
         {/* =========================================================
-            DIREKTORI LPK
+            DIREKTORI LPK  (tab "Semua" dihapus)
         ========================================================= */}
 
         <Route
           path="/direktori"
-          element={
-            <Navigate
-              to="/direktori/semua"
-              replace
-            />
-          }
+          element={<Navigate to="/direktori/terakreditasi" replace />}
         />
 
-        <Route
-          path="/direktori/semua"
-          element={<DirectoryPage />}
-        />
-
-        <Route
-          path="/direktori/terakreditasi"
-          element={<DirectoryPage />}
-        />
-
-        <Route
-          path="/direktori/akreditasi-dibekukan"
-          element={<DirectoryPage />}
-        />
-
-        <Route
-          path="/direktori/akreditasi-dicabut"
-          element={<DirectoryPage />}
-        />
-
+        <Route path="/direktori" element={<Navigate to="/direktori/semua" replace />} />
+        <Route path="/direktori/semua" element={<DirectoryPage />} />
+        <Route path="/direktori/terakreditasi" element={<DirectoryPage />} />
+        <Route path="/direktori/akreditasi-dibekukan" element={<DirectoryPage />} />
+        <Route path="/direktori/akreditasi-dicabut" element={<DirectoryPage />} />
 
         {/* =========================================================
             UNDUH / DOCUMENTS
         ========================================================= */}
 
-        <Route
-          path="/unduh/*"
-          element={<DocumentPage />}
-        />
-
-        <Route
-          path="/cari"
-          element={<SearchResults />}
-        />
+        <Route path="/unduh/*" element={<DocumentPage />} />
+        <Route path="/cari" element={<SearchResults />} />
 
 
         {/* =========================================================
             ADMIN ROUTES
         ========================================================= */}
 
-        <Route
-          path="/admin/login"
-          element={<AdminLogin />}
-        />
+        <Route path="/admin/login" element={<AdminLogin />} />
 
         <Route
           path="/admin/dashboard"
           element={
-            <ProtectedRoute
-              roles={[
-                'super_admin',
-                'admin',
-                'adminsosmed',
-                'sosmed_admin'
-              ]}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin', 'adminsosmed', 'sosmed_admin']}>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -322,14 +181,7 @@ function App() {
         <Route
           path="/admin/sliders"
           element={
-            <ProtectedRoute
-              roles={[
-                'super_admin',
-                'admin',
-                'adminsosmed',
-                'sosmed_admin'
-              ]}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin', 'adminsosmed', 'sosmed_admin']}>
               <SlidersManagement />
             </ProtectedRoute>
           }
@@ -338,14 +190,7 @@ function App() {
         <Route
           path="/admin/news"
           element={
-            <ProtectedRoute
-              roles={[
-                'super_admin',
-                'admin',
-                'adminsosmed',
-                'sosmed_admin'
-              ]}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin', 'adminsosmed', 'sosmed_admin']}>
               <NewsManagement />
             </ProtectedRoute>
           }
@@ -354,9 +199,7 @@ function App() {
         <Route
           path="/admin/partners"
           element={
-            <ProtectedRoute
-              roles={['super_admin', 'admin']}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <PartnersManagement />
             </ProtectedRoute>
           }
@@ -365,9 +208,7 @@ function App() {
         <Route
           path="/admin/faq"
           element={
-            <ProtectedRoute
-              roles={['super_admin', 'admin']}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <FaqManagement />
             </ProtectedRoute>
           }
@@ -376,9 +217,7 @@ function App() {
         <Route
           path="/admin/pages"
           element={
-            <ProtectedRoute
-              roles={['super_admin', 'admin']}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <PagesManagement />
             </ProtectedRoute>
           }
@@ -387,14 +226,7 @@ function App() {
         <Route
           path="/admin/content"
           element={
-            <ProtectedRoute
-              roles={[
-                'super_admin',
-                'admin',
-                'adminsosmed',
-                'sosmed_admin'
-              ]}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin', 'adminsosmed', 'sosmed_admin']}>
               <Suspense
                 fallback={
                   <div className="p-10 text-center text-gray-400">
@@ -411,9 +243,7 @@ function App() {
         <Route
           path="/admin/directory"
           element={
-            <ProtectedRoute
-              roles={['super_admin', 'admin']}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <DirectoryManagement />
             </ProtectedRoute>
           }
@@ -432,9 +262,7 @@ function App() {
         <Route
           path="/admin/legal"
           element={
-            <ProtectedRoute
-              roles={['super_admin', 'admin']}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <LegalManagement />
             </ProtectedRoute>
           }
@@ -449,17 +277,12 @@ function App() {
           }
         />
 
-        <Route
-          path="/admin/social-media"
-          element={<SocialMediaManagement />}
-        />
+        <Route path="/admin/social-media" element={<SocialMediaManagement />} />
 
         <Route
           path="/admin/menus"
           element={
-            <ProtectedRoute
-              roles={['super_admin', 'admin']}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <MenuManagement />
             </ProtectedRoute>
           }
@@ -468,9 +291,7 @@ function App() {
         <Route
           path="/admin/users"
           element={
-            <ProtectedRoute
-              roles={['super_admin', 'admin']}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <UserManagement />
             </ProtectedRoute>
           }
@@ -479,9 +300,7 @@ function App() {
         <Route
           path="/admin/contact-submissions"
           element={
-            <ProtectedRoute
-              roles={['super_admin', 'admin']}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <ContactInbox />
             </ProtectedRoute>
           }
@@ -490,33 +309,35 @@ function App() {
         <Route
           path="/admin/accreditation-steps"
           element={
-            <ProtectedRoute
-              roles={['super_admin', 'admin']}
-            >
+            <ProtectedRoute roles={['super_admin', 'admin']}>
               <AccreditationStepsManagement />
             </ProtectedRoute>
           }
         />
 
+        <Route
+          path="/admin/surveys"
+          element={
+            <ProtectedRoute roles={['super_admin', 'admin']}>
+              <SurveyManagement />
+            </ProtectedRoute>
+          }
+        />
 
         {/* =========================================================
             FAQ
         ========================================================= */}
 
-        <Route
-          path="/faq"
-          element={<FAQPage />}
-        />
+        <Route path="/faq" element={<FAQPage />} />
 
 
         {/* =========================================================
             CUSTOM PAGE
         ========================================================= */}
 
-        <Route
-          path="/:slug"
-          element={<CustomPage />}
-        />
+        <Route path="/survei/:code" element={<PublicSurvey />} />
+        
+        <Route path="/:slug" element={<CustomPage />} />
 
       </Routes>
     </Router>

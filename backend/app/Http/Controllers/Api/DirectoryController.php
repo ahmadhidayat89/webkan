@@ -3,67 +3,74 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\AccreditedOrganization;
+use App\Models\Lpk;
 use Illuminate\Http\Request;
 
 class DirectoryController extends Controller
 {
-    /**
-     * Map route segment ke status di DB.
-     * terakreditasi  → active
-     * akreditasi-dibekukan → suspended
-     * akreditasi-dicabut   → revoked
-     */
-    private array $statusMap = [
-        'terakreditasi'        => 'active',
-        'akreditasi-dibekukan' => 'suspended',
-        'akreditasi-dicabut'   => 'revoked',
-        'semua'                => null, // null = all statuses
+    // segment di URL => nama tab di model Lpk
+    private array $tabMap = [
+        'semua'                => 'semua',
+        'terakreditasi'        => 'terakreditasi',
+        'akreditasi-dibekukan' => 'dibekukan',
+        'akreditasi-dicabut'   => 'dicabut',
     ];
 
     public function index(Request $request, string $segment)
     {
-        if (!array_key_exists($segment, $this->statusMap)) {
+        if (!isset($this->tabMap[$segment])) {
             return response()->json(['success' => false, 'message' => 'Segmen direktori tidak valid'], 404);
         }
 
-        $status = $this->statusMap[$segment];
-        $query = AccreditedOrganization::query();
+        $tab     = $this->tabMap[$segment];
+        $perPage = min((int) $request->get('per_page', 10), 50);
 
-        if ($status !== null) {
-            $query->where('status', $status);
-        }
+        // Daftar tipe yang tersedia di tab ini (untuk dropdown filter)
+        $types = Lpk::inTab($tab)->select('type')->distinct()->orderBy('type')->pluck('type');
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+        $query = Lpk::query()->inTab($tab);
+
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
+
         if ($request->filled('search')) {
-            $s = strtolower($request->search);
+            $s = '%' . strtolower($request->search) . '%';
             $query->where(function ($q) use ($s) {
-                $q->whereRaw('LOWER(name) LIKE ?', ["%$s%"])
-                  ->orWhereRaw('LOWER(certificate_number) LIKE ?', ["%$s%"]);
+                $q->whereRaw('LOWER(name) LIKE ?', [$s])
+                  ->orWhereRaw('LOWER(certificate_number) LIKE ?', [$s])
+                  ->orWhereRaw('LOWER(address) LIKE ?', [$s])
+                  ->orWhereRaw('LOWER(scope) LIKE ?', [$s])
+                  ->orWhereRaw('LOWER(suspension_status) LIKE ?', [$s]);
             });
         }
 
-        $query->orderBy('name');
-        $perPage = $request->get('per_page', 20);
-        $data = $query->paginate($perPage);
+        // Fitur klik pill: ?focus=NOMOR_AKREDITASI
+        // Cari LPK itu ada di halaman berapa (sesuai urutan tabel), lalu buka halaman tersebut.
+        $page    = max(1, (int) $request->get('page', 1));
+        $focusId = null;
 
-        // Available types for filter
-        $typesQuery = AccreditedOrganization::select('type')->distinct()->orderBy('type');
-        if ($status !== null) {
-            $typesQuery->where('status', $status);
+        if ($request->filled('focus')) {
+            $targetId = (clone $query)->where('certificate_number', $request->focus)->value('id');
+
+            if ($targetId) {
+                $orderedIds = (clone $query)->naturalOrder()->pluck('id');
+                $position   = $orderedIds->search($targetId);
+
+                if ($position !== false) {
+                    $page    = intdiv($position, $perPage) + 1;
+                    $focusId = $targetId;
+                }
+            }
         }
-        $types = $typesQuery->pluck('type');
+
+        $data = $query->naturalOrder()->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
-            'success' => true,
-            'status'  => $status,
-            'data'    => $data,
-            'types'   => $types,
+            'success'  => true,
+            'data'     => $data,
+            'types'    => $types,
+            'focus_id' => $focusId,
         ]);
     }
 }

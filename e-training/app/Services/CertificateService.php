@@ -28,34 +28,10 @@ class CertificateService
             $cert->verification_code = Str::uuid();
         }
 
-        // 2. Generate QR Code sebagai base64
-        $verifyUrl = url('/verify/' . $cert->verification_code);
-        $qrBase64  = $this->generateQrBase64($verifyUrl);
-        $qrIsSvg   = str_starts_with($qrBase64, 'data:image/svg');
+        // 2. Render Blade template ke HTML (semua data dari viewData)
+        $html = view('certificates.template', $this->viewData($cert, $course, $user))->render();
 
-        // 3. Ambil gambar background & tanda tangan → base64
-        $bgBase64  = $this->imageToBase64($course->certificate_template);
-        $sigBase64 = $this->imageToBase64($course->certificate_signature);
-
-        // 4. Render Blade template ke HTML
-        $html = view('certificates.template', [
-            'student_name'       => $user->name,
-            'student_org'        => $user->organization ?? '',
-            'course_title'       => $course->title,
-            'course_level'       => ucfirst($course->level ?? ''),
-            'certificate_number' => $cert->certificate_number,
-            'issue_date'         => now()->locale('id')->isoFormat('D MMMM YYYY'),
-            'duration_hours'     => $course->duration_hours ?? 0,
-            'verify_url'         => $verifyUrl,
-            'qr_base64'          => $qrBase64,
-            'qr_is_svg'          => $qrIsSvg,
-            'bg_base64'          => $bgBase64,
-            'sig_base64'         => $sigBase64,
-            'signer_name'        => config('app.certificate_signer_name'),
-            'signer_role'        => config('app.certificate_signer_title'),
-        ])->render();
-
-        // 5. Generate PDF via DOMPDF
+        // 3. Generate PDF via DOMPDF
         $pdf = Pdf::loadHTML($html)
             ->setPaper('a4', 'landscape')
             ->setOption('isPhpEnabled', true)
@@ -63,13 +39,37 @@ class CertificateService
             ->setOption('defaultFont', 'DejaVu Sans')
             ->setOption('chroot', storage_path('app/public'));
 
-        // 6. Simpan ke storage
+        // 4. Simpan ke storage
         $filename = "certificates/{$course->id}/{$user->id}.pdf";
         Storage::disk('public')->put($filename, $pdf->output());
 
         $cert->fill(['file_path' => $filename, 'issued_at' => now()])->save();
 
         return $cert;
+    }
+
+    /**
+     * Kumpulkan semua data yang dibutuhkan template sertifikat.
+     * Dipakai bersama oleh PDF dan preview, supaya hasilnya selalu sama.
+     */
+    public function viewData(Certificate $cert, Course $course, User $user): array
+    {
+        $verifyUrl = url('/verify/' . ($cert->verification_code ?? 'preview'));
+        $qr        = $this->generateQrBase64($verifyUrl);
+
+        return [
+            'student_name'       => $cert->recipient_name ?: $user->name,
+            'status_text'        => $cert->status === 'hadir' ? 'hadir' : 'lulus',
+            'course_title'       => $course->title,
+            'event_text'         => $cert->event_text,
+            'certificate_number' => $cert->certificate_number,
+            'qr_base64'          => $qr,
+            'qr_is_svg'          => str_starts_with($qr, 'data:image/svg'),
+            'bg_base64'          => $this->imageToBase64($course->certificate_template),
+            'sig_base64'         => $this->imageToBase64($course->certificate_signature),
+            'signer_name'        => $cert->signer_name  ?: config('app.certificate_signer_name'),
+            'signer_role'        => $cert->signer_title ?: config('app.certificate_signer_title'),
+        ];
     }
 
     /**
@@ -103,7 +103,6 @@ class CertificateService
             'scale'           => 6,
         ]);
 
-        // render() sudah mengembalikan: "data:image/svg+xml;base64,..." — return as-is
         return (new QRCode($options))->render($content);
     }
 

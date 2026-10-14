@@ -1,0 +1,36 @@
+.rt-input {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Toolbar di bawah kolom input, seperti Google Forms */
+.rt-input .ql-toolbar.ql-snow {
+  order: 2;
+  border: 0;
+  padding: 6px 0 0;
+}
+
+.rt-input .ql-container.ql-snow {
+  border: 0;
+  border-bottom: 2px solid #1d4ed8;
+  background: #f9fafb;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.rt-input .ql-editor {
+  padding: 10px 12px;
+  min-height: 40px;
+}
+
+.rt-input .ql-editor.ql-blank::before {
+  left: 12px;
+  font-style: normal;
+  color: #9ca3af;
+}
+
+.rt-input .ql-snow.ql-toolbar button {
+  width: 28px;
+  height: 28px;
+}

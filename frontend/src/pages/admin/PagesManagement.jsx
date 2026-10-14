@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaSearch, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaSearch, FaCheckCircle, FaTimesCircle, FaFileAlt } from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
 
 const PagesManagement = () => {
@@ -116,7 +116,7 @@ const PagesManagement = () => {
       });
 
       console.log('Response status:', response.status);
-      
+
       // Check content type before parsing
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
@@ -185,18 +185,45 @@ const PagesManagement = () => {
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-2xl font-black text-gray-900">Kelola Halaman</h2>
-            <p className="mt-1 text-gray-600">Buat halaman website dan tentukan route/URL-nya.</p>
+        {/* Header Banner */}
+        <div className="relative overflow-hidden text-white shadow-xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute w-56 h-56 rounded-full -top-10 -right-10 bg-white/5 blur-3xl"></div>
           </div>
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-6 py-3 font-bold text-white transition-all shadow-lg bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl hover:scale-105"
-          >
-            <FaPlus />
-            <span>Tambah Halaman</span>
-          </button>
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-12 h-12 bg-white/15 rounded-xl">
+                <FaFileAlt className="text-xl text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black">Kelola Halaman</h2>
+                <p className="text-white/70 text-sm mt-0.5">Buat halaman website dan tentukan route/URL-nya.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden gap-2 sm:flex">
+                <div className="text-center px-4 py-2.5 bg-white/15 rounded-xl border border-white/20">
+                  <div className="text-xl font-black">{pages.filter((p) => p.is_published).length}</div>
+                  <div className="text-xs font-semibold text-white/70">Publish</div>
+                </div>
+                <div className="text-center px-4 py-2.5 bg-white/10 rounded-xl border border-white/20">
+                  <div className="text-xl font-black">{pages.filter((p) => !p.is_published).length}</div>
+                  <div className="text-xs font-semibold text-white/70">Draft</div>
+                </div>
+                <div className="text-center px-4 py-2.5 bg-white/10 rounded-xl border border-white/20">
+                  <div className="text-xl font-black">{pages.length}</div>
+                  <div className="text-xs font-semibold text-white/70">Total</div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleOpenModal()}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white text-primary-700 rounded-xl font-bold text-sm hover:bg-white/90 transition-all shadow-md"
+              >
+                <FaPlus />
+                Tambah Halaman
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Search */}
@@ -319,7 +346,7 @@ const PagesManagement = () => {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">Judul (Bahasa Indonesia) *</label>
+                <label className="block mb-2 text-sm font-bold text-gray-700">Judul (Bahasa Indonesia) <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={formData.title_id}
@@ -340,7 +367,7 @@ const PagesManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">Route / URL *</label>
+                <label className="block mb-2 text-sm font-bold text-gray-700">Route / URL <span className="text-red-500">*</span></label>
                 <div className="flex items-center px-4 border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-primary-500">
                   <span className="text-gray-400">/</span>
                   <input
@@ -357,7 +384,7 @@ const PagesManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-700">Konten (Bahasa Indonesia) *</label>
+                <label className="block mb-2 text-sm font-bold text-gray-700">Konten (Bahasa Indonesia) <span className="text-red-500">*</span></label>
                 <textarea
                   value={formData.content_id}
                   onChange={(e) => setFormData({ ...formData, content_id: e.target.value })}

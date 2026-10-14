@@ -18,6 +18,7 @@ import {
   FaUserCog,
   FaLink,
   FaClipboardCheck,
+  FaClipboardList,
 } from 'react-icons/fa';
 import { getMe, logout } from '../../services/api';
 import kanLogo from '../../assets/kan.png';
@@ -103,6 +104,12 @@ const MENU_GROUPS = [
         path: '/admin/faq',
         icon: FaQuestionCircle,
         label: 'FAQ',
+        roles: ['super_admin', 'admin'],
+      },
+      {
+        path: '/admin/surveys',
+        icon: FaClipboardList,
+        label: 'Kuesioner',
         roles: ['super_admin', 'admin'],
       },
       {
@@ -440,7 +447,7 @@ const AdminLayout = ({ children }) => {
       </aside>
 
       {/* ================= MAIN CONTENT ================= */}
-      <div className="flex-1 ml-64">
+      <div className="flex-1 min-w-0 ml-64">
 
         {/* Top Bar */}
         <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
@@ -526,7 +533,7 @@ const AdminLayout = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="p-6">
+        <main className="min-w-0 p-6 overflow-x-hidden">
           {children}
         </main>
 
