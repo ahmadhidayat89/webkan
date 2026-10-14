@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import {
   FaPlus,
   FaEdit,
@@ -44,6 +44,11 @@ const UserManagement = () => {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [msg, setMsg] = useState(null);
+
+  const nameId = useId();
+  const emailId = useId();
+  const passwordId = useId();
+  const roleId = useId();
 
   let currentUser = null;
 
@@ -590,11 +595,12 @@ const UserManagement = () => {
 
                 {/* Nama */}
                 <div>
-                  <label className="block mb-2 text-sm font-bold text-gray-800">
+                  <label htmlFor={nameId} className="block mb-2 text-sm font-bold text-gray-800">
                     Nama <span className="text-red-500">*</span>
                   </label>
-
+                  
                   <input
+                    id={nameId}
                     type="text"
                     required
                     maxLength="255"
@@ -612,11 +618,12 @@ const UserManagement = () => {
 
                 {/* Email */}
                 <div>
-                  <label className="block mb-2 text-sm font-bold text-gray-800">
+                  <label htmlFor={emailId} className="block mb-2 text-sm font-bold text-gray-800">
                     Email <span className="text-red-500">*</span>
                   </label>
-
+                  
                   <input
+                    id={emailId}
                     type="email"
                     required
                     maxLength="255"
@@ -634,7 +641,7 @@ const UserManagement = () => {
 
                 {/* Password */}
                 <div>
-                  <label className="block mb-2 text-sm font-bold text-gray-800">
+                  <label htmlFor={passwordId} className="block mb-2 text-sm font-bold text-gray-800">
 
                     Password
 
@@ -674,11 +681,12 @@ const UserManagement = () => {
 
                 {/* Role */}
                 <div>
-                  <label className="block mb-2 text-sm font-bold text-gray-800">
+                  <label htmlFor={roleId} className="block mb-2 text-sm font-bold text-gray-800">
                     Role <span className="text-red-500">*</span>
                   </label>
-
+                  
                   <select
+                    id={roleId}
                     value={form.role}
                     onChange={(event) =>
                       setForm((prev) => ({
@@ -705,6 +713,7 @@ const UserManagement = () => {
                   type="button"
                   onClick={closeModal}
                   disabled={saving}
+                  aria-label="Tutup"
                   className="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50 transition-all disabled:opacity-50"
                 >
                   Batal
