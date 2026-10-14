@@ -13,16 +13,19 @@ class AdminRoleAccessTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const ADMIN_USERS_URL = '/api/v1/admin/users';
+    private const NEW_PAGE_TITLE = 'Layanan Baru';
+
     public function test_admin_can_manage_users_and_contact_submissions_but_not_settings(): void
     {
         Sanctum::actingAs($this->userWithRole('admin'));
 
-        $this->getJson('/api/v1/admin/users')->assertOk();
+        $this->getJson(self::ADMIN_USERS_URL)->assertOk();
         $this->getJson('/api/v1/admin/contact-submissions')->assertOk();
         $this->getJson('/api/v1/admin/settings')->assertForbidden();
         $this->getJson('/api/v1/admin/social-settings')->assertForbidden();
 
-        $this->postJson('/api/v1/admin/users', [
+        $this->postJson(self::ADMIN_USERS_URL, [
             'name' => 'Social Admin',
             'email' => 'social-admin@example.com',
             'role' => 'adminsosmed',
@@ -37,7 +40,7 @@ class AdminRoleAccessTest extends TestCase
         $this->getJson('/api/v1/admin/social-settings')->assertOk();
         $this->getJson('/api/v1/admin/news')->assertOk();
         $this->getJson('/api/v1/admin/settings')->assertForbidden();
-        $this->getJson('/api/v1/admin/users')->assertForbidden();
+        $this->getJson(self::ADMIN_USERS_URL)->assertForbidden();
         $this->getJson('/api/v1/admin/contact-submissions')->assertForbidden();
         $this->getJson('/api/v1/admin/menus')->assertForbidden();
     }
@@ -46,7 +49,7 @@ class AdminRoleAccessTest extends TestCase
     {
         Sanctum::actingAs($this->userWithRole('admin'));
 
-        $this->postJson('/api/v1/admin/users', [
+        $this->postJson(self::ADMIN_USERS_URL, [
             'name' => 'Unauthorized Super Admin',
             'email' => 'unauthorized@example.com',
             'role' => 'super_admin',
@@ -61,21 +64,21 @@ class AdminRoleAccessTest extends TestCase
         Sanctum::actingAs($this->userWithRole('admin'));
 
         $this->postJson('/api/v1/admin/pages', [
-            'title_id' => 'Layanan Baru',
+            'title_id' => self::NEW_PAGE_TITLE,
             'slug' => 'layanan-baru',
             'content_id' => '<p>Informasi layanan.</p>',
             'is_published' => true,
         ])->assertCreated();
 
         $this->postJson('/api/v1/admin/menus', [
-            'title_id' => 'Layanan Baru',
+            'title_id' => self::NEW_PAGE_TITLE,
             'url' => '/layanan-baru',
             'is_active' => true,
         ])->assertCreated();
 
         $this->getJson('/api/v1/pages/layanan-baru')
             ->assertOk()
-            ->assertJsonPath('data.title_id', 'Layanan Baru');
+            ->assertJsonPath('data.title_id', self::NEW_PAGE_TITLE);
         $this->getJson('/api/v1/menus')
             ->assertOk()
             ->assertJsonPath('data.0.url', '/layanan-baru');
