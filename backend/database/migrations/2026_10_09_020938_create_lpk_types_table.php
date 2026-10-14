@@ -5,8 +5,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
+    private const KONSTRUKSI_PERSON_TYPE = 'Lembaga Sertifikasi Person Sektor dan Jasa Konstruksi';
+
     private array $types = [
         'Laboratorium Pengujian',
         'Laboratorium Kalibrasi',
@@ -14,7 +15,7 @@ return new class extends Migration
         'Lembaga Inspeksi',
         'Lembaga Sertifikasi Produk',
         'Lembaga Sertifikasi Person',
-        'Lembaga Sertifikasi Person Sektor dan Jasa Konstruksi',
+        self::KONSTRUKSI_PERSON_TYPE,
         'Lembaga Sertifikasi Sistem Mutu',
         'Lembaga Sertifikasi Berdasarkan SNI ISO/IEC 17065',
         'Lembaga Sertifikasi Badan Usaha Jasa Konstruksi',
@@ -29,10 +30,10 @@ return new class extends Migration
 
     // nama lama => nama baru (untuk data LPK yang sudah tersimpan)
     private array $renames = [
-        'Lembaga Sertifikasi Personel'              => 'Lembaga Sertifikasi Person',
-        'Lembaga Sertifikasi Person Sektor dan Jasa' => 'Lembaga Sertifikasi Person Sektor dan Jasa Konstruksi',
-        'Lembaga Sertifikasi Person Jasa Konstruksi' => 'Lembaga Sertifikasi Person Sektor dan Jasa Konstruksi',
-        'Lembaga Verifikasi & Validasi GRK'         => 'Lembaga Verifikasi dan Validasi',
+        'Lembaga Sertifikasi Personel' => 'Lembaga Sertifikasi Person',
+        'Lembaga Sertifikasi Person Sektor dan Jasa' => self::KONSTRUKSI_PERSON_TYPE,
+        'Lembaga Sertifikasi Person Jasa Konstruksi' => self::KONSTRUKSI_PERSON_TYPE,
+        'Lembaga Verifikasi & Validasi GRK' => 'Lembaga Verifikasi dan Validasi',
     ];
 
     public function up(): void
@@ -47,7 +48,7 @@ return new class extends Migration
         $now = now();
         foreach ($this->types as $i => $name) {
             DB::table('lpk_types')->insert([
-                'name'       => $name,
+                'name' => $name,
                 'sort_order' => $i + 1,
                 'created_at' => $now,
                 'updated_at' => $now,
