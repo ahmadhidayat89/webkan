@@ -848,11 +848,12 @@ const DirectoryManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                  <label htmlFor="lpk-form-name" className="block mb-1 text-sm font-bold text-gray-700">
                     Nama LPK <Req />
                   </label>
-
+                  
                   <input
+                    id="lpk-form-name"
                     value={form.name}
                     onChange={e => setF('name', e.target.value)}
                     className={inputCls}
@@ -860,11 +861,12 @@ const DirectoryManagement = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                  <label htmlFor="lpk-form-address" className="block mb-1 text-sm font-bold text-gray-700">
                     Alamat
                   </label>
-
+                  
                   <textarea
+                    id="lpk-form-address"
                     rows={2}
                     value={form.address}
                     onChange={e => setF('address', e.target.value)}
@@ -873,11 +875,12 @@ const DirectoryManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                  <label htmlFor="lpk-form-phone" className="block mb-1 text-sm font-bold text-gray-700">
                     Telepon / Fax
                   </label>
-
+                  
                   <input
+                    id="lpk-form-phone"
                     value={form.phone}
                     onChange={e => setF('phone', e.target.value)}
                     className={inputCls}
@@ -885,11 +888,12 @@ const DirectoryManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                  <label htmlFor="lpk-form-email" className="block mb-1 text-sm font-bold text-gray-700">
                     E-mail
                   </label>
-
+                  
                   <input
+                    id="lpk-form-email"
                     value={form.email}
                     onChange={e => setF('email', e.target.value)}
                     className={inputCls}
@@ -897,11 +901,12 @@ const DirectoryManagement = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                  <label htmlFor="lpk-form-scope" className="block mb-1 text-sm font-bold text-gray-700">
                     Lingkup
                   </label>
-
+                  
                   <textarea
+                    id="lpk-form-scope"
                     rows={2}
                     value={form.scope}
                     onChange={e => setF('scope', e.target.value)}
@@ -910,11 +915,12 @@ const DirectoryManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                  <label htmlFor="lpk-form-expiry" className="block mb-1 text-sm font-bold text-gray-700">
                     Masa Berlaku (Expired)
                   </label>
-
+                  
                   <input
+                    id="lpk-form-expiry"
                     type="date"
                     value={form.expiry_date}
                     onChange={e => setF('expiry_date', e.target.value)}
@@ -923,11 +929,12 @@ const DirectoryManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                  <label htmlFor="lpk-form-link" className="block mb-1 text-sm font-bold text-gray-700">
                     Link
                   </label>
-
+                  
                   <input
+                    id="lpk-form-link"
                     value={form.certificate_link}
                     onChange={e => setF('certificate_link', e.target.value)}
                     placeholder="https://..."
@@ -938,13 +945,14 @@ const DirectoryManagement = () => {
                 {isSuspendedForm && (
                   <>
                     <div className="md:col-span-2">
-                      <label className="block mb-1 text-sm font-bold text-gray-700">
+                      <label htmlFor="lpk-form-suspension-status" className="block mb-1 text-sm font-bold text-gray-700">
                         Status Pembekuan{' '}
                         {form.status_choice === 'suspended_partial' &&
                           '(daftar RL yang dibekukan)'}
                       </label>
-
+                      
                       <textarea
+                        id="lpk-form-suspension-status"
                         rows={2}
                         value={form.suspension_status}
                         onChange={e =>
@@ -960,11 +968,12 @@ const DirectoryManagement = () => {
                     </div>
 
                     <div>
-                      <label className="block mb-1 text-sm font-bold text-gray-700">
+                      <label htmlFor="lpk-form-suspended-at" className="block mb-1 text-sm font-bold text-gray-700">
                         Tanggal Dibekukan
                       </label>
-
+                      
                       <input
+                        id="lpk-form-suspended-at"
                         type="date"
                         value={form.suspended_at}
                         onChange={e =>
@@ -978,11 +987,12 @@ const DirectoryManagement = () => {
 
                 {form.status_choice === 'revoked' && (
                   <div>
-                    <label className="block mb-1 text-sm font-bold text-gray-700">
+                    <label htmlFor="lpk-form-revoked-at" className="block mb-1 text-sm font-bold text-gray-700">
                       Tanggal Dicabut
                     </label>
-
+                    
                     <input
+                      id="lpk-form-revoked-at"
                       type="date"
                       value={form.revoked_at}
                       onChange={e =>
