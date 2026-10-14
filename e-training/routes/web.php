@@ -42,9 +42,9 @@ Route::post('/course/{course}/lessons/{lesson}/complete', [CoursePlayerControlle
 // Diskusi per lesson/sesi (bisa diakses semua user yang login)
 use App\Http\Controllers\DiscussionController;
 Route::middleware(['auth'])->prefix('lessons/{lesson}/discussions')->name('discussions.')->group(function () {
-    Route::get('/',              [DiscussionController::class, 'index'])  ->name('index');
-    Route::post('/',             [DiscussionController::class, 'store'])  ->name('store');
-    Route::delete('/{discussion}',[DiscussionController::class, 'destroy'])->name('destroy');
+    Route::get('/', [DiscussionController::class, 'index'])->name('index');
+    Route::post('/', [DiscussionController::class, 'store'])->name('store');
+    Route::delete('/{discussion}', [DiscussionController::class, 'destroy'])->name('destroy');
 });
 
 // Peserta: self-enroll via referral code
@@ -62,10 +62,10 @@ Route::get('/api/calendar-events', [CourseEventController::class, 'getCalendarEv
     ->middleware(['auth'])->name('api.calendar.events');
 
 // Profil user
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+Route::middleware('auth')->prefix('profile')->name('profile.')->group(function () {
+    Route::get('/', [ProfileController::class, 'edit'])->name('edit');
+    Route::patch('/', [ProfileController::class, 'update'])->name('update');
+    Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
 });
 
 use App\Http\Controllers\ActivityLogController;
@@ -84,9 +84,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log');
 
     // Studio Konten — CRUD Kursus
-    Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
-    Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
-    Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
+
+    Route::prefix('courses')->name('courses.')->group(function () {
+        Route::get('/', [CourseController::class, 'index'])->name('index');
+        Route::post('/', [CourseController::class, 'store'])->name('store');
+    });
     Route::patch('/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
     Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
     Route::post('/courses/{course}/referral', [CourseController::class, 'regenerateReferral'])
@@ -145,4 +147,4 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         ->name('courses.referral.update');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

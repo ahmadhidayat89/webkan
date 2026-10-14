@@ -13,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 class SurveyController extends Controller
 {
+    private const DATETIME_FORMAT = 'd/m/Y H:i';
+    
     /**
      * Display a listing of surveys with statistics.
      */
@@ -52,11 +54,16 @@ class SurveyController extends Controller
             'questions.*.is_required' => 'boolean',
             'questions.*.options' => 'nullable|array',
             'questions.*.options.*' => 'nullable|string|max:255',
-            'questions.*.image_url' => ['nullable', 'string', 'max:2048', function ($attribute, $value, $fail) {
-                if ($value !== null && $value !== '' && !preg_match('#^(https?://|/storage/)#i', $value)) {
-                    $fail('Gambar pertanyaan harus berupa unggahan lokal atau alamat HTTP/HTTPS.');
+            'questions.*.image_url' => [
+                'nullable',
+                'string',
+                'max:2048',
+                function ($attribute, $value, $fail) {
+                    if ($value !== null && $value !== '' && !preg_match('#^(https?://|/storage/)#i', $value)) {
+                        $fail('Gambar pertanyaan harus berupa unggahan lokal atau alamat HTTP/HTTPS.');
+                    }
                 }
-            }],
+            ],
             'questions.*.validation' => 'nullable|array',
             'questions.*.validation.answer_type' => 'nullable|in:text,email,phone,number,text_number',
             'questions.*.validation.min_length' => 'nullable|integer|min:0|max:10000',
@@ -105,9 +112,11 @@ class SurveyController extends Controller
      */
     public function show($id)
     {
-        $survey = Survey::with(['questions' => function ($q) {
-            $q->orderBy('order', 'asc');
-        }])->findOrFail($id);
+        $survey = Survey::with([
+            'questions' => function ($q) {
+                $q->orderBy('order', 'asc');
+            }
+        ])->findOrFail($id);
 
         $responses = SurveyResponse::with('answers')
             ->where('survey_id', $survey->id)
@@ -167,7 +176,7 @@ class SurveyController extends Controller
             } elseif ($question->type === 'scale') {
                 $scaleCounts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
                 foreach ($qAnswers as $val) {
-                    $num = (int)$val;
+                    $num = (int) $val;
                     if ($num >= 1 && $num <= 5) {
                         $scaleCounts[$num]++;
                         $scaleScores[] = $num;
@@ -195,7 +204,7 @@ class SurveyController extends Controller
             return [
                 'id' => $resp->id,
                 'created_at' => $resp->created_at->format('Y-m-d H:i:s'),
-                'created_at_human' => $resp->created_at->format('d/m/Y H:i'),
+                'created_at_human' => $resp->created_at->format(self::DATETIME_FORMAT),
                 'answers' => $answersMap,
             ];
         });
@@ -208,7 +217,7 @@ class SurveyController extends Controller
                     'total_responses' => $totalResponses,
                     'average_scale' => $averageScale ? $averageScale . ' / 5' : '-',
                     'last_response_at' => $lastResponse ? $lastResponse->format('d/m/Y') : '-',
-                    'last_response_time' => $lastResponse ? $lastResponse->format('d/m/Y H:i') : '-',
+                    'last_response_time' => $lastResponse ? $lastResponse->format(self::DATETIME_FORMAT) : '-',
                 ],
                 'summary' => $questionsSummary,
                 'responses' => $respondentRows,
@@ -234,18 +243,23 @@ class SurveyController extends Controller
                 'integer',
                 'distinct',
                 Rule::exists('survey_questions', 'id')
-                    ->where(fn ($query) => $query->where('survey_id', $survey->id)),
+                    ->where(fn($query) => $query->where('survey_id', $survey->id)),
             ],
             'questions.*.text' => 'required|string',
             'questions.*.type' => 'required|in:short,para,email,phone,file,choice,check,drop,scale',
             'questions.*.is_required' => 'boolean',
             'questions.*.options' => 'nullable|array',
             'questions.*.options.*' => 'nullable|string|max:255',
-            'questions.*.image_url' => ['nullable', 'string', 'max:2048', function ($attribute, $value, $fail) {
-                if ($value !== null && $value !== '' && !preg_match('#^(https?://|/storage/)#i', $value)) {
-                    $fail('Gambar pertanyaan harus berupa unggahan lokal atau alamat HTTP/HTTPS.');
+            'questions.*.image_url' => [
+                'nullable',
+                'string',
+                'max:2048',
+                function ($attribute, $value, $fail) {
+                    if ($value !== null && $value !== '' && !preg_match('#^(https?://|/storage/)#i', $value)) {
+                        $fail('Gambar pertanyaan harus berupa unggahan lokal atau alamat HTTP/HTTPS.');
+                    }
                 }
-            }],
+            ],
             'questions.*.validation' => 'nullable|array',
             'questions.*.validation.answer_type' => 'nullable|in:text,email,phone,number,text_number',
             'questions.*.validation.min_length' => 'nullable|integer|min:0|max:10000',
@@ -360,9 +374,11 @@ class SurveyController extends Controller
      */
     public function exportCsv($id)
     {
-        $survey = Survey::with(['questions' => function ($q) {
-            $q->orderBy('order', 'asc');
-        }])->findOrFail($id);
+        $survey = Survey::with([
+            'questions' => function ($q) {
+                $q->orderBy('order', 'asc');
+            }
+        ])->findOrFail($id);
 
         $responses = SurveyResponse::with('answers')
             ->where('survey_id', $survey->id)
@@ -377,7 +393,7 @@ class SurveyController extends Controller
         $callback = function () use ($survey, $responses) {
             $file = fopen('php://output', 'w');
             // Write UTF-8 BOM
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
             // Header row (teks pertanyaan dibersihkan dari tag HTML)
             $headerRow = ['#', 'Waktu Pengisian'];
@@ -390,7 +406,7 @@ class SurveyController extends Controller
             foreach ($responses as $idx => $resp) {
                 $row = [
                     $idx + 1,
-                    $resp->created_at->format('d/m/Y H:i'),
+                    $resp->created_at->format(self::DATETIME_FORMAT),
                 ];
                 foreach ($survey->questions as $q) {
                     $ans = $resp->answers->firstWhere('question_id', $q->id);
@@ -439,7 +455,7 @@ class SurveyController extends Controller
             $labels[] = mb_substr($label, 0, 100);
         }
 
-        if (count(array_filter($labels, fn ($l) => $l !== '')) === 0) {
+        if (count(array_filter($labels, fn($l) => $l !== '')) === 0) {
             return ['Sangat Tidak Baik', 'Tidak Baik', 'Cukup', 'Baik', 'Sangat Baik'];
         }
 

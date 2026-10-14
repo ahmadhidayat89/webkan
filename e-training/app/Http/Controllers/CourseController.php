@@ -14,6 +14,9 @@ use Inertia\Response;
 
 class CourseController extends Controller
 {
+    private const DATE_FORMAT = 'd M Y';
+    private const DATETIME_LOCAL_FORMAT = 'Y-m-d\TH:i';
+
     /**
      * Daftar semua kursus untuk Studio Konten (Admin).
      */
@@ -25,17 +28,17 @@ class CourseController extends Controller
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(fn($c) => [
-                'id'               => $c->id,
-                'title'            => $c->title,
-                'slug'             => $c->slug,
-                'status'           => $c->status,
-                'level'            => $c->level,
-                'thumbnail'        => $c->thumbnail ? Storage::url($c->thumbnail) : null,
-                'category'         => $c->category?->name,
-                'modules_count'    => $c->modules_count,
+                'id' => $c->id,
+                'title' => $c->title,
+                'slug' => $c->slug,
+                'status' => $c->status,
+                'level' => $c->level,
+                'thumbnail' => $c->thumbnail ? Storage::url($c->thumbnail) : null,
+                'category' => $c->category?->name,
+                'modules_count' => $c->modules_count,
                 'enrollments_count' => $c->enrollments_count,
-                'created_at'       => $c->created_at->format('d M Y'),
-                'referral_code'    => $c->referral_code,
+                'created_at' => $c->created_at->format(self::DATE_FORMAT),
+                'referral_code' => $c->referral_code,
             ]);
 
         return Inertia::render('Admin/CreatorStudio', [
@@ -49,12 +52,12 @@ class CourseController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'title'             => 'required|string|max:255',
-            'description'       => 'nullable|string',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'short_description' => 'nullable|string|max:500',
-            'category_id'       => 'nullable|exists:categories,id',
-            'level'             => 'required|in:pemula,menengah,lanjutan',
-            'duration_hours'    => 'nullable|integer|min:1',
+            'category_id' => 'nullable|exists:categories,id',
+            'level' => 'required|in:pemula,menengah,lanjutan',
+            'duration_hours' => 'nullable|integer|min:1',
         ]);
 
         $slug = Str::slug($validated['title']);
@@ -66,10 +69,10 @@ class CourseController extends Controller
 
         $course = Course::create([
             ...$validated,
-            'slug'           => $slug,
-            'instructor_id'  => Auth::id(),
-            'status'         => 'draft',
-            'referral_code'  => strtoupper(Str::random(8)),
+            'slug' => $slug,
+            'instructor_id' => Auth::id(),
+            'status' => 'draft',
+            'referral_code' => strtoupper(Str::random(8)),
         ]);
 
         return redirect()->route('admin.courses.edit', $course->id)
@@ -92,49 +95,49 @@ class CourseController extends Controller
 
         // Format modules
         $modules = $course->modules->map(fn($m) => [
-            'id'          => $m->id,
-            'title'       => $m->title,
+            'id' => $m->id,
+            'title' => $m->title,
             'description' => $m->description,
-            'sort_order'  => $m->sort_order,
+            'sort_order' => $m->sort_order,
             'is_published' => $m->is_published,
-            'lessons'     => $m->lessons->map(fn($l) => [
-                'id'               => $l->id,
-                'title'            => $l->title,
-                'type'             => $l->type,
-                'description'      => $l->description,
-                'video_url'        => $l->video_url,
+            'lessons' => $m->lessons->map(fn($l) => [
+                'id' => $l->id,
+                'title' => $l->title,
+                'type' => $l->type,
+                'description' => $l->description,
+                'video_url' => $l->video_url,
                 'duration_minutes' => $l->duration_minutes,
-                'start_datetime'   => $l->start_datetime
-                    ? \Carbon\Carbon::parse($l->start_datetime)->format('Y-m-d\TH:i')
+                'start_datetime' => $l->start_datetime
+                    ? \Carbon\Carbon::parse($l->start_datetime)->format(self::DATETIME_LOCAL_FORMAT)
                     : null,
-                'sort_order'       => $l->sort_order,
-                'is_published'     => $l->is_published,
-                'files'            => $l->files->map(fn($f) => [
-                    'id'            => $f->id,
+                'sort_order' => $l->sort_order,
+                'is_published' => $l->is_published,
+                'files' => $l->files->map(fn($f) => [
+                    'id' => $f->id,
                     'original_name' => $f->original_name,
-                    'file_path'     => Storage::url($f->file_path),
-                    'mime_type'     => $f->mime_type,
-                    'file_size_kb'  => $f->file_size_kb,
+                    'file_path' => Storage::url($f->file_path),
+                    'mime_type' => $f->mime_type,
+                    'file_size_kb' => $f->file_size_kb,
                 ])->values(),
                 'quiz' => $l->quiz ? [
-                    'id'                  => $l->quiz->id,
-                    'duration_minutes'    => $l->quiz->duration_minutes,
-                    'passing_score'       => $l->quiz->passing_score,
-                    'max_attempts'        => $l->quiz->max_attempts,
-                    'shuffle_questions'   => $l->quiz->shuffle_questions,
+                    'id' => $l->quiz->id,
+                    'duration_minutes' => $l->quiz->duration_minutes,
+                    'passing_score' => $l->quiz->passing_score,
+                    'max_attempts' => $l->quiz->max_attempts,
+                    'shuffle_questions' => $l->quiz->shuffle_questions,
                     'show_correct_answers' => $l->quiz->show_correct_answers,
-                    'deadline_at'         => $l->quiz->deadline_at?->format('Y-m-d\TH:i'),
-                    'quiz_mode'           => $l->quiz->quiz_mode,
-                    'questions'           => $l->quiz->questions->map(fn($q) => [
-                        'id'          => $q->id,
-                        'question'    => $q->question,
-                        'type'        => $q->type,
-                        'points'      => $q->points,
-                        'sort_order'  => $q->sort_order,
+                    'deadline_at' => $l->quiz->deadline_at?->format(self::DATETIME_LOCAL_FORMAT),
+                    'quiz_mode' => $l->quiz->quiz_mode,
+                    'questions' => $l->quiz->questions->map(fn($q) => [
+                        'id' => $q->id,
+                        'question' => $q->question,
+                        'type' => $q->type,
+                        'points' => $q->points,
+                        'sort_order' => $q->sort_order,
                         'explanation' => $q->explanation,
-                        'image_path'  => $q->image_path ? Storage::url($q->image_path) : null,
-                        'options'     => $q->options->map(fn($o) => [
-                            'id'         => $o->id,
+                        'image_path' => $q->image_path ? Storage::url($q->image_path) : null,
+                        'options' => $q->options->map(fn($o) => [
+                            'id' => $o->id,
                             'option_text' => $o->option_text,
                             'is_correct' => $o->is_correct,
                             'sort_order' => $o->sort_order,
@@ -146,30 +149,30 @@ class CourseController extends Controller
 
         // Enrolled students
         $enrolledStudents = $course->enrollments->map(fn($e) => [
-            'id'              => $e->id,
-            'user_id'         => $e->user_id,
-            'name'            => $e->user->name,
-            'email'           => $e->user->email,
-            'organization'    => $e->user->organization,
+            'id' => $e->id,
+            'user_id' => $e->user_id,
+            'name' => $e->user->name,
+            'email' => $e->user->email,
+            'organization' => $e->user->organization,
             'progress_percent' => $e->progress_percent,
-            'status'          => $e->status,
-            'enrolled_at'     => $e->enrolled_at->format('d M Y'),
-            'completed_at'     => $e->completed_at?->format('Y-m-d'),
+            'status' => $e->status,
+            'enrolled_at' => $e->enrolled_at->format(self::DATE_FORMAT),
+            'completed_at' => $e->completed_at?->format('Y-m-d'),
         ])->values();
 
         // Certificates
         $certificates = $course->certificates->map(fn($cert) => [
-            'id'                 => $cert->id,
-            'user_id'            => $cert->user_id,
-            'name'               => $cert->user->name,
+            'id' => $cert->id,
+            'user_id' => $cert->user_id,
+            'name' => $cert->user->name,
             'certificate_number' => $cert->certificate_number,
-            'issued_at'          => $cert->issued_at?->format('d M Y'),
-            'file_path'          => $cert->file_path ? Storage::url($cert->file_path) : null,
-            'recipient_name'     => $cert->recipient_name,
-            'status'             => $cert->status,
-            'event_text'         => $cert->event_text,
-            'signer_name'        => $cert->signer_name,
-            'signer_title'       => $cert->signer_title,
+            'issued_at' => $cert->issued_at?->format(self::DATE_FORMAT),
+            'file_path' => $cert->file_path ? Storage::url($cert->file_path) : null,
+            'recipient_name' => $cert->recipient_name,
+            'status' => $cert->status,
+            'event_text' => $cert->event_text,
+            'signer_name' => $cert->signer_name,
+            'signer_title' => $cert->signer_title,
         ])->values();
 
         // All pelajar (for enroll dropdown)
@@ -181,26 +184,26 @@ class CourseController extends Controller
 
         return Inertia::render('Admin/CourseEditor', [
             'course' => [
-                'id'                => $course->id,
-                'title'             => $course->title,
-                'slug'              => $course->slug,
-                'description'       => $course->description,
+                'id' => $course->id,
+                'title' => $course->title,
+                'slug' => $course->slug,
+                'description' => $course->description,
                 'short_description' => $course->short_description,
-                'thumbnail'                    => $course->thumbnail ? Storage::url($course->thumbnail) : null,
-                'level'                        => $course->level,
-                'duration_hours'               => $course->duration_hours,
-                'deadline_at'                  => $course->deadline_at?->format('Y-m-d\TH:i'),
-                'status'                       => $course->status,
-                'category_id'                  => $course->category_id,
-                'referral_code'                => $course->referral_code,
-                'certificate_template_url'     => $course->certificate_template ? Storage::url($course->certificate_template) : null,
-                'certificate_signature_url'    => $course->certificate_signature ? Storage::url($course->certificate_signature) : null,
-                'modules'                      => $modules,
-                'enrolled_students'            => $enrolledStudents,
-                'certificates'                 => $certificates,
+                'thumbnail' => $course->thumbnail ? Storage::url($course->thumbnail) : null,
+                'level' => $course->level,
+                'duration_hours' => $course->duration_hours,
+                'deadline_at' => $course->deadline_at?->format(self::DATETIME_LOCAL_FORMAT),
+                'status' => $course->status,
+                'category_id' => $course->category_id,
+                'referral_code' => $course->referral_code,
+                'certificate_template_url' => $course->certificate_template ? Storage::url($course->certificate_template) : null,
+                'certificate_signature_url' => $course->certificate_signature ? Storage::url($course->certificate_signature) : null,
+                'modules' => $modules,
+                'enrolled_students' => $enrolledStudents,
+                'certificates' => $certificates,
             ],
-            'categories'   => $categories,
-            'allStudents'  => $allStudents,
+            'categories' => $categories,
+            'allStudents' => $allStudents,
         ]);
     }
 
@@ -210,20 +213,22 @@ class CourseController extends Controller
     public function update(Request $request, Course $course): RedirectResponse
     {
         $validated = $request->validate([
-            'title'             => 'required|string|max:255',
-            'description'       => 'nullable|string',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'short_description' => 'nullable|string|max:500',
-            'category_id'       => 'nullable|exists:categories,id',
-            'level'             => 'required|in:pemula,menengah,lanjutan',
-            'duration_hours'    => 'nullable|integer|min:1',
-            'status'            => 'required|in:draft,published',
-            'deadline_at'       => 'nullable|date',
+            'category_id' => 'nullable|exists:categories,id',
+            'level' => 'required|in:pemula,menengah,lanjutan',
+            'duration_hours' => 'nullable|integer|min:1',
+            'status' => 'required|in:draft,published',
+            'deadline_at' => 'nullable|date',
         ]);
 
         // Handle thumbnail upload
         if ($request->hasFile('thumbnail')) {
             $request->validate(['thumbnail' => 'image|max:2048']);
-            if ($course->thumbnail) { Storage::delete($course->thumbnail); }
+            if ($course->thumbnail) {
+                Storage::delete($course->thumbnail);
+            }
             $validated['thumbnail'] = $request->file('thumbnail')
                 ->store('thumbnails', 'public');
         }

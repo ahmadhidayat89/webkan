@@ -41,14 +41,14 @@ class LpkController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate($this->rules(), $this->messages());
-        $lpk  = Lpk::create($this->normalizeStatus($data));
+        $lpk = Lpk::create($this->normalizeStatus($data));
 
         return response()->json(['success' => true, 'message' => 'Data berhasil ditambahkan', 'data' => $lpk], 201);
     }
 
     public function update(Request $request, int|string $id)
     {
-        $lpk  = Lpk::findOrFail($id);
+        $lpk = Lpk::findOrFail($id);
         $data = $request->validate($this->rules((int) $id), $this->messages());
 
         // LPK yang sudah dicabut statusnya dikunci
@@ -76,28 +76,28 @@ class LpkController extends Controller
     private function rules(?int $ignoreId = null): array
     {
         return [
-            'type'               => ['required', 'string', 'max:191'],
+            'type' => ['required', 'string', 'max:191'],
             'certificate_number' => ['required', 'string', 'max:100', Rule::unique('lpks', 'certificate_number')->ignore($ignoreId)],
-            'name'               => ['required', 'string', 'max:255'],
-            'address'            => ['nullable', 'string'],
-            'phone'              => ['nullable', 'string', 'max:255'],
-            'email'              => ['nullable', 'string'],
-            'scope'              => ['nullable', 'string'],
-            'expiry_date'        => ['nullable', 'date'],
-            'certificate_link'   => ['nullable', 'string', 'max:500'],
+            'name' => ['required', 'string', 'max:255'],
+            'address' => ['nullable', 'string'],
+            'phone' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'string'],
+            'scope' => ['nullable', 'string'],
+            'expiry_date' => ['nullable', 'date'],
+            'certificate_link' => ['nullable', 'string', 'max:500'],
 
-            'status'             => ['required', Rule::in(['active', 'suspended', 'revoked'])],
-            'suspension_scope'   => ['required_if:status,suspended', 'nullable', Rule::in(['full', 'partial'])],
-            'suspension_status'  => ['nullable', 'string'],
-            'suspended_at'       => ['nullable', 'date'],
-            'revoked_at'         => ['nullable', 'date'],
+            'status' => ['required', Rule::in(['active', 'suspended', 'revoked'])],
+            'suspension_scope' => ['required_if:status,suspended', 'nullable', Rule::in(['full', 'partial'])],
+            'suspension_status' => ['nullable', 'string'],
+            'suspended_at' => ['nullable', 'date'],
+            'revoked_at' => ['nullable', 'date'],
         ];
     }
 
     private function messages(): array
     {
         return [
-            'certificate_number.unique'    => 'No. Akreditasi sudah terdaftar',
+            'certificate_number.unique' => 'No. Akreditasi sudah terdaftar',
             'suspension_scope.required_if' => 'Pilih jenis pembekuan (seluruh RL atau sebagian RL)',
         ];
     }
@@ -106,24 +106,28 @@ class LpkController extends Controller
     private function normalizeStatus(array $data): array
     {
         if ($data['status'] === 'active') {
-            $data['suspension_scope']  = null;
+            $data['suspension_scope'] = null;
             $data['suspension_status'] = null;
-            $data['suspended_at']      = null;
-            $data['revoked_at']        = null;
+            $data['suspended_at'] = null;
+            $data['revoked_at'] = null;
         } elseif ($data['status'] === 'suspended') {
             $data['revoked_at'] = null;
             if ($data['suspension_scope'] === 'full') {
-                $data['suspension_status'] = 'Pembekuan Seluruh RL';
+                $data['suspension_status'] = self::FREEZE_ALL_RL;
             }
         } else { // revoked
-            $data['suspension_scope']  = null;
+            $data['suspension_scope'] = null;
             $data['suspension_status'] = null;
-            $data['suspended_at']      = null;
-            $data['revoked_at']      ??= now()->toDateString();
+            $data['suspended_at'] = null;
+            $data['revoked_at'] ??= now()->toDateString();
         }
 
         return $data;
     }
+
+    private const FREEZE_ALL_RL = 'Pembekuan Seluruh RL';
+    private const ACCREDITATION_ALIASES = ['NO. AKREDITASI', 'NO AKREDITASI', 'NOMOR AKREDITASI'];
+    private const NAME_ALIASES = ['NAMA LPK', 'NAMA LEMBAGA'];
 
     // ==================================================================
     // IMPORT: STATUS DIPILIH MANUAL
@@ -131,25 +135,21 @@ class LpkController extends Controller
 
     private const IMPORT_COLUMNS = [
         'active' => [
-            'certificate_number' => ['NO. AKREDITASI', 'NO AKREDITASI', 'NOMOR AKREDITASI', 'NO. SERTIFIKAT'],
-            'name'               => ['NAMA LPK', 'NAMA LEMBAGA'],
-            'address'            => ['ALAMAT'],
-            'phone'              => ['TELEPON/FAX', 'TELEPON', 'TELP/FAX', 'TELP'],
-            'email'              => ['E-MAIL', 'EMAIL'],
-            'scope'              => ['LINGKUP'],
-            'expiry_date'        => ['MASA BERLAKU AKREDITASI (EXPIRED)', 'MASA BERLAKU AKREDITASI', 'MASA BERLAKU', 'EXPIRED'],
-            'certificate_link'   => ['LINK'],
+            'certificate_number' => [...self::ACCREDITATION_ALIASES, 'NO. SERTIFIKAT'],
+            'name' => self::NAME_ALIASES,
+            'address' => ['ALAMAT'],
+            // ... sisanya tidak berubah
         ],
         'suspended' => [
-            'certificate_number' => ['NO. AKREDITASI', 'NO AKREDITASI', 'NOMOR AKREDITASI'],
-            'name'               => ['NAMA LPK', 'NAMA LEMBAGA'],
-            'suspension_status'  => ['STATUS PEMBEKUAN', 'RUANG LINGKUP', 'LINGKUP', 'STATUS'],
-            'suspended_at'       => ['TANGGAL DIBEKUKAN', 'TGL DIBEKUKAN'],
+            'certificate_number' => self::ACCREDITATION_ALIASES,
+            'name' => self::NAME_ALIASES,
+            'suspension_status' => ['STATUS PEMBEKUAN', 'RUANG LINGKUP', 'LINGKUP', 'STATUS'],
+            'suspended_at' => ['TANGGAL DIBEKUKAN', 'TGL DIBEKUKAN'],
         ],
         'revoked' => [
-            'certificate_number' => ['NO. AKREDITASI', 'NO AKREDITASI', 'NOMOR AKREDITASI'],
-            'name'               => ['NAMA LPK', 'NAMA LEMBAGA'],
-            'revoked_at'         => ['TANGGAL DICABUT', 'TGL DICABUT'],
+            'certificate_number' => self::ACCREDITATION_ALIASES,
+            'name' => self::NAME_ALIASES,
+            'revoked_at' => ['TANGGAL DICABUT', 'TGL DICABUT'],
         ],
     ];
 
@@ -159,9 +159,9 @@ class LpkController extends Controller
     {
         $request->validate([
             'status_choice' => ['required', Rule::in(['from_file', 'active', 'suspended_full', 'suspended_partial', 'revoked'])],
-            'type'          => ['required', 'string', 'max:191'],
-            'file'          => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
-            'dry_run'       => ['nullable', 'boolean'],
+            'type' => ['required', 'string', 'max:191'],
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
+            'dry_run' => ['nullable', 'boolean'],
         ]);
 
         // Status dibaca dari kolom STATUS di dalam file
@@ -169,10 +169,10 @@ class LpkController extends Controller
             return $this->importFromFile($request);
         }
 
-        $choice  = $request->status_choice;
-        $group   = str_starts_with($choice, 'suspended') ? 'suspended' : $choice;
-        $type    = $request->type;
-        $dry     = $request->boolean('dry_run');
+        $choice = $request->status_choice;
+        $group = str_starts_with($choice, 'suspended') ? 'suspended' : $choice;
+        $type = $request->type;
+        $dry = $request->boolean('dry_run');
         $headers = self::IMPORT_COLUMNS[$group];
 
         $rows = Excel::toArray(new class {}, $request->file('file'))[0] ?? [];
@@ -188,16 +188,20 @@ class LpkController extends Controller
 
         // ---- Baca & validasi baris ----
         $records = [];
-        $errors  = [];
+        $errors = [];
         foreach (array_slice($rows, $headerIdx + 1, null, true) as $i => $row) {
-            $rec    = array_fill_keys(array_keys($headers), null);
+            $rec = array_fill_keys(array_keys($headers), null);
             $filled = false;
             foreach ($map as $col => $field) {
                 $v = $this->cell($row[$col] ?? null);
-                if ($v !== null) { $filled = true; }
+                if ($v !== null) {
+                    $filled = true;
+                }
                 $rec[$field] = $v;
             }
-            if (!$filled) { continue; } // baris kosong
+            if (!$filled) {
+                continue;
+            } // baris kosong
 
             $rowLabel = 'Baris ' . ($i + 1);
             if (!$rec['certificate_number'] || !$rec['name']) {
@@ -239,30 +243,33 @@ class LpkController extends Controller
             }));
         }
 
-        $new     = count(array_filter($records, fn($r) => !isset($existing[$r['certificate_number']])));
+        $new = count(array_filter($records, fn($r) => !isset($existing[$r['certificate_number']])));
         $updated = count($records) - $new;
 
         if ($dry) {
-            return response()->json(['success' => true, 'data' => [
-                'total'       => count($records),
-                'new'         => $new,
-                'updated'     => $updated,
-                'error_count' => count($errors),
-                'errors'      => array_slice($errors, 0, 20),
-                'preview'     => array_slice($records, 0, 5),
-            ]]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total' => count($records),
+                    'new' => $new,
+                    'updated' => $updated,
+                    'error_count' => count($errors),
+                    'errors' => array_slice($errors, 0, 20),
+                    'preview' => array_slice($records, 0, 5),
+                ]
+            ]);
         }
 
         if (!$records) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak ada baris valid untuk diimpor.',
-                'errors'  => array_slice($errors, 0, 20),
+                'errors' => array_slice($errors, 0, 20),
             ], 422);
         }
 
         // ---- Simpan ----
-        $now        = now();
+        $now = now();
         $updateCols = $this->importUpdateColumns($group);
         DB::transaction(function () use ($records, $choice, $type, $now, $updateCols) {
             foreach (array_chunk($records, 500) as $chunk) {
@@ -272,15 +279,21 @@ class LpkController extends Controller
         });
 
         $message = "Import selesai: $new data baru, $updated data diperbarui.";
-        if ($errors) { $message .= ' ' . count($errors) . ' baris dilewati.'; }
+        if ($errors) {
+            $message .= ' ' . count($errors) . ' baris dilewati.';
+        }
 
-        return response()->json(['success' => true, 'message' => $message, 'data' => [
-            'total' => count($records),
-            'new' => $new,
-            'updated' => $updated,
-            'error_count' => count($errors),
-            'errors' => array_slice($errors, 0, 20),
-        ]]);
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => [
+                'total' => count($records),
+                'new' => $new,
+                'updated' => $updated,
+                'error_count' => count($errors),
+                'errors' => array_slice($errors, 0, 20),
+            ]
+        ]);
     }
 
     /** Isi satu baris sesuai status yang dipilih admin. */
@@ -295,26 +308,26 @@ class LpkController extends Controller
         if ($choice === 'revoked') {
             return [
                 'certificate_number' => $r['certificate_number'],
-                'name'               => $r['name'],
-                'type'               => $type,
-                'status'             => 'revoked',
-                'revoked_at'         => $r['revoked_at'] ?? now()->toDateString(),
-                'suspension_scope'   => null,
-                'suspension_status'  => null,
-                'suspended_at'       => null,
+                'name' => $r['name'],
+                'type' => $type,
+                'status' => 'revoked',
+                'revoked_at' => $r['revoked_at'] ?? now()->toDateString(),
+                'suspension_scope' => null,
+                'suspension_status' => null,
+                'suspended_at' => null,
             ] + $stamps;
         }
 
         // suspended_full | suspended_partial
         return [
             'certificate_number' => $r['certificate_number'],
-            'name'               => $r['name'],
-            'type'               => $type,
-            'status'             => 'suspended',
-            'suspension_scope'   => $choice === 'suspended_full' ? 'full' : 'partial',
-            'suspension_status'  => $choice === 'suspended_full' ? 'Pembekuan Seluruh RL' : $r['suspension_status'],
-            'suspended_at'       => $r['suspended_at'],
-            'revoked_at'         => null,
+            'name' => $r['name'],
+            'type' => $type,
+            'status' => 'suspended',
+            'suspension_scope' => $choice === 'suspended_full' ? 'full' : 'partial',
+            'suspension_status' => $choice === 'suspended_full' ? self::FREEZE_ALL_RL : $r['suspension_status'],
+            'suspended_at' => $r['suspended_at'],
+            'revoked_at' => null,
         ] + $stamps;
     }
 
@@ -323,9 +336,9 @@ class LpkController extends Controller
     {
         return match ($group) {
             // Import Terakreditasi: data umum diperbarui, STATUS tidak ditimpa
-            'active'    => ['name', 'type', 'address', 'phone', 'email', 'scope', 'expiry_date', 'certificate_link', 'updated_at'],
+            'active' => ['name', 'type', 'address', 'phone', 'email', 'scope', 'expiry_date', 'certificate_link', 'updated_at'],
             'suspended' => ['status', 'suspension_scope', 'suspension_status', 'suspended_at', 'revoked_at', 'updated_at'],
-            default     => ['status', 'revoked_at', 'suspension_scope', 'suspension_status', 'suspended_at', 'updated_at'],
+            default => ['status', 'revoked_at', 'suspension_scope', 'suspension_status', 'suspended_at', 'updated_at'],
         };
     }
 
@@ -334,17 +347,17 @@ class LpkController extends Controller
     // ==================================================================
 
     private const FILE_COLUMNS = [
-        'certificate_number' => ['NO. AKREDITASI', 'NO AKREDITASI', 'NOMOR AKREDITASI', 'NO. SERTIFIKAT'],
-        'name'               => ['NAMA LPK', 'NAMA LEMBAGA'],
-        'file_status'        => ['STATUS'],
-        'address'            => ['ALAMAT'],
-        'phone'              => ['TELEPON/FAX', 'TELEPON', 'TELP/FAX', 'TELP'],
-        'email'              => ['E-MAIL', 'EMAIL'],
-        'expiry_date'        => ['MASA BERLAKU AKREDITASI (EXPIRED)', 'MASA BERLAKU AKREDITASI', 'MASA BERLAKU', 'EXPIRED'],
-        'certificate_link'   => ['LINK'],
-        'suspension_status'  => ['STATUS PEMBEKUAN'],
-        'suspended_at'       => ['TANGGAL DIBEKUKAN', 'TGL DIBEKUKAN'],
-        'revoked_at'         => ['TANGGAL DICABUT', 'TGL DICABUT'],
+        'certificate_number' => [...self::ACCREDITATION_ALIASES, 'NO. SERTIFIKAT'],
+        'name' => self::NAME_ALIASES,
+        'file_status' => ['STATUS'],
+        'address' => ['ALAMAT'],
+        'phone' => ['TELEPON/FAX', 'TELEPON', 'TELP/FAX', 'TELP'],
+        'email' => ['E-MAIL', 'EMAIL'],
+        'expiry_date' => ['MASA BERLAKU AKREDITASI (EXPIRED)', 'MASA BERLAKU AKREDITASI', 'MASA BERLAKU', 'EXPIRED'],
+        'certificate_link' => ['LINK'],
+        'suspension_status' => ['STATUS PEMBEKUAN'],
+        'suspended_at' => ['TANGGAL DIBEKUKAN', 'TGL DIBEKUKAN'],
+        'revoked_at' => ['TANGGAL DICABUT', 'TGL DICABUT'],
     ];
 
     // Dipakai hanya kalau kolom E-mail tidak ditemukan
@@ -353,7 +366,7 @@ class LpkController extends Controller
     private function importFromFile(Request $request)
     {
         $type = $request->type;
-        $dry  = $request->boolean('dry_run');
+        $dry = $request->boolean('dry_run');
 
         $rows = Excel::toArray(new class {}, $request->file('file'))[0] ?? [];
 
@@ -367,8 +380,8 @@ class LpkController extends Controller
 
         // Kolom Lingkup = kolom tepat di sebelah kanan E-mail, apa pun judulnya
         $headerRow = $rows[$headerIdx];
-        $scopeCol  = null;
-        $emailCol  = array_search('email', $map, true);
+        $scopeCol = null;
+        $emailCol = array_search('email', $map, true);
 
         if ($emailCol !== false && array_key_exists($emailCol + 1, $headerRow) && !isset($map[$emailCol + 1])) {
             $scopeCol = $emailCol + 1;
@@ -389,7 +402,7 @@ class LpkController extends Controller
         }
 
         // ---- Baca & validasi baris ----
-        $fields  = [
+        $fields = [
             'certificate_number',
             'name',
             'file_status',
@@ -404,20 +417,26 @@ class LpkController extends Controller
             'revoked_at'
         ];
 
-        $records  = [];
-        $errors   = [];
+        $records = [];
+        $errors = [];
         $warnings = [];
 
         foreach (array_slice($rows, $headerIdx + 1, null, true) as $i => $row) {
-            $rec    = array_fill_keys($fields, null);
+            $rec = array_fill_keys($fields, null);
             $filled = false;
             foreach ($map as $col => $field) {
                 $v = $this->cell($row[$col] ?? null);
-                if (in_array($v, ['-', '–', '—'], true)) { $v = null; }
-                if ($v !== null) { $filled = true; }
+                if (in_array($v, ['-', '–', '—'], true)) {
+                    $v = null;
+                }
+                if ($v !== null) {
+                    $filled = true;
+                }
                 $rec[$field] = $v;
             }
-            if (!$filled) { continue; } // baris kosong
+            if (!$filled) {
+                continue;
+            } // baris kosong
 
             $label = 'Baris ' . ($i + 1);
             if (!$rec['certificate_number'] || !$rec['name']) {
@@ -450,12 +469,12 @@ class LpkController extends Controller
             }
 
             // Kosongkan isian yang tidak relevan dengan status hasil pembacaan
-            $rec['status']            = $resolved['status'];
-            $rec['suspension_scope']  = $resolved['suspension_scope'];
+            $rec['status'] = $resolved['status'];
+            $rec['suspension_scope'] = $resolved['suspension_scope'];
             $rec['suspension_status'] = $resolved['suspension_status'];
             if ($rec['status'] === 'active') {
                 $rec['suspended_at'] = null;
-                $rec['revoked_at']   = null;
+                $rec['revoked_at'] = null;
             } elseif ($rec['status'] === 'suspended') {
                 $rec['revoked_at'] = null;
             } else {
@@ -481,38 +500,41 @@ class LpkController extends Controller
             return true;
         }));
 
-        $new      = count(array_filter($records, fn($r) => !isset($existing[$r['certificate_number']])));
-        $updated  = count($records) - $new;
+        $new = count(array_filter($records, fn($r) => !isset($existing[$r['certificate_number']])));
+        $updated = count($records) - $new;
         $byStatus = array_count_values(array_column($records, 'status'));
 
         if ($dry) {
-            return response()->json(['success' => true, 'data' => [
-                'total'        => count($records),
-                'new'          => $new,
-                'updated'      => $updated,
-                'by_status'    => [
-                    'active'    => $byStatus['active'] ?? 0,
-                    'suspended' => $byStatus['suspended'] ?? 0,
-                    'revoked'   => $byStatus['revoked'] ?? 0,
-                ],
-                'scope_column' => $scopeLabel,
-                'warning_count' => count($warnings),
-                'warnings'      => array_slice($warnings, 0, 20),
-                'error_count'  => count($errors),
-                'errors'       => array_slice($errors, 0, 20),
-            ]]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total' => count($records),
+                    'new' => $new,
+                    'updated' => $updated,
+                    'by_status' => [
+                        'active' => $byStatus['active'] ?? 0,
+                        'suspended' => $byStatus['suspended'] ?? 0,
+                        'revoked' => $byStatus['revoked'] ?? 0,
+                    ],
+                    'scope_column' => $scopeLabel,
+                    'warning_count' => count($warnings),
+                    'warnings' => array_slice($warnings, 0, 20),
+                    'error_count' => count($errors),
+                    'errors' => array_slice($errors, 0, 20),
+                ]
+            ]);
         }
 
         if (!$records) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak ada baris valid untuk diimpor.',
-                'errors'  => array_slice($errors, 0, 20),
+                'errors' => array_slice($errors, 0, 20),
             ], 422);
         }
 
         // ---- Simpan ----
-        $now        = now();
+        $now = now();
         $updateCols = [
             'name',
             'type',
@@ -534,21 +556,21 @@ class LpkController extends Controller
             foreach (array_chunk($records, 500) as $chunk) {
                 $payload = array_map(fn($r) => [
                     'certificate_number' => $r['certificate_number'],
-                    'name'               => $r['name'],
-                    'type'               => $type,
-                    'address'            => $r['address'],
-                    'phone'              => $r['phone'],
-                    'email'              => $r['email'],
-                    'scope'              => $r['scope'],
-                    'expiry_date'        => $r['expiry_date'],
-                    'certificate_link'   => $r['certificate_link'],
-                    'status'             => $r['status'],
-                    'suspension_scope'   => $r['suspension_scope'],
-                    'suspension_status'  => $r['suspension_status'],
-                    'suspended_at'       => $r['suspended_at'],
-                    'revoked_at'         => $r['revoked_at'],
-                    'created_at'         => $now,
-                    'updated_at'         => $now,
+                    'name' => $r['name'],
+                    'type' => $type,
+                    'address' => $r['address'],
+                    'phone' => $r['phone'],
+                    'email' => $r['email'],
+                    'scope' => $r['scope'],
+                    'expiry_date' => $r['expiry_date'],
+                    'certificate_link' => $r['certificate_link'],
+                    'status' => $r['status'],
+                    'suspension_scope' => $r['suspension_scope'],
+                    'suspension_status' => $r['suspension_status'],
+                    'suspended_at' => $r['suspended_at'],
+                    'revoked_at' => $r['revoked_at'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ], $chunk);
 
                 Lpk::upsert($payload, ['certificate_number'], $updateCols);
@@ -556,15 +578,21 @@ class LpkController extends Controller
         });
 
         $message = "Import selesai: $new data baru, $updated data diperbarui.";
-        if ($errors) { $message .= ' ' . count($errors) . ' baris dilewati.'; }
+        if ($errors) {
+            $message .= ' ' . count($errors) . ' baris dilewati.';
+        }
 
-        return response()->json(['success' => true, 'message' => $message, 'data' => [
-            'total' => count($records),
-            'new' => $new,
-            'updated' => $updated,
-            'error_count' => count($errors),
-            'errors' => array_slice($errors, 0, 20),
-        ]]);
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => [
+                'total' => count($records),
+                'new' => $new,
+                'updated' => $updated,
+                'error_count' => count($errors),
+                'errors' => array_slice($errors, 0, 20),
+            ]
+        ]);
     }
 
     /** Terjemahkan isi kolom STATUS di file ke status sistem. */
@@ -611,7 +639,7 @@ class LpkController extends Controller
         if (stripos($text, 'seluruh') !== false) {
             return ['status' => 'suspended', 'suspension_scope' => 'full', 'suspension_status' => 'Pembekuan Seluruh RL'];
         }
-        return ['status' => 'suspended', 'suspension_scope' => 'partial', 'suspension_status' => $text];
+        return ['status' => 'suspended', 'suspension_scope' => 'full', 'suspension_status' => self::FREEZE_ALL_RL];
     }
 
     // ==================================================================
@@ -628,7 +656,9 @@ class LpkController extends Controller
     {
         $lookup = [];
         foreach ($headers as $field => $aliases) {
-            foreach ($aliases as $a) { $lookup[$this->norm($a)] = $field; }
+            foreach ($aliases as $a) {
+                $lookup[$this->norm($a)] = $field;
+            }
         }
 
         foreach (array_slice($rows, 0, 15, true) as $i => $row) {
@@ -648,8 +678,12 @@ class LpkController extends Controller
 
     private function cell(mixed $v): ?string
     {
-        if ($v === null) { return null; }
-        if (is_float($v) && floor($v) == $v) { $v = (int) $v; }
+        if ($v === null) {
+            return null;
+        }
+        if (is_float($v) && floor($v) == $v) {
+            $v = (int) $v;
+        }
         $v = trim((string) $v);
         return $v === '' ? null : $v;
     }
@@ -679,7 +713,9 @@ class LpkController extends Controller
         foreach (['d/m/Y', 'd-m-Y', 'd.m.Y', 'Y-m-d', 'Y/m/d', 'j/n/Y', 'j-n-Y', 'd F Y', 'j F Y', 'd M Y', 'j M Y'] as $f) {
             try {
                 $d = Carbon::createFromFormat('!' . $f, $s);
-                if ($d && $d->year >= 1900 && $d->year <= 2200) { return $d->toDateString(); }
+                if ($d && $d->year >= 1900 && $d->year <= 2200) {
+                    return $d->toDateString();
+                }
             } catch (\Throwable $e) {
                 // coba format berikutnya
             }

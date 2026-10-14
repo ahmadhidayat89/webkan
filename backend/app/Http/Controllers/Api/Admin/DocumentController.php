@@ -11,6 +11,8 @@ use Illuminate\Validation\Rule;
 
 class DocumentController extends Controller
 {
+    private const MSG_LINK_REQUIRED = 'Link wajib diisi untuk tipe dokumen.';
+    private const MSG_NOT_FOUND = 'Data tidak ditemukan.';
     /**
      * Menampilkan semua kategori, subkategori, dan dokumen.
      */
@@ -105,9 +107,9 @@ class DocumentController extends Controller
         if ($validated['type'] === 'document' && empty($validated['link'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Link wajib diisi untuk tipe dokumen.',
+                'message' => self::MSG_LINK_REQUIRED,
                 'errors' => [
-                    'link' => ['Link wajib diisi untuk tipe dokumen.'],
+                    'link' => [self::MSG_LINK_REQUIRED],
                 ],
             ], 422);
         }
@@ -158,7 +160,7 @@ class DocumentController extends Controller
         if (!$document) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ditemukan.',
+                'message' => self::MSG_NOT_FOUND,
             ], 404);
         }
 
@@ -179,7 +181,7 @@ class DocumentController extends Controller
         if (!$document) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ditemukan.',
+                'message' => self::MSG_NOT_FOUND,
             ], 404);
         }
 
@@ -305,9 +307,9 @@ class DocumentController extends Controller
         if ($newType === 'document' && empty($newLink)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Link wajib diisi untuk tipe dokumen.',
+                'message' => self::MSG_LINK_REQUIRED,
                 'errors' => [
-                    'link' => ['Link wajib diisi untuk tipe dokumen.'],
+                    'link' => [self::MSG_LINK_REQUIRED],
                 ],
             ], 422);
         }
@@ -358,7 +360,7 @@ class DocumentController extends Controller
         if (!$document) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ditemukan.',
+                'message' => self::MSG_NOT_FOUND,
             ], 404);
         }
 
