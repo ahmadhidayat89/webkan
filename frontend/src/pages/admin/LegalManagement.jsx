@@ -32,13 +32,22 @@ const parseApiJson = (rawText) => {
   }
 };
 
-const trimEmptyTail = (html) =>
-  html.replace(/(?:\s*<p>(?:<br\s*\/?>)?<\/p>)+\s*$/i, '');
+const EMPTY_P_TAIL = /<p>(?:<br\s*\/?>)?<\/p>$/i;
+
+const trimEmptyTail = (html) => {
+  let result = html.trimEnd();
+  if (!EMPTY_P_TAIL.test(result)) return html;
+
+  while (EMPTY_P_TAIL.test(result)) {
+    result = result.replace(EMPTY_P_TAIL, '').trimEnd();
+  }
+  return result;
+};
 
 const hasMeaningfulContent = (html) => {
   if (!html) return false;
   return (
-    html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0
+    html.replace(/<[^<>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0
   );
 };
 
@@ -207,10 +216,11 @@ const LegalManagement = () => {
               )}
 
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-800">
+                <label htmlFor="legal-title" className="block mb-2 text-sm font-bold text-gray-800">
                   Judul Halaman <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="legal-title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -219,9 +229,9 @@ const LegalManagement = () => {
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-bold text-gray-800">
+                <p id="legal-content-label" className="block mb-2 text-sm font-bold text-gray-800">
                   Isi Halaman <span className="text-red-500">*</span>
-                </label>
+                </p>
                 <QuillEditor
                   key={pageId}
                   value={content}
