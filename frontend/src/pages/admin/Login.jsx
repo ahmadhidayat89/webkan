@@ -64,14 +64,15 @@ const AdminLogin = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="admin-email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email
               </label>
               <div className="relative">
-                <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="email"
-                  name="email"
+                  <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="admin-email"
+                    type="email"
+                    name="email"
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="admin@kan.go.id"
@@ -83,12 +84,13 @@ const AdminLogin = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="admin-password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
               <div className="relative">
                 <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
+                  id="admin-password"
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
