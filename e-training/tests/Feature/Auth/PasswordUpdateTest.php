@@ -11,24 +11,27 @@ class PasswordUpdateTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const PROFILE_URL = '/profile';
+    private const NEW_PASSWORD = 'N3w-Passw0rd!';
+
     public function test_password_can_be_updated(): void
     {
         $user = User::factory()->create();
 
         $response = $this
             ->actingAs($user)
-            ->from('/profile')
+            ->from(self::PROFILE_URL)
             ->put('/password', [
                 'current_password' => 'password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password' => self::NEW_PASSWORD,
+                'password_confirmation' => self::NEW_PASSWORD,
             ]);
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ->assertRedirect(self::PROFILE_URL);
 
-        $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+        $this->assertTrue(Hash::check(self::NEW_PASSWORD, $user->refresh()->password));
     }
 
     public function test_correct_password_must_be_provided_to_update_password(): void
@@ -37,15 +40,15 @@ class PasswordUpdateTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->from('/profile')
+            ->from(self::PROFILE_URL)
             ->put('/password', [
                 'current_password' => 'wrong-password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password' => self::NEW_PASSWORD,
+                'password_confirmation' => self::NEW_PASSWORD,
             ]);
 
         $response
             ->assertSessionHasErrors('current_password')
-            ->assertRedirect('/profile');
+            ->assertRedirect(self::PROFILE_URL);
     }
 }
