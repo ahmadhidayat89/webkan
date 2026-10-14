@@ -9,7 +9,7 @@ export default function TabGrading({ courseId, modules }) {
     const [selectedAttempt, setSelectedAttempt] = useState(null);
 
     // Get all quizzes from modules
-    const quizzes = modules.flatMap(m => 
+    const quizzes = modules.flatMap(m =>
         m.lessons.filter(l => l.type === 'quiz' && l.quiz).map(l => ({
             id: l.quiz.id,
             title: `${m.title} - ${l.title}`,
@@ -45,7 +45,7 @@ export default function TabGrading({ courseId, modules }) {
                     .then(data => {
                         setAttempts(data);
                         // update selected attempt
-                        if(selectedAttempt) {
+                        if (selectedAttempt) {
                             setSelectedAttempt(data.find(a => a.id === selectedAttempt.id));
                         }
                     });
@@ -58,9 +58,10 @@ export default function TabGrading({ courseId, modules }) {
             {/* Left Sidebar: Quiz Selection & List of Attempts */}
             <div className="w-full lg:w-1/3 flex flex-col gap-4">
                 <div className="card p-4">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Pilih Kuis</label>
-                    <select 
-                        value={selectedQuizId} 
+                    <label htmlFor="quiz-select" className="block text-sm font-bold text-gray-700 mb-2">Pilih Kuis</label>
+                    <select
+                        id="quiz-select"
+                        value={selectedQuizId}
                         onChange={e => setSelectedQuizId(e.target.value)}
                         className="w-full text-sm border-gray-200 rounded-lg bg-gray-50 focus:border-navy-500"
                     >
@@ -87,13 +88,11 @@ export default function TabGrading({ courseId, modules }) {
                             ) : (
                                 <ul className="divide-y divide-gray-100">
                                     {attempts.map(attempt => (
-                                        <li key={attempt.id}>
-                                          <button
-                                            type="button"
+                                        <li
+                                            key={attempt.id}
                                             onClick={() => setSelectedAttempt(attempt)}
-                                            aria-pressed={selectedAttempt?.id === attempt.id}
-                                            className={`w-full p-3 text-left hover:bg-navy-50 transition-colors ${selectedAttempt?.id === attempt.id ? 'bg-navy-50 border-l-4 border-navy-500' : ''}`}
-                                          >
+                                            className={`p-3 cursor-pointer hover:bg-navy-50 transition-colors ${selectedAttempt?.id === attempt.id ? 'bg-navy-50 border-l-4 border-navy-500' : ''}`}
+                                        >
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <p className="font-bold text-sm text-gray-900">{attempt.user_name}</p>
@@ -110,7 +109,6 @@ export default function TabGrading({ courseId, modules }) {
                                                     <AlertCircle className="w-3 h-3" /> Butuh Koreksi Essay
                                                 </div>
                                             )}
-                                          </button>
                                         </li>
                                     ))}
                                 </ul>
@@ -139,7 +137,7 @@ export default function TabGrading({ courseId, modules }) {
 
                         <div className="p-6 space-y-6 bg-gray-50/50">
                             <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2">Detail Jawaban</h4>
-                            
+
                             {selectedAttempt.answers.map((ans, idx) => (
                                 <div key={ans.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                                     <div className="flex gap-3">
@@ -148,7 +146,7 @@ export default function TabGrading({ courseId, modules }) {
                                         </div>
                                         <div className="flex-1">
                                             <div className="text-sm font-medium text-gray-900 mb-3" dangerouslySetInnerHTML={{ __html: ans.question_text }}></div>
-                                            
+
                                             {ans.question_image && (
                                                 <img src={ans.question_image} className="max-w-md rounded-lg mb-3 border" alt="Soal" />
                                             )}
@@ -171,14 +169,14 @@ export default function TabGrading({ courseId, modules }) {
                                                         <p className="text-xs font-bold text-blue-800 uppercase mb-1">Jawaban Peserta:</p>
                                                         <div className="text-sm text-gray-800 whitespace-pre-wrap">{ans.essay_answer || '(Kosong)'}</div>
                                                     </div>
-                                                    
+
                                                     <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                                                         <p className="text-xs font-bold text-amber-800 uppercase mb-3">Koreksi Manual Admin</p>
                                                         <div className="flex flex-col sm:flex-row gap-4">
                                                             <div>
-                                                                <label className="block text-xs font-medium text-amber-900 mb-1">Nilai (0-100)</label>
-                                                                <input 
-                                                                    type="number" 
+                                                                <label htmlFor={`score-${ans.id}`} className="block text-xs font-medium text-amber-900 mb-1">Nilai (0-100)</label>
+                                                                <input
+                                                                    type="number"
                                                                     className="w-24 text-sm border-amber-300 rounded focus:ring-amber-500 focus:border-amber-500"
                                                                     defaultValue={ans.manual_score ?? ''}
                                                                     id={`score-${ans.id}`}
@@ -186,8 +184,8 @@ export default function TabGrading({ courseId, modules }) {
                                                                 />
                                                             </div>
                                                             <div className="flex-1">
-                                                                <label className="block text-xs font-medium text-amber-900 mb-1">Feedback / Komentar (Opsional)</label>
-                                                                <textarea 
+                                                                <label htmlFor={`feedback-${ans.id}`} className="block text-xs font-medium text-amber-900 mb-1">Feedback / Komentar (Opsional)</label>
+                                                                <textarea
                                                                     className="w-full text-sm border-amber-300 rounded focus:ring-amber-500 focus:border-amber-500"
                                                                     rows="2"
                                                                     defaultValue={ans.admin_feedback || ''}
@@ -196,7 +194,7 @@ export default function TabGrading({ courseId, modules }) {
                                                             </div>
                                                         </div>
                                                         <div className="mt-3 text-right">
-                                                            <button 
+                                                            <button
                                                                 onClick={() => {
                                                                     const score = document.getElementById(`score-${ans.id}`).value;
                                                                     const feedback = document.getElementById(`feedback-${ans.id}`).value;
