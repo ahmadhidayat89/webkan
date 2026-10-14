@@ -370,10 +370,15 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
 
                         {/* Nama di sertifikat */}
                         <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            {/* FIX: label dihubungkan ke kontrol lewat htmlFor + id */}
+                            <label
+                                htmlFor="cert-recipient-name"
+                                className="block text-xs font-semibold text-gray-700 mb-1"
+                            >
                                 Nama di Sertifikat
                             </label>
                             <input
+                                id="cert-recipient-name"
                                 type="text"
                                 value={certForm.data.recipient_name}
                                 onChange={e => certForm.setData('recipient_name', e.target.value)}
@@ -387,10 +392,14 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
 
                         {/* Status */}
                         <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            <label
+                                htmlFor="cert-status"
+                                className="block text-xs font-semibold text-gray-700 mb-1"
+                            >
                                 Keterangan di Bawah Nama
                             </label>
                             <select
+                                id="cert-status"
                                 value={certForm.data.status}
                                 onChange={e => certForm.setData('status', e.target.value)}
                                 className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
@@ -405,11 +414,15 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
 
                         {/* Tanggal selesai + keterangan */}
                         <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            <label
+                                htmlFor="cert-event-date"
+                                className="block text-xs font-semibold text-gray-700 mb-1"
+                            >
                                 Tanggal Selesai Pelatihan
                             </label>
                             <div className="mb-3">
                                 <input
+                                    id="cert-event-date"
                                     type="date"
                                     value={eventDate}
                                     onChange={e => {
@@ -420,10 +433,14 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                                 />
                             </div>
 
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            <label
+                                htmlFor="cert-event-text"
+                                className="block text-xs font-semibold text-gray-700 mb-1"
+                            >
                                 Keterangan di Sertifikat
                             </label>
                             <textarea
+                                id="cert-event-text"
                                 value={certForm.data.event_text}
                                 onChange={e => certForm.setData('event_text', e.target.value)}
                                 rows={3}
@@ -442,10 +459,14 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                         {/* Penandatangan */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                <label
+                                    htmlFor="cert-signer-name"
+                                    className="block text-xs font-semibold text-gray-700 mb-1"
+                                >
                                     Nama Penandatangan
                                 </label>
                                 <input
+                                    id="cert-signer-name"
                                     type="text"
                                     value={certForm.data.signer_name}
                                     onChange={e => certForm.setData('signer_name', e.target.value)}
@@ -458,10 +479,14 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                                 )}
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                <label
+                                    htmlFor="cert-signer-title"
+                                    className="block text-xs font-semibold text-gray-700 mb-1"
+                                >
                                     Jabatan
                                 </label>
                                 <input
+                                    id="cert-signer-title"
                                     type="text"
                                     value={certForm.data.signer_title}
                                     onChange={e => certForm.setData('signer_title', e.target.value)}
