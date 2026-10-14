@@ -92,8 +92,8 @@ function UserFormModal({ isOpen, onClose, editUser = null }) {
                 <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
                     {/* Role Selector */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Role <span className="text-red-500">*</span></label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <p id="user-role-label" className="block text-sm font-semibold text-gray-700 mb-2">Role <span className="text-red-500">*</span></p>
+                        <div role="radiogroup" aria-labelledby="user-role-label" className="grid grid-cols-2 gap-3">
                             {Object.entries(ROLE_CONFIG).map(([value, cfg]) => (
                                 <label key={value} className={`flex items-center gap-2.5 p-3 border-2 rounded-xl cursor-pointer transition-all
                                     ${data.role === value ? 'border-navy-500 bg-navy-50' : 'border-gray-200 hover:border-gray-300'}`}>
@@ -138,8 +138,8 @@ function UserFormModal({ isOpen, onClose, editUser = null }) {
                         {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Konfirmasi Password</label>
-                        <input type={showPass ? 'text' : 'password'} value={data.password_confirmation}
+                        <label htmlFor="user-password-confirmation" className="block text-sm font-semibold text-gray-700 mb-1.5">Konfirmasi Password</label>
+                        <input id="user-password-confirmation" type={showPass ? 'text' : 'password'} value={data.password_confirmation}
                             onChange={e => setData('password_confirmation', e.target.value)}
                             placeholder="Ulangi password"
                             className="w-full px-4 text-sm border border-gray-200 rounded-xl bg-gray-50 py-3" />
