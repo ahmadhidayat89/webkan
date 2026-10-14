@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 import { usePage } from '@inertiajs/react';
 
 const RoleContext = createContext({
-    role: 'pelajar',
+    role: 'peserta',
 });
 
 export const useRole = () => useContext(RoleContext);
@@ -15,5 +15,5 @@ export default RoleContext;
  */
 export function useUserRole() {
     const { auth } = usePage().props;
-    return auth?.user?.role ?? 'pelajar';
+    return auth?.user?.role ?? 'peserta';
 }

@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Certificate;
 use App\Models\User;
+use App\Models\Enrollment as CourseEnrollment;
 
 class DashboardController extends Controller
 {
@@ -19,68 +20,25 @@ class DashboardController extends Controller
         $calendarEvents = $eventController->getCalendarEvents($request);
 
         if ($user->isAdmin()) {
-            $totalStudents = User::where('role', 'pelajar')->count();
+            return $this->adminDashboard($upcomingEvents, $calendarEvents);
+        }
+
+        return $this->studentDashboard($user, $upcomingEvents, $calendarEvents);
+    }
+
+    private function adminDashboard($upcomingEvents, $calendarEvents)
+    {
+            $totalStudents = User::where('role', 'peserta')->count();
             $activeCourses = Course::where('status', 'published')->count();
             // Estimasi completion rate bisa dari perbandingan certificate / enrollment
             $totalEnrollments = Enrollment::count();
             $totalCertificates = Certificate::count();
             $completionRate = $totalEnrollments > 0 ? round(($totalCertificates / $totalEnrollments) * 100) : 0;
 
-            // ── Aktivitas Terkini: gabungkan enrollment, certificate, quiz ──
-            $activities = collect();
-
-            // Enrollment terbaru
-            \App\Models\Enrollment::with('user', 'course')
-                ->latest()->take(10)->get()
-                ->each(function ($e) use (&$activities) {
-                    if ($e->user && $e->course) {
-                        $activities->push([
-                            'id'   => 'enroll_' . $e->id,
-                            'type' => 'enrollment',
-                            'text' => "{$e->user->name} mendaftar kursus \"{$e->course->title}\"",
-                            'time' => $e->created_at->diffForHumans(),
-                            'sort' => $e->created_at->timestamp,
-                        ]);
-                    }
-                });
-
-            // Sertifikat terbaru
-            Certificate::with('user', 'course')
-                ->latest()->take(10)->get()
-                ->each(function ($c) use (&$activities) {
-                    if ($c->user && $c->course) {
-                        $activities->push([
-                            'id'   => 'cert_' . $c->id,
-                            'type' => 'certificate',
-                            'text' => "Sertifikat diterbitkan untuk {$c->user->name} — \"{$c->course->title}\"",
-                            'time' => $c->issued_at ? $c->issued_at->diffForHumans() : $c->created_at->diffForHumans(),
-                            'sort' => $c->issued_at ? $c->issued_at->timestamp : $c->created_at->timestamp,
-                        ]);
-                    }
-                });
-
-            // Quiz attempts terbaru
-            \App\Models\QuizAttempt::with(['user', 'quiz.lesson.module.course'])
-                ->whereNotNull('finished_at')
-                ->latest('finished_at')->take(10)->get()
-                ->each(function ($a) use (&$activities) {
-                    if ($a->user && $a->quiz) {
-                        $courseName = optional(optional(optional($a->quiz->lesson)->module)->course)->title ?? 'kursus';
-                        $status = $a->is_passed ? 'lulus' : 'belum lulus';
-                        $activities->push([
-                            'id'   => 'quiz_' . $a->id,
-                            'type' => 'quiz',
-                            'text' => "{$a->user->name} mengerjakan kuis di \"{$courseName}\" — {$status} (skor {$a->score})",
-                            'time' => $a->finished_at->diffForHumans(),
-                            'sort' => $a->finished_at->timestamp,
-                        ]);
-                    }
-                });
-
-            $recentActivity = $activities->sortByDesc('sort')->take(10)->values()->toArray();
+            $recentActivity = $this->recentAdminActivities();
 
             // ── User Online (aktif dalam 5 menit terakhir) ──
-            $onlineUsers = User::where('role', 'pelajar')
+            $onlineUsers = User::where('role', 'peserta')
                 ->where('last_seen_at', '>=', now()->subMinutes(5))
                 ->orderByDesc('last_seen_at')
                 ->take(20)
@@ -129,8 +87,107 @@ class DashboardController extends Controller
                 'adminCourses'   => $adminCourses,
                 'onlineUsers'    => $onlineUsers,
             ]);
-        } else {
-            // Pelajar
+    }
+
+    private function recentAdminActivities(): array
+    {
+        $activities = collect();
+        $this->appendEnrollmentActivities($activities);
+        $this->appendCertificateActivities($activities);
+        $this->appendQuizActivities($activities);
+        return $activities->sortByDesc('sort')->take(10)->values()->toArray();
+    }
+
+    private function appendEnrollmentActivities($activities): void
+    {
+        Enrollment::with('user', 'course')->latest()->take(10)->get()->each(function ($enrollment) use ($activities) {
+            if (!$enrollment->user || !$enrollment->course) {
+                return;
+            }
+            $activities->push([
+                'id' => 'enroll_' . $enrollment->id, 'type' => 'enrollment',
+                'text' => "{$enrollment->user->name} mendaftar kursus \"{$enrollment->course->title}\"",
+                'time' => $enrollment->created_at->diffForHumans(), 'sort' => $enrollment->created_at->timestamp,
+            ]);
+        });
+    }
+
+    private function appendCertificateActivities($activities): void
+    {
+        Certificate::with('user', 'course')->latest()->take(10)->get()->each(function ($certificate) use ($activities) {
+            if (!$certificate->user || !$certificate->course) {
+                return;
+            }
+            $issuedAt = $certificate->issued_at ?? $certificate->created_at;
+            $activities->push([
+                'id' => 'cert_' . $certificate->id, 'type' => 'certificate',
+                'text' => "Sertifikat diterbitkan untuk {$certificate->user->name} — \"{$certificate->course->title}\"",
+                'time' => $issuedAt->diffForHumans(), 'sort' => $issuedAt->timestamp,
+            ]);
+        });
+    }
+
+    private function appendQuizActivities($activities): void
+    {
+        \App\Models\QuizAttempt::with(['user', 'quiz.lesson.module.course'])->whereNotNull('finished_at')
+            ->latest('finished_at')->take(10)->get()->each(function ($attempt) use ($activities) {
+                if (!$attempt->user || !$attempt->quiz) {
+                    return;
+                }
+                $courseName = optional(optional(optional($attempt->quiz->lesson)->module)->course)->title ?? 'kursus';
+                $status = $attempt->is_passed ? 'lulus' : 'belum lulus';
+                $activities->push([
+                    'id' => 'quiz_' . $attempt->id, 'type' => 'quiz',
+                    'text' => "{$attempt->user->name} mengerjakan kuis di \"{$courseName}\" — {$status} (skor {$attempt->score})",
+                    'time' => $attempt->finished_at->diffForHumans(), 'sort' => $attempt->finished_at->timestamp,
+                ]);
+            });
+    }
+
+    private function totalHoursLearned($enrollments): int
+    {
+        return (int) round($enrollments->sum(fn ($enrollment) => $enrollment->course
+            ? ($enrollment->progress_percent / 100) * $enrollment->course->duration_hours
+            : 0));
+    }
+
+    private function formatEnrolledCourse(CourseEnrollment $enrollment, $certificates): ?array
+    {
+        $course = $enrollment->course;
+        if (!$course) {
+            return null;
+        }
+        return [
+            'id' => $course->id, 'title' => $course->title,
+            'short_description' => $course->short_description,
+            'category_name' => $course->category ? $course->category->name : 'Umum',
+            'thumbnail' => $course->thumbnail ? \Illuminate\Support\Facades\Storage::url($course->thumbnail) : null,
+            'instructor_name' => $course->instructor ? $course->instructor->name : 'Instruktur',
+            'level' => $course->level, 'duration' => $course->duration_hours . ' Jam',
+            'progress' => $enrollment->progress_percent,
+            'enrolled_students' => $course->enrollments()->count(), 'rating' => 0,
+            'is_featured' => $course->is_featured,
+            'certificate_id' => isset($certificates[$course->id]) ? $certificates[$course->id]->id : null,
+        ];
+    }
+
+    private function formatAvailableCourse(Course $course): array
+    {
+        return [
+            'id' => $course->id, 'title' => $course->title,
+            'short_description' => $course->short_description,
+            'category_name' => $course->category ? $course->category->name : 'Umum',
+            'thumbnail' => $course->thumbnail ? \Illuminate\Support\Facades\Storage::url($course->thumbnail) : null,
+            'instructor_name' => $course->instructor ? $course->instructor->name : 'Instruktur',
+            'level' => $course->level, 'duration' => $course->duration_hours . ' Jam',
+            'progress' => 0, 'enrolled_students' => $course->enrollments_count,
+            'rating' => 0, 'is_featured' => $course->is_featured,
+        ];
+    }
+
+    private function studentDashboard(User $user, $upcomingEvents, $calendarEvents)
+    {
+            // Peserta
             $enrollments = Enrollment::with(['course.instructor', 'course.category'])
                 ->where('user_id', $user->id)
                 ->get();
@@ -139,13 +196,7 @@ class DashboardController extends Controller
             $coursesCompleted = $enrollments->where('progress_percent', 100)->count();
             $certificates = Certificate::where('user_id', $user->id)->count();
             
-            $totalHoursLearned = 0;
-            foreach ($enrollments as $enrollment) {
-                if ($enrollment->course) {
-                    $totalHoursLearned += ($enrollment->progress_percent / 100) * $enrollment->course->duration_hours;
-                }
-            }
-            $totalHoursLearned = round($totalHoursLearned);
+            $totalHoursLearned = $this->totalHoursLearned($enrollments);
 
             $studentStats = [
                 'coursesInProgress' => $coursesInProgress,
@@ -156,25 +207,9 @@ class DashboardController extends Controller
 
             $certificates = Certificate::where('user_id', $user->id)->get()->keyBy('course_id');
 
-            $enrolledCourses = $enrollments->map(function ($enrollment) use ($certificates) {
-                $course = $enrollment->course;
-                if (!$course) return null;
-                return [
-                    'id' => $course->id,
-                    'title' => $course->title,
-                    'short_description' => $course->short_description,
-                    'category_name' => $course->category ? $course->category->name : 'Umum',
-                    'thumbnail' => $course->thumbnail ? \Illuminate\Support\Facades\Storage::url($course->thumbnail) : null,
-                    'instructor_name' => $course->instructor ? $course->instructor->name : 'Instruktur',
-                    'level' => $course->level,
-                    'duration' => $course->duration_hours . ' Jam',
-                    'progress' => $enrollment->progress_percent,
-                    'enrolled_students' => $course->enrollments()->count(),
-                    'rating' => 0,
-                    'is_featured' => $course->is_featured,
-                    'certificate_id' => isset($certificates[$course->id]) ? $certificates[$course->id]->id : null,
-                ];
-            })->filter()->values();
+            $enrolledCourses = $enrollments
+                ->map(fn ($enrollment) => $this->formatEnrolledCourse($enrollment, $certificates))
+                ->filter()->values();
 
             // Ambil kursus yang belum di-enroll
             $enrolledCourseIds = $enrollments->pluck('course_id')->toArray();
@@ -185,25 +220,10 @@ class DashboardController extends Controller
                 ->take(4)
                 ->get();
 
-            $availableCourses = $availableCoursesQuery->map(function ($course) {
-                return [
-                    'id' => $course->id,
-                    'title' => $course->title,
-                    'short_description' => $course->short_description,
-                    'category_name' => $course->category ? $course->category->name : 'Umum',
-                    'thumbnail' => $course->thumbnail ? \Illuminate\Support\Facades\Storage::url($course->thumbnail) : null,
-                    'instructor_name' => $course->instructor ? $course->instructor->name : 'Instruktur',
-                    'level' => $course->level,
-                    'duration' => $course->duration_hours . ' Jam',
-                    'progress' => 0,
-                    'enrolled_students' => $course->enrollments_count,
-                    'rating' => 0,
-                    'is_featured' => $course->is_featured,
-                ];
-            });
+            $availableCourses = $availableCoursesQuery->map(fn ($course) => $this->formatAvailableCourse($course));
 
-            // User pelajar yang sedang online (kecuali diri sendiri)
-            $onlineUsers = User::where('role', 'pelajar')
+            // User peserta yang sedang online (kecuali diri sendiri)
+            $onlineUsers = User::where('role', 'peserta')
                 ->where('id', '!=', $user->id)
                 ->where('last_seen_at', '>=', now()->subMinutes(5))
                 ->orderByDesc('last_seen_at')
@@ -226,6 +246,5 @@ class DashboardController extends Controller
                 'onlineUsers'      => $onlineUsers,
             ]);
 
-        }
     }
 }

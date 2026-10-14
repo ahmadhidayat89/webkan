@@ -1,36 +1,122 @@
 import { router, useForm } from '@inertiajs/react';
-import { Award, Download, FileCheck, CheckCircle2, Upload, Image, Pen, Eye } from 'lucide-react';
+import { Award, Download, FileCheck, Upload, Image, Pen, Eye, Pencil } from 'lucide-react';
 import { useState, useRef } from 'react';
 
+const BULAN = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+];
+
+// "2026-10-09" -> "9 Oktober 2026"
+const formatTanggal = (value) => {
+    if (!value) return '';
+    const d = new Date(value + 'T00:00:00');
+    return `${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`;
+};
+
+// "Yang diselesaikan pada tanggal 5 Oktober 2026 ..." -> "2026-10-05"
+const bacaTanggalDariTeks = (teks) => {
+    const m = (teks || '').match(/(\d{1,2}) (\S+) (\d{4})/);
+    if (!m) return '';
+    const bulan = BULAN.findIndex(b => b.toLowerCase() === m[2].toLowerCase());
+    if (bulan < 0) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${m[3]}-${pad(bulan + 1)}-${pad(Number(m[1]))}`;
+};
+
+const KALIMAT_TANGGAL = 'Yang diselesaikan pada tanggal';
+
 export default function TabCertificates({ courseId, enrolledStudents, certificates, course }) {
+    // Modal edit data sertifikat
+    const [modalStudent, setModalStudent] = useState(null);
     const [generatingId, setGeneratingId] = useState(null);
 
-    // Template upload form
-    const { post: postTemplate, processing: uploadingTemplate } = useForm({});
+    const certForm = useForm({
+        user_id: '',
+        recipient_name: '',
+        status: 'lulus',
+        event_text: '',
+        signer_name: '',
+        signer_title: '',
+    });
+
+    // Terbitkan / Regenerate cepat (otomatis, tanpa modal)
+    const generateCertificate = (userId) => {
+        setGeneratingId(userId);
+        router.post(route('admin.certificates.generate', courseId), {
+            user_id: userId,
+        }, {
+            preserveScroll: true,
+            onFinish: () => setGeneratingId(null),
+        });
+    };
+
+    // Tanggal selesai (hanya untuk membantu mengisi event_text)
+    const [eventDate, setEventDate] = useState('');
+
+    // Ganti hanya bagian tanggal; teks setelahnya (tempat, JP) tidak ikut berubah.
+    const applyDate = (value) => {
+        if (!value) return;
+        const awal = `${KALIMAT_TANGGAL} ${formatTanggal(value)}`;
+        const current = certForm.data.event_text || '';
+        const re = new RegExp(`^${KALIMAT_TANGGAL} \\d{1,2} \\S+ \\d{4}`);
+
+        certForm.setData(
+            'event_text',
+            re.test(current) ? current.replace(re, awal) : awal + (current ? ' ' + current : '')
+        );
+    };
+
+    // Template upload
     const templateRef = useRef(null);
     const [templatePreview, setTemplatePreview] = useState(
         course.certificate_template_url || null
     );
 
-    // Signature upload form
-    const { post: postSig, processing: uploadingSig } = useForm({});
+    // Signature upload
     const signatureRef = useRef(null);
     const [signaturePreview, setSignaturePreview] = useState(
         course.certificate_signature_url || null
     );
 
-    const generateCertificate = (userId) => {
-        setGeneratingId(userId);
-        router.post(route('admin.certificates.generate', courseId), {
-            user_id: userId
-        }, {
-            preserveScroll: true,
-            onFinish: () => setGeneratingId(null)
-        });
-    };
-
     const hasCertificate = (userId) => {
         return certificates.find(c => c.user_id === userId);
+    };
+
+    const openModal = (student) => {
+        const cert = hasCertificate(student.user_id);
+
+        // Tanggal default: tanggal selesai peserta, atau hari ini kalau belum tercatat
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const tanggalHariIni = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        const defaultDate = student.completed_at || tanggalHariIni;
+
+        certForm.clearErrors();
+        certForm.setData({
+            user_id: student.user_id,
+            recipient_name: cert?.recipient_name || student.name,
+            status: cert?.status || 'lulus',
+            // Sudah pernah diisi -> pakai yang tersimpan. Belum -> isi dari tanggal default.
+            event_text: cert?.event_text
+                || `${KALIMAT_TANGGAL} ${formatTanggal(defaultDate)}`,
+            signer_name: cert?.signer_name || '',
+            signer_title: cert?.signer_title || '',
+        });
+        setEventDate(bacaTanggalDariTeks(cert?.event_text) || defaultDate);
+        setModalStudent(student);
+    };
+
+    const closeModal = () => {
+        setModalStudent(null);
+    };
+
+    const submitCertificate = (e) => {
+        e.preventDefault();
+        certForm.post(route('admin.certificates.generate', courseId), {
+            preserveScroll: true,
+            onSuccess: () => closeModal(),
+        });
     };
 
     const handleTemplateUpload = (e) => {
@@ -154,13 +240,13 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                 </div>
             </div>
 
-            {/* Tabel Pelajar */}
+            {/* Tabel Peserta */}
             <div className="card overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-medium">
                             <tr>
-                                <th className="px-6 py-4">Nama Pelajar</th>
+                                <th className="px-6 py-4">Nama Peserta</th>
                                 <th className="px-6 py-4">Status & Progress</th>
                                 <th className="px-6 py-4">No. Sertifikat</th>
                                 <th className="px-6 py-4 text-right">Aksi</th>
@@ -217,23 +303,39 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                                                         <Download className="w-3.5 h-3.5" /> Unduh PDF
                                                     </a>
                                                     <button
+                                                        onClick={() => openModal(student)}
+                                                        className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5"
+                                                        title="Edit data sertifikat"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" /> Edit
+                                                    </button>
+                                                    <button
                                                         onClick={() => generateCertificate(student.user_id)}
                                                         disabled={generatingId === student.user_id}
                                                         className="btn-gold text-xs px-3 py-1.5"
-                                                        title="Generate Ulang"
+                                                        title="Generate ulang dengan data tersimpan"
                                                     >
                                                         {generatingId === student.user_id ? 'Menerbitkan...' : 'Regenerate'}
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <button
-                                                    onClick={() => generateCertificate(student.user_id)}
-                                                    disabled={generatingId === student.user_id}
-                                                    className="btn-gold text-xs px-4 py-1.5 flex items-center gap-1.5 ml-auto"
-                                                >
-                                                    <FileCheck className="w-3.5 h-3.5" />
-                                                    {generatingId === student.user_id ? 'Menerbitkan...' : 'Terbitkan Sertifikat'}
-                                                </button>
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => openModal(student)}
+                                                        className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5"
+                                                        title="Isi data sertifikat dulu"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" /> Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => generateCertificate(student.user_id)}
+                                                        disabled={generatingId === student.user_id}
+                                                        className="btn-gold text-xs px-4 py-1.5 flex items-center gap-1.5"
+                                                    >
+                                                        <FileCheck className="w-3.5 h-3.5" />
+                                                        {generatingId === student.user_id ? 'Menerbitkan...' : 'Terbitkan Sertifikat'}
+                                                    </button>
+                                                </div>
                                             )}
                                         </td>
                                     </tr>
@@ -243,7 +345,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                             {enrolledStudents.length === 0 && (
                                 <tr>
                                     <td colSpan="4" className="px-6 py-8 text-center text-gray-500 text-sm">
-                                        Belum ada pelajar yang terdaftar di pelatihan ini.
+                                        Belum ada peserta yang terdaftar di pelatihan ini.
                                     </td>
                                 </tr>
                             )}
@@ -251,6 +353,152 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                     </table>
                 </div>
             </div>
+
+            {/* Modal Edit Data Sertifikat */}
+            {modalStudent && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <form
+                        onSubmit={submitCertificate}
+                        className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 space-y-4"
+                    >
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">Data Sertifikat</h3>
+                            <p className="text-xs text-gray-500">
+                                Peserta: {modalStudent.name}
+                            </p>
+                        </div>
+
+                        {/* Nama di sertifikat */}
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                Nama di Sertifikat
+                            </label>
+                            <input
+                                type="text"
+                                value={certForm.data.recipient_name}
+                                onChange={e => certForm.setData('recipient_name', e.target.value)}
+                                maxLength={150}
+                                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
+                            />
+                            {certForm.errors.recipient_name && (
+                                <p className="text-xs text-red-600 mt-1">{certForm.errors.recipient_name}</p>
+                            )}
+                        </div>
+
+                        {/* Status */}
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                Keterangan di Bawah Nama
+                            </label>
+                            <select
+                                value={certForm.data.status}
+                                onChange={e => certForm.setData('status', e.target.value)}
+                                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
+                            >
+                                <option value="lulus">telah lulus</option>
+                                <option value="hadir">telah hadir</option>
+                            </select>
+                            {certForm.errors.status && (
+                                <p className="text-xs text-red-600 mt-1">{certForm.errors.status}</p>
+                            )}
+                        </div>
+
+                        {/* Tanggal selesai + keterangan */}
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                Tanggal Selesai Pelatihan
+                            </label>
+                            <div className="mb-3">
+                                <input
+                                    type="date"
+                                    value={eventDate}
+                                    onChange={e => {
+                                        setEventDate(e.target.value);
+                                        applyDate(e.target.value);
+                                    }}
+                                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
+                                />
+                            </div>
+
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                Keterangan di Sertifikat
+                            </label>
+                            <textarea
+                                value={certForm.data.event_text}
+                                onChange={e => certForm.setData('event_text', e.target.value)}
+                                rows={3}
+                                maxLength={500}
+                                placeholder="Pilih tanggal di atas, lalu tambahkan: secara luring di Surabaya dengan 40 JP"
+                                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">
+                                Kalimat tanggal terisi otomatis dan masih bisa diedit. Tambahkan tempat dan JP setelahnya.
+                            </p>
+                            {certForm.errors.event_text && (
+                                <p className="text-xs text-red-600 mt-1">{certForm.errors.event_text}</p>
+                            )}
+                        </div>
+
+                        {/* Penandatangan */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                    Nama Penandatangan
+                                </label>
+                                <input
+                                    type="text"
+                                    value={certForm.data.signer_name}
+                                    onChange={e => certForm.setData('signer_name', e.target.value)}
+                                    maxLength={100}
+                                    placeholder="Kosongkan = default"
+                                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
+                                />
+                                {certForm.errors.signer_name && (
+                                    <p className="text-xs text-red-600 mt-1">{certForm.errors.signer_name}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                    Jabatan
+                                </label>
+                                <input
+                                    type="text"
+                                    value={certForm.data.signer_title}
+                                    onChange={e => certForm.setData('signer_title', e.target.value)}
+                                    maxLength={100}
+                                    placeholder="Kosongkan = default"
+                                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
+                                />
+                                {certForm.errors.signer_title && (
+                                    <p className="text-xs text-red-600 mt-1">{certForm.errors.signer_title}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {certForm.errors.user_id && (
+                            <p className="text-xs text-red-600">{certForm.errors.user_id}</p>
+                        )}
+
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                disabled={certForm.processing}
+                                className="btn-secondary text-sm px-4 py-2"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={certForm.processing}
+                                className="btn-gold text-sm px-5 py-2"
+                            >
+                                {certForm.processing ? 'Menerbitkan...' : 'Simpan & Terbitkan'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
         </div>
     );
 }

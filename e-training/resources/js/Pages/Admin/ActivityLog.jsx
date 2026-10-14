@@ -121,7 +121,7 @@ export default function ActivityLog({ activities = [], total = 0, perPage = 30, 
                         <h1 className="text-2xl font-bold text-gray-900">Log Aktivitas</h1>
                     </div>
                     <p className="text-sm text-gray-500 ml-12">
-                        Pantau semua aktivitas pelajar — pendaftaran, penyelesaian kuis, dan sertifikat.
+                        Pantau semua aktivitas peserta — pendaftaran, penyelesaian kuis, dan sertifikat.
                     </p>
                 </div>
 
@@ -160,7 +160,7 @@ export default function ActivityLog({ activities = [], total = 0, perPage = 30, 
                     <div className="text-center py-20 bg-white rounded-2xl border border-gray-200">
                         <Activity className="w-12 h-12 text-gray-200 mx-auto mb-3" />
                         <p className="text-sm font-semibold text-gray-500">Belum ada aktivitas</p>
-                        <p className="text-xs text-gray-400 mt-1">Aktivitas akan muncul saat pelajar mulai berinteraksi</p>
+                        <p className="text-xs text-gray-400 mt-1">Aktivitas akan muncul saat peserta mulai berinteraksi</p>
                     </div>
                 )}
 

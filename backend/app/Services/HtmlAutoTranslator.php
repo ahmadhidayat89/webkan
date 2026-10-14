@@ -207,35 +207,7 @@ class HtmlAutoTranslator
 
         foreach ($chunks as $chunk) {
             try {
-                $responses = Http::pool(function (Pool $pool) use ($chunk, $from, $to) {
-                    $requests = [];
-                    foreach ($chunk as $source) {
-                        $payload = [
-                            'q' => $source,
-                            'source' => $from,
-                            'target' => $to,
-                            'format' => 'text',
-                        ];
-                        if ($this->libreTranslateApiKey) {
-                            $payload['api_key'] = $this->libreTranslateApiKey;
-                        }
-
-                        $requests[$source] = $pool
-                            ->as($source)
-                            ->timeout(20)
-                            ->post($this->libreTranslateUrl . '/translate', $payload);
-                    }
-                    return $requests;
-                });
-
-                foreach ($chunk as $source) {
-                    $response = $responses[$source] ?? null;
-                    $translated = $this->parseTranslationResponse($response);
-                    $results[$source] = $translated;
-                    if ($translated !== null) {
-                        Cache::put($this->cacheKey($source, $from, $to), $translated, self::CACHE_TTL_SECONDS);
-                    }
-                }
+                $this->translateChunk($chunk, $from, $to, $results);
             } catch (\Throwable $e) {
                 Log::warning('Auto translate pool failed: ' . $e->getMessage());
                 foreach ($chunk as $source) {
@@ -244,24 +216,64 @@ class HtmlAutoTranslator
             }
 
             // Retry failed items sequentially (best-effort) to improve completion rate.
-            foreach ($chunk as $source) {
-                if (($results[$source] ?? null) !== null) {
-                    continue;
-                }
-
-                $retry = $this->translateText($source, $from, $to);
-                if ($retry !== null) {
-                    $results[$source] = $retry;
-                }
-            }
+            $this->retryFailedTranslations($chunk, $from, $to, $results);
         }
 
         return $results;
     }
 
+    private function translateChunk(array $chunk, string $from, string $to, array &$results): void
+    {
+        $responses = Http::pool(fn (Pool $pool) => $this->buildTranslationRequests($pool, $chunk, $from, $to));
+
+        foreach ($chunk as $source) {
+            $translated = $this->parseTranslationResponse($responses[$source] ?? null);
+            $results[$source] = $translated;
+            if ($translated !== null) {
+                Cache::put($this->cacheKey($source, $from, $to), $translated, self::CACHE_TTL_SECONDS);
+            }
+        }
+    }
+
+    private function buildTranslationRequests(Pool $pool, array $chunk, string $from, string $to): array
+    {
+        $requests = [];
+        foreach ($chunk as $source) {
+            $requests[$source] = $pool->as($source)
+                ->timeout(20)
+                ->post($this->libreTranslateUrl . '/translate', $this->translationPayload($source, $from, $to));
+        }
+
+        return $requests;
+    }
+
+    private function translationPayload(string $source, string $from, string $to): array
+    {
+        $payload = ['q' => $source, 'source' => $from, 'target' => $to, 'format' => 'text'];
+        if ($this->libreTranslateApiKey) {
+            $payload['api_key'] = $this->libreTranslateApiKey;
+        }
+
+        return $payload;
+    }
+
+    private function retryFailedTranslations(array $chunk, string $from, string $to, array &$results): void
+    {
+        foreach ($chunk as $source) {
+            if (($results[$source] ?? null) !== null) {
+                continue;
+            }
+
+            $retry = $this->translateText($source, $from, $to);
+            if ($retry !== null) {
+                $results[$source] = $retry;
+            }
+        }
+    }
+
     private function cacheKey(string $text, string $from, string $to): string
     {
-        return 'auto_translate:' . $from . ':' . $to . ':' . sha1($text);
+        return 'auto_translate:' . $from . ':' . $to . ':' . hash('sha256', $text);
     }
 
     private function parseTranslationResponse($response): ?string

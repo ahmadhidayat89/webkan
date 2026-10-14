@@ -1,23 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
-import Quill from 'quill';
-import 'quill/dist/quill.snow.css';
-import { FaSave, FaShieldAlt, FaCheckCircle, FaExclamationCircle, FaClock } from 'react-icons/fa';
+import { useEffect, useState } from 'react';
+import {
+  FaSave,
+  FaShieldAlt,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaClock,
+} from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
+import QuillEditor from '../../components/admin/QuillEditor';
 
 const TABS = [
   { id: 'privacy', label: 'Kebijakan Privasi' },
   { id: 'terms', label: 'Syarat & Ketentuan' },
 ];
-
-const quillModules = {
-  toolbar: [
-    [{ header: [2, 3, false] }],
-    ['bold', 'italic', 'underline'],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    ['link'],
-    ['clean'],
-  ],
-};
 
 const parseApiJson = (rawText) => {
   if (!rawText) return null;
@@ -27,7 +22,11 @@ const parseApiJson = (rawText) => {
     const start = rawText.indexOf('{');
     const end = rawText.lastIndexOf('}');
     if (start !== -1 && end > start) {
-      try { return JSON.parse(rawText.slice(start, end + 1)); } catch { return null; }
+      try {
+        return JSON.parse(rawText.slice(start, end + 1));
+      } catch {
+        return null;
+      }
     }
     return null;
   }
@@ -38,52 +37,8 @@ const trimEmptyTail = (html) =>
 
 const hasMeaningfulContent = (html) => {
   if (!html) return false;
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0;
-};
-
-const QuillEditor = ({ value, onChange, placeholder }) => {
-  const wrapperRef = useRef(null);
-  const quillRef = useRef(null);
-  const onChangeRef = useRef(onChange);
-  const initialValueRef = useRef(value);
-
-  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
-
-  useEffect(() => {
-    if (!wrapperRef.current || quillRef.current) return;
-
-    const wrapper = wrapperRef.current;
-    wrapper.innerHTML = '';
-    const editorElement = document.createElement('div');
-    wrapper.appendChild(editorElement);
-
-    const quill = new Quill(editorElement, {
-      theme: 'snow',
-      placeholder,
-      modules: quillModules,
-    });
-    quillRef.current = quill;
-
-    const initial = initialValueRef.current;
-    if (initial) {
-      const delta = quill.clipboard.convert({ html: initial, text: '\n' });
-      quill.updateContents(delta, 'silent');
-    }
-
-    quill.on('text-change', () => {
-      onChangeRef.current(trimEmptyTail(quill.root.innerHTML));
-    });
-
-    return () => {
-      wrapper.innerHTML = '';
-      quillRef.current = null;
-    };
-  }, [placeholder]);
-
   return (
-    <div className="bg-white [&_.ql-toolbar]:rounded-t-xl [&_.ql-container]:rounded-b-xl [&_.ql-editor]:min-h-[380px] [&_.ql-editor]:text-sm">
-      <div ref={wrapperRef} />
-    </div>
+    html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0
   );
 };
 
@@ -104,8 +59,8 @@ const LegalManagement = () => {
       try {
         const res = await fetch(`/api/v1/admin/page-contents/${pageId}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Accept: 'application/json',
           },
         });
         const data = parseApiJson(await res.text());
@@ -125,7 +80,8 @@ const LegalManagement = () => {
     load();
   }, [pageId]);
 
-  const canSave = title.trim().length > 0 && hasMeaningfulContent(content) && !saving;
+  const canSave =
+    title.trim().length > 0 && hasMeaningfulContent(content) && !saving;
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -136,8 +92,8 @@ const LegalManagement = () => {
       const res = await fetch('/api/v1/admin/page-contents', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Accept': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -152,8 +108,16 @@ const LegalManagement = () => {
         setSaveMsg({ type: 'success', text: 'Konten berhasil disimpan!' });
         setUpdatedAt(data.data?.updated_at || new Date().toISOString());
       } else {
-        const firstError = data?.errors ? Object.values(data.errors).flat()?.[0] : null;
-        setSaveMsg({ type: 'error', text: firstError || data?.message || `Gagal menyimpan (HTTP ${res.status})` });
+        const firstError = data?.errors
+          ? Object.values(data.errors).flat()?.[0]
+          : null;
+        setSaveMsg({
+          type: 'error',
+          text:
+            firstError ||
+            data?.message ||
+            `Gagal menyimpan (HTTP ${res.status})`,
+        });
       }
     } catch (e) {
       setSaveMsg({ type: 'error', text: 'Terjadi kesalahan, coba lagi' });
@@ -165,7 +129,6 @@ const LegalManagement = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-
         {/* Header */}
         <div className="relative overflow-hidden text-white shadow-xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7">
           <div className="relative z-10 flex items-center gap-4">
@@ -174,7 +137,9 @@ const LegalManagement = () => {
             </div>
             <div>
               <h2 className="text-2xl font-black">Kelola Halaman Legal</h2>
-              <p className="text-white/70 text-sm mt-0.5">Isi Kebijakan Privasi dan Syarat & Ketentuan website</p>
+              <p className="text-white/70 text-sm mt-0.5">
+                Isi Kebijakan Privasi dan Syarat & Ketentuan website
+              </p>
             </div>
           </div>
         </div>
@@ -184,6 +149,7 @@ const LegalManagement = () => {
           {TABS.map((t) => (
             <button
               key={t.id}
+              type="button"
               onClick={() => setPageId(t.id)}
               className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 pageId === t.id
@@ -207,7 +173,11 @@ const LegalManagement = () => {
               {updatedAt && (
                 <span className="flex items-center gap-1">
                   <FaClock />
-                  {new Date(updatedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {new Date(updatedAt).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
                 </span>
               )}
             </div>
@@ -219,14 +189,19 @@ const LegalManagement = () => {
             </div>
           ) : (
             <div className="space-y-6 p-7">
-
               {saveMsg && (
-                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${
-                  saveMsg.type === 'success'
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
-                }`}>
-                  {saveMsg.type === 'success' ? <FaCheckCircle /> : <FaExclamationCircle />}
+                <div
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${
+                    saveMsg.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}
+                >
+                  {saveMsg.type === 'success' ? (
+                    <FaCheckCircle />
+                  ) : (
+                    <FaExclamationCircle />
+                  )}
                   {saveMsg.text}
                 </div>
               )}
@@ -251,15 +226,21 @@ const LegalManagement = () => {
                   key={pageId}
                   value={content}
                   onChange={setContent}
+                  minHeight={380}
+                  withHeading
+                  transformOutput={trimEmptyTail}
                   placeholder="Tulis isi halaman di sini..."
                 />
                 <p className="text-xs text-gray-400 mt-1.5">
-                  Tips: pakai "Heading" di toolbar untuk sub-judul (misalnya "1. Penerimaan Syarat").
+                  Tips: pakai tombol H2 / H3 di toolbar untuk sub-judul
+                  (misalnya "1. Penerimaan Syarat"), dan P untuk kembali ke
+                  paragraf biasa.
                 </p>
               </div>
 
               <div className="pt-2 border-t border-gray-100">
                 <button
+                  type="button"
                   onClick={handleSave}
                   disabled={!canSave}
                   className="flex items-center gap-2 py-3 font-bold text-white transition-all shadow-md px-7 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed"

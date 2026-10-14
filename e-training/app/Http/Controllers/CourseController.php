@@ -14,6 +14,9 @@ use Inertia\Response;
 
 class CourseController extends Controller
 {
+    private const DISPLAY_DATE_FORMAT = 'd M Y';
+    private const DATETIME_LOCAL_FORMAT = 'Y-m-d\\TH:i';
+
     /**
      * Daftar semua kursus untuk Studio Konten (Admin).
      */
@@ -33,8 +36,8 @@ class CourseController extends Controller
                 'thumbnail'        => $c->thumbnail ? Storage::url($c->thumbnail) : null,
                 'category'         => $c->category?->name,
                 'modules_count'    => $c->modules_count,
-                'enrollments_count'=> $c->enrollments_count,
-                'created_at'       => $c->created_at->format('d M Y'),
+                'enrollments_count' => $c->enrollments_count,
+                'created_at'       => $c->created_at->format(self::DISPLAY_DATE_FORMAT),
                 'referral_code'    => $c->referral_code,
             ]);
 
@@ -90,56 +93,7 @@ class CourseController extends Controller
             'certificates.user',
         ]);
 
-        // Format modules
-        $modules = $course->modules->map(fn($m) => [
-            'id'          => $m->id,
-            'title'       => $m->title,
-            'description' => $m->description,
-            'sort_order'  => $m->sort_order,
-            'is_published'=> $m->is_published,
-            'lessons'     => $m->lessons->map(fn($l) => [
-                'id'               => $l->id,
-                'title'            => $l->title,
-                'type'             => $l->type,
-                'description'      => $l->description,
-                'video_url'        => $l->video_url,
-                'duration_minutes' => $l->duration_minutes,
-                'sort_order'       => $l->sort_order,
-                'is_published'     => $l->is_published,
-                'files'            => $l->files->map(fn($f) => [
-                    'id'            => $f->id,
-                    'original_name' => $f->original_name,
-                    'file_path'     => Storage::url($f->file_path),
-                    'mime_type'     => $f->mime_type,
-                    'file_size_kb'  => $f->file_size_kb,
-                ])->values(),
-                'quiz' => $l->quiz ? [
-                    'id'                  => $l->quiz->id,
-                    'duration_minutes'    => $l->quiz->duration_minutes,
-                    'passing_score'       => $l->quiz->passing_score,
-                    'max_attempts'        => $l->quiz->max_attempts,
-                    'shuffle_questions'   => $l->quiz->shuffle_questions,
-                    'show_correct_answers'=> $l->quiz->show_correct_answers,
-                    'deadline_at'         => $l->quiz->deadline_at?->format('Y-m-d\TH:i'),
-                    'quiz_mode'           => $l->quiz->quiz_mode,
-                    'questions'           => $l->quiz->questions->map(fn($q) => [
-                        'id'          => $q->id,
-                        'question'    => $q->question,
-                        'type'        => $q->type,
-                        'points'      => $q->points,
-                        'sort_order'  => $q->sort_order,
-                        'explanation' => $q->explanation,
-                        'image_path'  => $q->image_path ? Storage::url($q->image_path) : null,
-                        'options'     => $q->options->map(fn($o) => [
-                            'id'         => $o->id,
-                            'option_text'=> $o->option_text,
-                            'is_correct' => $o->is_correct,
-                            'sort_order' => $o->sort_order,
-                        ])->values(),
-                    ])->values(),
-                ] : null,
-            ])->values(),
-        ]);
+        $modules = $course->modules->map(fn ($module) => $this->formatModule($module))->values();
 
         // Enrolled students
         $enrolledStudents = $course->enrollments->map(fn($e) => [
@@ -148,9 +102,10 @@ class CourseController extends Controller
             'name'            => $e->user->name,
             'email'           => $e->user->email,
             'organization'    => $e->user->organization,
-            'progress_percent'=> $e->progress_percent,
+            'progress_percent' => $e->progress_percent,
             'status'          => $e->status,
-            'enrolled_at'     => $e->enrolled_at->format('d M Y'),
+            'enrolled_at'     => $e->enrolled_at->format(self::DISPLAY_DATE_FORMAT),
+            'completed_at'     => $e->completed_at?->format('Y-m-d'),
         ])->values();
 
         // Certificates
@@ -159,8 +114,13 @@ class CourseController extends Controller
             'user_id'            => $cert->user_id,
             'name'               => $cert->user->name,
             'certificate_number' => $cert->certificate_number,
-            'issued_at'          => $cert->issued_at->format('d M Y'),
+            'issued_at'          => $cert->issued_at?->format(self::DISPLAY_DATE_FORMAT),
             'file_path'          => $cert->file_path ? Storage::url($cert->file_path) : null,
+            'recipient_name'     => $cert->recipient_name,
+            'status'             => $cert->status,
+            'event_text'         => $cert->event_text,
+            'signer_name'        => $cert->signer_name,
+            'signer_title'       => $cert->signer_title,
         ])->values();
 
         // All pelajar (for enroll dropdown)
@@ -180,6 +140,7 @@ class CourseController extends Controller
                 'thumbnail'                    => $course->thumbnail ? Storage::url($course->thumbnail) : null,
                 'level'                        => $course->level,
                 'duration_hours'               => $course->duration_hours,
+                'deadline_at'                  => $course->deadline_at?->format(self::DATETIME_LOCAL_FORMAT),
                 'status'                       => $course->status,
                 'category_id'                  => $course->category_id,
                 'referral_code'                => $course->referral_code,
@@ -192,6 +153,82 @@ class CourseController extends Controller
             'categories'   => $categories,
             'allStudents'  => $allStudents,
         ]);
+    }
+
+    private function formatModule($module): array
+    {
+        return [
+            'id' => $module->id,
+            'title' => $module->title,
+            'description' => $module->description,
+            'sort_order' => $module->sort_order,
+            'is_published' => $module->is_published,
+            'lessons' => $module->lessons->map(fn ($lesson) => $this->formatLesson($lesson))->values(),
+        ];
+    }
+
+    private function formatLesson($lesson): array
+    {
+        return [
+            'id' => $lesson->id,
+            'title' => $lesson->title,
+            'type' => $lesson->type,
+            'description' => $lesson->description,
+            'video_url' => $lesson->video_url,
+            'duration_minutes' => $lesson->duration_minutes,
+            'start_datetime' => $lesson->start_datetime
+                ? \Carbon\Carbon::parse($lesson->start_datetime)->format(self::DATETIME_LOCAL_FORMAT)
+                : null,
+            'sort_order' => $lesson->sort_order,
+            'is_published' => $lesson->is_published,
+            'files' => $lesson->files->map(fn ($file) => $this->formatLessonFile($file))->values(),
+            'quiz' => $lesson->quiz ? $this->formatQuiz($lesson->quiz) : null,
+        ];
+    }
+
+    private function formatLessonFile($file): array
+    {
+        return [
+            'id' => $file->id,
+            'original_name' => $file->original_name,
+            'file_path' => Storage::url($file->file_path),
+            'mime_type' => $file->mime_type,
+            'file_size_kb' => $file->file_size_kb,
+        ];
+    }
+
+    private function formatQuiz($quiz): array
+    {
+        return [
+            'id' => $quiz->id,
+            'duration_minutes' => $quiz->duration_minutes,
+            'passing_score' => $quiz->passing_score,
+            'max_attempts' => $quiz->max_attempts,
+            'shuffle_questions' => $quiz->shuffle_questions,
+            'show_correct_answers' => $quiz->show_correct_answers,
+            'deadline_at' => $quiz->deadline_at?->format(self::DATETIME_LOCAL_FORMAT),
+            'quiz_mode' => $quiz->quiz_mode,
+            'questions' => $quiz->questions->map(fn ($question) => $this->formatQuizQuestion($question))->values(),
+        ];
+    }
+
+    private function formatQuizQuestion($question): array
+    {
+        return [
+            'id' => $question->id,
+            'question' => $question->question,
+            'type' => $question->type,
+            'points' => $question->points,
+            'sort_order' => $question->sort_order,
+            'explanation' => $question->explanation,
+            'image_path' => $question->image_path ? Storage::url($question->image_path) : null,
+            'options' => $question->options->map(fn ($option) => [
+                'id' => $option->id,
+                'option_text' => $option->option_text,
+                'is_correct' => $option->is_correct,
+                'sort_order' => $option->sort_order,
+            ])->values(),
+        ];
     }
 
     /**
@@ -207,12 +244,15 @@ class CourseController extends Controller
             'level'             => 'required|in:pemula,menengah,lanjutan',
             'duration_hours'    => 'nullable|integer|min:1',
             'status'            => 'required|in:draft,published',
+            'deadline_at'       => 'nullable|date',
         ]);
 
         // Handle thumbnail upload
         if ($request->hasFile('thumbnail')) {
             $request->validate(['thumbnail' => 'image|max:2048']);
-            if ($course->thumbnail) Storage::delete($course->thumbnail);
+            if ($course->thumbnail) {
+                Storage::delete($course->thumbnail);
+            }
             $validated['thumbnail'] = $request->file('thumbnail')
                 ->store('thumbnails', 'public');
         }

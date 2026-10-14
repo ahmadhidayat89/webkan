@@ -29,21 +29,21 @@ class DatabaseSeeder extends Seeder
             'name' => 'Siti Nurhaliza',
             'username' => 'pelajar',
             'email' => 'pelajar@kan.or.id',
-            'role' => 'pelajar',
+            'role' => 'peserta',
             'organization' => 'PT Laboratorium Nusantara',
         ]);
 
         User::factory()->create([
             'name' => 'Budi Santoso',
             'email' => 'budi@example.com',
-            'role' => 'pelajar',
+            'role' => 'peserta',
             'organization' => 'CV Inspeksi Mandiri',
         ]);
 
         User::factory()->create([
             'name' => 'Dewi Kartini',
             'email' => 'dewi@example.com',
-            'role' => 'pelajar',
+            'role' => 'peserta',
             'organization' => 'PT Sertifikasi Indonesia',
         ]);
 

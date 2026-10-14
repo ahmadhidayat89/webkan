@@ -4,7 +4,7 @@ import { RoleProvider } from '@/contexts/RoleContext';
 
 export default function AuthenticatedLayout({ header, children }) {
     const { auth } = usePage().props;
-    const role = auth?.user?.role ?? 'pelajar';
+    const role = auth?.user?.role ?? 'peserta';
 
     return (
         <RoleProvider value={{ role }}>

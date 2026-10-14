@@ -29,14 +29,17 @@ class FaqController extends Controller
         $validated = $request->validate([
             'question' => 'required|string|max:500',
             'answer' => 'required|string',
+            'order' => 'sometimes|nullable|integer|min:0',
+            'is_active' => 'sometimes|boolean',
+            'show_on_home' => 'sometimes|boolean',
         ]);
-
-        $maxOrder = Faq::max('order') ?? 0;
 
         $faq = Faq::create([
             'question' => $validated['question'],
             'answer' => $validated['answer'],
-            'order' => $maxOrder + 1,
+            'order' => $validated['order'] ?? ((Faq::max('order') ?? 0) + 1),
+            'is_active' => $validated['is_active'] ?? true,
+            'show_on_home' => $validated['show_on_home'] ?? true,
         ]);
 
         return response()->json([
@@ -56,7 +59,15 @@ class FaqController extends Controller
         $validated = $request->validate([
             'question' => 'required|string|max:500',
             'answer' => 'required|string',
+            'order' => 'sometimes|nullable|integer|min:0',
+            'is_active' => 'sometimes|boolean',
+            'show_on_home' => 'sometimes|boolean',
         ]);
+
+        // Jika order dikirim kosong (null), biarkan nilai lama
+        if (array_key_exists('order', $validated) && $validated['order'] === null) {
+            unset($validated['order']);
+        }
 
         $faq->update($validated);
 
@@ -99,6 +110,36 @@ class FaqController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Urutan FAQ berhasil disimpan',
+        ]);
+    }
+
+    /**
+     * Aktifkan / nonaktifkan FAQ
+     */
+    public function toggleActive($id)
+    {
+        $faq = Faq::findOrFail($id);
+        $faq->update(['is_active' => ! $faq->is_active]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $faq->is_active ? 'FAQ diaktifkan' : 'FAQ dinonaktifkan',
+            'data' => $faq,
+        ]);
+    }
+
+    /**
+     * Tampilkan / sembunyikan di beranda
+     */
+    public function toggleShowHome($id)
+    {
+        $faq = Faq::findOrFail($id);
+        $faq->update(['show_on_home' => ! $faq->show_on_home]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $faq->show_on_home ? 'FAQ ditampilkan di beranda' : 'FAQ disembunyikan dari beranda',
+            'data' => $faq,
         ]);
     }
 }

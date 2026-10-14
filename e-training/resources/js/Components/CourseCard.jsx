@@ -23,7 +23,7 @@ const thumbnailGradients = [
     'from-cyan-600 via-cyan-500 to-sky-400',
 ];
 
-export default function CourseCard({ course, role = 'pelajar', index = 0 }) {
+export default function CourseCard({ course, role = 'peserta', index = 0 }) {
     const gradient = thumbnailGradients[index % thumbnailGradients.length];
     const isCompleted = course.progress === 100;
     const isEnrolled = course.progress > 0;
@@ -108,7 +108,7 @@ export default function CourseCard({ course, role = 'pelajar', index = 0 }) {
                 </div>
 
                 {/* Progress bar or Stats */}
-                {role === 'pelajar' && isEnrolled && (
+                {role === 'peserta' && isEnrolled && (
                     <div className="mb-3">
                         <div className="flex items-center justify-between mb-1">
                             <span className="text-[11px] font-medium text-gray-600">Progres</span>
@@ -130,7 +130,7 @@ export default function CourseCard({ course, role = 'pelajar', index = 0 }) {
                     <div className="flex items-center gap-3">
                         <span className="text-[11px] text-gray-500 flex items-center gap-1">
                             <Users className="w-3 h-3" />
-                            {course.enrolled_students || 0} pelajar
+                            {course.enrolled_students || 0} peserta
                         </span>
                         <span className="text-[11px] text-gray-500 flex items-center gap-1">
                             <Star className="w-3 h-3 text-gold-500" />

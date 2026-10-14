@@ -272,13 +272,13 @@ export const mockInstructorStats = {
     totalCertificates: 892,
     recentActivity: [
         { id: 1, text: 'Siti Nurhaliza menyelesaikan modul "Persyaratan Struktural"', time: '2 jam lalu', type: 'completion' },
-        { id: 2, text: '15 pelajar baru mendaftar di kursus ISO 17025', time: '5 jam lalu', type: 'enrollment' },
+        { id: 2, text: '15 peserta baru mendaftar di kursus ISO 17025', time: '5 jam lalu', type: 'enrollment' },
         { id: 3, text: 'Kuis "Pemahaman Dasar" telah dikerjakan 45 kali', time: '1 hari lalu', type: 'quiz' },
         { id: 4, text: 'Budi Santoso mendapatkan sertifikat ISO 17021', time: '2 hari lalu', type: 'certificate' },
     ],
 };
 
-// Statistik untuk dashboard pelajar
+// Statistik untuk dashboard peserta
 export const mockStudentStats = {
     coursesInProgress: 3,
     coursesCompleted: 1,

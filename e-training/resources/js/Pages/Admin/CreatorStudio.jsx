@@ -8,7 +8,7 @@ function DeleteModal({ course, onConfirm, onCancel }) {
     if (!course) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
+            <button type="button" aria-label="Tutup dialog hapus" className="absolute inset-0 border-0 bg-black/50 p-0 backdrop-blur-sm" onClick={onCancel} />
             <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-md w-full animate-fade-in">
                 <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
@@ -24,7 +24,7 @@ function DeleteModal({ course, onConfirm, onCancel }) {
                 </div>
                 <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-5">
                     <p className="text-sm text-red-700 font-medium">"{course.title}"</p>
-                    <p className="text-xs text-red-500 mt-1">Semua modul, materi, kuis, dan data pelajar terkait akan dihapus permanen.</p>
+                    <p className="text-xs text-red-500 mt-1">Semua modul, materi, kuis, dan data peserta terkait akan dihapus permanen.</p>
                 </div>
                 <div className="flex gap-3">
                     <button onClick={onCancel} className="flex-1 btn-secondary text-sm py-2.5">
@@ -172,7 +172,7 @@ export default function CreatorStudio({ courses }) {
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <Users className="w-3.5 h-3.5" />
-                                        {course.enrollments_count} Pelajar
+                                        {course.enrollments_count} Peserta
                                     </div>
                                     <div className="ml-auto text-[10px] text-gray-400">{course.created_at}</div>
                                 </div>

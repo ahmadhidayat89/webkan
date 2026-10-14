@@ -23,59 +23,31 @@ class HomeController extends Controller
         $sliders = Slider::active()
             ->ordered()
             ->get()
-            ->map(function ($slider) use ($lang) {
-                return [
-                    'id' => $slider->id,
-                    'title' => $lang === 'en' && $slider->title_en ? $slider->title_en : $slider->title_id,
-                    'subtitle' => $lang === 'en' && $slider->subtitle_en ? $slider->subtitle_en : $slider->subtitle_id,
-                    'image' => $slider->image_url,
-                    'link' => $slider->link,
-                ];
-            });
+            ->map(fn ($slider) => $this->formatSlider($slider, $lang));
 
         // Get quick links
         $quickLinks = QuickLink::active()
             ->ordered()
             ->get()
-            ->map(function ($link) use ($lang) {
-                return [
-                    'id' => $link->id,
-                    'title' => $lang === 'en' && $link->title_en ? $link->title_en : $link->title_id,
-                    'description' => $lang === 'en' && $link->description_en ? $link->description_en : $link->description_id,
-                    'icon' => $link->icon_url,
-                    'link' => $link->link,
-                ];
-            });
+            ->map(fn ($link) => $this->formatQuickLink($link, $lang));
 
         // Get latest news
         $latestNews = News::published()
             ->latest('published_at')
             ->take(6)
             ->get()
-            ->map(function ($news) use ($lang) {
-                return [
-                    'id' => $news->id,
-                    'title' => $lang === 'en' && $news->title_en ? $news->title_en : $news->title_id,
-                    'excerpt' => $lang === 'en' && $news->excerpt_en ? $news->excerpt_en : $news->excerpt_id,
-                    'image' => $news->image_url,
-                    'slug' => $news->slug,
-                    'category' => $news->category,
-                    'published_at' => $news->published_at->format('Y-m-d'),
-                ];
-            });
+            ->map(fn ($news) => $this->formatNews($news, $lang));
 
         // Get partners
         $partners = Partner::active()
             ->ordered()
             ->get()
-            ->map(function ($partner) {
-                return [
-                    'id' => $partner->id,
-                    'name' => $partner->name,
-                    'logo' => $partner->logo_url,
-                    'url' => $partner->url,
-                ];
-            });
+            ->map(fn ($partner) => [
+                'id' => $partner->id,
+                'name' => $partner->name,
+                'logo' => $partner->logo_url,
+                'url' => $partner->url,
+            ]);
 
         return response()->json([
             'success' => true,
@@ -86,5 +58,45 @@ class HomeController extends Controller
                 'partners' => $partners,
             ],
         ]);
+    }
+
+    private function localized(string $language, ?string $translation, ?string $original): ?string
+    {
+        return $language === 'en' && $translation ? $translation : $original;
+    }
+
+    private function formatSlider(Slider $slider, string $language): array
+    {
+        return [
+            'id' => $slider->id,
+            'title' => $this->localized($language, $slider->title_en, $slider->title_id),
+            'subtitle' => $this->localized($language, $slider->subtitle_en, $slider->subtitle_id),
+            'image' => $slider->image_url,
+            'link' => $slider->link,
+        ];
+    }
+
+    private function formatQuickLink(QuickLink $link, string $language): array
+    {
+        return [
+            'id' => $link->id,
+            'title' => $this->localized($language, $link->title_en, $link->title_id),
+            'description' => $this->localized($language, $link->description_en, $link->description_id),
+            'icon' => $link->icon_url,
+            'link' => $link->link,
+        ];
+    }
+
+    private function formatNews(News $news, string $language): array
+    {
+        return [
+            'id' => $news->id,
+            'title' => $this->localized($language, $news->title_en, $news->title_id),
+            'excerpt' => $this->localized($language, $news->excerpt_en, $news->excerpt_id),
+            'image' => $news->image_url,
+            'slug' => $news->slug,
+            'category' => $news->category,
+            'published_at' => $news->published_at->format('Y-m-d'),
+        ];
     }
 }

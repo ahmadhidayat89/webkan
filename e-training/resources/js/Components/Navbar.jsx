@@ -71,7 +71,7 @@ export default function Navbar({ role }) {
 
     const roleBadge = isAdmin
         ? { label: 'Admin', color: 'bg-gold-100 text-gold-700 border-gold-200' }
-        : { label: 'Pelajar', color: 'bg-navy-50 text-navy-700 border-navy-200' };
+        : { label: 'Peserta', color: 'bg-navy-50 text-navy-700 border-navy-200' };
 
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${

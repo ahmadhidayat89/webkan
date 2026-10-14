@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FaEdit, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaPlus, FaTrash, FaLink } from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
 
 const blank = { parent_id: null, title_id: '', title_en: '', url: '/', order: 0, is_active: true };
@@ -82,7 +82,17 @@ const MenuManagement = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div><h2 className="text-2xl font-black text-gray-900">Kelola Menu</h2><p className="mt-1 text-gray-600">Atur tautan navigasi website. Buat halaman terlebih dahulu di Kelola Halaman, lalu tambahkan rutenya di sini.</p></div>
+        <div className="bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7 text-white shadow-xl">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+              <FaLink className="text-white text-xl" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black">Kelola Menu</h2>
+              <p className="text-white/70 text-sm mt-0.5">Atur tautan navigasi website. Buat halaman terlebih dahulu di Kelola Halaman, lalu tambahkan rutenya di sini.</p>
+            </div>
+          </div>
+        </div>
         {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
         <form onSubmit={saveMenu} className="grid gap-4 rounded-2xl border bg-white p-6 md:grid-cols-2">
           <h3 className="text-lg font-bold md:col-span-2">{editing ? 'Ubah Menu' : 'Tambah Menu'}</h3>
@@ -106,7 +116,7 @@ const MenuManagement = () => {
           </label>
           <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Tampilkan di website</label>
           <div className="flex gap-3 md:col-span-2">
-            <button disabled={saving} className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white disabled:opacity-50"><FaPlus />{saving ? 'Menyimpan...' : 'Simpan Menu'}</button>
+            <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white disabled:opacity-50"><FaPlus />{saving ? 'Menyimpan...' : 'Simpan Menu'}</button>
             {editing && <button type="button" onClick={() => { setEditing(null); setForm(blank); }} className="rounded-lg border px-4 py-2 font-semibold">Batal</button>}
           </div>
         </form>

@@ -14,7 +14,7 @@ use Inertia\Response;
 class UserController extends Controller
 {
     /**
-     * Tampilkan semua user (admin + pelajar).
+     * Tampilkan semua user (admin + peserta).
      */
     public function index(): Response
     {
@@ -46,7 +46,7 @@ class UserController extends Controller
             'username'     => 'required|string|max:50|unique:users,username|alpha_dash',
             'email'        => 'required|string|lowercase|email|max:255|unique:users,email',
             'password'     => ['required', 'confirmed', Rules\Password::defaults()],
-            'role'         => 'required|in:pelajar,admin',
+            'role'         => 'required|in:peserta,admin',
             'organization' => 'nullable|string|max:255',
             'phone'        => 'nullable|string|max:20',
         ]);
@@ -61,7 +61,7 @@ class UserController extends Controller
             'phone'        => $request->phone,
         ]);
 
-        $roleLabel = $request->role === 'admin' ? 'Admin' : 'Pelajar';
+        $roleLabel = $request->role === 'admin' ? 'Admin' : 'Peserta';
         return back()->with('success', "Akun {$roleLabel} berhasil dibuat.");
     }
 
@@ -74,7 +74,7 @@ class UserController extends Controller
             'name'         => 'required|string|max:255',
             'username'     => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($user->id)],
             'email'        => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'role'         => 'required|in:pelajar,admin',
+            'role'         => 'required|in:peserta,admin',
             'organization' => 'nullable|string|max:255',
             'phone'        => 'nullable|string|max:20',
             'password'     => ['nullable', 'confirmed', Rules\Password::defaults()],

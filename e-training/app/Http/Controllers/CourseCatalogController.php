@@ -18,7 +18,7 @@ class CourseCatalogController extends Controller
             ->withCount('enrollments')
             ->where('status', 'published');
             
-        if ($user->role === 'pelajar') {
+        if ($user->role === 'peserta') {
             // Only show courses the student is enrolled in
             $query->whereHas('enrollments', function($q) use ($user) {
                 $q->where('user_id', $user->id);

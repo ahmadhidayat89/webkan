@@ -19,8 +19,8 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
-     * Role yang tersedia: 'pelajar', 'admin'
-     * - pelajar : peserta pelatihan
+     * Role yang tersedia: 'peserta', 'admin'
+     * - peserta : peserta pelatihan
      * - admin   : pengelola platform (membuat kursus, mengelola user)
      */
 
@@ -47,11 +47,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Cek apakah user adalah pelajar (peserta pelatihan).
+     * Cek apakah user adalah peserta (peserta pelatihan).
      */
     public function isPelajar(): bool
     {
-        return $this->role === 'pelajar';
+        return $this->role === 'peserta';
     }
 
     /**
@@ -71,7 +71,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Pendaftaran kursus user sebagai pelajar.
+     * Pendaftaran kursus user sebagai peserta.
      */
     public function enrollments(): HasMany
     {

@@ -152,39 +152,14 @@ class NewsController extends Controller
             'meta_keywords' => 'nullable|string',
         ]);
 
-        // Map frontend field names to model field names
-        $data = [];
-
-        if ($request->has('title'))     $data['title_id']   = $request->input('title');
-        if ($request->has('title_en'))  $data['title_en']   = $request->input('title_en');
-        if ($request->has('excerpt'))   $data['excerpt_id'] = $request->input('excerpt');
-        if ($request->has('excerpt_en')) $data['excerpt_en'] = $request->input('excerpt_en');
-        if ($request->has('content'))   $data['content_id'] = $request->input('content');
-        if ($request->has('content_en')) $data['content_en'] = $request->input('content_en');
-        if ($request->has('category'))  $data['category']   = $request->input('category');
-        if ($request->has('published_at')) $data['published_at'] = $request->input('published_at') ?: null;
-        if ($request->has('meta_title')) $data['meta_title'] = $request->input('meta_title');
-        if ($request->has('meta_description')) $data['meta_description'] = $request->input('meta_description');
-        if ($request->has('meta_keywords')) $data['meta_keywords'] = $request->input('meta_keywords');
+        $data = $this->mapUpdateFields($request);
 
         // Handle image upload
-        if ($request->hasFile('image')) {
-            if ($news->image) {
-                Storage::disk('public')->delete($news->image);
-            }
-            $data['image'] = $request->file('image')->store('news', 'public');
-        }
+        $this->replaceImageIfUploaded($request, $news, $data);
 
         // Update slug if title_id changed
         if (isset($data['title_id']) && $data['title_id'] !== $news->title_id) {
-            $slug = Str::slug($data['title_id']);
-            $originalSlug = $slug;
-            $count = 1;
-            while (News::where('slug', $slug)->where('id', '!=', $id)->exists()) {
-                $slug = $originalSlug . '-' . $count;
-                $count++;
-            }
-            $data['slug'] = $slug;
+            $data['slug'] = $this->uniqueSlug($data['title_id'], (int) $id);
         }
 
         $news->update($data);
@@ -194,6 +169,59 @@ class NewsController extends Controller
             'message' => 'News updated successfully',
             'data' => $news->load('creator:id,name')
         ]);
+    }
+
+    private function mapUpdateFields(Request $request): array
+    {
+        $fieldMap = [
+            'title' => 'title_id',
+            'title_en' => 'title_en',
+            'excerpt' => 'excerpt_id',
+            'excerpt_en' => 'excerpt_en',
+            'content' => 'content_id',
+            'content_en' => 'content_en',
+            'category' => 'category',
+            'published_at' => 'published_at',
+            'meta_title' => 'meta_title',
+            'meta_description' => 'meta_description',
+            'meta_keywords' => 'meta_keywords',
+        ];
+
+        $data = [];
+        foreach ($fieldMap as $input => $column) {
+            if ($request->has($input)) {
+                $value = $request->input($input);
+                $data[$column] = $input === 'published_at' && !$value ? null : $value;
+            }
+        }
+
+        return $data;
+    }
+
+    private function replaceImageIfUploaded(Request $request, News $news, array &$data): void
+    {
+        if (!$request->hasFile('image')) {
+            return;
+        }
+
+        if ($news->image) {
+            Storage::disk('public')->delete($news->image);
+        }
+
+        $data['image'] = $request->file('image')->store('news', 'public');
+    }
+
+    private function uniqueSlug(string $title, ?int $exceptId = null): string
+    {
+        $base = Str::slug($title);
+        $slug = $base;
+        $suffix = 1;
+
+        while (News::where('slug', $slug)->when($exceptId, fn ($query) => $query->where('id', '!=', $exceptId))->exists()) {
+            $slug = $base . '-' . $suffix++;
+        }
+
+        return $slug;
     }
 
     /**

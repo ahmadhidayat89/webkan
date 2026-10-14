@@ -30,7 +30,7 @@ class DiscussionController extends Controller
     {
         $request->validate([
             'message' => 'nullable|string|max:2000',
-            'file'    => 'nullable|file|max:20480|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,png,jpg,jpeg',
+            'file'    => 'nullable|file|max:1024|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,png,jpg,jpeg',
         ]);
 
         if (!$request->filled('message') && !$request->hasFile('file')) {

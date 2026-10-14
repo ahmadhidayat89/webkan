@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\User;
 use App\Services\CertificateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -20,11 +22,16 @@ class CertificateAdminController extends Controller
      */
     public function generate(Request $request, Course $course): RedirectResponse
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
+        $data = $request->validate([
+            'user_id'        => 'required|exists:users,id',
+            'recipient_name' => 'nullable|string|max:150',
+            'status'         => 'sometimes|in:hadir,lulus',
+            'event_text'     => 'nullable|string|max:500',
+            'signer_name'    => 'nullable|string|max:100',
+            'signer_title'   => 'nullable|string|max:100',
         ]);
 
-        $user       = \App\Models\User::findOrFail($request->user_id);
+        $user       = User::findOrFail($data['user_id']);
         $enrollment = Enrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->firstOrFail();
@@ -38,7 +45,9 @@ class CertificateAdminController extends Controller
         // Buat nomor sertifikat jika belum ada
         if (! $cert->certificate_number) {
             $courseCode = strtoupper(Str::limit(
-                preg_replace('/[^A-Za-z0-9]/', '', $course->slug), 8, ''
+                preg_replace('/[^A-Za-z0-9]/', '', $course->slug),
+                8,
+                ''
             ));
             $count = Certificate::whereYear('issued_at', now()->year)->count() + 1;
             $cert->certificate_number = sprintf(
@@ -52,6 +61,25 @@ class CertificateAdminController extends Controller
         // Pastikan verification_code ada sebelum save pertama
         if (! $cert->verification_code) {
             $cert->verification_code = Str::uuid();
+        }
+
+        // Isi data kustom dari admin (hanya yang dikirim form)
+        $cert->fill(Arr::only($data, [
+            'recipient_name',
+            'status',
+            'event_text',
+            'signer_name',
+            'signer_title',
+        ]));
+
+        // Klik cepat (tanpa modal): kalau keterangan masih kosong, isi otomatis
+        // dengan tanggal selesai peserta (atau hari ini kalau belum tercatat).
+        if (! $request->has('event_text') && empty($cert->event_text)) {
+            $tanggal = ($enrollment->completed_at ?? now())
+                ->locale('id')
+                ->isoFormat('D MMMM YYYY');
+
+            $cert->event_text = "Yang diselesaikan pada tanggal {$tanggal}";
         }
 
         // Simpan dulu agar punya ID untuk generate
@@ -119,9 +147,14 @@ class CertificateAdminController extends Controller
             abort(404, 'File sertifikat tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download(
-            $certificate->file_path,
-            "Sertifikat-{$certificate->certificate_number}.pdf"
+        $path = Storage::disk('public')->path($certificate->file_path);
+
+        return response()->download(
+            $path,
+            "Sertifikat-{$certificate->certificate_number}.pdf",
+            [
+                'Content-Type' => 'application/pdf',
+            ]
         );
     }
 
@@ -131,57 +164,32 @@ class CertificateAdminController extends Controller
     public function preview(Certificate $certificate)
     {
         $certificate->load(['user', 'course']);
-        $course = $certificate->course;
-        $user   = $certificate->user;
 
-        $verifyUrl = url('/verify/' . ($certificate->verification_code ?? 'preview'));
-        $qrBase64  = $this->certService->generateQrBase64($verifyUrl);
-        $bgBase64  = $this->certService->imageToBase64($course->certificate_template);
-        $sigBase64 = $this->certService->imageToBase64($course->certificate_signature);
-
-        return view('certificates.template', [
-            'student_name'       => $user->name,
-            'student_org'        => $user->organization ?? '',
-            'course_title'       => $course->title,
-            'course_level'       => ucfirst($course->level ?? ''),
-            'certificate_number' => $certificate->certificate_number,
-            'issue_date'         => $certificate->issued_at->locale('id')->isoFormat('D MMMM YYYY'),
-            'duration_hours'     => $course->duration_hours ?? 0,
-            'verify_url'         => $verifyUrl,
-            'qr_base64'          => $qrBase64,
-            'qr_is_svg'          => str_starts_with($qrBase64, 'data:image/svg'),
-            'bg_base64'          => $bgBase64,
-            'sig_base64'         => $sigBase64,
-            'signer_name'        => $course->instructor->name ?? 'Kepala KAN',
-            'signer_role'        => 'Kepala Pusat Pengembangan SDM',
-        ]);
+        return view(
+            'certificates.template',
+            $this->certService->viewData($certificate, $certificate->course, $certificate->user)
+        );
     }
 
     /**
-     * Preview template sertifikat menggunakan data dummy (belum generate untuk pelajar tertentu).
+     * Preview template sertifikat menggunakan data dummy.
      */
     public function previewTemplate(Course $course)
     {
-        $verifyUrl = url('/verify/preview-qr-demo');
-        $qrBase64  = $this->certService->generateQrBase64($verifyUrl);
-        $bgBase64  = $this->certService->imageToBase64($course->certificate_template);
-        $sigBase64 = $this->certService->imageToBase64($course->certificate_signature);
-
-        return view('certificates.template', [
-            'student_name'       => 'Nama Pelajar Contoh',
-            'student_org'        => 'Instansi / Organisasi',
-            'course_title'       => $course->title,
-            'course_level'       => ucfirst($course->level ?? 'Umum'),
+        $dummy = new Certificate();
+        $dummy->forceFill([
             'certificate_number' => 'KAN-' . now()->year . '-PREVIEW-000001',
-            'issue_date'         => now()->locale('id')->isoFormat('D MMMM YYYY'),
-            'duration_hours'     => $course->duration_hours ?? 0,
-            'verify_url'         => $verifyUrl,
-            'qr_base64'          => $qrBase64,
-            'qr_is_svg'          => str_starts_with($qrBase64, 'data:image/svg'),
-            'bg_base64'          => $bgBase64,
-            'sig_base64'         => $sigBase64,
-            'signer_name'        => $course->instructor->name ?? 'Kepala KAN',
-            'signer_role'        => 'Kepala Pusat Pengembangan SDM',
+            'recipient_name'     => 'Nama Peserta Contoh',
+            'status'             => 'lulus',
+            'event_text'         => 'Yang diselesaikan pada tanggal ' . now()->locale('id')->isoFormat('D MMMM YYYY') . ' secara luring di Surabaya dengan 40 JP',
         ]);
+
+        $user = new User();
+        $user->name = 'Nama Peserta Contoh';
+
+        return view(
+            'certificates.template',
+            $this->certService->viewData($dummy, $course, $user)
+        );
     }
 }

@@ -423,12 +423,16 @@ const SlidersManagement = () => {
                 </div>
                 <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-200">
                   <span className="text-sm font-bold text-gray-700">{formData.is_active ? 'Aktif' : 'Nonaktif'}</span>
-                  <div
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.is_active}
+                    aria-label="Status slider aktif"
                     onClick={() => setFormData({...formData, is_active: !formData.is_active})}
-                    className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${formData.is_active ? 'bg-primary-600' : 'bg-gray-300'}`}
+                    className={`relative inline-flex w-11 h-6 rounded-full border-0 p-0 transition-colors ${formData.is_active ? 'bg-primary-600' : 'bg-gray-300'}`}
                   >
                     <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.is_active ? 'translate-x-6' : 'translate-x-1'}`}></span>
-                  </div>
+                  </button>
                 </div>
               </div>
 

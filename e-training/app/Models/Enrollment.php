@@ -25,7 +25,7 @@ class Enrollment extends Model
     }
 
     /**
-     * Pelajar yang mendaftar.
+     * Peserta yang mendaftar.
      */
     public function user(): BelongsTo
     {

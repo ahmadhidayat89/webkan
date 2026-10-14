@@ -604,9 +604,7 @@ const DocumentPage = () => {
               </h2>
 
               <p className="max-w-2xl mt-2 text-sm leading-relaxed text-gray-500 md:text-base">
-                {isMainPage
-                  ? 'Pilih kategori dokumen yang ingin Anda akses.'
-                  : 'Pilih kategori dokumen yang ingin Anda akses.'}
+                Pilih kategori dokumen yang ingin Anda akses.
               </p>
             </div>
 

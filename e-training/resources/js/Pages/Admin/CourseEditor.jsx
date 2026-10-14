@@ -16,7 +16,7 @@ export default function CourseEditor({ course, categories, allStudents }) {
         { id: 'modules', label: 'Modul & Materi', icon: PlusCircle },
         { id: 'grading', label: 'Penilaian Kuis', icon: HelpCircle },
         { id: 'certificates', label: 'Sertifikat', icon: Award },
-        { id: 'students', label: 'Pelajar', icon: Users },
+        { id: 'students', label: 'Peserta', icon: Users },
     ];
 
     return (
@@ -42,7 +42,7 @@ export default function CourseEditor({ course, categories, allStudents }) {
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${course.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'}`}>
                                 {course.status}
                             </span>
-                            • {course.enrolled_students.length} Pelajar Terdaftar
+                            • {course.enrolled_students.length} Peserta Terdaftar
                         </p>
                     </div>
 

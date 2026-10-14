@@ -11,6 +11,9 @@ use Illuminate\Validation\Rule;
 
 class DocumentController extends Controller
 {
+    private const LINK_REQUIRED_MESSAGE = 'Link wajib diisi untuk tipe dokumen.';
+    private const NOT_FOUND_MESSAGE = 'Data tidak ditemukan.';
+
     /**
      * Menampilkan semua kategori, subkategori, dan dokumen.
      */
@@ -105,9 +108,9 @@ class DocumentController extends Controller
         if ($validated['type'] === 'document' && empty($validated['link'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Link wajib diisi untuk tipe dokumen.',
+                'message' => self::LINK_REQUIRED_MESSAGE,
                 'errors' => [
-                    'link' => ['Link wajib diisi untuk tipe dokumen.'],
+                    'link' => [self::LINK_REQUIRED_MESSAGE],
                 ],
             ], 422);
         }
@@ -158,7 +161,7 @@ class DocumentController extends Controller
         if (!$document) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ditemukan.',
+                'message' => self::NOT_FOUND_MESSAGE,
             ], 404);
         }
 
@@ -175,162 +178,103 @@ class DocumentController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $document = Document::find($id);
-
         if (!$document) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data tidak ditemukan.',
-            ], 404);
+            return response()->json(['success' => false, 'message' => self::NOT_FOUND_MESSAGE], 404);
         }
 
-        $validated = $request->validate([
-            'parent_id' => [
-                'nullable',
-                'integer',
-                'exists:documents,id',
-            ],
-            'name' => [
-                'sometimes',
-                'required',
-                'string',
-                'max:255',
-            ],
-            'slug' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-            'description' => [
-                'nullable',
-                'string',
-            ],
-            'type' => [
-                'sometimes',
-                'required',
-                Rule::in(['category', 'document']),
-            ],
-            'file_type' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-            'language' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-            'link' => [
-                'nullable',
-                'url',
-                'max:2048',
-            ],
-            'sort_order' => [
-                'nullable',
-                'integer',
-                'min:0',
-            ],
-            'is_active' => [
-                'nullable',
-                'boolean',
-            ],
+        $validated = $request->validate($this->updateRules());
+        $validationError = $this->validateDocumentUpdate($document, $validated);
+        if ($validationError) {
+            return $validationError;
+        }
+
+        $this->prepareDocumentUpdateFields($document, $validated);
+        $document->update($validated);
+        return response()->json([
+            'success' => true,
+            'message' => 'Data berhasil diperbarui.',
+            'data' => $document->fresh()->load('parent'),
         ]);
+    }
 
-        /*
-         * Tidak boleh menjadikan dirinya sendiri sebagai parent.
-         */
-        if (
-            array_key_exists('parent_id', $validated) &&
-            $validated['parent_id'] !== null &&
-            (int) $validated['parent_id'] === (int) $document->id
-        ) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data tidak dapat menjadi parent untuk dirinya sendiri.',
-            ], 422);
+    private function updateRules(): array
+    {
+        return [
+            'parent_id' => ['nullable', 'integer', 'exists:documents,id'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'type' => ['sometimes', 'required', Rule::in(['category', 'document'])],
+            'file_type' => ['nullable', 'string', 'max:100'],
+            'language' => ['nullable', 'string', 'max:100'],
+            'link' => ['nullable', 'url', 'max:2048'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ];
+    }
+
+    private function validateDocumentUpdate(Document $document, array $validated)
+    {
+        return $this->validateParentChange($document, $validated)
+            ?? $this->validateCategoryConversion($document, $validated)
+            ?? $this->validateRequiredLink($document, $validated);
+    }
+
+    private function validateParentChange(Document $document, array $validated)
+    {
+        $message = null;
+        if (array_key_exists('parent_id', $validated) && $validated['parent_id'] !== null) {
+            if ((int) $validated['parent_id'] === (int) $document->id) {
+                $message = 'Data tidak dapat menjadi parent untuk dirinya sendiri.';
+            } else {
+                $parent = Document::find($validated['parent_id']);
+                if (!$parent || $parent->type !== 'category') {
+                    $message = 'Parent harus berupa kategori.';
+                } elseif ($this->isDescendant($parent, $document)) {
+                    $message = 'Data tidak dapat dipindahkan ke salah satu turunannya sendiri.';
+                }
+            }
         }
 
-        /*
-         * Jika parent berubah, parent harus berupa category.
-         */
-        if (
-            array_key_exists('parent_id', $validated) &&
-            !empty($validated['parent_id'])
-        ) {
-            $parent = Document::find($validated['parent_id']);
+        return $message === null
+            ? null
+            : response()->json(['success' => false, 'message' => $message], 422);
+    }
 
-            if (!$parent || $parent->type !== 'category') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Parent harus berupa kategori.',
-                ], 422);
-            }
-
-            /*
-             * Tidak boleh memindahkan item ke salah satu keturunannya.
-             */
-            if ($this->isDescendant($parent, $document)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data tidak dapat dipindahkan ke salah satu turunannya sendiri.',
-                ], 422);
-            }
-        }
-
-        /*
-         * Tentukan tipe setelah update.
-         */
+    private function validateCategoryConversion(Document $document, array $validated)
+    {
         $newType = $validated['type'] ?? $document->type;
-
-        /*
-         * Jika category memiliki children, tidak boleh diubah menjadi document.
-         */
-        if (
-            $document->type === 'category' &&
-            $newType === 'document' &&
-            $document->children()->exists()
-        ) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kategori yang masih memiliki isi tidak dapat diubah menjadi dokumen.',
-            ], 422);
+        if ($document->type === 'category' && $newType === 'document' && $document->children()->exists()) {
+            return response()->json(['success' => false, 'message' => 'Kategori yang masih memiliki isi tidak dapat diubah menjadi dokumen.'], 422);
         }
+        return null;
+    }
 
-        /*
-         * Jika menjadi document, link wajib ada.
-         */
-        $newLink = array_key_exists('link', $validated)
-            ? $validated['link']
-            : $document->link;
-
+    private function validateRequiredLink(Document $document, array $validated)
+    {
+        $newType = $validated['type'] ?? $document->type;
+        $newLink = array_key_exists('link', $validated) ? $validated['link'] : $document->link;
         if ($newType === 'document' && empty($newLink)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Link wajib diisi untuk tipe dokumen.',
-                'errors' => [
-                    'link' => ['Link wajib diisi untuk tipe dokumen.'],
-                ],
+                'message' => self::LINK_REQUIRED_MESSAGE,
+                'errors' => ['link' => [self::LINK_REQUIRED_MESSAGE]],
             ], 422);
         }
+        return null;
+    }
 
-        /*
-         * Jika category, field khusus dokumen dikosongkan.
-         */
+    private function prepareDocumentUpdateFields(Document $document, array &$validated): void
+    {
+        $newType = $validated['type'] ?? $document->type;
         if ($newType === 'category') {
             $validated['file_type'] = null;
             $validated['language'] = null;
             $validated['link'] = null;
-        } else {
-            /*
-             * Jika document, rapikan link.
-             */
-            if (!empty($validated['link'])) {
-                $validated['link'] = $this->normalizeUrl($validated['link']);
-            }
+        } elseif (!empty($validated['link'])) {
+            $validated['link'] = $this->normalizeUrl($validated['link']);
         }
 
-        /*
-         * Rapikan slug.
-         */
         if (array_key_exists('slug', $validated)) {
             $validated['slug'] = !empty($validated['slug'])
                 ? Str::slug($validated['slug'])
@@ -338,14 +282,6 @@ class DocumentController extends Controller
         } elseif (isset($validated['name'])) {
             $validated['slug'] = Str::slug($validated['name']);
         }
-
-        $document->update($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data berhasil diperbarui.',
-            'data' => $document->fresh()->load('parent'),
-        ]);
     }
 
     /**
@@ -358,7 +294,7 @@ class DocumentController extends Controller
         if (!$document) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ditemukan.',
+                'message' => self::NOT_FOUND_MESSAGE,
             ], 404);
         }
 

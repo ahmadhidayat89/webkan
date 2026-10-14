@@ -106,88 +106,69 @@ const AutoPageTranslator = () => {
     }
   };
 
-  const translateVisibleTexts = async () => {
-    if (isTranslatingRef.current || isApplyingRef.current) return;
-    isTranslatingRef.current = true;
-
-    const nodes = collectTranslatableNodes();
-    if (!nodes.length) {
-      isTranslatingRef.current = false;
-      return;
-    }
-
-    const textsToTranslate = [];
+  const collectUntranslatedTexts = (nodes) => {
+    const texts = [];
     const seen = new Set();
-
     for (const node of nodes) {
       const currentText = node.nodeValue || '';
-      if (!originalTextByNodeRef.current.has(node)) {
-        originalTextByNodeRef.current.set(node, currentText);
-      }
-
+      if (!originalTextByNodeRef.current.has(node)) originalTextByNodeRef.current.set(node, currentText);
       const source = normalizeText(originalTextByNodeRef.current.get(node) || currentText);
-      if (source.length < MIN_TEXT_LENGTH) continue;
-
-      if (!translatedCacheRef.current.has(source) && !seen.has(source)) {
+      if (source.length >= MIN_TEXT_LENGTH && !translatedCacheRef.current.has(source) && !seen.has(source)) {
         seen.add(source);
-        textsToTranslate.push(source);
+        texts.push(source);
       }
     }
+    return texts.filter((text) => text.length <= MAX_TEXT_LENGTH);
+  };
 
-    if (textsToTranslate.length > 0) {
-      const validTexts = textsToTranslate.filter((text) => text.length <= MAX_TEXT_LENGTH);
-      const chunks = chunkArray(validTexts, MAX_ITEMS_PER_REQUEST);
-
-      for (const chunk of chunks) {
-        try {
-          const res = await fetch('/api/v1/translate/texts', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-              from: 'id',
-              to: 'en',
-              texts: chunk,
-            }),
-          });
-
-          const data = await res.json();
-          if (res.ok && data?.success && Array.isArray(data?.data?.items)) {
-            for (const item of data.data.items) {
-              const source = normalizeText(item?.source || '');
-              const translated = typeof item?.translated === 'string' ? item.translated : null;
-              if (source && translated) {
-                translatedCacheRef.current.set(source, translated);
-              }
-            }
-            persistCacheToStorage();
+  const fetchMissingTranslations = async (texts) => {
+    for (const chunk of chunkArray(texts, MAX_ITEMS_PER_REQUEST)) {
+      try {
+        const response = await fetch('/api/v1/translate/texts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ from: 'id', to: 'en', texts: chunk }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data?.success || !Array.isArray(data?.data?.items)) continue;
+        data.data.items.forEach((item) => {
+          const source = normalizeText(item?.source || '');
+          if (source && typeof item?.translated === 'string' && item.translated) {
+            translatedCacheRef.current.set(source, item.translated);
           }
-        } catch {
-          // Best-effort translation only; keep original text on failure.
-        }
+        });
+        persistCacheToStorage();
+      } catch {
+        // Best-effort translation only; keep original text on failure.
       }
     }
+  };
 
-    isApplyingRef.current = true;
+  const applyTranslationsToNodes = (nodes) => {
     for (const node of nodes) {
       if (!node?.isConnected) continue;
       const original = originalTextByNodeRef.current.get(node);
       if (!original) continue;
-      const source = normalizeText(original);
-      const translated = translatedCacheRef.current.get(source);
-      if (translated) {
-        const match = original.match(/^(\s*)([\s\S]*?)(\s*)$/);
-        if (match) {
-          node.nodeValue = `${match[1]}${translated}${match[3]}`;
-        } else {
-          node.nodeValue = translated;
-        }
-      }
+      const translated = translatedCacheRef.current.get(normalizeText(original));
+      if (!translated) continue;
+      const match = original.match(/^(\s*)([\s\S]*?)(\s*)$/);
+      node.nodeValue = match ? `${match[1]}${translated}${match[3]}` : translated;
     }
-    isApplyingRef.current = false;
-    isTranslatingRef.current = false;
+  };
+
+  const translateVisibleTexts = async () => {
+    if (isTranslatingRef.current || isApplyingRef.current) return;
+    isTranslatingRef.current = true;
+    try {
+      const nodes = collectTranslatableNodes();
+      if (!nodes.length) return;
+      await fetchMissingTranslations(collectUntranslatedTexts(nodes));
+      isApplyingRef.current = true;
+      applyTranslationsToNodes(nodes);
+    } finally {
+      isApplyingRef.current = false;
+      isTranslatingRef.current = false;
+    }
   };
 
   useEffect(() => {

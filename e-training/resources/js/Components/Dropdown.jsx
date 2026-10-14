@@ -1,6 +1,6 @@
 import { Transition } from '@headlessui/react';
 import { Link } from '@inertiajs/react';
-import { createContext, useContext, useState } from 'react';
+import { Children, cloneElement, createContext, isValidElement, useContext, useState } from 'react';
 
 const DropDownContext = createContext();
 
@@ -23,13 +23,24 @@ const Trigger = ({ children }) => {
 
     return (
         <>
-            <div onClick={toggleOpen}>{children}</div>
+            {Children.map(children, (child) => isValidElement(child)
+                ? cloneElement(child, {
+                    'aria-haspopup': 'menu',
+                    'aria-expanded': open,
+                    onClick: (event) => {
+                        child.props.onClick?.(event);
+                        if (!event.defaultPrevented) toggleOpen();
+                    },
+                })
+                : child)}
 
             {open && (
-                <div
+                <button
+                    type="button"
+                    aria-label="Tutup menu"
                     className="fixed inset-0 z-40"
                     onClick={() => setOpen(false)}
-                ></div>
+                />
             )}
         </>
     );
@@ -41,7 +52,7 @@ const Content = ({
     contentClasses = 'py-1 bg-white',
     children,
 }) => {
-    const { open, setOpen } = useContext(DropDownContext);
+    const { open } = useContext(DropDownContext);
 
     let alignmentClasses = 'origin-top';
 
@@ -70,7 +81,6 @@ const Content = ({
             >
                 <div
                     className={`absolute z-50 mt-2 rounded-md shadow-lg ${alignmentClasses} ${widthClasses}`}
-                    onClick={() => setOpen(false)}
                 >
                     <div
                         className={
@@ -86,10 +96,15 @@ const Content = ({
     );
 };
 
-const DropdownLink = ({ className = '', children, ...props }) => {
+const DropdownLink = ({ className = '', children, onClick, ...props }) => {
+    const { setOpen } = useContext(DropDownContext);
     return (
         <Link
             {...props}
+            onClick={(event) => {
+                onClick?.(event);
+                if (!event.defaultPrevented) setOpen(false);
+            }}
             className={
                 'block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none ' +
                 className

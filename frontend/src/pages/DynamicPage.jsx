@@ -26,11 +26,10 @@ const SUBPAGE_HUBS = [
     emptyIcon: '🧪',
     emptyTitle: 'Belum Ada Laboratorium',
     emptyDesc: 'Daftar jenis laboratorium akan ditampilkan di sini.',
-    apiEndpoint: '/api/v1/lab-subpages',
   },
   {
     base: 'layanan/lembaga-verifikasi-validasi-grk',
-    list: 'daftar-verifikasi-grk',
+    list: 'daftar-layanan/lembaga-verifikasi-validasi-grk',
     parentLabel: 'Lembaga Verifikasi dan/atau Validasi GRK',
     listHeading: 'Daftar Verifikasi & Validasi GRK',
     listTitle: 'Pilih Skema Verifikasi/Validasi GRK',
@@ -38,11 +37,10 @@ const SUBPAGE_HUBS = [
     emptyIcon: '🌿',
     emptyTitle: 'Belum Ada Skema',
     emptyDesc: 'Daftar skema verifikasi/validasi GRK akan ditampilkan di sini.',
-    apiEndpoint: '/api/v1/grk-subpages',
   },
   {
     base: 'layanan/sistem-manajemen',
-    list: 'daftar-sistem-manajemen',
+    list: 'daftar-layanan/sistem-manajemen',
     parentLabel: 'Sistem Manajemen',
     listHeading: 'Daftar Sistem Manajemen',
     listTitle: 'Pilih Skema Sistem Manajemen',
@@ -50,7 +48,28 @@ const SUBPAGE_HUBS = [
     emptyIcon: '📋',
     emptyTitle: 'Belum Ada Skema',
     emptyDesc: 'Daftar skema sistem manajemen akan ditampilkan di sini.',
-    apiEndpoint: '/api/v1/sistem-manajemen-subpages',
+  },
+  {
+    base: 'layanan/sertifikasi-sni-iso-iec-17065',
+    list: 'daftar-layanan/sertifikasi-sni-iso-iec-17065',
+    parentLabel: 'Sertifikasi Berdasarkan SNI ISO/IEC 17065',
+    listHeading: 'Daftar Sertifikasi SNI ISO/IEC 17065',
+    listTitle: 'Pilih Skema Sertifikasi',
+    listDesc: 'Skema sertifikasi produk, proses, dan jasa berdasarkan SNI ISO/IEC 17065',
+    emptyIcon: '📜',
+    emptyTitle: 'Belum Ada Skema',
+    emptyDesc: 'Daftar skema sertifikasi akan ditampilkan di sini.',
+  },
+  {
+    base: 'layanan/sertifikasi-pembangunan-berkelanjutan',
+    list: 'daftar-layanan/sertifikasi-pembangunan-berkelanjutan',
+    parentLabel: 'Sertifikasi Pembangunan Berkelanjutan',
+    listHeading: 'Daftar Sertifikasi Pembangunan Berkelanjutan',
+    listTitle: 'Pilih Skema Pembangunan Berkelanjutan',
+    listDesc: 'Skema sertifikasi yang berkaitan dengan pembangunan berkelanjutan',
+    emptyIcon: '🌱',
+    emptyTitle: 'Belum Ada Skema',
+    emptyDesc: 'Daftar skema akan ditampilkan di sini.',
   },
 ];
 
@@ -115,44 +134,47 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
   const img = images[current];
 
   return (
-    <div
+    <dialog
+      open
+      aria-modal="true"
+      aria-label="Pratinjau gambar"
+      tabIndex={-1}
       className="fixed inset-0 z-[9999] flex flex-col"
       style={{ background: 'rgba(0,0,0,0.97)' }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       {/* Top Bar */}
-      <div className="z-10 flex items-center justify-between flex-shrink-0 px-6 py-4"
+      <div className="flex items-center justify-between px-6 py-4 z-10 flex-shrink-0"
         style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)' }}>
         <div className="flex items-center gap-3">
-          <FaImage className="text-sm text-white/60" />
-          <span className="text-sm font-medium text-white/80">
+          <FaImage className="text-white/60 text-sm" />
+          <span className="text-white/80 text-sm font-medium">
             {current + 1} / {images.length}
           </span>
           {img.caption && (
-            <span className="hidden text-sm text-white/50 md:inline">— {img.caption}</span>
+            <span className="text-white/50 text-sm hidden md:inline">— {img.caption}</span>
           )}
         </div>
         <div className="flex items-center gap-3">
           {/* Zoom controls */}
           <button
             onClick={() => setZoom((z) => Math.max(z - 0.5, 1))}
-            className="p-2 text-white transition-all rounded-full bg-white/10 hover:bg-white/20"
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
             title="Zoom out (-)"
           >
             <FaSearchMinus className="text-sm" />
           </button>
-          <span className="w-10 text-xs text-center text-white/60">{Math.round(zoom * 100)}%</span>
+          <span className="text-white/60 text-xs w-10 text-center">{Math.round(zoom * 100)}%</span>
           <button
             onClick={() => setZoom((z) => Math.min(z + 0.5, 4))}
-            className="p-2 text-white transition-all rounded-full bg-white/10 hover:bg-white/20"
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
             title="Zoom in (+)"
           >
             <FaSearchPlus className="text-sm" />
           </button>
-          <div className="w-px h-5 mx-1 bg-white/20" />
+          <div className="w-px h-5 bg-white/20 mx-1" />
           <button
             onClick={onClose}
-            className="p-2 text-white transition-all rounded-full bg-white/10 hover:bg-red-500/80"
+            className="p-2 rounded-full bg-white/10 hover:bg-red-500/80 text-white transition-all"
             title="Tutup (Esc)"
           >
             <FaTimes className="text-sm" />
@@ -162,7 +184,7 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
 
       {/* Image area */}
       <div
-        className="relative flex items-center justify-center flex-1 overflow-hidden select-none"
+        className="flex-1 flex items-center justify-center relative overflow-hidden select-none"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -171,8 +193,8 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
       >
         {/* Loading spinner */}
         {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center">
-            <FaSpinner className="text-3xl text-white/40 animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <FaSpinner className="text-white/40 text-3xl animate-spin" />
           </div>
         )}
 
@@ -181,7 +203,7 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
           src={img.src}
           alt={img.caption || ''}
           onLoad={() => setIsLoading(false)}
-          className="object-contain max-w-full max-h-full transition-transform duration-200"
+          className="max-h-full max-w-full object-contain transition-transform duration-200"
           style={{
             transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${offset.y / zoom}px)`,
             opacity: isLoading ? 0 : 1,
@@ -195,13 +217,13 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
           <>
             <button
               onClick={(e) => { e.stopPropagation(); goPrev(); }}
-              className="absolute p-3 text-white transition-all -translate-y-1/2 border rounded-full left-4 top-1/2 bg-white/10 hover:bg-white/25 backdrop-blur-sm border-white/10"
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all backdrop-blur-sm border border-white/10"
             >
               <FaChevronLeft className="text-lg" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); goNext(); }}
-              className="absolute p-3 text-white transition-all -translate-y-1/2 border rounded-full right-4 top-1/2 bg-white/10 hover:bg-white/25 backdrop-blur-sm border-white/10"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all backdrop-blur-sm border border-white/10"
             >
               <FaChevronRight className="text-lg" />
             </button>
@@ -212,7 +234,7 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
       {/* Bottom: Thumbnails */}
       {images.length > 1 && (
         <div
-          className="flex items-center justify-center flex-shrink-0 gap-2 px-6 py-4 overflow-x-auto"
+          className="flex-shrink-0 px-6 py-4 flex items-center justify-center gap-2 overflow-x-auto"
           style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}
         >
           {images.map((im, i) => (
@@ -223,7 +245,7 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
                 i === current ? 'border-white scale-110' : 'border-white/20 opacity-50 hover:opacity-80'
               }`}
             >
-              <img src={im.src} alt="" className="object-cover w-full h-full" />
+              <img src={im.src} alt="" className="w-full h-full object-cover" />
             </button>
           ))}
         </div>
@@ -231,11 +253,11 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
 
       {/* Caption bottom */}
       {img.caption && (
-        <div className="flex-shrink-0 px-6 pb-4 text-center">
-          <p className="text-sm italic text-white/50">{img.caption}</p>
+        <div className="flex-shrink-0 text-center pb-4 px-6">
+          <p className="text-white/50 text-sm italic">{img.caption}</p>
         </div>
       )}
-    </div>
+    </dialog>
   );
 };
 
@@ -252,17 +274,17 @@ const VideoEmbed = ({ src, title }) => {
   const thumbnail = getThumbnail(src);
 
   return (
-    <div className="relative w-full my-6 overflow-hidden bg-black shadow-2xl rounded-2xl group"
+    <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl bg-black group my-6"
       style={{ aspectRatio: '16/9' }}>
       {!playing && thumbnail ? (
-        <div className="absolute inset-0 cursor-pointer" onClick={() => setPlaying(true)}>
-          <img src={thumbnail} alt={title || 'Video'} className="object-cover w-full h-full" />
+        <button type="button" aria-label={`Putar video ${title || ''}`} className="absolute inset-0 cursor-pointer border-0 bg-transparent p-0 text-left" onClick={() => setPlaying(true)}>
+          <img src={thumbnail} alt={title || 'Video'} className="w-full h-full object-cover" />
           {/* Dark overlay */}
-          <div className="absolute inset-0 transition-colors bg-black/40 group-hover:bg-black/30" />
+          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
           {/* Play button */}
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-            <div className="flex items-center justify-center w-20 h-20 transition-transform border-2 rounded-full shadow-2xl bg-white/20 backdrop-blur-sm border-white/40 group-hover:scale-110">
-              <FaPlay className="ml-1 text-2xl text-white" />
+            <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xl">
+              <FaPlay className="text-white text-2xl ml-1" />
             </div>
             {title && (
               <div className="max-w-xs text-center">
@@ -272,7 +294,7 @@ const VideoEmbed = ({ src, title }) => {
               </div>
             )}
           </div>
-        </div>
+        </button>
       ) : (
         <iframe
           src={playing ? `${src}?autoplay=1` : src}
@@ -514,12 +536,15 @@ const DynamicPage = () => {
       .finally(() => setSurveyLoading(false));
   }, [isSurveyList, surveyYear]);
 
-  // Ambil daftar sub-halaman untuk hub yang sedang aktif (Laboratorium / GRK / Sistem Manajemen)
+  // Ambil daftar sub-halaman untuk hub yang sedang aktif (Laboratorium / GRK /
+  // Sistem Manajemen / SNI 17065 / Pembangunan Berkelanjutan) lewat endpoint
+  // generik di backend: /api/v1/layanan-services/{category}
   useEffect(() => {
     if (!currentHub) return;
     if (subpagesByHub[currentHub.base]?.length > 0) return; // sudah pernah dimuat
     setSubpagesLoading(true);
-    fetch(currentHub.apiEndpoint)
+    const category = currentHub.base.split('/')[1]; // 'layanan/laboratorium' → 'laboratorium'
+    fetch(`/api/v1/layanan-services/${category}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.success) {
@@ -749,10 +774,10 @@ const DynamicPage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <FaSpinner className="mx-auto mb-4 text-5xl text-primary-600 animate-spin" />
-          <p className="font-semibold text-gray-500">Memuat halaman...</p>
+          <FaSpinner className="text-5xl text-primary-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 font-semibold">Memuat halaman...</p>
         </div>
       </div>
     );
@@ -772,17 +797,17 @@ const DynamicPage = () => {
       )}
 
       {/* Dark Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
+      <div className="relative bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute rounded-full -top-20 -right-20 w-96 h-96 bg-primary-600/20 blur-3xl" />
-          <div className="absolute bottom-0 w-64 h-64 rounded-full left-1/4 bg-white/5 blur-3xl" />
-          <div className="absolute w-32 h-32 rounded-full top-1/2 right-1/3 bg-primary-400/10 blur-2xl" />
+          <div className="absolute -top-20 -right-20 w-96 h-96 bg-primary-600/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 right-1/3 w-32 h-32 bg-primary-400/10 rounded-full blur-2xl" />
         </div>
 
-        <div className="container relative z-10 px-6 mx-auto">
+        <div className="container mx-auto px-6 relative z-10">
           {/* Breadcrumb */}
-          <div className="pt-32 pb-4 border-b lg:pt-40 border-white/10">
-            <nav className="flex flex-wrap items-center gap-2 text-sm">
+          <div className="pt-32 lg:pt-40 pb-4 border-b border-white/10">
+            <nav className="flex items-center gap-2 text-sm flex-wrap">
               <button
                 onClick={() => navigate('/')}
                 className="flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors font-medium"
@@ -801,7 +826,7 @@ const DynamicPage = () => {
                   <FaChevronRight className="text-xs text-white/30" />
                   <button
                     onClick={() => navigate(`/${SURVEY_BASE}`)}
-                    className="transition-colors text-white/50 hover:text-white/80"
+                    className="text-white/50 hover:text-white/80 transition-colors"
                   >
                     Survey Kepuasan Pelanggan
                   </button>
@@ -812,7 +837,7 @@ const DynamicPage = () => {
                   <FaChevronRight className="text-xs text-white/30" />
                   <button
                     onClick={() => navigate(`/${SURVEY_LIST}`)}
-                    className="transition-colors text-white/50 hover:text-white/80"
+                    className="text-white/50 hover:text-white/80 transition-colors"
                   >
                     Hasil Survei per Tahun
                   </button>
@@ -823,7 +848,7 @@ const DynamicPage = () => {
                   <FaChevronRight className="text-xs text-white/30" />
                   <button
                     onClick={() => navigate(`/${currentHub.base}`)}
-                    className="transition-colors text-white/50 hover:text-white/80"
+                    className="text-white/50 hover:text-white/80 transition-colors"
                   >
                     {currentHub.parentLabel}
                   </button>
@@ -834,14 +859,14 @@ const DynamicPage = () => {
                   <FaChevronRight className="text-xs text-white/30" />
                   <button
                     onClick={() => navigate(`/${currentHub.list}`)}
-                    className="transition-colors text-white/50 hover:text-white/80"
+                    className="text-white/50 hover:text-white/80 transition-colors"
                   >
                     {currentHub.listHeading}
                   </button>
                 </>
               )}
               <FaChevronRight className="text-xs text-white/30" />
-              <span className="font-semibold text-white/80">{title}</span>
+              <span className="text-white/80 font-semibold">{title}</span>
             </nav>
           </div>
 
@@ -849,12 +874,12 @@ const DynamicPage = () => {
           <div className="py-10">
             <div className="flex items-start gap-4">
               <div className="flex-1">
-                <h1 className="mb-3 text-4xl font-black leading-tight text-white md:text-5xl">
+                <h1 className="text-4xl md:text-5xl font-black text-white leading-tight mb-3">
                   {title}
                 </h1>
-                <div className="w-16 h-1 rounded-full bg-primary-400" />
+                <div className="w-16 h-1 bg-primary-400 rounded-full" />
                 {updatedAt && (
-                  <div className="flex items-center gap-2 mt-4 text-sm text-white/40">
+                  <div className="flex items-center gap-2 mt-4 text-white/40 text-sm">
                     <FaCalendarAlt className="text-xs" />
                     <span>{`Diperbarui: ${updatedAt}`}</span>
                   </div>
@@ -867,23 +892,23 @@ const DynamicPage = () => {
 
       {/* Content Area */}
       <main className="py-12">
-        <div className="container px-6 mx-auto">
-          <div className="mx-auto max-w-7xl">
-            <div className="flex items-start gap-8">
+        <div className="container mx-auto px-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex gap-8 items-start">
 
               {/* Sidebar */}
-              <aside className="flex-shrink-0 hidden lg:block w-72">
-                <div className="sticky space-y-4 top-28">
+              <aside className="hidden lg:block w-72 flex-shrink-0">
+                <div className="sticky top-28 space-y-4">
                   <button
                     onClick={() => navigate('/')}
-                    className="flex items-center gap-2 text-sm font-semibold transition-colors text-primary-600 hover:text-primary-700"
+                    className="flex items-center gap-2 text-sm text-primary-600 font-semibold hover:text-primary-700 transition-colors"
                   >
                     <FaArrowLeft className="text-xs" />
                     <span>Kembali ke Beranda</span>
                   </button>
 
                   {siblings.length > 0 && (
-                    <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                       <nav className="p-2">
                         {siblings.map((page) => {
                           const isActive = page.id === activeId;
@@ -914,7 +939,7 @@ const DynamicPage = () => {
                 {(isSurveyList || isHubList) && (
                   <button
                     onClick={() => navigate(isSurveyList ? `/${SURVEY_BASE}` : `/${currentHub.base}`)}
-                    className="inline-flex items-center gap-2 px-5 py-3 mb-6 text-sm font-bold text-gray-700 transition-colors border border-gray-200 bg-gray-50 hover:bg-gray-200 rounded-xl"
+                    className="inline-flex items-center gap-2 mb-6 px-5 py-3 bg-gray-50 hover:bg-gray-200 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 transition-colors"
                   >
                     <FaArrowLeft className="text-xs" />
                     <span>Kembali</span>
@@ -923,10 +948,10 @@ const DynamicPage = () => {
 
                 {isSurveyList ? (
                   /* ── Halaman daftar tahun survei ── */
-                  <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
-                    <div className="px-8 py-6 border-b border-gray-100 md:px-12">
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-8 md:px-12 py-6 border-b border-gray-100">
                       <h2 className="text-xl font-black text-gray-900">Pilih Tahun Survei</h2>
-                      <p className="mt-1 text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 mt-1">
                         Hasil Survei Kepuasan Pelanggan KAN dari tahun ke tahun
                       </p>
                     </div>
@@ -936,31 +961,31 @@ const DynamicPage = () => {
                         <FaSpinner className="text-3xl text-primary-600 animate-spin" />
                       </div>
                     ) : surveyYears.length > 0 ? (
-                      <div className="flex flex-col gap-3 p-4 md:p-6">
+                      <div className="p-4 md:p-6 flex flex-col gap-3">
                         {[...surveyYears]
                           .sort((a, b) => Number(a.year) - Number(b.year))
                           .map((s) => (
                             <button
                               key={s.page_id}
                               onClick={() => navigate(`/${s.page_id}`)}
-                              className="flex items-center justify-between gap-3 px-5 py-4 text-left transition-all border border-gray-200 group rounded-xl hover:border-primary-400 hover:bg-primary-50"
+                              className="group flex items-center justify-between gap-3 px-5 py-4 rounded-xl border border-gray-200 text-left hover:border-primary-400 hover:bg-primary-50 transition-all"
                             >
                               <span className="font-bold text-gray-800 group-hover:text-primary-700">
                                 Survei Kepuasan Pelanggan {s.year}
                               </span>
-                              <FaChevronRight className="flex-shrink-0 text-xs text-gray-300 group-hover:text-primary-600" />
+                              <FaChevronRight className="text-xs text-gray-300 group-hover:text-primary-600 flex-shrink-0" />
                             </button>
                           ))}
                       </div>
                     ) : (
-                      <div className="px-8 py-16 text-center">
-                        <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full">
+                      <div className="text-center py-16 px-8">
+                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                           <span className="text-3xl">📄</span>
                         </div>
-                        <h3 className="mb-3 text-2xl font-black text-gray-800">
+                        <h3 className="text-2xl font-black text-gray-800 mb-3">
                           Belum Ada Hasil Survei
                         </h3>
-                        <p className="max-w-md mx-auto text-gray-500">
+                        <p className="text-gray-500 max-w-md mx-auto">
                           Hasil survei per tahun akan ditampilkan di sini.
                         </p>
                       </div>
@@ -968,10 +993,10 @@ const DynamicPage = () => {
                   </div>
                 ) : isHubList && currentHub ? (
                   /* ── Halaman daftar sub-halaman (Laboratorium / GRK / Sistem Manajemen) ── */
-                  <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
-                    <div className="px-8 py-6 border-b border-gray-100 md:px-12">
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-8 md:px-12 py-6 border-b border-gray-100">
                       <h2 className="text-xl font-black text-gray-900">{currentHub.listTitle}</h2>
-                      <p className="mt-1 text-sm text-gray-500">{currentHub.listDesc}</p>
+                      <p className="text-sm text-gray-500 mt-1">{currentHub.listDesc}</p>
                     </div>
 
                     {subpagesLoading ? (
@@ -979,29 +1004,29 @@ const DynamicPage = () => {
                         <FaSpinner className="text-3xl text-primary-600 animate-spin" />
                       </div>
                     ) : currentHubItems.length > 0 ? (
-                      <div className="flex flex-col gap-3 p-4 md:p-6">
+                      <div className="p-4 md:p-6 flex flex-col gap-3">
                         {currentHubItems.map((item) => (
                           <button
                             key={item.page_id}
                             onClick={() => navigate(`/${item.page_id}`)}
-                            className="flex items-center justify-between gap-3 px-5 py-4 text-left transition-all border border-gray-200 group rounded-xl hover:border-primary-400 hover:bg-primary-50"
+                            className="group flex items-center justify-between gap-3 px-5 py-4 rounded-xl border border-gray-200 text-left hover:border-primary-400 hover:bg-primary-50 transition-all"
                           >
                             <span className="font-bold text-gray-800 group-hover:text-primary-700">
                               {item.title}
                             </span>
-                            <FaChevronRight className="flex-shrink-0 text-xs text-gray-300 group-hover:text-primary-600" />
+                            <FaChevronRight className="text-xs text-gray-300 group-hover:text-primary-600 flex-shrink-0" />
                           </button>
                         ))}
                       </div>
                     ) : (
-                      <div className="px-8 py-16 text-center">
-                        <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full">
+                      <div className="text-center py-16 px-8">
+                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                           <span className="text-3xl">{currentHub.emptyIcon}</span>
                         </div>
-                        <h3 className="mb-3 text-2xl font-black text-gray-800">
+                        <h3 className="text-2xl font-black text-gray-800 mb-3">
                           {currentHub.emptyTitle}
                         </h3>
-                        <p className="max-w-md mx-auto text-gray-500">
+                        <p className="text-gray-500 max-w-md mx-auto">
                           {currentHub.emptyDesc}
                         </p>
                       </div>
@@ -1013,7 +1038,7 @@ const DynamicPage = () => {
                     {(surveyYear || hubSlug) && (
                       <button
                         onClick={() => navigate(surveyYear ? `/${SURVEY_LIST}` : `/${currentHub.list}`)}
-                        className="inline-flex items-center gap-2 px-5 py-3 mb-6 text-sm font-bold text-gray-700 transition-colors border border-gray-200 bg-gray-50 hover:bg-gray-200 rounded-xl"
+                        className="inline-flex items-center gap-2 mb-6 px-5 py-3 bg-gray-50 hover:bg-gray-200 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 transition-colors"
                       >
                         <FaArrowLeft className="text-xs" />
                         <span>Kembali</span>
@@ -1022,7 +1047,9 @@ const DynamicPage = () => {
 
                     {/* ── Featured Image Hero ── */}
                     {pageContent?.image && (
-                      <div
+                      <button
+                        type="button"
+                        aria-label={`Perbesar gambar ${title}`}
                         className={`relative mb-8 rounded-2xl overflow-hidden group cursor-zoom-in ${
                           (surveyYear || hubSlug) ? 'bg-white border border-gray-200' : 'shadow-2xl'
                         }`}
@@ -1038,7 +1065,7 @@ const DynamicPage = () => {
                         <img
                           src={`/storage/${pageContent.image}`}
                           alt={title}
-                          className="object-cover w-full transition-transform duration-700 group-hover:scale-105"
+                          className="w-full object-cover transition-transform duration-700 group-hover:scale-105"
                           style={{ maxHeight: '480px' }}
                         />
                         {/* Gradient overlay bottom (tidak dipakai di halaman survei/sub-halaman) */}
@@ -1053,14 +1080,14 @@ const DynamicPage = () => {
                         {/* Title overlay (tidak dipakai di halaman survei/sub-halaman) */}
                         {!(surveyYear || hubSlug) && (
                           <div className="absolute bottom-0 left-0 right-0 p-6">
-                            <p className="text-sm font-medium text-white/80">{title}</p>
+                            <p className="text-white/80 text-sm font-medium">{title}</p>
                           </div>
                         )}
-                      </div>
+                      </button>
                     )}
 
                     {/* ── Content Card ── */}
-                    <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                       {content ? (
                         <div className="p-8 md:p-12">
                           <div
@@ -1095,25 +1122,25 @@ const DynamicPage = () => {
                             "
                             dangerouslySetInnerHTML={{
                               __html: DOMPurify
-                                .sanitize(content, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling'] })
+                                .sanitize(content, { FORBID_TAGS: ['iframe'] })
                                 .replace(/&nbsp;/g, ' '),
                               }}
                           />
                         </div>
                       ) : (
-                        <div className="px-8 py-16 text-center">
-                          <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full">
+                        <div className="text-center py-16 px-8">
+                          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <span className="text-3xl">📄</span>
                           </div>
-                          <h3 className="mb-3 text-2xl font-black text-gray-800">
+                          <h3 className="text-2xl font-black text-gray-800 mb-3">
                             Konten Belum Tersedia
                           </h3>
-                          <p className="max-w-md mx-auto mb-6 text-gray-500">
+                          <p className="text-gray-500 mb-6 max-w-md mx-auto">
                             Konten untuk halaman ini sedang dalam proses pengembangan.
                           </p>
                           <button
                             onClick={() => navigate('/')}
-                            className="inline-flex items-center gap-2 px-6 py-3 font-bold text-white transition-colors bg-primary-600 rounded-xl hover:bg-primary-700"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors"
                           >
                             <FaHome />
                             <span>Kembali ke Beranda</span>
@@ -1122,8 +1149,8 @@ const DynamicPage = () => {
                       )}
 
                       {updatedAt && content && (
-                        <div className="flex items-center justify-between px-8 py-4 border-t border-gray-100 md:px-12 bg-gray-50">
-                          <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <div className="px-8 md:px-12 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-gray-400 text-sm">
                             <FaCalendarAlt className="text-xs" />
                             <span>{`Terakhir diperbarui: ${updatedAt}`}</span>
                           </div>
@@ -1133,13 +1160,13 @@ const DynamicPage = () => {
 
                     {/* Tombol Sebelumnya / Berikutnya antar tahun survei */}
                     {surveyYear && (prevYear || nextYear) && (
-                      <div className="flex items-stretch justify-between gap-4 mt-6">
+                      <div className="mt-6 flex items-stretch justify-between gap-4">
                         {prevYear ? (
                           <button
                             onClick={() => navigate(`/${prevYear.page_id}`)}
-                            className="flex items-center gap-3 px-5 py-3 text-left transition-all shadow-sm group bg-primary-600 hover:bg-primary-700 rounded-xl hover:shadow-md"
+                            className="group flex items-center gap-3 px-5 py-3 bg-primary-600 hover:bg-primary-700 rounded-xl text-left shadow-sm hover:shadow-md transition-all"
                           >
-                            <FaChevronLeft className="text-xs transition-all text-white/70 group-hover:text-white group-hover:-translate-x-1" />
+                            <FaChevronLeft className="text-xs text-white/70 group-hover:text-white group-hover:-translate-x-1 transition-all" />
                             <span className="flex flex-col">
                               <span className="text-xs font-medium text-white/70">Sebelumnya</span>
                               <span className="text-sm font-bold text-white">
@@ -1154,7 +1181,7 @@ const DynamicPage = () => {
                         {nextYear ? (
                           <button
                             onClick={() => navigate(`/${nextYear.page_id}`)}
-                            className="flex items-center gap-3 px-5 py-3 text-right transition-all shadow-sm group bg-primary-600 hover:bg-primary-700 rounded-xl hover:shadow-md"
+                            className="group flex items-center gap-3 px-5 py-3 bg-primary-600 hover:bg-primary-700 rounded-xl text-right shadow-sm hover:shadow-md transition-all"
                           >
                             <span className="flex flex-col">
                               <span className="text-xs font-medium text-white/70">Berikutnya</span>
@@ -1162,7 +1189,7 @@ const DynamicPage = () => {
                                 Survei {nextYear.year}
                               </span>
                             </span>
-                            <FaChevronRight className="text-xs transition-all text-white/70 group-hover:text-white group-hover:translate-x-1" />
+                            <FaChevronRight className="text-xs text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
                           </button>
                         ) : (
                           <div />
@@ -1174,17 +1201,17 @@ const DynamicPage = () => {
                     {pageId === SURVEY_BASE && (
                       <button
                         onClick={() => navigate(`/${SURVEY_LIST}`)}
-                        className="flex items-center justify-between w-full gap-4 px-8 py-6 mt-6 text-left transition-all shadow-sm group bg-primary-600 hover:bg-primary-700 rounded-2xl hover:shadow-md md:px-12"
+                        className="group mt-6 w-full flex items-center justify-between gap-4 bg-primary-600 hover:bg-primary-700 rounded-2xl shadow-sm hover:shadow-md px-8 md:px-12 py-6 text-left transition-all"
                       >
                         <div>
                           <h2 className="text-xl font-black text-white">
                             Hasil Survei per Tahun
                           </h2>
-                          <p className="mt-1 text-sm text-white/70">
+                          <p className="text-sm text-white/70 mt-1">
                             Lihat hasil survei kepuasan pelanggan dari tahun ke tahun
                           </p>
                         </div>
-                        <FaChevronRight className="flex-shrink-0 transition-all text-white/70 group-hover:text-white group-hover:translate-x-1" />
+                        <FaChevronRight className="text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all flex-shrink-0" />
                       </button>
                     )}
 
@@ -1194,17 +1221,17 @@ const DynamicPage = () => {
                         <button
                           key={hub.base}
                           onClick={() => navigate(`/${hub.list}`)}
-                          className="flex items-center justify-between w-full gap-4 px-8 py-6 mt-6 text-left transition-all shadow-sm group bg-primary-600 hover:bg-primary-700 rounded-2xl hover:shadow-md md:px-12"
+                          className="group mt-6 w-full flex items-center justify-between gap-4 bg-primary-600 hover:bg-primary-700 rounded-2xl shadow-sm hover:shadow-md px-8 md:px-12 py-6 text-left transition-all"
                         >
                           <div>
                             <h2 className="text-xl font-black text-white">
                               {hub.listHeading}
                             </h2>
-                            <p className="mt-1 text-sm text-white/70">
+                            <p className="text-sm text-white/70 mt-1">
                               {hub.listDesc}
                             </p>
                           </div>
-                          <FaChevronRight className="flex-shrink-0 transition-all text-white/70 group-hover:text-white group-hover:translate-x-1" />
+                          <FaChevronRight className="text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all flex-shrink-0" />
                         </button>
                       ) : null
                     )}
@@ -1213,11 +1240,11 @@ const DynamicPage = () => {
 
                 {/* Mobile Section Nav */}
                 {siblings.length > 0 && (
-                  <div className="mt-6 overflow-hidden bg-white border border-gray-200 shadow-sm lg:hidden rounded-2xl">
-                    <div className="px-5 py-3 bg-gradient-to-r from-primary-600 to-primary-700">
-                      <h3 className="text-sm font-black tracking-wide text-white uppercase">{sectionKey}</h3>
+                  <div className="lg:hidden mt-6 bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-5 py-3">
+                      <h3 className="text-white font-black text-sm tracking-wide uppercase">{sectionKey}</h3>
                     </div>
-                    <nav className="grid grid-cols-2 gap-1 p-2">
+                    <nav className="p-2 grid grid-cols-2 gap-1">
                       {siblings.map((page) => {
                         const isActive = page.id === activeId;
                         return (

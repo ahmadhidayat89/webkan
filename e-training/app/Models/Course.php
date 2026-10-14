@@ -27,6 +27,7 @@ class Course extends Model
         'published_at',
         'certificate_template',
         'certificate_signature',
+        'deadline_at',
     ];
 
     protected function casts(): array
@@ -34,6 +35,7 @@ class Course extends Model
         return [
             'is_featured' => 'boolean',
             'published_at' => 'datetime',
+            'deadline_at' => 'datetime',
         ];
     }
 
@@ -91,5 +93,13 @@ class Course extends Model
     public function isPublished(): bool
     {
         return $this->status === 'published';
+    }
+    
+    /**
+     * Cek apakah deadline kursus sudah lewat.
+     */
+    public function isExpired(): bool
+    {
+        return $this->deadline_at !== null && now()->greaterThan($this->deadline_at);
     }
 }

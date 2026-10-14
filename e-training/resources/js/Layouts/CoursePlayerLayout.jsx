@@ -91,7 +91,7 @@ export default function CoursePlayerLayout({ course, modules, activeLesson, onSe
                 {/* Mobile Sidebar Overlay */}
                 {mobileSidebarOpen && (
                     <div className="md:hidden fixed inset-0 z-50 flex">
-                        <div className="absolute inset-0 bg-black/40" onClick={() => setMobileSidebarOpen(false)} />
+                        <button type="button" aria-label="Tutup navigasi kursus" className="absolute inset-0 border-0 bg-black/40 p-0" onClick={() => setMobileSidebarOpen(false)} />
                         <div className="relative w-80 max-w-[85vw] bg-white shadow-xl flex flex-col animate-slide-in-left">
                             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                                 <div>

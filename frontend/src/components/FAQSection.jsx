@@ -7,7 +7,7 @@ const FAQSection = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/v1/faqs')
+    fetch('/api/v1/faqs?home=1')
       .then((r) => r.json())
       .then((d) => {
         if (d.success) setFaqs(d.data);

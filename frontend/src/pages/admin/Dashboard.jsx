@@ -325,9 +325,10 @@ const Dashboard = () => {
               ) : (
                 <div className="divide-y divide-gray-50">
                   {recentNews.map((item) => (
-                    <div
+                    <button
+                      type="button"
                       key={item.id}
-                      className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="flex w-full items-center gap-4 border-0 bg-transparent px-6 py-4 text-left hover:bg-gray-50 transition-colors"
                       onClick={() => navigate('/admin/news')}
                     >
                       {item.image ? (
@@ -366,7 +367,7 @@ const Dashboard = () => {
                           })}
                         </p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}

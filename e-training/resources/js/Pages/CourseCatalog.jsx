@@ -6,7 +6,7 @@ import { Search, SlidersHorizontal, X, Key, ArrowRight, BookOpen } from 'lucide-
 
 function CatalogContent() {
     const { auth, courses = [], categories = [] } = usePage().props;
-    const role = auth?.user?.role ?? 'pelajar';
+    const role = auth?.user?.role ?? 'peserta';
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState('semua');
     const [sortBy, setSortBy] = useState('terbaru');
@@ -45,16 +45,16 @@ function CatalogContent() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                 <div>
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
-                        {role === 'pelajar' ? 'Pelatihan Saya' : 'Katalog Pelatihan'}
+                        {role === 'peserta' ? 'Pelatihan Saya' : 'Katalog Pelatihan'}
                     </h1>
                     <p className="text-sm text-gray-500">
-                        {role === 'pelajar' 
+                        {role === 'peserta' 
                             ? 'Daftar pelatihan yang sedang Anda ikuti' 
                             : 'Temukan pelatihan SNI dan ISO yang sesuai kebutuhan Anda'}
                     </p>
                 </div>
 
-                {role === 'pelajar' && (
+                {role === 'peserta' && (
                     <div className="flex-shrink-0">
                         <form onSubmit={handleJoin} className="flex items-center gap-2">
                             <div className="relative">
@@ -170,10 +170,10 @@ function CatalogContent() {
                         <BookOpen className="w-8 h-8 text-gray-300" />
                     </div>
                     <h3 className="text-sm font-semibold text-gray-700 mb-1">
-                        {role === 'pelajar' ? 'Belum ada pelatihan' : 'Tidak ditemukan'}
+                        {role === 'peserta' ? 'Belum ada pelatihan' : 'Tidak ditemukan'}
                     </h3>
                     <p className="text-xs text-gray-400 max-w-xs mx-auto">
-                        {role === 'pelajar' 
+                        {role === 'peserta' 
                             ? 'Anda belum terdaftar di pelatihan manapun. Gunakan kode referral untuk bergabung.' 
                             : 'Coba ubah kata kunci atau filter kategori'}
                     </p>

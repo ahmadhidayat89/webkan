@@ -15,7 +15,7 @@ class CourseEventController extends Controller
         $user = auth()->user();
         
         $enrolledCourseIds = [];
-        if ($user && $user->role === 'pelajar') {
+        if ($user && $user->role === 'peserta') {
             $enrolledCourseIds = \App\Models\Enrollment::where('user_id', $user->id)->pluck('course_id')->toArray();
         }
 
@@ -24,7 +24,7 @@ class CourseEventController extends Controller
             ->whereNotNull('deadline_at')
             ->where('deadline_at', '>=', now());
             
-        if ($user && $user->role === 'pelajar') {
+        if ($user && $user->role === 'peserta') {
             $quizzesQuery->whereHas('lesson.module.course', function($q) use ($enrolledCourseIds) {
                 $q->whereIn('id', $enrolledCourseIds);
             });
@@ -52,7 +52,7 @@ class CourseEventController extends Controller
             ->whereNotNull('start_datetime')
             ->where('start_datetime', '>=', now());
             
-        if ($user && $user->role === 'pelajar') {
+        if ($user && $user->role === 'peserta') {
             $zoomQuery->whereHas('module.course', function($q) use ($enrolledCourseIds) {
                 $q->whereIn('id', $enrolledCourseIds);
             });
@@ -87,7 +87,7 @@ class CourseEventController extends Controller
         $user = auth()->user();
         
         $enrolledCourseIds = [];
-        if ($user && $user->role === 'pelajar') {
+        if ($user && $user->role === 'peserta') {
             $enrolledCourseIds = \App\Models\Enrollment::where('user_id', $user->id)->pluck('course_id')->toArray();
         }
 
@@ -102,7 +102,7 @@ class CourseEventController extends Controller
             $zoomQuery->whereMonth('start_datetime', $month)->whereYear('start_datetime', $year);
         }
 
-        if ($user && $user->role === 'pelajar') {
+        if ($user && $user->role === 'peserta') {
             $quizzesQuery->whereHas('lesson.module.course', function($q) use ($enrolledCourseIds) {
                 $q->whereIn('id', $enrolledCourseIds);
             });

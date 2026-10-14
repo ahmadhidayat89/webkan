@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class CourseEnrollmentController extends Controller
 {
     /**
-     * Admin mendaftarkan pelajar ke kursus.
+     * Admin mendaftarkan peserta ke kursus.
      */
     public function enroll(Request $request, Course $course): RedirectResponse
     {
@@ -21,8 +21,8 @@ class CourseEnrollmentController extends Controller
 
         $user = User::findOrFail($request->user_id);
 
-        if ($user->role !== 'pelajar') {
-            return back()->with('error', 'Hanya user dengan role pelajar yang bisa didaftarkan.');
+        if ($user->role !== 'peserta') {
+            return back()->with('error', 'Hanya user dengan role peserta yang bisa didaftarkan.');
         }
 
         $already = Enrollment::where('user_id', $user->id)
@@ -43,7 +43,7 @@ class CourseEnrollmentController extends Controller
     }
 
     /**
-     * Pelajar enroll mandiri via kode referral.
+     * Peserta enroll mandiri via kode referral.
      * Route: POST /courses/join
      */
     public function joinByReferral(Request $request): RedirectResponse
@@ -80,7 +80,7 @@ class CourseEnrollmentController extends Controller
     }
 
     /**
-     * Keluarkan pelajar dari kursus.
+     * Keluarkan peserta dari kursus.
      */
     public function unenroll(Course $course, User $user): RedirectResponse
     {

@@ -88,4 +88,72 @@ export const reorderSliders = (sliders) => {
   return api.post('/admin/sliders/reorder', { sliders });
 };
 
+// ─── Accreditation Steps (Public) ────────────────────────────────────────────
+export const getAccreditationSteps = () =>
+  api.get('/accreditation-steps');
+
+// ─── Accreditation Steps (Admin) ─────────────────────────────────────────────
+export const getAdminAccreditationSteps = () =>
+  api.get('/admin/accreditation-steps');
+
+export const createAccreditationStep = (data) =>
+  api.post('/admin/accreditation-steps', data);
+
+export const updateAccreditationStep = (id, data) =>
+  api.put(`/admin/accreditation-steps/${id}`, data);
+
+export const deleteAccreditationStep = (id) =>
+  api.delete(`/admin/accreditation-steps/${id}`);
+
+export const moveAccreditationStepUp = (id) =>
+  api.post(`/admin/accreditation-steps/${id}/move-up`);
+
+export const moveAccreditationStepDown = (id) =>
+  api.post(`/admin/accreditation-steps/${id}/move-down`);
+
+// ─── Surveys (Admin) ──────────────────────────────────────────────────────────
+export const getAdminSurveys = () =>
+  api.get('/admin/surveys');
+
+export const getAdminSurvey = (id) =>
+  api.get(`/admin/surveys/${id}`);
+
+export const createAdminSurvey = (data) =>
+  api.post('/admin/surveys', data);
+
+export const uploadSurveyImage = (file) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  return api.post('/admin/surveys/upload-image', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+};
+
+export const updateAdminSurvey = (id, data) =>
+  api.put(`/admin/surveys/${id}`, data);
+
+export const deleteAdminSurvey = (id) =>
+  api.delete(`/admin/surveys/${id}`);
+
+export const publishAdminSurvey = (id) =>
+  api.post(`/admin/surveys/${id}/publish`);
+
+export const toggleActiveAdminSurvey = (id) =>
+  api.post(`/admin/surveys/${id}/toggle-active`);
+
+export const exportAdminSurveyCsv = (id) =>
+  api.get(`/admin/surveys/${id}/export-csv`, { responseType: 'blob' });
+
+// ─── Surveys (Public) ─────────────────────────────────────────────────────────
+export const getPublicSurvey = (code) =>
+  api.get(`/surveys/${code}`);
+
+export const submitPublicSurvey = (code, data) =>
+  api.post(`/surveys/${code}/submit`, data);
+
+export const uploadPublicSurveyFile = (code, questionId, file) => {
+  const formData = new FormData();
+  formData.append('question_id', questionId);
+  formData.append('file', file);
+  return api.post(`/surveys/${code}/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+};
+
 export default api;

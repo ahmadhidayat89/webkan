@@ -123,4 +123,13 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Penanda Tangan Sertifikat
+    |--------------------------------------------------------------------------
+    */
+
+    'certificate_signer_name'  => env('CERTIFICATE_SIGNER_NAME', 'Admin'),
+    'certificate_signer_title' => env('CERTIFICATE_SIGNER_TITLE', 'Kepala Pusat Pengembangan SDM'),
+
 ];

@@ -76,7 +76,7 @@ export default function TabGrading({ courseId, modules }) {
                         <div className="p-3 border-b border-gray-100 bg-gray-50">
                             <div className="relative">
                                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input type="text" placeholder="Cari nama pelajar..." className="w-full text-xs pl-9 py-2 border-gray-200 rounded-lg" />
+                                <input type="text" placeholder="Cari nama peserta..." className="w-full text-xs pl-9 py-2 border-gray-200 rounded-lg" />
                             </div>
                         </div>
                         <div className="flex-1 overflow-y-auto">
@@ -87,11 +87,13 @@ export default function TabGrading({ courseId, modules }) {
                             ) : (
                                 <ul className="divide-y divide-gray-100">
                                     {attempts.map(attempt => (
-                                        <li 
-                                            key={attempt.id} 
+                                        <li key={attempt.id}>
+                                          <button
+                                            type="button"
                                             onClick={() => setSelectedAttempt(attempt)}
-                                            className={`p-3 cursor-pointer hover:bg-navy-50 transition-colors ${selectedAttempt?.id === attempt.id ? 'bg-navy-50 border-l-4 border-navy-500' : ''}`}
-                                        >
+                                            aria-pressed={selectedAttempt?.id === attempt.id}
+                                            className={`w-full p-3 text-left hover:bg-navy-50 transition-colors ${selectedAttempt?.id === attempt.id ? 'bg-navy-50 border-l-4 border-navy-500' : ''}`}
+                                          >
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <p className="font-bold text-sm text-gray-900">{attempt.user_name}</p>
@@ -108,6 +110,7 @@ export default function TabGrading({ courseId, modules }) {
                                                     <AlertCircle className="w-3 h-3" /> Butuh Koreksi Essay
                                                 </div>
                                             )}
+                                          </button>
                                         </li>
                                     ))}
                                 </ul>
@@ -165,7 +168,7 @@ export default function TabGrading({ courseId, modules }) {
                                                 /* ESSAY GRADING */
                                                 <div className="space-y-3">
                                                     <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
-                                                        <p className="text-xs font-bold text-blue-800 uppercase mb-1">Jawaban Pelajar:</p>
+                                                        <p className="text-xs font-bold text-blue-800 uppercase mb-1">Jawaban Peserta:</p>
                                                         <div className="text-sm text-gray-800 whitespace-pre-wrap">{ans.essay_answer || '(Kosong)'}</div>
                                                     </div>
                                                     
@@ -216,8 +219,8 @@ export default function TabGrading({ courseId, modules }) {
                 ) : (
                     <div className="card h-full min-h-[400px] flex flex-col items-center justify-center text-gray-400 p-8">
                         <CheckCircle2 className="w-16 h-16 text-gray-200 mb-4" />
-                        <h3 className="text-lg font-bold text-gray-600 mb-2">Pilih Pelajar</h3>
-                        <p className="text-sm text-center">Pilih salah satu pelajar di sidebar kiri untuk melihat detail jawaban dan memberikan penilaian essay.</p>
+                        <h3 className="text-lg font-bold text-gray-600 mb-2">Pilih Peserta</h3>
+                        <p className="text-sm text-center">Pilih salah satu peserta di sidebar kiri untuk melihat detail jawaban dan memberikan penilaian essay.</p>
                     </div>
                 )}
             </div>

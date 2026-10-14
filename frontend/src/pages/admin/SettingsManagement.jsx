@@ -1,14 +1,30 @@
 import { useState, useEffect } from 'react';
-import { FaSave, FaImage, FaCog, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import {
+  FaSave,
+  FaImage,
+  FaCog,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaEnvelope,
+  FaKey,
+  FaUserTie,
+  FaExternalLinkAlt,
+  FaShieldAlt,
+  FaEye,
+  FaEyeSlash,
+  FaTimesCircle,
+  FaTrash,
+  FaPlus,
+} from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
 
 const groupLabels = {
   general: 'Umum',
   contact: 'Kontak',
-  social: 'Media Sosial',
   seo: 'SEO',
   appearance: 'Tampilan',
   about: 'Tentang KAN',
+  mail: 'Email Balasan',
 };
 
 const keyLabels = {
@@ -21,41 +37,175 @@ const keyLabels = {
   contact_phone: 'Telepon',
   contact_email: 'Email',
   contact_inbox_email: 'Email penerima pesan masuk',
-  social_facebook: 'Facebook',
-  social_twitter: 'Twitter / X',
-  social_instagram: 'Instagram',
-  social_youtube: 'YouTube',
 };
 
-const SettingsManagement = ({ socialOnly = false }) => {
+const mailFieldDefs = [
+  {
+    key: 'mail_username',
+    label: 'Gmail Pengirim',
+    placeholder: 'contoh@gmail.com',
+    type: 'email',
+  },
+  {
+    key: 'mail_password',
+    label: 'App Password Gmail',
+    placeholder: 'xxxx xxxx xxxx xxxx',
+    type: 'password',
+  },
+  {
+    key: 'mail_from_name',
+    label: 'Nama Pengirim',
+    placeholder: 'Komite Akreditasi Nasional',
+    type: 'text',
+  },
+];
+
+// Key kontak yang dikelola lewat editor khusus (bukan input biasa)
+const CONTACT_LIST_KEYS = [
+  'contact_email',
+  'contact_phone',
+  'contact_emails',
+  'contact_phones',
+  'contact_hours',
+];
+
+const parseList = (raw) => {
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+};
+
+const ContactListEditor = ({
+  title,
+  items,
+  onChange,
+  valuePlaceholder,
+  inputType,
+  addLabel,
+}) => {
+  const update = (i, field, v) =>
+    onChange(items.map((it, idx) => (idx === i ? { ...it, [field]: v } : it)));
+  const remove = (i) => onChange(items.filter((_, idx) => idx !== i));
+  const add = () => onChange([...items, { label: '', value: '' }]);
+
+  return (
+    <div className="border-b border-gray-100 pb-7">
+      <label className="block mb-3 text-sm font-bold text-gray-800">
+        {title}
+      </label>
+
+      <div className="space-y-3">
+        {items.map((item, i) => (
+          <div
+            key={i}
+            className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr_auto]"
+          >
+            <input
+              type="text"
+              value={item.label}
+              onChange={(e) => update(i, 'label', e.target.value)}
+              placeholder="Label (contoh: Direktorat Lab)"
+              className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+            />
+            <input
+              type={inputType}
+              value={item.value}
+              onChange={(e) => update(i, 'value', e.target.value)}
+              placeholder={valuePlaceholder}
+              className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+            />
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="flex items-center justify-center text-red-500 transition border border-red-200 w-11 h-11 rounded-xl hover:bg-red-50"
+              aria-label="Hapus"
+            >
+              <FaTrash className="text-xs" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={add}
+        className="inline-flex items-center gap-2 px-4 py-2 mt-3 text-sm font-bold transition border border-dashed rounded-xl border-primary-300 text-primary-700 hover:bg-primary-50"
+      >
+        <FaPlus className="text-xs" />
+        {addLabel}
+      </button>
+    </div>
+  );
+};
+
+const SettingsManagement = () => {
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState(null);
-  const [activeGroup, setActiveGroup] = useState(socialOnly ? 'social' : 'general');
+
+  const [activeGroup, setActiveGroup] = useState('general');
   const [groups, setGroups] = useState([]);
 
+  const [mailSettings, setMailSettings] = useState({
+    mail_username: '',
+    mail_password: '',
+    mail_from_name: '',
+  });
+
+  const [mailSaving, setMailSaving] = useState(false);
+  const [mailMsg, setMailMsg] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  const [contactLists, setContactLists] = useState({
+    emails: [],
+    phones: [],
+  });
+
+  const [contactHours, setContactHours] = useState({ id: '', en: '' });
+
+  const isMailGroup = activeGroup === 'mail';
+
   useEffect(() => {
-    if (socialOnly) {
-      setGroups(['social']);
-      setActiveGroup('social');
-    } else {
-      fetchGroups();
-    }
+    fetchGroups();
     fetchSettings();
-  }, [socialOnly]);
+    fetchMailSettings();
+  }, []);
 
   const fetchGroups = async () => {
     try {
       const response = await fetch('/api/v1/admin/settings/groups', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
+
       const data = await response.json();
+
       if (data.success) {
-        setGroups(data.data);
-        if (data.data.length > 0) {
-          setActiveGroup(data.data[0]);
+        const fetchedGroups = data.data || [];
+
+        // Hapus social dari daftar grup
+        const filteredGroups = fetchedGroups.filter(
+          (group) => group !== 'social'
+        );
+
+        // Tambahkan mail kalau belum ada
+        const nextGroups = filteredGroups.includes('mail')
+          ? filteredGroups
+          : [...filteredGroups, 'mail'];
+
+        setGroups(nextGroups);
+
+        if (!nextGroups.includes(activeGroup)) {
+          setActiveGroup(nextGroups[0] || 'general');
         }
+      } else {
+        console.error('Gagal memuat grup:', data);
       }
     } catch (error) {
       console.error('Error fetching groups:', error);
@@ -65,12 +215,50 @@ const SettingsManagement = ({ socialOnly = false }) => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await fetch(socialOnly ? '/api/v1/admin/social-settings' : '/api/v1/admin/settings', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+
+      const response = await fetch('/api/v1/admin/settings', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
+
       const data = await response.json();
+
       if (data.success) {
-        setSettings(data.data);
+        // Social tidak ditampilkan di halaman Settings
+        const filteredData = (data.data || []).filter(
+          (setting) => setting.group !== 'social'
+        );
+
+        setSettings(filteredData);
+
+        // Isi daftar email & telepon (data lama jadi baris pertama)
+        const find = (k) => filteredData.find((s) => s.key === k)?.value_id;
+
+        const emails = parseList(find('contact_emails'));
+        const phones = parseList(find('contact_phones'));
+
+        setContactLists({
+          emails: emails.length
+            ? emails
+            : find('contact_email')
+              ? [{ label: '', value: find('contact_email') }]
+              : [],
+          phones: phones.length
+            ? phones
+            : find('contact_phone')
+              ? [{ label: '', value: find('contact_phone') }]
+              : [],
+        });
+
+        // Isi jam operasional
+        const hours = filteredData.find((s) => s.key === 'contact_hours');
+        setContactHours({
+          id: hours?.value_id || '',
+          en: hours?.value_en || '',
+        });
+      } else {
+        console.error('Gagal memuat pengaturan:', data);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -79,10 +267,42 @@ const SettingsManagement = ({ socialOnly = false }) => {
     }
   };
 
+  const fetchMailSettings = async () => {
+    try {
+      const response = await fetch('/api/v1/admin/settings?group=mail', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success && Array.isArray(data.data)) {
+        setMailSettings({
+          mail_username:
+            data.data.find((item) => item.key === 'mail_username')?.value_id ||
+            '',
+          mail_password:
+            data.data.find((item) => item.key === 'mail_password')?.value_id ||
+            '',
+          mail_from_name:
+            data.data.find((item) => item.key === 'mail_from_name')?.value_id ||
+            '',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching mail settings:', error);
+    }
+  };
+
   const handleChange = (key, field, value) => {
-    setSettings(settings.map(s =>
-      s.key === key ? { ...s, [field]: value } : s
-    ));
+    setSettings(
+      settings.map((setting) =>
+        setting.key === key
+          ? { ...setting, [field]: value }
+          : setting
+      )
+    );
   };
 
   const handleImageUpload = async (key, file) => {
@@ -94,20 +314,34 @@ const SettingsManagement = ({ socialOnly = false }) => {
 
       const response = await fetch('/api/v1/admin/settings/upload-image', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
         body: formData,
       });
 
       const data = await response.json();
+
       if (data.success) {
-        fetchSettings();
-        setSaveMsg({ type: 'success', text: 'Gambar berhasil diupload!' });
+        await fetchSettings();
+
+        setSaveMsg({
+          type: 'success',
+          text: 'Gambar berhasil diupload!',
+        });
       } else {
-        setSaveMsg({ type: 'error', text: 'Gagal mengupload gambar' });
+        setSaveMsg({
+          type: 'error',
+          text: 'Gagal mengupload gambar',
+        });
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      setSaveMsg({ type: 'error', text: 'Terjadi kesalahan saat upload' });
+
+      setSaveMsg({
+        type: 'error',
+        text: 'Terjadi kesalahan saat upload',
+      });
     }
   };
 
@@ -115,91 +349,875 @@ const SettingsManagement = ({ socialOnly = false }) => {
     try {
       setSaving(true);
       setSaveMsg(null);
+
       const settingsToUpdate = settings
-        .filter(s => s.group === activeGroup)
-        .map(s => ({
-          key: s.key,
-          value_id: s.value_id,
-          value_en: s.value_en || null,
+        .filter((setting) => setting.group === activeGroup)
+        .filter(
+          (setting) =>
+            !(
+              activeGroup === 'contact' &&
+              CONTACT_LIST_KEYS.includes(setting.key)
+            )
+        )
+        .map((setting) => ({
+          key: setting.key,
+          value_id: setting.value_id,
+          value_en: setting.value_en || null,
         }));
 
+      if (activeGroup === 'contact') {
+        const clean = (list) =>
+          list
+            .map((it) => ({
+              label: (it.label || '').trim(),
+              value: (it.value || '').trim(),
+            }))
+            .filter((it) => it.value);
+
+        const emails = clean(contactLists.emails);
+        const phones = clean(contactLists.phones);
+
+        settingsToUpdate.push(
+          {
+            key: 'contact_emails',
+            value_id: JSON.stringify(emails),
+            value_en: null,
+            group: 'contact',
+          },
+          {
+            key: 'contact_phones',
+            value_id: JSON.stringify(phones),
+            value_en: null,
+            group: 'contact',
+          },
+          // dua key lama tetap diisi item pertama, supaya yang lama tidak rusak
+          {
+            key: 'contact_email',
+            value_id: emails[0]?.value || '',
+            value_en: null,
+            group: 'contact',
+          },
+          {
+            key: 'contact_phone',
+            value_id: phones[0]?.value || '',
+            value_en: null,
+            group: 'contact',
+          },
+          {
+            key: 'contact_hours',
+            value_id: contactHours.id.trim(),
+            value_en: contactHours.en.trim() || null,
+            group: 'contact',
+          }
+        );
+      }
+
       const response = await fetch(
-        socialOnly ? '/api/v1/admin/social-settings/bulk-update' : '/api/v1/admin/settings/bulk-update',
+        '/api/v1/admin/settings/bulk-update',
         {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ settings: settingsToUpdate }),
-        },
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            settings: settingsToUpdate,
+          }),
+        }
       );
 
       const data = await response.json();
+
       if (data.success) {
-        setSaveMsg({ type: 'success', text: 'Pengaturan berhasil disimpan!' });
-        fetchSettings();
+        setSaveMsg({
+          type: 'success',
+          text: 'Pengaturan berhasil disimpan!',
+        });
+
+        await fetchSettings();
       } else {
-        setSaveMsg({ type: 'error', text: 'Gagal menyimpan pengaturan' });
+        setSaveMsg({
+          type: 'error',
+          text: 'Gagal menyimpan pengaturan',
+        });
       }
     } catch (error) {
       console.error('Error saving settings:', error);
-      setSaveMsg({ type: 'error', text: 'Terjadi kesalahan, coba lagi' });
+
+      setSaveMsg({
+        type: 'error',
+        text: 'Terjadi kesalahan, coba lagi',
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const filteredSettings = settings.filter(s => s.group === activeGroup);
+  const saveMailSettings = async () => {
+    setMailSaving(true);
+    setMailMsg(null);
+
+    try {
+      const payload = Object.entries(mailSettings).map(
+        ([key, value_id]) => ({
+          key,
+          value_id,
+        })
+      );
+
+      const response = await fetch(
+        '/api/v1/admin/settings/bulk-update',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            settings: payload,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMailMsg({
+          type: 'success',
+          text: 'Pengaturan email berhasil disimpan.',
+        });
+      } else {
+        setMailMsg({
+          type: 'error',
+          text: 'Gagal menyimpan pengaturan.',
+        });
+      }
+    } catch (error) {
+      console.error('Error saving mail settings:', error);
+
+      setMailMsg({
+        type: 'error',
+        text: 'Gagal menyimpan pengaturan.',
+      });
+    } finally {
+      setMailSaving(false);
+
+      setTimeout(() => {
+        setMailMsg(null);
+      }, 3000);
+    }
+  };
+
+  const resetMailSettings = async () => {
+    setMailSaving(true);
+    setMailMsg(null);
+
+    const empty = {
+      mail_username: '',
+      mail_password: '',
+      mail_from_name: '',
+    };
+
+    try {
+      const payload = Object.entries(empty).map(
+        ([key, value_id]) => ({
+          key,
+          value_id,
+        })
+      );
+
+      const response = await fetch(
+        '/api/v1/admin/settings/bulk-update',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            settings: payload,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMailSettings(empty);
+        setConfirmReset(false);
+
+        setMailMsg({
+          type: 'success',
+          text: 'Pengaturan email berhasil dikosongkan.',
+        });
+      } else {
+        setMailMsg({
+          type: 'error',
+          text: 'Gagal mengosongkan pengaturan.',
+        });
+      }
+    } catch (error) {
+      console.error('Error resetting mail settings:', error);
+
+      setMailMsg({
+        type: 'error',
+        text: 'Gagal mengosongkan pengaturan.',
+      });
+    } finally {
+      setMailSaving(false);
+
+      setTimeout(() => {
+        setMailMsg(null);
+      }, 3000);
+    }
+  };
+
+  const filteredSettings = settings.filter(
+    (setting) =>
+      setting.group === activeGroup &&
+      activeGroup !== 'mail' &&
+      !(
+        activeGroup === 'contact' &&
+        CONTACT_LIST_KEYS.includes(setting.key)
+      )
+  );
+
+  const renderSaveMessage = () => {
+    if (!saveMsg) return null;
+
+    return (
+      <div
+        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold mb-6 ${
+          saveMsg.type === 'success'
+            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            : 'bg-red-50 text-red-700 border border-red-200'
+        }`}
+      >
+        {saveMsg.type === 'success' ? (
+          <FaCheckCircle />
+        ) : (
+          <FaExclamationCircle />
+        )}
+
+        {saveMsg.text}
+      </div>
+    );
+  };
+
+  const renderSettingInput = (setting) => {
+    if (setting.type === 'image') {
+      return (
+        <div className="space-y-3">
+          {setting.value_id && (
+            <img
+              src={`/storage/${setting.value_id}`}
+              alt={setting.key}
+              className="object-contain max-w-xs p-2 border border-gray-200 h-28 rounded-xl bg-gray-50"
+            />
+          )}
+
+          <label className="flex items-center gap-3 px-4 py-3 transition-all border border-gray-300 border-dashed cursor-pointer w-fit rounded-xl hover:border-primary-400 hover:bg-primary-50 group">
+            <FaImage className="text-gray-300 transition-colors group-hover:text-primary-400" />
+
+            <span className="text-sm font-semibold text-gray-500 group-hover:text-primary-600">
+              {setting.value_id
+                ? 'Ganti Gambar'
+                : 'Upload Gambar'}
+            </span>
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+
+                if (file) {
+                  handleImageUpload(setting.key, file);
+                }
+              }}
+              className="hidden"
+            />
+          </label>
+        </div>
+      );
+    }
+
+    if (setting.type === 'textarea') {
+      return (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <div className="text-xs text-gray-400 font-semibold mb-1.5">
+              🇮🇩 Indonesia
+            </div>
+
+            <textarea
+              value={setting.value_id || ''}
+              onChange={(e) =>
+                handleChange(
+                  setting.key,
+                  'value_id',
+                  e.target.value
+                )
+              }
+              rows="4"
+              className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 resize-none rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+            />
+          </div>
+
+          <div>
+            <div className="text-xs text-gray-400 font-semibold mb-1.5">
+              🇬🇧 English
+            </div>
+
+            <textarea
+              value={setting.value_en || ''}
+              onChange={(e) =>
+                handleChange(
+                  setting.key,
+                  'value_en',
+                  e.target.value
+                )
+              }
+              rows="4"
+              className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 resize-none rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (setting.type === 'boolean') {
+      const isEnabled =
+        setting.value_id === '1' ||
+        setting.value_id === 'true';
+
+      return (
+        <div className="flex items-center justify-between w-64 p-4 border border-gray-200 bg-gray-50 rounded-xl">
+          <span className="text-sm font-semibold text-gray-700">
+            {isEnabled
+              ? 'Diaktifkan'
+              : 'Dinonaktifkan'}
+          </span>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isEnabled}
+            aria-label={`Aktifkan ${setting.key}`}
+            onClick={() =>
+              handleChange(
+                setting.key,
+                'value_id',
+                isEnabled ? '0' : '1'
+              )
+            }
+            className={`relative inline-flex w-11 h-6 rounded-full border-0 p-0 transition-colors ${
+              isEnabled
+                ? 'bg-primary-600'
+                : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                isEnabled
+                  ? 'translate-x-6'
+                  : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div>
+          <div className="text-xs text-gray-400 font-semibold mb-1.5">
+            🇮🇩 Indonesia
+          </div>
+
+          <input
+            type={
+              setting.key.endsWith('_email')
+                ? 'email'
+                : 'text'
+            }
+            value={setting.value_id || ''}
+            onChange={(e) =>
+              handleChange(
+                setting.key,
+                'value_id',
+                e.target.value
+              )
+            }
+            className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+          />
+        </div>
+
+        <div>
+          <div className="text-xs text-gray-400 font-semibold mb-1.5">
+            🇬🇧 English
+          </div>
+
+          <input
+            type="text"
+            value={setting.value_en || ''}
+            onChange={(e) =>
+              handleChange(
+                setting.key,
+                'value_en',
+                e.target.value
+              )
+            }
+            className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const renderGeneralSettingsSection = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 border-4 rounded-full border-primary-600 border-t-transparent animate-spin" />
+        </div>
+      );
+    }
+
+    if (filteredSettings.length === 0 && activeGroup !== 'contact') {
+      return (
+        <div className="py-16 text-center text-gray-500">
+          <FaCog className="mx-auto mb-3 text-4xl text-gray-300" />
+
+          <p className="font-semibold">
+            Tidak ada pengaturan di grup ini
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-7">
+        {filteredSettings.map((setting) => (
+          <div
+            key={setting.key}
+            className="border-b border-gray-100 pb-7 last:border-0 last:pb-0"
+          >
+            <label className="block mb-3 text-sm font-bold text-gray-800">
+              {keyLabels[setting.key] ||
+                setting.key
+                  .split('_')
+                  .map(
+                    (word) =>
+                      word.charAt(0).toUpperCase() +
+                      word.slice(1)
+                  )
+                  .join(' ')}
+            </label>
+
+            {renderSettingInput(setting)}
+          </div>
+        ))}
+
+        {activeGroup === 'contact' && (
+          <>
+            <ContactListEditor
+              title="Email"
+              items={contactLists.emails}
+              onChange={(emails) =>
+                setContactLists((p) => ({ ...p, emails }))
+              }
+              valuePlaceholder="nama@bsn.go.id"
+              inputType="email"
+              addLabel="Tambah email"
+            />
+
+            <ContactListEditor
+              title="Telepon"
+              items={contactLists.phones}
+              onChange={(phones) =>
+                setContactLists((p) => ({ ...p, phones }))
+              }
+              valuePlaceholder="081234567890"
+              inputType="tel"
+              addLabel="Tambah telepon"
+            />
+
+            <div className="pb-7">
+              <label className="block mb-3 text-sm font-bold text-gray-800">
+                Jam Operasional
+              </label>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <div className="text-xs text-gray-400 font-semibold mb-1.5">
+                    🇮🇩 Indonesia
+                  </div>
+                  <input
+                    type="text"
+                    value={contactHours.id}
+                    onChange={(e) =>
+                      setContactHours((p) => ({
+                        ...p,
+                        id: e.target.value,
+                      }))
+                    }
+                    placeholder="Senin - Jumat: 08:00 - 17:00 WIB"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <div className="text-xs text-gray-400 font-semibold mb-1.5">
+                    🇬🇧 English
+                  </div>
+                  <input
+                    type="text"
+                    value={contactHours.en}
+                    onChange={(e) =>
+                      setContactHours((p) => ({
+                        ...p,
+                        en: e.target.value,
+                      }))
+                    }
+                    placeholder="Monday - Friday: 08:00 - 17:00 WIB"
+                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const renderMailSettingsSection = () => (
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      {/* Form Email */}
+      <div className="p-6 border shadow-sm xl:col-span-2 rounded-2xl border-slate-200 bg-gradient-to-b from-white to-slate-50">
+        <div className="flex items-start gap-4">
+          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-primary-100 text-primary-700 shrink-0">
+            <FaEnvelope />
+          </div>
+
+          <div>
+            <h4 className="text-lg font-black text-slate-900">
+              Konfigurasi Akun Pengirim
+            </h4>
+
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              Gunakan akun Gmail khusus pengirim dan{' '}
+              <span className="font-semibold">
+                App Password
+              </span>
+              , bukan password utama akun.
+            </p>
+
+            <a
+              href="https://myaccount.google.com/apppasswords"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-3 text-sm font-semibold text-primary-700 hover:text-primary-800"
+            >
+              Buka halaman App Password Gmail
+              <FaExternalLinkAlt className="text-xs" />
+            </a>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 mt-6 md:grid-cols-2">
+          {mailFieldDefs.map(
+            ({ key, label, placeholder, type }) => {
+              const iconMap = {
+                mail_username: FaEnvelope,
+                mail_password: FaKey,
+                mail_from_name: FaUserTie,
+              };
+
+              const Icon = iconMap[key] || FaCog;
+
+              return (
+                <div
+                  key={key}
+                  className={
+                    key === 'mail_from_name'
+                      ? 'md:col-span-2'
+                      : ''
+                  }
+                >
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                    <Icon className="text-slate-400 text-[11px]" />
+                    {label}
+                  </label>
+
+                  {key === 'mail_password' ? (
+                    <div className="relative">
+                      <input
+                        type={
+                          showPassword
+                            ? 'text'
+                            : 'password'
+                        }
+                        value={mailSettings[key]}
+                        onChange={(e) =>
+                          setMailSettings((prev) => ({
+                            ...prev,
+                            [key]: e.target.value,
+                          }))
+                        }
+                        placeholder={placeholder}
+                        className="w-full px-4 py-2.5 pr-11 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white font-mono tracking-widest"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowPassword(
+                            (value) => !value
+                          )
+                        }
+                        className="absolute transition -translate-y-1/2 right-3 top-1/2 text-slate-400 hover:text-slate-700"
+                        title={
+                          showPassword
+                            ? 'Sembunyikan'
+                            : 'Tampilkan'
+                        }
+                      >
+                        {showPassword ? (
+                          <FaEyeSlash />
+                        ) : (
+                          <FaEye />
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      type={type}
+                      value={mailSettings[key]}
+                      onChange={(e) =>
+                        setMailSettings((prev) => ({
+                          ...prev,
+                          [key]: e.target.value,
+                        }))
+                      }
+                      placeholder={placeholder}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+                    />
+                  )}
+                </div>
+              );
+            }
+          )}
+        </div>
+
+        <div className="flex flex-col flex-wrap gap-3 mt-5 sm:flex-row sm:items-center">
+          <button
+            onClick={saveMailSettings}
+            disabled={mailSaving}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-bold rounded-xl hover:bg-primary-700 transition disabled:opacity-50"
+          >
+            <FaSave />
+
+            {mailSaving
+              ? 'Menyimpan...'
+              : 'Simpan Pengaturan Email'}
+          </button>
+
+          {!confirmReset ? (
+            <button
+              type="button"
+              onClick={() => setConfirmReset(true)}
+              disabled={
+                mailSaving ||
+                (!mailSettings.mail_username &&
+                  !mailSettings.mail_password &&
+                  !mailSettings.mail_from_name)
+              }
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-red-300 text-red-600 text-sm font-bold rounded-xl hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <FaTrash className="text-xs" />
+              Reset / Kosongkan Email
+            </button>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl">
+              <FaTimesCircle className="text-red-500 shrink-0" />
+
+              <span className="text-sm font-semibold text-red-700">
+                Yakin ingin mengosongkan semua pengaturan
+                email?
+              </span>
+
+              <button
+                type="button"
+                onClick={resetMailSettings}
+                disabled={mailSaving}
+                className="px-3 py-1 text-xs font-bold text-white transition bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                Ya, Kosongkan
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setConfirmReset(false)
+                }
+                className="px-3 py-1 text-xs font-bold text-gray-600 transition border border-gray-300 rounded-lg hover:bg-gray-100"
+              >
+                Batal
+              </button>
+            </div>
+          )}
+
+          {mailMsg && (
+            <div
+              className={`inline-flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl ${
+                mailMsg.type === 'success'
+                  ? 'bg-green-50 text-green-700 border border-green-100'
+                  : 'bg-red-50 text-red-600 border border-red-100'
+              }`}
+            >
+              {mailMsg.type === 'success' ? (
+                <FaCheckCircle className="shrink-0" />
+              ) : (
+                <FaExclamationCircle className="shrink-0" />
+              )}
+
+              {mailMsg.text}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Panduan */}
+      <div className="p-5 border shadow-sm rounded-2xl border-amber-200 bg-amber-50 h-fit">
+        <div className="flex items-center gap-2 mb-3 text-amber-800">
+          <FaShieldAlt />
+
+          <p className="text-sm font-bold">
+            Panduan App Password
+          </p>
+        </div>
+
+        <ol className="space-y-2 text-sm text-amber-800">
+          <li>
+            <span className="font-semibold">1.</span>{' '}
+            Login ke akun Google yang ingin digunakan.
+          </li>
+
+          <li>
+            <span className="font-semibold">2.</span>{' '}
+            Buka{' '}
+            <strong>
+              myaccount.google.com/apppasswords
+            </strong>
+            .
+          </li>
+
+          <li>
+            <span className="font-semibold">3.</span>{' '}
+            Beri nama, contoh: <strong>KAN Admin</strong>,
+            lalu klik <strong>Buat</strong>.
+          </li>
+
+          <li>
+            <span className="font-semibold">4.</span>{' '}
+            Salin 16 karakter, kemudian tempel ke kolom
+            App Password.
+          </li>
+        </ol>
+
+        <div className="px-3 py-2 mt-4 text-xs border rounded-xl bg-amber-100/70 border-amber-200 text-amber-900">
+          Pastikan fitur{' '}
+          <strong>2-Step Verification</strong> sudah
+          aktif di akun Google tersebut.
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-
         {/* Header Banner */}
-        <div className="relative bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7 text-white shadow-xl overflow-hidden">
+        <div className="relative overflow-hidden text-white shadow-xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-10 -right-10 w-56 h-56 bg-white/5 rounded-full blur-3xl"></div>
+            <div className="absolute w-56 h-56 rounded-full -top-10 -right-10 bg-white/5 blur-3xl" />
           </div>
-          <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
+
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center">
-                <FaCog className="text-white text-xl" />
+              <div className="flex items-center justify-center w-12 h-12 bg-white/15 rounded-xl">
+                <FaCog className="text-xl text-white" />
               </div>
+
               <div>
-                <h2 className="text-2xl font-black">{socialOnly ? 'Media Sosial' : 'Pengaturan Website'}</h2>
-                <p className="text-white/70 text-sm mt-0.5">{socialOnly ? 'Kelola tautan media sosial KAN' : 'Konfigurasi tampilan dan informasi website KAN'}</p>
+                <h2 className="text-2xl font-black">
+                  Pengaturan Website
+                </h2>
+
+                <p className="text-white/70 text-sm mt-0.5">
+                  Konfigurasi tampilan dan informasi
+                  website KAN
+                </p>
               </div>
             </div>
+
             <button
-              onClick={handleSave}
-              disabled={saving}
+              onClick={
+                isMailGroup
+                  ? saveMailSettings
+                  : handleSave
+              }
+              disabled={
+                isMailGroup
+                  ? mailSaving
+                  : saving
+              }
               className="flex items-center gap-2 px-5 py-2.5 bg-white text-primary-700 rounded-xl font-bold text-sm hover:bg-white/90 transition-all shadow-md disabled:opacity-60"
             >
               <FaSave />
-              {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+
+              {isMailGroup
+                ? mailSaving
+                  ? 'Menyimpan...'
+                  : 'Simpan Pengaturan Email'
+                : saving
+                  ? 'Menyimpan...'
+                  : 'Simpan Perubahan'}
             </button>
           </div>
         </div>
 
-        <div className="flex gap-6 items-start">
+        <div className="flex items-start gap-6">
           {/* Groups Sidebar */}
-          <div className="w-56 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden sticky top-6">
+          <div className="sticky flex-shrink-0 w-56 overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl top-6">
             <div className="px-4 py-4 border-b border-gray-100">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Grup Pengaturan</p>
+              <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
+                Grup Pengaturan
+              </p>
             </div>
+
             <div className="p-2">
               {groups.map((group) => (
                 <button
                   key={group}
-                  onClick={() => { setActiveGroup(group); setSaveMsg(null); }}
+                  onClick={() => {
+                    setActiveGroup(group);
+                    setSaveMsg(null);
+                    setMailMsg(null);
+                    setConfirmReset(false);
+                  }}
                   className={`w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition-all mb-1 ${
                     activeGroup === group
                       ? 'bg-primary-600 text-white shadow-md'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  {groupLabels[group] || group.charAt(0).toUpperCase() + group.slice(1)}
+                  {groupLabels[group] ||
+                    group.charAt(0).toUpperCase() +
+                      group.slice(1)}
                 </button>
               ))}
             </div>
@@ -207,138 +1225,31 @@ const SettingsManagement = ({ socialOnly = false }) => {
 
           {/* Settings Form */}
           <div className="flex-1 min-w-0">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
               {/* Form Header */}
-              <div className="px-7 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex items-center justify-between">
+              <div className="flex items-center justify-between py-5 border-b border-gray-100 px-7 bg-gradient-to-r from-gray-50 to-white">
                 <div>
                   <h3 className="text-base font-black text-gray-900">
-                    {groupLabels[activeGroup] || activeGroup}
+                    {groupLabels[activeGroup] ||
+                      activeGroup}
                   </h3>
+
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {filteredSettings.length} pengaturan tersedia
+                    {isMailGroup
+                      ? '3 pengaturan tersedia'
+                      : `${filteredSettings.length} pengaturan tersedia`}
                   </p>
                 </div>
               </div>
 
               <div className="p-7">
-                {/* Save Message */}
-                {saveMsg && (
-                  <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold mb-6 ${
-                    saveMsg.type === 'success'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}>
-                    {saveMsg.type === 'success' ? <FaCheckCircle /> : <FaExclamationCircle />}
-                    {saveMsg.text}
-                  </div>
-                )}
-
-                {loading ? (
-                  <div className="flex justify-center py-16">
-                    <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                ) : filteredSettings.length === 0 ? (
-                  <div className="text-center py-16 text-gray-500">
-                    <FaCog className="text-4xl text-gray-300 mx-auto mb-3" />
-                    <p className="font-semibold">Tidak ada pengaturan di grup ini</p>
-                  </div>
+                {isMailGroup ? (
+                  renderMailSettingsSection()
                 ) : (
-                  <div className="space-y-7">
-                    {filteredSettings.map((setting) => (
-                      <div key={setting.key} className="border-b border-gray-100 pb-7 last:border-0 last:pb-0">
-                        <label className="block text-sm font-bold text-gray-800 mb-3">
-                          {keyLabels[setting.key] || setting.key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                        </label>
-
-                        {setting.type === 'image' ? (
-                          <div className="space-y-3">
-                            {setting.value_id && (
-                              <img
-                                src={`/storage/${setting.value_id}`}
-                                alt={setting.key}
-                                className="max-w-xs h-28 object-contain border border-gray-200 rounded-xl p-2 bg-gray-50"
-                              />
-                            )}
-                            <label className="flex items-center gap-3 px-4 py-3 w-fit border border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-all group">
-                              <FaImage className="text-gray-300 group-hover:text-primary-400 transition-colors" />
-                              <span className="text-sm text-gray-500 font-semibold group-hover:text-primary-600">
-                                {setting.value_id ? 'Ganti Gambar' : 'Upload Gambar'}
-                              </span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                  const file = e.target.files[0];
-                                  if (file) handleImageUpload(setting.key, file);
-                                }}
-                                className="hidden"
-                              />
-                            </label>
-                          </div>
-                        ) : setting.type === 'textarea' ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                              <div className="text-xs text-gray-400 font-semibold mb-1.5">🇮🇩 Indonesia</div>
-                              <textarea
-                                value={setting.value_id || ''}
-                                onChange={(e) => handleChange(setting.key, 'value_id', e.target.value)}
-                                rows="4"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors resize-none"
-                              />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-400 font-semibold mb-1.5">🇬🇧 English</div>
-                              <textarea
-                                value={setting.value_en || ''}
-                                onChange={(e) => handleChange(setting.key, 'value_en', e.target.value)}
-                                rows="4"
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors resize-none"
-                              />
-                            </div>
-                          </div>
-                        ) : setting.type === 'boolean' ? (
-                          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 w-64">
-                            <span className="text-sm font-semibold text-gray-700">
-                              {setting.value_id === '1' || setting.value_id === 'true' ? 'Diaktifkan' : 'Dinonaktifkan'}
-                            </span>
-                            <div
-                              onClick={() => handleChange(setting.key, 'value_id',
-                                (setting.value_id === '1' || setting.value_id === 'true') ? '0' : '1'
-                              )}
-                              className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
-                                (setting.value_id === '1' || setting.value_id === 'true') ? 'bg-primary-600' : 'bg-gray-300'
-                              }`}
-                            >
-                              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                                (setting.value_id === '1' || setting.value_id === 'true') ? 'translate-x-6' : 'translate-x-1'
-                              }`}></span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                              <div className="text-xs text-gray-400 font-semibold mb-1.5">🇮🇩 Indonesia</div>
-                              <input
-                                    type={setting.key.endsWith('_email') ? 'email' : 'text'}
-                                value={setting.value_id || ''}
-                                onChange={(e) => handleChange(setting.key, 'value_id', e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors"
-                              />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-400 font-semibold mb-1.5">🇬🇧 English</div>
-                              <input
-                                type="text"
-                                value={setting.value_en || ''}
-                                onChange={(e) => handleChange(setting.key, 'value_en', e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 text-sm bg-gray-50 focus:bg-white transition-colors"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <>
+                    {renderSaveMessage()}
+                    {renderGeneralSettingsSection()}
+                  </>
                 )}
               </div>
             </div>

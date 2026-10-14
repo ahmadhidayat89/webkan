@@ -391,12 +391,16 @@ const PartnersManagement = () => {
                   <div className="text-sm font-bold text-gray-800">Status Aktif</div>
                   <div className="text-xs text-gray-500">Tampilkan mitra di halaman publik</div>
                 </div>
-                <div
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={formData.is_active}
+                  aria-label="Status aktif"
                   onClick={() => setFormData({...formData, is_active: !formData.is_active})}
-                  className={`relative w-12 h-6 rounded-full transition-colors cursor-pointer ${formData.is_active ? 'bg-primary-600' : 'bg-gray-300'}`}
+                  className={`relative inline-flex w-12 h-6 rounded-full border-0 p-0 transition-colors ${formData.is_active ? 'bg-primary-600' : 'bg-gray-300'}`}
                 >
                   <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.is_active ? 'translate-x-7' : 'translate-x-1'}`}></span>
-                </div>
+                </button>
               </div>
 
               {/* Footer */}

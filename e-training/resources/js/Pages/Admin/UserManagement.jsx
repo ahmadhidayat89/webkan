@@ -9,11 +9,11 @@ import {
 
 const ROLE_CONFIG = {
     admin:   { label: 'Admin',   icon: Shield,        bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
-    pelajar: { label: 'Pelajar', icon: GraduationCap, bg: 'bg-blue-100',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
+    peserta: { label: 'Peserta', icon: GraduationCap, bg: 'bg-blue-100',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
 };
 
 function RoleBadge({ role }) {
-    const cfg = ROLE_CONFIG[role] ?? ROLE_CONFIG.pelajar;
+    const cfg = ROLE_CONFIG[role] ?? ROLE_CONFIG.peserta;
     return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.bg} ${cfg.text}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -29,7 +29,7 @@ function UserFormModal({ isOpen, onClose, editUser = null }) {
         name:                  editUser?.name         ?? '',
         username:              editUser?.username      ?? '',
         email:                 editUser?.email         ?? '',
-        role:                  editUser?.role          ?? 'pelajar',
+        role:                  editUser?.role          ?? 'peserta',
         organization:          editUser?.organization  ?? '',
         phone:                 editUser?.phone         ?? '',
         password:              '',
@@ -70,7 +70,7 @@ function UserFormModal({ isOpen, onClose, editUser = null }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+            <button type="button" aria-label="Tutup dialog pengguna" className="absolute inset-0 border-0 bg-black/50 p-0 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scale-in">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
@@ -176,7 +176,7 @@ function DeleteConfirmModal({ user, onConfirm, onCancel }) {
     if (!user) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
+            <button type="button" aria-label="Tutup dialog hapus pengguna" className="absolute inset-0 border-0 bg-black/50 p-0 backdrop-blur-sm" onClick={onCancel} />
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in p-6">
                 <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
                     <Trash2 className="w-6 h-6 text-red-500" />
@@ -247,7 +247,7 @@ export default function UserManagement({ users = [], flash = {} }) {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Kelola User</h1>
-                        <p className="text-sm text-gray-500 mt-1">Kelola semua akun admin dan pelajar di platform E-Training KAN</p>
+                        <p className="text-sm text-gray-500 mt-1">Kelola semua akun admin dan peserta di platform E-Training KAN</p>
                     </div>
                     <button onClick={() => setShowAddModal(true)}
                         className="flex items-center gap-2 px-5 py-2.5 bg-navy-600 hover:bg-navy-700 rounded-xl text-sm font-semibold text-white transition-all shadow-sm w-fit">
@@ -273,7 +273,7 @@ export default function UserManagement({ users = [], flash = {} }) {
                     {[
                         { role: 'all',    label: 'Semua',   count: users.length,         icon: Users,        color: 'text-gray-600',   bg: 'bg-gray-50'   },
                         { role: 'admin',  label: 'Admin',   count: countByRole('admin'),  icon: Shield,       color: 'text-purple-600', bg: 'bg-purple-50' },
-                        { role: 'pelajar',label: 'Pelajar', count: countByRole('pelajar'),icon: GraduationCap,color: 'text-blue-600',   bg: 'bg-blue-50'   },
+                        { role: 'peserta',label: 'Peserta', count: countByRole('peserta'),icon: GraduationCap,color: 'text-blue-600',   bg: 'bg-blue-50'   },
                     ].map(({ role, label, count, icon: Icon, color, bg }) => (
                         <button key={role} onClick={() => setFilterRole(role)}
                             className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left
@@ -306,7 +306,7 @@ export default function UserManagement({ users = [], flash = {} }) {
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {filtered.map((user) => {
-                                        const cfg = ROLE_CONFIG[user.role] ?? ROLE_CONFIG.pelajar;
+                                        const cfg = ROLE_CONFIG[user.role] ?? ROLE_CONFIG.peserta;
                                         return (
                                             <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
                                                 <td className="px-6 py-4">

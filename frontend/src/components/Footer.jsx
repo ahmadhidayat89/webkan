@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FaFacebook,
   FaTwitter,
   FaInstagram,
   FaYoutube,
+  FaTiktok,
+  FaLinkedinIn,
   FaPhone,
   FaEnvelope,
   FaMapMarkerAlt,
@@ -11,9 +14,42 @@ import {
 } from 'react-icons/fa';
 import logoKan from '../assets/kan.png';
 import { Link } from 'react-router-dom';
+import useContactSettings, {
+  phoneLink,
+  mapsLink,
+  gmailLink,
+} from '../hooks/useContactSettings';
+
+const SOCIAL_PLATFORMS = [
+  { key: 'social_facebook',  icon: FaFacebook,   label: 'Facebook',  hover: 'hover:bg-blue-600' },
+  { key: 'social_twitter',   icon: FaTwitter,    label: 'Twitter',   hover: 'hover:bg-sky-500' },
+  { key: 'social_instagram', icon: FaInstagram,  label: 'Instagram', hover: 'hover:bg-pink-600' },
+  { key: 'social_youtube',   icon: FaYoutube,    label: 'YouTube',   hover: 'hover:bg-red-600' },
+  { key: 'social_tiktok',    icon: FaTiktok,     label: 'TikTok',    hover: 'hover:bg-gray-900' },
+  { key: 'social_linkedin',  icon: FaLinkedinIn, label: 'LinkedIn',  hover: 'hover:bg-blue-700' },
+];
+
+// Kotak abu-abu yang tampil selama data kontak dimuat
+const ContactSkeleton = () => (
+  <div className="space-y-4 animate-pulse">
+    <div className="w-11/12 h-4 rounded bg-white/10"></div>
+    <div className="w-2/3 h-4 rounded bg-white/10"></div>
+    <div className="w-3/4 h-4 rounded bg-white/10"></div>
+  </div>
+);
 
 const Footer = () => {
+  const { i18n } = useTranslation();
+  const lang = (i18n.resolvedLanguage || i18n.language || 'id').startsWith('en')
+    ? 'en'
+    : 'id';
+
   const [logoUrl, setLogoUrl] = useState(null);
+  const [socialLinks, setSocialLinks] = useState({});
+  const contact = useContactSettings(lang);
+
+  const { loaded, address, emails, phones } = contact;
+  const rowCount = Math.max(emails.length, phones.length);
 
   useEffect(() => {
     fetch('/api/v1/settings?group=general')
@@ -21,6 +57,15 @@ const Footer = () => {
       .then(data => {
         if (data.success && data.data?.site_logo) {
           setLogoUrl(data.data.site_logo);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/v1/settings?group=social')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setSocialLinks(prev => ({ ...prev, ...data.data }));
         }
       })
       .catch(() => {});
@@ -62,59 +107,26 @@ const Footer = () => {
               internasional untuk mendukung daya saing nasional.
             </p>
 
-            {/* Social Media */}
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-                className="relative flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg group bg-white/10 backdrop-blur-sm hover:bg-primary-600"
-              >
-                <FaFacebook
-                  size={18}
-                  className="transition-transform group-hover:scale-110"
-                />
-              </a>
-
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Twitter"
-                className="relative flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg group bg-white/10 backdrop-blur-sm hover:bg-primary-600"
-              >
-                <FaTwitter
-                  size={18}
-                  className="transition-transform group-hover:scale-110"
-                />
-              </a>
-
-              <a
-                href="https://instagram.com/kan_akreditasi"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-                className="relative flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg group bg-white/10 backdrop-blur-sm hover:bg-primary-600"
-              >
-                <FaInstagram
-                  size={18}
-                  className="transition-transform group-hover:scale-110"
-                />
-              </a>
-
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="YouTube"
-                className="relative flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg group bg-white/10 backdrop-blur-sm hover:bg-primary-600"
-              >
-                <FaYoutube
-                  size={18}
-                  className="transition-transform group-hover:scale-110"
-                />
-              </a>
+            {/* Social Media — hanya tampil jika URL diisi di admin */}
+            <div className="grid grid-cols-3 gap-2 w-fit">
+              {SOCIAL_PLATFORMS.filter(p => socialLinks[p.key]?.trim()).map(p => {
+                const Icon = p.icon;
+                return (
+                  <a
+                    key={p.key}
+                    href={socialLinks[p.key]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={p.label}
+                    className={`relative flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg group bg-white/10 backdrop-blur-sm ${p.hover}`}
+                  >
+                    <Icon
+                      size={18}
+                      className="transition-transform group-hover:scale-110"
+                    />
+                  </a>
+                );
+              })}
             </div>
           </div>
 
@@ -153,39 +165,82 @@ const Footer = () => {
               Kontak
             </h3>
 
-            <ul className="space-y-4 text-sm">
-              <li className="flex items-start gap-3 group">
-                <FaMapMarkerAlt className="flex-shrink-0 mt-1 transition-transform text-primary-500 group-hover:scale-110" />
+            {!loaded ? (
+              <ContactSkeleton />
+            ) : (
+              <ul className="space-y-4 text-sm">
+                {/* Alamat -> Google Maps */}
+                {address && (
+                  <li>
+                    <a
+                      href={mapsLink(address)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-3 group"
+                    >
+                      <FaMapMarkerAlt className="flex-shrink-0 mt-1 transition-transform text-primary-500 group-hover:scale-110" />
+                      <span className="text-gray-400 whitespace-pre-line transition-colors group-hover:text-white">
+                        {address}
+                      </span>
+                    </a>
+                  </li>
+                )}
 
-                <span className="text-gray-400 transition-colors group-hover:text-white">
-                  Jl. Kuningan Barat Raya, No. 01A<br />
-                  Jakarta Selatan 12710
-                </span>
-              </li>
+                {/* Email & telepon: dipasangkan berurutan */}
+                {Array.from({ length: rowCount }).map((_, i) => {
+                  const mail = emails[i];
+                  const tel = phones[i];
+                  const label = mail?.label || tel?.label;
+                  const phone = tel ? phoneLink(tel.value) : null;
 
-              <li className="flex items-center gap-3 group">
-                <FaPhone className="flex-shrink-0 transition-transform text-primary-500 group-hover:scale-110" />
+                  return (
+                    <li key={i}>
+                      {label && (
+                        <span className="block mb-1 text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                          {label}
+                        </span>
+                      )}
 
-                <a
-                  href="tel:081388636959"
-                  className="text-gray-400 transition-colors hover:text-white"
-                >
-                  081388636959
-                </a>
-              </li>
+                      <ul className="space-y-2">
+                        {/* Email -> Gmail */}
+                        {mail && (
+                          <li>
+                            <a
+                              href={gmailLink(mail.value)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-3 group"
+                            >
+                              <FaEnvelope className="flex-shrink-0 transition-transform text-primary-500 group-hover:scale-110" />
+                              <span className="text-gray-400 break-all transition-colors group-hover:text-white">
+                                {mail.value}
+                              </span>
+                            </a>
+                          </li>
+                        )}
 
-              <li className="flex items-center gap-3 group">
-                <FaEnvelope className="flex-shrink-0 transition-transform text-primary-500 group-hover:scale-110"
-                />
-
-                <a
-                  href="mailto:laboratorium@bsn.go.id"
-                  className="text-gray-400 break-all transition-colors hover:text-white"
-                >
-                  laboratorium@bsn.go.id
-                </a>
-              </li>
-            </ul>
+                        {/* Telepon -> WhatsApp (nomor HP) / aplikasi telepon (nomor kantor) */}
+                        {tel && (
+                          <li>
+                            <a
+                              href={phone.href}
+                              target={phone.isWa ? '_blank' : undefined}
+                              rel={phone.isWa ? 'noopener noreferrer' : undefined}
+                              className="flex items-center gap-3 group"
+                            >
+                              <FaPhone className="flex-shrink-0 transition-transform text-primary-500 group-hover:scale-110" />
+                              <span className="text-gray-400 transition-colors group-hover:text-white">
+                                {tel.value}
+                              </span>
+                            </a>
+                          </li>
+                        )}
+                      </ul>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
 
           {/* Motto */}
@@ -207,7 +262,7 @@ const Footer = () => {
               {`© ${new Date().getFullYear()} KAN - Komite Akreditasi Nasional. All rights reserved.`}
             </p>
 
-             <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+            <div className="flex flex-wrap justify-center gap-4 md:gap-6">
               <Link to="/privacy" className="transition-colors hover:text-white">
                 Kebijakan Privasi
               </Link>

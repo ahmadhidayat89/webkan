@@ -27,13 +27,21 @@ class SettingController extends Controller
         ]);
 
         foreach ($validated['settings'] as $item) {
-            $setting = Setting::where('key', $item['key'])->where('group', 'social')->firstOrFail();
-            $setting->update([
-                'value_id' => $item['value_id'] ?? null,
-                'value_en' => $item['value_en'] ?? null,
-            ]);
+            // updateOrCreate: platform baru (TikTok, LinkedIn) otomatis dibuat saat pertama disimpan
+            $setting = Setting::updateOrCreate(
+                ['key' => $item['key']],
+                [
+                    'group' => 'social',
+                    'type' => 'text',
+                    'value_id' => $item['value_id'] ?? null,
+                    'value_en' => $item['value_en'] ?? null,
+                ]
+            );
             cache()->forget("setting_{$setting->key}");
         }
+
+        // Clear cache
+        cache()->forget('settings');
 
         return response()->json(['success' => true, 'message' => 'Social media settings updated successfully.']);
     }
@@ -107,20 +115,28 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'settings' => 'required|array',
-            'settings.*.key' => 'required|string',
-            'settings.*.value_id' => 'required|string',
+            'settings.*.key' => 'required|string|max:255',
+            'settings.*.value_id' => 'nullable|string',
             'settings.*.value_en' => 'nullable|string',
+            'settings.*.group' => 'nullable|string|max:100',
         ]);
 
         foreach ($validated['settings'] as $item) {
-            Setting::where('key', $item['key'])->update([
-                'value_id' => $item['value_id'],
-                'value_en' => $item['value_en'] ?? null,
-            ]);
+            $setting = Setting::firstOrNew(['key' => $item['key']]);
+
+            $setting->value_id = $item['value_id'] ?? null;
+            $setting->value_en = $item['value_en'] ?? null;
+
+            // group & type hanya diisi saat key baru dibuat
+            if (!$setting->exists) {
+                $setting->group = $item['group'] ?? 'general';
+                $setting->type = 'text';
+            }
+
+            $setting->save();
             cache()->forget("setting_{$item['key']}");
         }
 
-        // Clear cache
         cache()->forget('settings');
 
         return response()->json([

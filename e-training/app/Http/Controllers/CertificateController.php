@@ -10,7 +10,7 @@ use Inertia\Response;
 class CertificateController extends Controller
 {
     /**
-     * Tampilkan daftar sertifikat milik pelajar yang sedang login.
+     * Tampilkan daftar sertifikat milik peserta yang sedang login.
      */
     public function index(): Response
     {
@@ -39,7 +39,7 @@ class CertificateController extends Controller
     }
 
     /**
-     * Download sertifikat PDF milik pelajar.
+     * Download sertifikat PDF milik peserta.
      */
     public function download(int $id)
     {

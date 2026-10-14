@@ -272,6 +272,26 @@ const parseApiJson = (rawText) => {
   }
 };
 
+const buildContentFormData = ({ selectedId, formData, isSub, imageFile, removeImage }) => {
+  const form = new FormData();
+  form.append('page_id', selectedId);
+  form.append('content_id', formData.content_id);
+  if (isSub) form.append('title', formData.title.trim());
+  if (imageFile) form.append('image', imageFile);
+  if (removeImage && !imageFile) form.append('remove_image', '1');
+  return form;
+};
+
+const getContentSaveError = (response, raw, data) => {
+  const rawTrimmed = raw.trim();
+  if ((response.ok && data?.success) || (response.ok && /"success"\s*:\s*true/i.test(rawTrimmed))) return null;
+  const isHtmlResponse = rawTrimmed.startsWith('<!DOCTYPE') || rawTrimmed.startsWith('<html');
+  const firstError = data?.errors ? Object.values(data.errors).flat()?.[0] : null;
+  return isHtmlResponse
+    ? 'Sesi login tidak valid/expired. Silakan login ulang.'
+    : (firstError || data?.message || `Gagal menyimpan konten (HTTP ${response.status})`);
+};
+
 const toPreviewUrl = (imagePath) => {
   if (!imagePath) return null;
 
@@ -782,13 +802,8 @@ const ContentManagement = () => {
 
   const handleSave = async () => {
     if (!selectedId) return;
-
     const isSub = !!subOf(selectedId);
-
-    if (
-      isSub &&
-      !formData.title.trim()
-    ) {
+    if (isSub && !formData.title.trim()) {
       setSaveMsg({
         type: 'error',
         text: 'Judul halaman tidak boleh kosong'
@@ -801,52 +816,16 @@ const ContentManagement = () => {
       setSaving(true);
       setSaveMsg(null);
 
-      const fd = new FormData();
-
-      fd.append('page_id', selectedId);
-      fd.append(
-        'content_id',
-        formData.content_id
-      );
-
-      if (isSub) {
-        fd.append(
-          'title',
-          formData.title.trim()
-        );
-      }
-
-      if (imageFile) {
-        fd.append('image', imageFile);
-      }
-
-      if (
-        removeImage &&
-        !imageFile
-      ) {
-        fd.append(
-          'remove_image',
-          '1'
-        );
-      }
-
-      const res = await fetch(
-        '/api/v1/admin/page-contents',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json',
-          },
-          body: fd,
-        }
-      );
-
+      const fd = buildContentFormData({ selectedId, formData, isSub, imageFile, removeImage });
+      const res = await fetch('/api/v1/admin/page-contents', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, Accept: 'application/json' },
+        body: fd,
+      });
       const raw = await res.text();
-      const rawTrimmed = raw.trim();
       const data = parseApiJson(raw);
-
-      if (res.ok && data?.success) {
+      const error = getContentSaveError(res, raw, data);
+      if (!error) {
         setSaveMsg({
           type: 'success',
           text: 'Konten berhasil disimpan!'
@@ -857,45 +836,7 @@ const ContentManagement = () => {
         setImageFile(null);
         setRemoveImage(false);
       } else {
-        const isHtmlResponse =
-          rawTrimmed.startsWith('<!DOCTYPE') ||
-          rawTrimmed.startsWith('<html');
-
-        const hasSuccessPattern =
-          /"success"\s*:\s*true/i.test(
-            rawTrimmed
-          );
-
-        const firstError = data?.errors
-          ? Object.values(data.errors)
-              .flat()?.[0]
-          : null;
-
-        if (
-          res.ok &&
-          hasSuccessPattern
-        ) {
-          setSaveMsg({
-            type: 'success',
-            text: 'Konten berhasil disimpan!'
-          });
-
-          await fetchContents();
-
-          setImageFile(null);
-          setRemoveImage(false);
-        } else {
-          setSaveMsg({
-            type: 'error',
-            text: isHtmlResponse
-              ? 'Sesi login tidak valid/expired. Silakan login ulang.'
-              : (
-                  firstError ||
-                  data?.message ||
-                  `Gagal menyimpan konten (HTTP ${res.status})`
-                ),
-          });
-        }
+        setSaveMsg({ type: 'error', text: error });
       }
     } catch (e) {
       setSaveMsg({
