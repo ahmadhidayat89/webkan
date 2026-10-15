@@ -8,6 +8,122 @@ import {
 } from 'react-icons/fa';
 import logoKan from '../assets/kan.png';
 
+const NAV_ITEMS = [
+  {
+    label: 'Beranda',
+    href: '/',
+  },
+  {
+    label: 'Tentang KAN',
+    href: '/tentang-kan',
+    dropdown: [
+      { label: 'Profil KAN', href: '/tentang-kan' },
+      { label: 'Sejarah dan Fungsi KAN', href: '/sejarah-fungsi' },
+      { label: 'Struktur Organisasi', href: '/struktur-organisasi' },
+      { label: 'Ketidakberpihakan', href: '/ketidakberpihakan' },
+      { label: 'Pengakuan Internasional', href: '/pengakuan-internasional' },
+      { label: 'Anggota KAN', href: '/anggota-kan' },
+      { label: 'Maklumat Layanan', href: '/maklumat-layanan' },
+      { label: 'Standar Layanan Akreditasi', href: '/standar-layanan' }
+    ]
+  },
+  {
+    label: 'Proses Akreditasi',
+    href: '/proses-akreditasi',
+    dropdown: [
+      { label: 'Proses Akreditasi', href: '/proses-akreditasi' },
+      { label: 'Tarif Akreditasi', href: '/tarif-akreditasi' },
+      { label: 'Penanganan Komplain', href: '/penanganan-komplain' },
+      { label: 'Penanganan Banding', href: '/penanganan-banding' },
+      { label: 'Survey Kepuasan Pelanggan', href: '/survey-kepuasan-pelanggan' },
+    ]
+  },
+  {
+    label: 'Layanan Akreditasi',
+    href: '/layanan-akreditasi',
+    dropdown: [
+      { label: 'Layanan Akreditasi', href: '/layanan-akreditasi' },
+      { label: 'Laboratorium', href: '/layanan/laboratorium' },
+      {
+        label: 'Lembaga Verifikasi dan/atau Validasi Gas Rumah Kaca',
+        href: '/layanan/lembaga-verifikasi-validasi-grk'
+      },
+      {
+        label: 'Penyelenggara Uji Profisiensi',
+        href: '/layanan/penyelenggara-uji-profisiensi'
+      },
+      {
+        label: 'Produsen Bahan Acuan',
+        href: '/layanan/produsen-bahan-acuan'
+      },
+      {
+        label: 'Sistem Manajemen',
+        href: '/layanan/sistem-manajemen'
+      },
+      {
+        label: 'Sertifikasi Person',
+        href: '/layanan/sertifikasi-person'
+      },
+      {
+        label: 'Sertifikasi Berdasarkan SNI ISO/IEC 17065',
+        href: '/layanan/sertifikasi-sni-iso-iec-17065'
+      },
+      {
+        label: 'Sertifikasi Pembangunan Berkelanjutan',
+        href: '/layanan/sertifikasi-pembangunan-berkelanjutan'
+      },
+    ]
+  },
+  {
+    label: 'Direktori LPK',
+    href: '/direktori',
+    dropdown: [
+      {
+        label: 'Terakreditasi',
+        href: '/direktori/terakreditasi'
+      },
+      {
+        label: 'Akreditasi Dibekukan',
+        href: '/direktori/akreditasi-dibekukan'
+      },
+      {
+        label: 'Akreditasi Dicabut',
+        href: '/direktori/akreditasi-dicabut'
+      },
+    ]
+  },
+  {
+    label: 'Unduh',
+    href: '/unduh',
+    dropdown: [
+      {
+        label: 'Dokumen Akreditasi',
+        href: '/unduh/dokumen-akreditasi'
+      },
+      {
+        label: 'Materi Kegiatan',
+        href: '/unduh/materi-kegiatan'
+      },
+      {
+        label: 'Artikel Penilaian Kesesuaian',
+        href: '/unduh/artikel-penilaian-kesesuaian'
+      },
+      {
+        label: 'Dokumen Internasional',
+        href: '/unduh/dokumen-internasional'
+      },
+    ]
+  },
+  {
+    label: 'E-Training',
+    href: 'http://127.0.0.1:8001',
+    external: true,
+  },
+];
+
+// Key stabil untuk item menu (menggantikan index array)
+const getItemKey = (item) => `${item.href}|${item.label}`;
+
 const Header = () => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
@@ -59,122 +175,9 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const navItems = [
-    {
-      label: 'Beranda',
-      href: '/',
-    },
-    {
-      label: 'Tentang KAN',
-      href: '/tentang-kan',
-      dropdown: [
-        { label: 'Profil KAN', href: '/tentang-kan' },
-        { label: 'Sejarah dan Fungsi KAN', href: '/sejarah-fungsi' },
-        { label: 'Struktur Organisasi', href: '/struktur-organisasi' },
-        { label: 'Ketidakberpihakan', href: '/ketidakberpihakan' },
-        { label: 'Pengakuan Internasional', href: '/pengakuan-internasional' },
-        { label: 'Anggota KAN', href: '/anggota-kan' },
-        { label: 'Maklumat Layanan', href: '/maklumat-layanan' },
-        { label: 'Standar Layanan Akreditasi', href: '/standar-layanan' }
-      ]
-    },
-    {
-      label: 'Proses Akreditasi',
-      href: '/proses-akreditasi',
-      dropdown: [
-        { label: 'Proses Akreditasi', href: '/proses-akreditasi' },
-        { label: 'Tarif Akreditasi', href: '/tarif-akreditasi' },
-        { label: 'Penanganan Komplain', href: '/penanganan-komplain' },
-        { label: 'Penanganan Banding', href: '/penanganan-banding' },
-        { label: 'Survey Kepuasan Pelanggan', href: '/survey-kepuasan-pelanggan' },
-      ]
-    },
-    {
-      label: 'Layanan Akreditasi',
-      href: '/layanan-akreditasi',
-      dropdown: [
-        { label: 'Layanan Akreditasi', href: '/layanan-akreditasi' },
-        { label: 'Laboratorium', href: '/layanan/laboratorium' },
-        {
-          label: 'Lembaga Verifikasi dan/atau Validasi Gas Rumah Kaca',
-          href: '/layanan/lembaga-verifikasi-validasi-grk'
-        },
-        {
-          label: 'Penyelenggara Uji Profisiensi',
-          href: '/layanan/penyelenggara-uji-profisiensi'
-        },
-        {
-          label: 'Produsen Bahan Acuan',
-          href: '/layanan/produsen-bahan-acuan'
-        },
-        {
-          label: 'Sistem Manajemen',
-          href: '/layanan/sistem-manajemen'
-        },
-        {
-          label: 'Sertifikasi Person',
-          href: '/layanan/sertifikasi-person'
-        },
-        {
-          label: 'Sertifikasi Berdasarkan SNI ISO/IEC 17065',
-          href: '/layanan/sertifikasi-sni-iso-iec-17065'
-        },
-        {
-          label: 'Sertifikasi Pembangunan Berkelanjutan',
-          href: '/layanan/sertifikasi-pembangunan-berkelanjutan'
-        },
-      ]
-    },
-    {
-      label: 'Direktori LPK',
-      href: '/direktori',
-      dropdown: [
-        {
-          label: 'Terakreditasi',
-          href: '/direktori/terakreditasi'
-        },
-        {
-          label: 'Akreditasi Dibekukan',
-          href: '/direktori/akreditasi-dibekukan'
-        },
-        {
-          label: 'Akreditasi Dicabut',
-          href: '/direktori/akreditasi-dicabut'
-        },
-      ]
-    },
-    {
-      label: 'Unduh',
-      href: '/unduh',
-      dropdown: [
-        {
-          label: 'Dokumen Akreditasi',
-          href: '/unduh/dokumen-akreditasi'
-        },
-        {
-          label: 'Materi Kegiatan',
-          href: '/unduh/materi-kegiatan'
-        },
-        {
-          label: 'Artikel Penilaian Kesesuaian',
-          href: '/unduh/artikel-penilaian-kesesuaian'
-        },
-        {
-          label: 'Dokumen Internasional',
-          href: '/unduh/dokumen-internasional'
-        },
-      ]
-    },
-    {
-      label: 'E-Training',
-      href: 'http://127.0.0.1:8001',
-      external: true,
-    },
-  ];
-
   const activeLang = (i18n.resolvedLanguage || i18n.language || 'id').startsWith('en') ? 'en' : 'id';
   const allNavItems = [
-    ...navItems,
+    ...NAV_ITEMS,
     ...customMenus
       .filter((menu) => !menu.parent_id && menu.is_active)
       .map((menu) => {
@@ -300,61 +303,63 @@ const Header = () => {
                 ================================================= */}
             <nav className="hidden xl:flex items-center flex-nowrap gap-0.5 ml-auto">
 
-              {allNavItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="relative flex-shrink-0 group"
-                  onMouseEnter={() =>
-                    item.dropdown && setActiveDropdown(index)
-                  }
-                  onMouseLeave={() =>
-                    setActiveDropdown(null)
-                  }
-                >
+              {allNavItems.map((item) => {
+                const itemKey = getItemKey(item);
 
-                  <a
-                    href={item.href}
-                    target={item.external ? '_blank' : undefined}
-                    rel={item.external ? 'noopener noreferrer' : undefined}
-                    className={`${isScrolled
-                      ? 'text-gray-700 hover:text-primary-600'
-                      : 'text-white/90 hover:text-white'
-                      } px-2.5 lg:px-3.5 py-2.5 rounded-xl font-semibold transition-all relative overflow-hidden text-[11px] lg:text-sm group/item flex items-center gap-1 lg:gap-1.5 whitespace-nowrap`}
+                return (
+                  <div
+                    key={itemKey}
+                    className="relative flex-shrink-0 group"
+                    onMouseEnter={() =>
+                      item.dropdown && setActiveDropdown(itemKey)
+                    }
+                    onMouseLeave={() =>
+                      setActiveDropdown(null)
+                    }
                   >
 
-                    <span
-                      className={`absolute inset-0 ${isScrolled
-                        ? 'bg-primary-50'
-                        : 'bg-white/10'
-                        } scale-0 group-hover/item:scale-100 transition-transform duration-300 rounded-xl`}
-                    ></span>
+                    <a
+                      href={item.href}
+                      target={item.external ? '_blank' : undefined}
+                      rel={item.external ? 'noopener noreferrer' : undefined}
+                      className={`${isScrolled
+                        ? 'text-gray-700 hover:text-primary-600'
+                        : 'text-white/90 hover:text-white'
+                        } px-2.5 lg:px-3.5 py-2.5 rounded-xl font-semibold transition-all relative overflow-hidden text-[11px] lg:text-sm group/item flex items-center gap-1 lg:gap-1.5 whitespace-nowrap`}
+                    >
 
-                    <span className="relative z-10 whitespace-nowrap">
-                      {item.label}
-                    </span>
-
-                    {item.dropdown && (
                       <span
-                        className={`relative z-10 text-xs transition-transform ${activeDropdown === index
-                          ? 'rotate-180'
-                          : ''
-                          }`}
-                      >
-                        ▼
+                        className={`absolute inset-0 ${isScrolled
+                          ? 'bg-primary-50'
+                          : 'bg-white/10'
+                          } scale-0 group-hover/item:scale-100 transition-transform duration-300 rounded-xl`}
+                      ></span>
+
+                      <span className="relative z-10 whitespace-nowrap">
+                        {item.label}
                       </span>
-                    )}
 
-                  </a>
+                      {item.dropdown && (
+                        <span
+                          className={`relative z-10 text-xs transition-transform ${activeDropdown === itemKey
+                            ? 'rotate-180'
+                            : ''
+                            }`}
+                        >
+                          ▼
+                        </span>
+                      )}
 
-                  {/* Dropdown */}
-                  {item.dropdown &&
-                    activeDropdown === index && (
-                      <div className="absolute left-0 w-56 pt-0 overflow-hidden border border-gray-100 shadow-2xl top-full bg-white/95 backdrop-blur-xl rounded-2xl animate-fadeIn">
+                    </a>
 
-                        {item.dropdown.map(
-                          (dropItem, dropIndex) => (
+                    {/* Dropdown */}
+                    {item.dropdown &&
+                      activeDropdown === itemKey && (
+                        <div className="absolute left-0 w-56 pt-0 overflow-hidden border border-gray-100 shadow-2xl top-full bg-white/95 backdrop-blur-xl rounded-2xl animate-fadeIn">
+
+                          {item.dropdown.map((dropItem) => (
                             <a
-                              key={dropIndex}
+                              key={getItemKey(dropItem)}
                               href={dropItem.href}
                               target={dropItem.external ? '_blank' : undefined}
                               rel={dropItem.external ? 'noopener noreferrer' : undefined}
@@ -362,14 +367,14 @@ const Header = () => {
                             >
                               {dropItem.label}
                             </a>
-                          )
-                        )}
+                          ))}
 
-                      </div>
-                    )}
+                        </div>
+                      )}
 
-                </div>
-              ))}
+                  </div>
+                );
+              })}
 
               {/* =================================================
                   SEARCH DESKTOP
@@ -462,8 +467,8 @@ const Header = () => {
 
               <div className="p-3 space-y-1 md:p-4">
 
-                {allNavItems.map((item, index) => (
-                  <div key={index}>
+                {allNavItems.map((item) => (
+                  <div key={getItemKey(item)}>
 
                     <a
                       href={item.href}
@@ -479,22 +484,20 @@ const Header = () => {
                     {item.dropdown && (
                       <div className="mt-1 ml-8 space-y-1 md:ml-10">
 
-                        {item.dropdown.map(
-                          (dropItem, dropIndex) => (
-                            <a
-                              key={dropIndex}
-                              href={dropItem.href}
-                              target={dropItem.external ? '_blank' : undefined}
-                              rel={dropItem.external ? 'noopener noreferrer' : undefined}
-                              className="block text-gray-600 hover:text-primary-600 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm"
-                              onClick={() =>
-                                setIsMobileMenuOpen(false)
-                              }
-                            >
-                              {dropItem.label}
-                            </a>
-                          )
-                        )}
+                        {item.dropdown.map((dropItem) => (
+                          <a
+                            key={getItemKey(dropItem)}
+                            href={dropItem.href}
+                            target={dropItem.external ? '_blank' : undefined}
+                            rel={dropItem.external ? 'noopener noreferrer' : undefined}
+                            className="block text-gray-600 hover:text-primary-600 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm"
+                            onClick={() =>
+                              setIsMobileMenuOpen(false)
+                            }
+                          >
+                            {dropItem.label}
+                          </a>
+                        ))}
 
                       </div>
                     )}
