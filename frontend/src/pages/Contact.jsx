@@ -125,86 +125,88 @@ const Contact = () => {
       </span>
     ) : null;
 
+  // ===== Isi kartu kontak =====
+  // Masing-masing dibuat sebagai fungsi dengan if biasa
+  // supaya tidak ada ternary bersarang.
+
+  const renderAddress = () => {
+    if (!loaded) return <CardSkeleton />;
+    if (!address) return <span>-</span>;
+    return (
+      <a
+        href={mapsLink(address)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={linkClass}
+      >
+        {address}
+      </a>
+    );
+  };
+
+  const renderPhones = () => {
+    if (!loaded) return <CardSkeleton />;
+    if (!phones.length) return <span>-</span>;
+    return phones.map((p) => {
+      const { href, isWa } = phoneLink(p.value);
+      return (
+        <div key={p.value}>
+          {labelEl(p.label)}
+          <a
+            href={href}
+            target={isWa ? "_blank" : undefined}
+            rel={isWa ? "noopener noreferrer" : undefined}
+            className={linkClass}
+          >
+            {p.value}
+          </a>
+        </div>
+      );
+    });
+  };
+
+  const renderEmails = () => {
+    if (!loaded) return <CardSkeleton />;
+    if (!emails.length) return <span>-</span>;
+    return emails.map((m) => (
+      <div key={m.value}>
+        {labelEl(m.label)}
+        <a
+          href={gmailLink(m.value)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${linkClass} break-all`}
+        >
+          {m.value}
+        </a>
+      </div>
+    ));
+  };
+
   const contactInfo = [
     {
       icon: FaMapMarkerAlt,
       title: "Alamat",
       titleEn: "Address",
-      content: !loaded ? (
-        <CardSkeleton />
-      ) : address ? (
-        <a
-          href={mapsLink(address)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={linkClass}
-        >
-          {address}
-        </a>
-      ) : (
-        <span>-</span>
-      ),
+      content: renderAddress(),
     },
     {
       icon: FaPhone,
       title: "Telepon",
       titleEn: "Phone",
-      content: !loaded ? (
-        <CardSkeleton />
-      ) : phones.length ? (
-        phones.map((p, i) => {
-          const { href, isWa } = phoneLink(p.value);
-          return (
-            <div key={i}>
-              {labelEl(p.label)}
-              <a
-                href={href}
-                target={isWa ? "_blank" : undefined}
-                rel={isWa ? "noopener noreferrer" : undefined}
-                className={linkClass}
-              >
-                {p.value}
-              </a>
-            </div>
-          );
-        })
-      ) : (
-        <span>-</span>
-      ),
+      content: renderPhones(),
     },
     {
       icon: FaEnvelope,
       title: "Email",
       titleEn: "Email",
-      content: !loaded ? (
-        <CardSkeleton />
-      ) : emails.length ? (
-        emails.map((m, i) => (
-          <div key={i}>
-            {labelEl(m.label)}
-            <a
-              href={gmailLink(m.value)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${linkClass} break-all`}
-            >
-              {m.value}
-            </a>
-          </div>
-        ))
-      ) : (
-        <span>-</span>
-      ),
+      content: renderEmails(),
     },
     {
       icon: FaClock,
       title: "Jam Operasional",
       titleEn: "Operating Hours",
-      content: !loaded ? (
-        <CardSkeleton />
-      ) : (
-        <span>{hours || "-"}</span>
-      ),
+      content: !loaded ? <CardSkeleton /> : <span>{hours || "-"}</span>,
     },
   ];
 
@@ -237,12 +239,12 @@ const Contact = () => {
         <div className="container px-6 mx-auto">
           <div className="max-w-6xl mx-auto">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {contactInfo.map((item, index) => {
+              {contactInfo.map((item) => {
                 const Icon = item.icon;
 
                 return (
                   <div
-                    key={index}
+                    key={item.title}
                     className="p-6 transition-all bg-white border border-gray-200 shadow-lg rounded-2xl hover:shadow-2xl hover:-translate-y-2 group"
                   >
                     {/* Icon */}
