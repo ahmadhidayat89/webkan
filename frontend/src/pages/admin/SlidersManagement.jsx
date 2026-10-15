@@ -173,6 +173,92 @@ const SlidersManagement = () => {
 
   const activeCount = sliders.filter(s => s.is_active).length;
 
+  // FIX: ternary bersarang (loading / kosong / daftar) diganti early return
+  const renderSliders = () => {
+    if (loading) {
+      return (
+        <div className="col-span-full flex justify-center py-16">
+          <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      );
+    }
+
+    if (sliders.length === 0) {
+      return (
+        <div className="col-span-full text-center py-20">
+          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <FaImages className="text-gray-400 text-2xl" />
+          </div>
+          <p className="text-gray-500 font-semibold mb-1">Belum ada slider</p>
+          <button onClick={() => handleOpenModal()} className="text-sm text-primary-600 font-bold hover:underline">
+            Buat slider pertama
+          </button>
+        </div>
+      );
+    }
+
+    return sliders.map((slider) => (
+      <div
+        key={slider.id}
+        className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all group"
+      >
+        {/* Image */}
+        <div className="relative h-44 bg-gray-100">
+          {slider.image ? (
+            <img
+              src={`/storage/${slider.image}`}
+              alt={slider.title_id}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <FaImage className="text-5xl text-gray-300" />
+            </div>
+          )}
+          <div className="absolute top-3 right-3">
+            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+              slider.is_active ? 'bg-emerald-500 text-white' : 'bg-gray-500 text-white'
+            }`}>
+              {slider.is_active ? 'Aktif' : 'Nonaktif'}
+            </span>
+          </div>
+          <div className="absolute top-3 left-3">
+            <span className="px-2.5 py-1 bg-black/60 text-white rounded-full text-xs font-bold flex items-center gap-1 backdrop-blur-sm">
+              <FaGripVertical className="text-[10px]" />
+              {slider.order}
+            </span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-5">
+          <h3 className="font-black text-gray-900 text-sm line-clamp-1 mb-1">
+            {slider.title_id || <span className="text-gray-400 italic">Tanpa judul</span>}
+          </h3>
+          {slider.subtitle_id && (
+            <p className="text-xs text-gray-500 line-clamp-2">{slider.subtitle_id}</p>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-1.5 pt-4 border-t border-gray-100 mt-4">
+            <button
+              onClick={() => handleOpenModal(slider)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-all text-xs font-bold"
+            >
+              <FaEdit /> Edit
+            </button>
+            <button
+              onClick={() => handleDelete(slider.id)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-all text-xs font-bold"
+            >
+              <FaTrash /> Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    ));
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -216,82 +302,7 @@ const SlidersManagement = () => {
 
         {/* Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {loading ? (
-            <div className="col-span-full flex justify-center py-16">
-              <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : sliders.length === 0 ? (
-            <div className="col-span-full text-center py-20">
-              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <FaImages className="text-gray-400 text-2xl" />
-              </div>
-              <p className="text-gray-500 font-semibold mb-1">Belum ada slider</p>
-              <button onClick={() => handleOpenModal()} className="text-sm text-primary-600 font-bold hover:underline">
-                Buat slider pertama
-              </button>
-            </div>
-          ) : (
-            sliders.map((slider) => (
-              <div
-                key={slider.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all group"
-              >
-                {/* Image */}
-                <div className="relative h-44 bg-gray-100">
-                  {slider.image ? (
-                    <img
-                      src={`/storage/${slider.image}`}
-                      alt={slider.title_id}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <FaImage className="text-5xl text-gray-300" />
-                    </div>
-                  )}
-                  <div className="absolute top-3 right-3">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      slider.is_active ? 'bg-emerald-500 text-white' : 'bg-gray-500 text-white'
-                    }`}>
-                      {slider.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </div>
-                  <div className="absolute top-3 left-3">
-                    <span className="px-2.5 py-1 bg-black/60 text-white rounded-full text-xs font-bold flex items-center gap-1 backdrop-blur-sm">
-                      <FaGripVertical className="text-[10px]" />
-                      {slider.order}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-5">
-                  <h3 className="font-black text-gray-900 text-sm line-clamp-1 mb-1">
-                    {slider.title_id || <span className="text-gray-400 italic">Tanpa judul</span>}
-                  </h3>
-                  {slider.subtitle_id && (
-                    <p className="text-xs text-gray-500 line-clamp-2">{slider.subtitle_id}</p>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-1.5 pt-4 border-t border-gray-100 mt-4">
-                    <button
-                      onClick={() => handleOpenModal(slider)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-all text-xs font-bold"
-                    >
-                      <FaEdit /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(slider.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-all text-xs font-bold"
-                    >
-                      <FaTrash /> Hapus
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+          {renderSliders()}
         </div>
       </div>
 
