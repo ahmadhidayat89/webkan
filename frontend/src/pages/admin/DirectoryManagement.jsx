@@ -948,7 +948,7 @@ const ImportPreview = ({ preview }) => (
       <div className="text-amber-700">
         <p>{preview.warning_count} baris perlu dicek (tetap diimpor):</p>
         <ul className="ml-4 text-xs list-disc">
-          {preview.warnings.map((w, i) => <li key={i}>{w.row}: {w.message}</li>)}
+          {preview.warnings.map((w) => <li key={`${w.row}-${w.message}`}>{w.row}: {w.message}</li>)}
         </ul>
       </div>
     )}
@@ -957,7 +957,7 @@ const ImportPreview = ({ preview }) => (
       <div className="text-red-700">
         <p>{preview.error_count} baris dilewati:</p>
         <ul className="ml-4 text-xs list-disc">
-          {preview.errors.map((e, i) => <li key={i}>{e.row}: {e.message}</li>)}
+          {preview.errors.map((e) => <li key={`${e.row}-${e.message}`}>{e.row}: {e.message}</li>)}
         </ul>
       </div>
     )}
