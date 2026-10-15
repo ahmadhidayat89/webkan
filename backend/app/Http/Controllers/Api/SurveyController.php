@@ -69,20 +69,34 @@ class SurveyController extends Controller
             ->where('code', $code)
             ->where('is_published', true)
             ->first();
+    
+        $unavailable = $this->unavailableResponse($survey);
+        if ($unavailable) {
+            return $unavailable;
+        }
+    
+        $answers = $request->input('answers', []);
+        $validationResponse = $this->validateAnswers($survey, $answers);
+        if ($validationResponse) {
+            return $validationResponse;
+        }
+    
+        return $this->storeAnswers($survey, $answers, $request);
+    }
+    
+    /**
+     * Respons error kalau kuesioner tidak ada atau sedang ditutup, null kalau boleh diisi.
+     */
+    private function unavailableResponse(?Survey $survey)
+    {
         if (!$survey) {
             return response()->json(['success' => false, 'message' => 'Kuesioner tidak ditemukan atau belum diterbitkan.'], 404);
         }
         if (!$survey->is_active) {
             return response()->json(['success' => false, 'message' => 'Kuesioner ini sedang ditutup dan tidak menerima jawaban baru.'], 422);
         }
-
-        $answers = $request->input('answers', []);
-        $validationResponse = $this->validateAnswers($survey, $answers);
-        if ($validationResponse) {
-            return $validationResponse;
-        }
-
-        return $this->storeAnswers($survey, $answers, $request);
+    
+        return null;
     }
 
     private function validateAnswers(Survey $survey, array $answers)
