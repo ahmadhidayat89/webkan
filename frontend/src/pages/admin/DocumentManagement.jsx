@@ -1166,10 +1166,10 @@ const DocumentManagement = () => {
             return categories;
         }
 
-        const excludedIds = [editItem.id, ...getDescendantIds(data, editItem.id)];
+        const excludedIds = new Set([editItem.id, ...getDescendantIds(data, editItem.id)]);
 
         return categories.filter(
-            (category) => !excludedIds.includes(category.id)
+            (category) => !excludedIds.has(category.id)
         );
     }, [categories, editItem, data]);
 
