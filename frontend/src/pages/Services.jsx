@@ -139,11 +139,11 @@ const Services = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-7xl mx-auto">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {t.services.map((service, index) => {
+              {t.services.map((service) => {
                 const Icon = service.icon;
                 return (
                   <div
-                    key={index}
+                    key={service.title}
                     className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-2xl hover:-translate-y-2 transition-all group flex flex-col"
                   >
                     <div
@@ -159,8 +159,8 @@ const Services = () => {
                     <p className="text-gray-600 mb-6">{service.desc}</p>
 
                     <div className="space-y-2 flex-1">
-                      {service.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm">
+                      {service.features.map((feature) => (
+                        <div key={feature} className="flex items-center gap-2 text-sm">
                           <FaCheckCircle className="text-primary-600 flex-shrink-0" />
                           <span className="text-gray-700">{feature}</span>
                         </div>
@@ -192,7 +192,7 @@ const Services = () => {
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {t.process.steps.map((step, index) => (
-                <div key={index} className="relative">
+                <div key={step.num} className="relative">
                   <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-primary-200 hover:shadow-2xl hover:-translate-y-2 transition-all">
                     <div className="text-6xl font-black text-primary-600/20 mb-4">
                       {step.num}
@@ -222,9 +222,9 @@ const Services = () => {
             </h2>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {t.benefits.items.map((benefit, index) => (
+              {t.benefits.items.map((benefit) => (
                 <div
-                  key={index}
+                  key={benefit}
                   className="flex items-center gap-4 bg-gradient-to-br from-primary-50 to-accent-50 rounded-xl p-6 border-2 border-primary-200 hover:border-primary-600 transition-all group"
                 >
                   <div className="w-12 h-12 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
