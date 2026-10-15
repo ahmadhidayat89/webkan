@@ -1,6 +1,5 @@
 import '../css/app.css';
 import './bootstrap';
-
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
@@ -22,4 +21,6 @@ createInertiaApp({
     progress: {
         color: '#4B5563',
     },
+}).catch((error) => {
+    console.error('Failed to initialize the Inertia app:', error);
 });
