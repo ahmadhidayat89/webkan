@@ -1,9 +1,38 @@
 import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import { Image, Save, CheckCircle2, Upload, Plus, X } from 'lucide-react';
+import { Image, CheckCircle2, Plus, X } from 'lucide-react';
+
+// Tampilan area thumbnail: file baru yang dipilih, thumbnail tersimpan, atau kosong
+function ThumbnailPreview({ pending, saved }) {
+    if (pending instanceof File) {
+        return (
+            <div className="p-8 text-center bg-navy-50">
+                <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                <p className="text-sm font-bold text-navy-700">{pending.name}</p>
+                <p className="text-xs text-gray-500">Akan diupload saat disimpan</p>
+            </div>
+        );
+    }
+
+    if (saved) {
+        return (
+            <img src={saved} alt="Thumbnail pelatihan" className="object-cover w-full h-48 opacity-80 group-hover:opacity-100" />
+        );
+    }
+
+    return (
+        <div className="p-8 text-center bg-gray-50">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-gray-200 rounded-xl">
+                <Image className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-sm font-medium text-gray-600">Klik atau drop untuk upload thumbnail</p>
+            <p className="mt-1 text-xs text-gray-400">PNG, JPG hingga 2MB • Rasio 16:9</p>
+        </div>
+    );
+}
 
 export default function TabDetail({ course, categories }) {
-    const { data, setData, patch, post, processing, recentlySuccessful, errors } = useForm({
+    const { data, setData, patch, post, recentlySuccessful, errors } = useForm({
         title: course.title,
         description: course.description || '',
         short_description: course.short_description || '',
@@ -43,18 +72,6 @@ export default function TabDetail({ course, categories }) {
         patch(route('admin.courses.update', course.id), {
             preserveScroll: true,
         });
-    };
-
-    const handleThumbnailChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            const form = new FormData();
-            form.append('thumbnail', e.target.files[0]);
-            form.append('_method', 'POST'); // In Laravel, file uploads need POST with _method spoofing if not PATCH
-
-            // We'll use a separate endpoint or just submit with post
-            // Actually, patch doesn't support multipart form data directly in older Inertia without specific config.
-            // Inertia supports it now: we can just use `post` with `_method: 'PATCH'`
-        }
     };
 
     const submitWithFile = (e) => {
@@ -237,23 +254,7 @@ export default function TabDetail({ course, categories }) {
                             }
                         }}
                     />
-                    {data.thumbnail instanceof File ? (
-                        <div className="p-8 text-center bg-navy-50">
-                            <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                            <p className="text-sm font-bold text-navy-700">{data.thumbnail.name}</p>
-                            <p className="text-xs text-gray-500">Akan diupload saat disimpan</p>
-                        </div>
-                    ) : course.thumbnail ? (
-                        <img src={course.thumbnail} alt="Thumbnail pelatihan" className="object-cover w-full h-48 opacity-80 group-hover:opacity-100" />
-                    ) : (
-                        <div className="p-8 text-center bg-gray-50">
-                            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-gray-200 rounded-xl">
-                                <Image className="w-6 h-6 text-gray-400" />
-                            </div>
-                            <p className="text-sm font-medium text-gray-600">Klik atau drop untuk upload thumbnail</p>
-                            <p className="mt-1 text-xs text-gray-400">PNG, JPG hingga 2MB • Rasio 16:9</p>
-                        </div>
-                    )}
+                    <ThumbnailPreview pending={data.thumbnail} saved={course.thumbnail} />
                 </div>
                 {errors.thumbnail && <p className="mt-1 text-xs text-red-500">{errors.thumbnail}</p>}
             </div>
