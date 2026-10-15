@@ -43,7 +43,7 @@ const ContactInbox = () => {
   };
 
   useEffect(() => {
-    loadMessages();
+    void loadMessages();
   }, []);
 
   const markRead = async (message, isRead) => {
@@ -223,7 +223,7 @@ const ContactInbox = () => {
                     <button
                       onClick={() => {
                         setSelected(message);
-                        if (!message.read_at) markRead(message, true);
+                        if (!message.read_at) void markRead(message, true);
                       }}
                       className={`w-full p-4 text-left hover:bg-gray-50 ${
                         selected?.id === message.id ? 'bg-primary-50' : ''
