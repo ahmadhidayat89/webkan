@@ -97,7 +97,7 @@ const SearchResults = () => {
       }
     };
 
-    fetchResults();
+    void fetchResults();
   }, [q]);
 
   const totalResults =
