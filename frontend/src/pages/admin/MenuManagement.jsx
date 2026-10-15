@@ -128,12 +128,29 @@ const MenuManagement = () => {
         <div className="overflow-x-auto rounded-2xl border bg-white">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500"><tr><th className="px-5 py-4">Menu</th><th className="px-5 py-4">Route</th><th className="px-5 py-4">Status</th><th className="px-5 py-4 text-right">Aksi</th></tr></thead>
-            <tbody className="divide-y">{loading ? <tr><td colSpan="4" className="p-8 text-center text-gray-500">Memuat menu...</td></tr>
-              : menus.length === 0 ? <tr><td colSpan="4" className="p-8 text-center text-gray-500">Belum ada menu tambahan.</td></tr>
-                : menus.map((menu) => <tr key={menu.id}>
-                  <td className="px-5 py-4 font-semibold">{menu.parent_id ? '↳ ' : ''}{menu.title_id}</td><td className="px-5 py-4 font-mono text-xs">{menu.url}</td><td className="px-5 py-4">{menu.is_active ? 'Aktif' : 'Nonaktif'}</td>
-                  <td className="px-5 py-4"><div className="flex justify-end gap-2"><button aria-label={`Ubah ${menu.title_id}`} onClick={() => startEdit(menu)} className="rounded-lg p-2 text-primary-700 hover:bg-primary-50"><FaEdit /></button><button aria-label={`Hapus ${menu.title_id}`} onClick={() => deleteMenu(menu)} className="rounded-lg p-2 text-red-600 hover:bg-red-50"><FaTrash /></button></div></td>
-                </tr>)}</tbody>
+            <tbody className="divide-y">
+              {loading && (
+                <tr><td colSpan="4" className="p-8 text-center text-gray-500">Memuat menu...</td></tr>
+              )}
+
+              {!loading && menus.length === 0 && (
+                <tr><td colSpan="4" className="p-8 text-center text-gray-500">Belum ada menu tambahan.</td></tr>
+              )}
+
+              {!loading && menus.map((menu) => (
+                <tr key={menu.id}>
+                  <td className="px-5 py-4 font-semibold">{menu.parent_id ? '↳ ' : ''}{menu.title_id}</td>
+                  <td className="px-5 py-4 font-mono text-xs">{menu.url}</td>
+                  <td className="px-5 py-4">{menu.is_active ? 'Aktif' : 'Nonaktif'}</td>
+                  <td className="px-5 py-4">
+                    <div className="flex justify-end gap-2">
+                      <button aria-label={`Ubah ${menu.title_id}`} onClick={() => startEdit(menu)} className="rounded-lg p-2 text-primary-700 hover:bg-primary-50"><FaEdit /></button>
+                      <button aria-label={`Hapus ${menu.title_id}`} onClick={() => deleteMenu(menu)} className="rounded-lg p-2 text-red-600 hover:bg-red-50"><FaTrash /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
       </div>
