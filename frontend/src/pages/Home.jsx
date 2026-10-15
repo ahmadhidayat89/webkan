@@ -21,7 +21,7 @@ const Home = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchHomeData();
+    void fetchHomeData();
   }, []);
 
   useEffect(() => {
