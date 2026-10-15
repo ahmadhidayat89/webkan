@@ -29,6 +29,14 @@ const SOCIAL_PLATFORMS = [
   { key: 'social_linkedin',  icon: FaLinkedinIn, label: 'LinkedIn',  hover: 'hover:bg-blue-700' },
 ];
 
+const QUICK_LINKS = [
+  { label: 'Tentang KAN', href: '/tentang-kan' },
+  { label: 'Proses Akreditasi', href: '/proses-akreditasi' },
+  { label: 'Layanan', href: '/layanan' },
+  { label: 'Direktori LPK', href: '/direktori' },
+  { label: 'Berita & Pengumuman', href: '/berita' },
+];
+
 // Kotak abu-abu yang tampil selama data kontak dimuat
 const ContactSkeleton = () => (
   <div className="space-y-4 animate-pulse">
@@ -49,7 +57,22 @@ const Footer = () => {
   const contact = useContactSettings(lang);
 
   const { loaded, address, emails, phones } = contact;
-  const rowCount = Math.max(emails.length, phones.length);
+
+  // Email & telepon dipasangkan berurutan; key diambil dari nilainya, bukan index
+  const contactRows = Array.from(
+    { length: Math.max(emails.length, phones.length) },
+    (_, i) => {
+      const mail = emails[i];
+      const tel = phones[i];
+      return {
+        key: `${mail?.value ?? ''}|${tel?.value ?? ''}`,
+        mail,
+        tel,
+        label: mail?.label || tel?.label,
+        phone: tel ? phoneLink(tel.value) : null,
+      };
+    }
+  );
 
   useEffect(() => {
     fetch('/api/v1/settings?group=general')
@@ -138,14 +161,8 @@ const Footer = () => {
             </h3>
 
             <ul className="space-y-3">
-              {[
-                { label: 'Tentang KAN', href: '/tentang-kan' },
-                { label: 'Proses Akreditasi', href: '/proses-akreditasi' },
-                { label: 'Layanan', href: '/layanan' },
-                { label: 'Direktori LPK', href: '/direktori' },
-                { label: 'Berita & Pengumuman', href: '/berita' }
-              ].map((link, index) => (
-                <li key={index}>
+              {QUICK_LINKS.map((link) => (
+                <li key={link.href}>
                   <a
                     href={link.href}
                     className="flex items-center gap-2 text-sm text-gray-400 transition-all group hover:text-white md:text-base"
@@ -187,58 +204,51 @@ const Footer = () => {
                 )}
 
                 {/* Email & telepon: dipasangkan berurutan */}
-                {Array.from({ length: rowCount }).map((_, i) => {
-                  const mail = emails[i];
-                  const tel = phones[i];
-                  const label = mail?.label || tel?.label;
-                  const phone = tel ? phoneLink(tel.value) : null;
+                {contactRows.map(({ key, mail, tel, label, phone }) => (
+                  <li key={key}>
+                    {label && (
+                      <span className="block mb-1 text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                        {label}
+                      </span>
+                    )}
 
-                  return (
-                    <li key={i}>
-                      {label && (
-                        <span className="block mb-1 text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                          {label}
-                        </span>
+                    <ul className="space-y-2">
+                      {/* Email -> Gmail */}
+                      {mail && (
+                        <li>
+                          <a
+                            href={gmailLink(mail.value)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 group"
+                          >
+                            <FaEnvelope className="flex-shrink-0 transition-transform text-primary-500 group-hover:scale-110" />
+                            <span className="text-gray-400 break-all transition-colors group-hover:text-white">
+                              {mail.value}
+                            </span>
+                          </a>
+                        </li>
                       )}
 
-                      <ul className="space-y-2">
-                        {/* Email -> Gmail */}
-                        {mail && (
-                          <li>
-                            <a
-                              href={gmailLink(mail.value)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-3 group"
-                            >
-                              <FaEnvelope className="flex-shrink-0 transition-transform text-primary-500 group-hover:scale-110" />
-                              <span className="text-gray-400 break-all transition-colors group-hover:text-white">
-                                {mail.value}
-                              </span>
-                            </a>
-                          </li>
-                        )}
-
-                        {/* Telepon -> WhatsApp (nomor HP) / aplikasi telepon (nomor kantor) */}
-                        {tel && (
-                          <li>
-                            <a
-                              href={phone.href}
-                              target={phone.isWa ? '_blank' : undefined}
-                              rel={phone.isWa ? 'noopener noreferrer' : undefined}
-                              className="flex items-center gap-3 group"
-                            >
-                              <FaPhone className="flex-shrink-0 transition-transform text-primary-500 group-hover:scale-110" />
-                              <span className="text-gray-400 transition-colors group-hover:text-white">
-                                {tel.value}
-                              </span>
-                            </a>
-                          </li>
-                        )}
-                      </ul>
-                    </li>
-                  );
-                })}
+                      {/* Telepon -> WhatsApp (nomor HP) / aplikasi telepon (nomor kantor) */}
+                      {tel && (
+                        <li>
+                          <a
+                            href={phone.href}
+                            target={phone.isWa ? '_blank' : undefined}
+                            rel={phone.isWa ? 'noopener noreferrer' : undefined}
+                            className="flex items-center gap-3 group"
+                          >
+                            <FaPhone className="flex-shrink-0 transition-transform text-primary-500 group-hover:scale-110" />
+                            <span className="text-gray-400 transition-colors group-hover:text-white">
+                              {tel.value}
+                            </span>
+                          </a>
+                        </li>
+                      )}
+                    </ul>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
