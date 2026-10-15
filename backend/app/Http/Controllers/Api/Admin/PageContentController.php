@@ -72,14 +72,18 @@ class PageContentController extends Controller
 
         $existing = PageContent::where('page_id', $validated['page_id'])->first();
 
+        // If Indonesian content changes, reset cached translation.
+        $contentEn = null;
+        
+        if ($request->has('content_en')) {
+            $contentEn = $validated['content_en'] ?? null;
+        } elseif ($existing && $existing->content_id === $validated['content_id']) {
+            $contentEn = $existing->content_en;
+        }
+        
         $updateData = [
             'content_id' => $validated['content_id'],
-            // If Indonesian content changes, reset cached translation.
-            'content_en' => (
-                $request->has('content_en')
-                    ? ($validated['content_en'] ?? null)
-                    : (($existing && $existing->content_id === $validated['content_id']) ? $existing->content_en : null)
-            ),
+            'content_en' => $contentEn,
         ];
 
         if ($request->has('title')) {
