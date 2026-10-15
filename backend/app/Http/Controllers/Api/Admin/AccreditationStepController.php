@@ -27,12 +27,7 @@ class AccreditationStepController extends Controller
      */
     public function index()
     {
-        $steps = AccreditationStep::ordered()->get();
-
-        return response()->json([
-            'success' => true,
-            'data'    => $steps,
-        ]);
+        return $this->publicIndex();
     }
 
     /**
