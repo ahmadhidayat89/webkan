@@ -17,7 +17,7 @@ const NewsManagement = () => {
   const [selectedNews, setSelectedNews] = useState([]);
 
   useEffect(() => {
-    fetchNews();
+    void fetchNews();
   }, [filterCategory, filterStatus]);
 
   const fetchNews = async () => {
@@ -56,7 +56,7 @@ const NewsManagement = () => {
       });
       const data = await response.json();
       if (data.success) {
-        fetchNews();
+        void fetchNews();
       }
     } catch (error) {
       console.error('Error deleting news:', error);
@@ -73,7 +73,7 @@ const NewsManagement = () => {
       });
       const data = await response.json();
       if (data.success) {
-        fetchNews();
+        void fetchNews();
       }
     } catch (error) {
       console.error('Error toggling publish:', error);
@@ -95,7 +95,7 @@ const NewsManagement = () => {
       const data = await response.json();
       if (data.success) {
         setSelectedNews([]);
-        fetchNews();
+        void fetchNews();
       }
     } catch (error) {
       console.error('Error bulk deleting:', error);
