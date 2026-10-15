@@ -1344,7 +1344,7 @@ const DirectoryManagement = () => {
   const handleImported = (message) => {
     setImportOpen(false);
     setNotice(message);
-    fetchData();
+    void fetchData();
   };
 
   const handleTypeSaved = async (name) => {
