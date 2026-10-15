@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import QuillTableBetter from 'quill-table-better';
 import 'quill-table-better/dist/quill-table-better.css';
 import {
-  FaEdit, FaSave, FaTimes, FaImage, FaTrash,
+  FaSave, FaTimes, FaImage, FaTrash,
   FaFileAlt, FaCheckCircle, FaExclamationCircle,
   FaChevronRight, FaLayerGroup, FaClock,
 } from 'react-icons/fa';
@@ -334,6 +334,234 @@ const trimEmptyTail = (html) => {
   return out;
 };
 
+/*
+ * =========================================================
+ * HELPER (di luar komponen supaya Cognitive Complexity
+ * komponen utama tetap rendah)
+ * =========================================================
+ */
+
+const authHeaders = () => ({
+  Authorization: `Bearer ${localStorage.getItem('token')}`,
+  Accept: 'application/json',
+});
+
+const resolveSection = (requestedSection) =>
+  sections.some((section) => section.key === requestedSection) ? requestedSection : 'tentang';
+
+const loadPageContents = async () => {
+  try {
+    const res = await fetch('/api/v1/admin/page-contents', { headers: authHeaders() });
+    const data = parseApiJson(await res.text());
+
+    return data?.success ? data.data : null;
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+};
+
+const requestDeletePage = async (pageId) => {
+  try {
+    const res = await fetch(`/api/v1/admin/page-contents/${pageId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    const data = parseApiJson(await res.text());
+
+    if (res.ok && data?.success) return { ok: true };
+
+    return { ok: false, message: data?.message || `Gagal menghapus (HTTP ${res.status})` };
+  } catch {
+    return { ok: false, message: 'Terjadi kesalahan, coba lagi' };
+  }
+};
+
+// Mengembalikan pesan error (string) atau null jika berhasil
+const savePageContent = async ({ selectedId, formData, imageFile, removeImage }) => {
+  const isSub = Boolean(subOf(selectedId));
+
+  if (isSub && !formData.title.trim()) return 'Judul halaman tidak boleh kosong';
+
+  try {
+    const res = await fetch('/api/v1/admin/page-contents', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: buildContentFormData({ selectedId, formData, isSub, imageFile, removeImage }),
+    });
+    const raw = await res.text();
+
+    return getContentSaveError(res, raw, parseApiJson(raw));
+  } catch {
+    return 'Terjadi kesalahan, coba lagi';
+  }
+};
+
+const getSurveyYears = (dbContents, draftYears) =>
+  Array.from(
+    new Set([
+      ...dbContents.map((c) => surveyYearOf(c.page_id)).filter(Boolean),
+      ...draftYears,
+    ])
+  ).sort((a, b) => b.localeCompare(a));
+
+// Sub-halaman dari database (pakai title tersimpan) + yang baru ditambah (belum disimpan)
+const getSubItems = (dbContents, draftSubs) => {
+  const dbSubs = dbContents
+    .map((c) => ({ c, r: subOf(c.page_id) }))
+    .filter(({ r }) => r)
+    .map(({ c, r }) => ({
+      cat: r.cat,
+      slug: r.slug,
+      title: c.title || r.slug,
+    }));
+
+  return [
+    ...dbSubs,
+    ...draftSubs.filter(
+      (d) => !dbSubs.some((s) => s.cat === d.cat && s.slug === d.slug)
+    ),
+  ].sort((a, b) => a.title.localeCompare(b.title));
+};
+
+// Kategori aktif (dari halaman yang dipilih)
+const getActiveCat = (selectedId) => {
+  const r = subOf(selectedId);
+
+  if (r) return r.cat;
+
+  const m = selectedId && selectedId.match(/^layanan\/([^/]+)$/);
+
+  return m && SUB_CATS.some((c) => c.slug === m[1]) ? m[1] : null;
+};
+
+const buildFormState = (pageId, content, subItems, draftSubs) => {
+  const sub = subOf(pageId);
+
+  const findTitle = (list) =>
+    sub ? (list.find((l) => l.cat === sub.cat && l.slug === sub.slug)?.title || '') : '';
+
+  if (content) {
+    return {
+      formData: {
+        content_id: content.content_id || '',
+        title: content.title || findTitle(subItems),
+      },
+      imagePreview: toPreviewUrl(content.image),
+    };
+  }
+
+  return {
+    formData: { content_id: '', title: findTitle(draftSubs) },
+    imagePreview: null,
+  };
+};
+
+const validateSurveyYear = (year, existingYears) => {
+  if (!/^(19|20)\d{2}$/.test(year)) return 'Masukkan tahun 4 digit, contoh: 2019';
+  if (existingYears.includes(year)) return `Survei ${year} sudah ada`;
+
+  return '';
+};
+
+// Mengembalikan { error } atau { id, item }
+const buildSubDraft = (name, activeCat, subItems) => {
+  if (!name) return { error: 'Masukkan nama sub-halaman' };
+
+  if (name.length > 150) return { error: 'Nama maksimal 150 karakter' };
+
+  const baseSlug = slugify(name);
+
+  if (!baseSlug) return { error: 'Nama tidak valid, gunakan huruf atau angka' };
+
+  // Alamat dibatasi 100 karakter di backend, jadi slug dipotong otomatis.
+  // Nama yang tampil (title) tetap utuh.
+  const prefix = `layanan/${activeCat}/`;
+  const maxSlug = 100 - prefix.length - 4;
+  const truncatedBase = trimTrailingHyphens(baseSlug.slice(0, maxSlug));
+
+  let slug = truncatedBase;
+
+  // Kalau alamat bentrok (nama berbeda tapi hasil potongan sama), beri nomor
+  let n = 2;
+
+  while (subItems.some((l) => l.cat === activeCat && l.slug === slug)) {
+    if (slug === baseSlug || (n === 2 && baseSlug.length <= maxSlug)) {
+      return { error: 'Sub-halaman dengan nama ini sudah ada' };
+    }
+
+    slug = `${truncatedBase}-${n}`;
+    n += 1;
+  }
+
+  return {
+    id: `${prefix}${slug}`,
+    item: { cat: activeCat, slug, title: name },
+  };
+};
+
+const getDeleteConfirmText = (pageId, subItems) => {
+  const year = surveyYearOf(pageId);
+
+  if (year) {
+    return `Hapus Survei Kepuasan Pelanggan ${year}? Tindakan ini tidak bisa dibatalkan.`;
+  }
+
+  const sub = subOf(pageId);
+
+  if (!sub) return null;
+
+  const name =
+    subItems.find((l) => l.cat === sub.cat && l.slug === sub.slug)?.title || sub.slug;
+
+  return `Hapus sub-halaman "${name}"? Tindakan ini tidak bisa dibatalkan.`;
+};
+
+const confirmDelete = (pageId, subItems) => {
+  const text = getDeleteConfirmText(pageId, subItems);
+
+  return Boolean(text) && window.confirm(text);
+};
+
+/*
+ * =========================================================
+ * HOOK
+ * =========================================================
+ */
+
+const usePageContents = () => {
+  const [dbContents, setDbContents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchContents = useCallback(async () => {
+    const list = await loadPageContents();
+
+    if (list) setDbContents(list);
+
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchContents();
+  }, [fetchContents]);
+
+  const getContent = (pageId) => dbContents.find((p) => p.page_id === pageId);
+
+  const hasContent = (pageId) => {
+    const c = getContent(pageId);
+
+    return Boolean(c) && (c.content_id || '').trim().length > 0;
+  };
+
+  return { dbContents, loading, fetchContents, getContent, hasContent };
+};
+
+/*
+ * =========================================================
+ * KOMPONEN
+ * =========================================================
+ */
+
 const QuillEditor = ({ value, onChange, placeholder }) => {
   const wrapperRef = useRef(null);
   const quillRef = useRef(null);
@@ -400,31 +628,613 @@ const QuillEditor = ({ value, onChange, placeholder }) => {
   );
 };
 
+const PageStatusIcon = ({ filled, isSelected }) => {
+  if (filled) {
+    return (
+      <FaCheckCircle
+        className={`flex-shrink-0 text-sm ${isSelected ? 'text-green-300' : 'text-emerald-500'}`}
+      />
+    );
+  }
+
+  return (
+    <FaExclamationCircle
+      className={`flex-shrink-0 text-sm ${isSelected ? 'text-yellow-300' : 'text-amber-400'}`}
+    />
+  );
+};
+
+const PageButton = ({ page, filled, isSelected, onSelect, withChevron = false }) => (
+  <button
+    onClick={() => onSelect(page.id)}
+    className={`w-full flex items-center gap-3 px-3 rounded-xl text-left transition-all mb-1 ${
+      withChevron ? 'py-3 group' : 'py-2.5'
+    } ${
+      isSelected
+        ? 'bg-primary-600 text-white shadow-md'
+        : 'hover:bg-gray-50 text-gray-700'
+    }`}
+  >
+    <PageStatusIcon filled={filled} isSelected={isSelected} />
+
+    <span className="flex-1 text-sm font-semibold truncate">
+      {page.name}
+    </span>
+
+    {withChevron && (
+      <FaChevronRight
+        className={`flex-shrink-0 text-xs transition-transform ${
+          isSelected
+            ? 'text-white/60'
+            : 'text-gray-300 group-hover:text-gray-400 group-hover:translate-x-0.5'
+        }`}
+      />
+    )}
+  </button>
+);
+
+const SectionTab = ({ section, filledCount, isActive, onClick }) => {
+  const c = colorMap[section.color];
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all ${
+        isActive
+          ? `${c.active} border-l-4 font-bold`
+          : 'text-gray-600 hover:bg-gray-50 border-l-4 border-transparent'
+      }`}
+    >
+      <span className="text-sm truncate">
+        {section.label}
+      </span>
+
+      <span
+        className={`text-xs font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+          filledCount === section.pages.length
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-gray-100 text-gray-500'
+        }`}
+      >
+        {filledCount}/{section.pages.length}
+      </span>
+    </button>
+  );
+};
+
+// Daftar halaman dinamis (survei per tahun / sub-halaman) + form tambah
+const DynamicPageGroup = ({ title, pages, selectedId, hasContent, onSelect, input }) => (
+  <div className="px-1 pt-3 mt-3 border-t border-gray-100">
+    <p className="px-2 mb-2 text-xs font-bold tracking-wide text-gray-400 uppercase">
+      {title}
+    </p>
+
+    {pages.map((page) => (
+      <PageButton
+        key={page.id}
+        page={page}
+        filled={hasContent(page.id)}
+        isSelected={selectedId === page.id}
+        onSelect={onSelect}
+      />
+    ))}
+
+    <div className="mt-2">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          {...input.inputProps}
+          aria-label={input.placeholder}
+          value={input.value}
+          onChange={(e) => input.onChange(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && input.onAdd()}
+          placeholder={input.placeholder}
+          className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400"
+        />
+
+        <button
+          onClick={input.onAdd}
+          className="px-3 py-2 text-sm font-bold text-white rounded-lg bg-primary-600 hover:bg-primary-700"
+        >
+          + Tambah
+        </button>
+      </div>
+
+      {input.error && (
+        <p className="mt-1 text-xs text-red-600">
+          {input.error}
+        </p>
+      )}
+    </div>
+  </div>
+);
+
+const ContentSidebar = ({
+  activeSection,
+  onSectionChange,
+  selectedId,
+  onSelect,
+  hasContent,
+  survey,
+  sub,
+}) => {
+  const currentSection = sections.find((s) => s.key === activeSection);
+
+  return (
+    <div className="sticky flex-shrink-0 overflow-hidden bg-white border border-gray-200 shadow-sm w-72 rounded-2xl top-6">
+      {/* Section Tabs */}
+      <div className="p-3 space-y-1 border-b border-gray-100">
+        {sections.map((s) => (
+          <SectionTab
+            key={s.key}
+            section={s}
+            filledCount={s.pages.filter((p) => hasContent(p.id)).length}
+            isActive={activeSection === s.key}
+            onClick={() => onSectionChange(s.key)}
+          />
+        ))}
+      </div>
+
+      {/* Pages in Active Section */}
+      <div className="p-2">
+        {currentSection?.pages.map((page) => (
+          <PageButton
+            key={page.id}
+            page={page}
+            filled={hasContent(page.id)}
+            isSelected={selectedId === page.id}
+            onSelect={onSelect}
+            withChevron
+          />
+        ))}
+
+        {/* Survei per Tahun (hanya di menu Proses Akreditasi) */}
+        {activeSection === 'proses' && (
+          <DynamicPageGroup
+            title="Survei per Tahun"
+            pages={survey.pages}
+            selectedId={selectedId}
+            hasContent={hasContent}
+            onSelect={onSelect}
+            input={survey.input}
+          />
+        )}
+
+        {/* Sub-halaman */}
+        {activeSection === 'layanan' && sub.info && (
+          <DynamicPageGroup
+            title={`${sub.info.name} (Sub-halaman)`}
+            pages={sub.pages}
+            selectedId={selectedId}
+            hasContent={hasContent}
+            onSelect={onSelect}
+            input={sub.input}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ContentHeader = ({ filledCount, totalCount }) => (
+  <div className="relative overflow-hidden text-white shadow-xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7">
+    <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute w-56 h-56 rounded-full -top-10 -right-10 bg-white/5 blur-3xl"></div>
+    </div>
+
+    <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center w-12 h-12 bg-white/15 rounded-xl">
+          <FaLayerGroup className="text-xl text-white" />
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-black">
+            Kelola Konten Halaman
+          </h2>
+
+          <p className="text-white/70 text-sm mt-0.5">
+            Edit konten untuk setiap halaman website KAN
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <div className="px-5 py-3 text-center border bg-white/15 rounded-xl border-white/20">
+          <div className="text-2xl font-black">{filledCount}</div>
+          <div className="text-xs font-semibold text-white/70">Terisi</div>
+        </div>
+
+        <div className="px-5 py-3 text-center border bg-white/15 rounded-xl border-white/20">
+          <div className="text-2xl font-black">{totalCount - filledCount}</div>
+          <div className="text-xs font-semibold text-white/70">Kosong</div>
+        </div>
+
+        <div className="px-5 py-3 text-center border bg-white/10 rounded-xl border-white/20">
+          <div className="text-2xl font-black">{totalCount}</div>
+          <div className="text-xs font-semibold text-white/70">Total</div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const EmptyEditorState = () => (
+  <div className="flex flex-col items-center justify-center py-24 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
+    <div className="flex items-center justify-center w-20 h-20 mb-4 bg-gray-100 rounded-2xl">
+      <FaFileAlt className="text-3xl text-gray-400" />
+    </div>
+
+    <h3 className="mb-2 text-lg font-black text-gray-800">
+      Pilih Halaman
+    </h3>
+
+    <p className="max-w-xs text-sm text-gray-500">
+      Pilih salah satu halaman dari daftar di sebelah kiri untuk mulai mengedit kontennya.
+    </p>
+  </div>
+);
+
+const EditorHeader = ({ page, content, selectedId, filled }) => (
+  <div className="py-5 border-b border-gray-100 px-7 bg-gradient-to-r from-gray-50 to-white">
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <span
+            className={`text-xs font-bold px-2 py-0.5 rounded-full ${colorMap[page?.color]?.badge}`}
+          >
+            {page?.section}
+          </span>
+
+          {content?.updated_at && (
+            <span className="flex items-center gap-1 text-xs text-gray-400">
+              <FaClock className="text-xs" />
+
+              {new Date(content.updated_at).toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+              })}
+            </span>
+          )}
+        </div>
+
+        <h3 className="text-xl font-black text-gray-900">
+          {page?.name}
+        </h3>
+
+        <p className="text-xs text-gray-400 mt-0.5 font-mono">
+          /{selectedId}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {filled ? (
+          <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+            <FaCheckCircle />
+            Konten Tersedia
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+            <FaExclamationCircle />
+            Belum Ada Konten
+          </span>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const SaveMessage = ({ msg }) => {
+  const isSuccess = msg.type === 'success';
+
+  return (
+    <div
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${
+        isSuccess
+          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+          : 'bg-red-50 text-red-700 border border-red-200'
+      }`}
+    >
+      {isSuccess ? <FaCheckCircle /> : <FaExclamationCircle />}
+
+      {msg.text}
+    </div>
+  );
+};
+
+const ImageUploadField = ({ preview, onSelect, onRemove }) => {
+  const handleChange = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    if (file.size > 2048000) {
+      alert('Ukuran gambar maksimal 2MB');
+      return;
+    }
+
+    onSelect(file);
+  };
+
+  return (
+    <div>
+      <p className="block mb-2 text-sm font-bold text-gray-800">
+        Gambar Header{' '}
+        <span className="font-normal text-gray-400">
+          (Opsional)
+        </span>
+      </p>
+
+      {preview ? (
+        <div className="relative w-full max-w-lg overflow-hidden border border-gray-200 rounded-xl group">
+          <img
+            src={preview}
+            alt="Preview"
+            className="object-cover w-full h-44"
+          />
+
+          <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-black/40 group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={onRemove}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700"
+            >
+              <FaTrash />
+              Hapus Gambar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <label className="flex flex-col items-center justify-center w-full h-40 max-w-lg transition-all border-2 border-gray-300 border-dashed cursor-pointer rounded-xl hover:border-primary-400 hover:bg-primary-50 group">
+          <FaImage className="mb-2 text-3xl text-gray-300 transition-colors group-hover:text-primary-400" />
+
+          <span className="text-sm font-semibold text-gray-500 group-hover:text-primary-600">
+            Klik untuk upload gambar
+          </span>
+
+          <span className="mt-1 text-xs text-gray-400">
+            JPG, PNG — Maks. 2MB
+          </span>
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleChange}
+            className="hidden"
+          />
+        </label>
+      )}
+    </div>
+  );
+};
+
+const EditorActions = ({ canSave, saving, isSurvey, isSub, onSave, onClose, onDelete }) => (
+  <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+    <button
+      onClick={onSave}
+      disabled={!canSave}
+      className="flex items-center gap-2 py-3 font-bold text-white transition-all shadow-md px-7 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl hover:from-primary-700 hover:to-primary-800 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <FaSave />
+
+      {saving ? 'Menyimpan...' : 'Simpan Konten'}
+    </button>
+
+    <button
+      onClick={onClose}
+      className="flex items-center gap-2 px-5 py-3 font-bold text-gray-600 transition-all border border-gray-200 rounded-xl hover:bg-gray-50"
+    >
+      <FaTimes />
+      Tutup
+    </button>
+
+    {isSurvey && (
+      <button
+        onClick={onDelete}
+        disabled={saving}
+        className="flex items-center gap-2 px-5 py-3 ml-auto font-bold text-red-600 transition-all border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50"
+      >
+        <FaTrash />
+        Hapus Survei
+      </button>
+    )}
+
+    {isSub && (
+      <button
+        onClick={onDelete}
+        disabled={saving}
+        className="flex items-center gap-2 px-5 py-3 ml-auto font-bold text-red-600 transition-all border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50"
+      >
+        <FaTrash />
+        Hapus Sub-halaman
+      </button>
+    )}
+  </div>
+);
+
+// Panel editor. Dipasang ulang (key) setiap halaman dipilih, sehingga
+// state form otomatis kembali ke isi halaman yang baru dipilih.
+const EditorPanel = ({
+  selectedId,
+  selectedPage,
+  content,
+  filled,
+  subItems,
+  draftSubs,
+  onSaved,
+  onClose,
+  onDeleted,
+}) => {
+  const [initial] = useState(() => buildFormState(selectedId, content, subItems, draftSubs));
+  const [formData, setFormData] = useState(initial.formData);
+  const [imagePreview, setImagePreview] = useState(initial.imagePreview);
+  const [imageFile, setImageFile] = useState(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState(null);
+
+  const isSurvey = Boolean(surveyYearOf(selectedId));
+  const isSub = Boolean(subOf(selectedId));
+
+  const canSave =
+    hasMeaningfulContent(formData.content_id) &&
+    !saving &&
+    (!isSub || formData.title.trim().length > 0);
+
+  const handleImageSelect = (file) => {
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleImageRemove = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveImage(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveMsg(null);
+
+    const error = await savePageContent({ selectedId, formData, imageFile, removeImage });
+
+    if (error) {
+      setSaveMsg({ type: 'error', text: error });
+      setSaving(false);
+      return;
+    }
+
+    setSaveMsg({ type: 'success', text: 'Konten berhasil disimpan!' });
+
+    await onSaved();
+
+    setImageFile(null);
+    setRemoveImage(false);
+    setSaving(false);
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete(selectedId, subItems)) return;
+
+    setSaving(true);
+
+    const result = await requestDeletePage(selectedId);
+
+    if (!result.ok) {
+      setSaveMsg({ type: 'error', text: result.message });
+      setSaving(false);
+      return;
+    }
+
+    await onDeleted(selectedId);
+
+    setSaving(false);
+  };
+
+  return (
+    <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+      <EditorHeader
+        page={selectedPage}
+        content={content}
+        selectedId={selectedId}
+        filled={filled}
+      />
+
+      <div className="space-y-6 p-7">
+        {saveMsg && <SaveMessage msg={saveMsg} />}
+
+        {/* Judul Halaman */}
+        {isSub && (
+          <div>
+            <label htmlFor="page_title" className="block mb-2 text-sm font-bold text-gray-800">
+              Judul Halaman{' '}
+              <span className="text-red-500">
+                *
+              </span>
+            </label>
+
+            <input
+              id="page_title"
+              type="text"
+              value={formData.title}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  title: e.target.value
+                }))
+              }
+              placeholder="mis. Laboratorium Penguji"
+              className="w-full max-w-lg px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400 text-sm"
+            />
+
+            <p className="text-xs text-gray-400 mt-1.5">
+              Judul ini muncul di daftar sub-halaman dan judul halaman, terlepas dari alamat /{selectedId}
+            </p>
+          </div>
+        )}
+
+        <ImageUploadField
+          preview={imagePreview}
+          onSelect={handleImageSelect}
+          onRemove={handleImageRemove}
+        />
+
+        {/* Content ID */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-bold text-gray-800">
+              Konten Bahasa Indonesia{' '}
+              <span className="text-red-500">
+                *
+              </span>
+            </p>
+
+            <span className="px-2 py-1 font-mono text-xs text-gray-400 bg-gray-100 rounded-md">
+              HTML
+            </span>
+          </div>
+
+          <QuillEditor
+            key={selectedId}
+            value={formData.content_id}
+            onChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                content_id: value
+              }))
+            }
+            placeholder="Tulis konten bahasa Indonesia..."
+          />
+
+          <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+            Mendukung tag HTML: &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;a&gt;, &lt;table&gt;, dll.
+          </p>
+        </div>
+
+        <EditorActions
+          canSave={canSave}
+          saving={saving}
+          isSurvey={isSurvey}
+          isSub={isSub}
+          onSave={handleSave}
+          onClose={onClose}
+          onDelete={handleDelete}
+        />
+      </div>
+    </div>
+  );
+};
+
 const ContentManagement = () => {
   const [searchParams] = useSearchParams();
   const requestedSection = searchParams.get('section');
-  const [dbContents, setDbContents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState(null);
-  const [formData, setFormData] = useState({
-    content_id: '',
-    title: ''
-  });
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState(null);
-  const [activeSection, setActiveSection] = useState(
-    sections.some((section) => section.key === requestedSection) ? requestedSection : 'tentang',
-  );
 
-  useEffect(() => {
-    setActiveSection(
-      sections.some((section) => section.key === requestedSection) ? requestedSection : 'tentang',
-    );
-    setSelectedId(null);
-  }, [requestedSection]);
-  const [removeImage, setRemoveImage] = useState(false);
+  const { dbContents, loading, fetchContents, getContent, hasContent } = usePageContents();
+
+  const [selectedId, setSelectedId] = useState(null);
+  const [selectCount, setSelectCount] = useState(0);
+  const [activeSection, setActiveSection] = useState(resolveSection(requestedSection));
   const [draftYears, setDraftYears] = useState([]);
   const [newYear, setNewYear] = useState('');
   const [yearError, setYearError] = useState('');
@@ -433,173 +1243,38 @@ const ContentManagement = () => {
   const [subError, setSubError] = useState('');
 
   useEffect(() => {
-    fetchContents();
-  }, []);
+    setActiveSection(resolveSection(requestedSection));
+    setSelectedId(null);
+  }, [requestedSection]);
 
-  const fetchContents = async () => {
-    try {
-      setLoading(true);
+  const filledCount = allPages.filter((p) => hasContent(p.id)).length;
 
-      const res = await fetch('/api/v1/admin/page-contents', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Accept': 'application/json',
-        },
-      });
-
-      const raw = await res.text();
-      const data = parseApiJson(raw);
-
-      if (data.success) {
-        setDbContents(data.data);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getContent = (pageId) =>
-    dbContents.find(p => p.page_id === pageId);
-
-  const hasContent = (pageId) => {
-    const c = getContent(pageId);
-
-    return c && (c.content_id || '').trim().length > 0;
-  };
-
-  const filledCount = allPages.filter(
-    p => hasContent(p.id)
-  ).length;
-
-  // Daftar tahun survei:
-  // dari database + tahun yang baru ditambah (belum disimpan)
-  const surveyYears = Array.from(
-    new Set([
-      ...dbContents
-        .map((c) => surveyYearOf(c.page_id))
-        .filter(Boolean),
-      ...draftYears,
-    ])
-  ).sort((a, b) => b.localeCompare(a));
-
+  const surveyYears = getSurveyYears(dbContents, draftYears);
   const surveyPages = surveyYears.map(buildSurveyPage);
 
-  // Sub-halaman:
-  // dari database (pakai title tersimpan)
-  // + yang baru ditambah (belum disimpan)
-  const dbSubs = dbContents
-    .map((c) => ({
-      c,
-      r: subOf(c.page_id)
-    }))
-    .filter(({ r }) => r)
-    .map(({ c, r }) => ({
-      cat: r.cat,
-      slug: r.slug,
-      title: c.title || r.slug
-    }));
-
-  const subItems = [
-    ...dbSubs,
-    ...draftSubs.filter(
-      (d) =>
-        !dbSubs.some(
-          (s) =>
-            s.cat === d.cat &&
-            s.slug === d.slug
-        )
-    ),
-  ].sort((a, b) =>
-    a.title.localeCompare(b.title)
-  );
-
+  const subItems = getSubItems(dbContents, draftSubs);
   const subPages = subItems.map(buildSubPage);
 
-  // Kategori aktif (dari halaman yang dipilih)
-  const activeCat = (() => {
-    const r = subOf(selectedId);
+  const activeCat = getActiveCat(selectedId);
+  const activeCatInfo = SUB_CATS.find((c) => c.slug === activeCat);
+  const catSubPages = subPages.filter((p) => p.cat === activeCat);
 
-    if (r) return r.cat;
-
-    const m =
-      selectedId &&
-      selectedId.match(/^layanan\/([^/]+)$/);
-
-    return m &&
-      SUB_CATS.some((c) => c.slug === m[1])
-      ? m[1]
-      : null;
-  })();
-
-  const activeCatInfo = SUB_CATS.find(
-    (c) => c.slug === activeCat
-  );
-
-  const catSubPages = subPages.filter(
-    (p) => p.cat === activeCat
-  );
+  const selectedPage =
+    allPages.find((p) => p.id === selectedId) ||
+    surveyPages.find((p) => p.id === selectedId) ||
+    subPages.find((p) => p.id === selectedId);
 
   const handleSelect = (pageId) => {
     setSelectedId(pageId);
-    setSaveMsg(null);
-    setRemoveImage(false);
-
-    const c = getContent(pageId);
-    const sub = subOf(pageId);
-
-    const knownTitle = sub
-      ? (
-          subItems.find(
-            (l) =>
-              l.cat === sub.cat &&
-              l.slug === sub.slug
-          )?.title || ''
-        )
-      : '';
-
-    if (c) {
-      setFormData({
-        content_id: c.content_id || '',
-        title: c.title || knownTitle
-      });
-
-      setImagePreview(toPreviewUrl(c.image));
-    } else {
-      const draftTitle = sub
-        ? (
-            draftSubs.find(
-              (l) =>
-                l.cat === sub.cat &&
-                l.slug === sub.slug
-            )?.title || ''
-          )
-        : '';
-
-      setFormData({
-        content_id: '',
-        title: draftTitle
-      });
-
-      setImagePreview(null);
-    }
-
-    setImageFile(null);
+    setSelectCount((count) => count + 1);
   };
 
   const handleAddSurvey = () => {
     const year = newYear.trim();
+    const error = validateSurveyYear(year, surveyYears);
 
-    if (!/^(19|20)\d{2}$/.test(year)) {
-      setYearError(
-        'Masukkan tahun 4 digit, contoh: 2019'
-      );
-      return;
-    }
-
-    if (surveyYears.includes(year)) {
-      setYearError(`Survei ${year} sudah ada`);
+    if (error) {
+      setYearError(error);
       return;
     }
 
@@ -611,357 +1286,68 @@ const ContentManagement = () => {
   };
 
   const handleAddSub = () => {
-    const name = newSubName.trim();
+    const result = buildSubDraft(newSubName.trim(), activeCat, subItems);
 
-    if (!name) {
-      setSubError('Masukkan nama sub-halaman');
+    if (result.error) {
+      setSubError(result.error);
       return;
     }
 
-    if (name.length > 150) {
-      setSubError('Nama maksimal 150 karakter');
-      return;
-    }
-
-    const baseSlug = slugify(name);
-
-    if (!baseSlug) {
-      setSubError(
-        'Nama tidak valid, gunakan huruf atau angka'
-      );
-      return;
-    }
-
-    // Alamat dibatasi 100 karakter di backend,
-    // jadi slug dipotong otomatis.
-    // Nama yang tampil (title) tetap utuh.
-    const prefix = `layanan/${activeCat}/`;
-
-    const maxSlug =
-      100 - prefix.length - 4;
-
-    // FIX: pemotongan dihitung sekali, tanpa regex /-+$/
-    const truncatedBase = trimTrailingHyphens(
-      baseSlug.slice(0, maxSlug)
-    );
-
-    let slug = truncatedBase;
-
-    // Kalau alamat bentrok
-    // (nama berbeda tapi hasil potongan sama),
-    // beri nomor
-    let n = 2;
-
-    while (
-      subItems.some(
-        (l) =>
-          l.cat === activeCat &&
-          l.slug === slug
-      )
-    ) {
-      if (
-        slug === baseSlug ||
-        (n === 2 && baseSlug.length <= maxSlug)
-      ) {
-        setSubError(
-          'Sub-halaman dengan nama ini sudah ada'
-        );
-        return;
-      }
-
-      slug = `${truncatedBase}-${n}`;
-
-      n += 1;
-    }
-
-    const id = `${prefix}${slug}`;
-
-    setDraftSubs((prev) => [
-      ...prev,
-      {
-        cat: activeCat,
-        slug,
-        title: name
-      }
-    ]);
-
+    setDraftSubs((prev) => [...prev, result.item]);
     setNewSubName('');
     setSubError('');
 
-    handleSelect(id);
-
-    setFormData({
-      content_id: '',
-      title: name
-    });
+    handleSelect(result.id);
   };
 
-  const handleDeleteSurvey = async () => {
-    const year = surveyYearOf(selectedId);
+  // Dipanggil setelah halaman dinamis (survei / sub-halaman) berhasil dihapus
+  const handleDeleted = async (pageId) => {
+    const deletedSub = subOf(pageId);
 
-    if (!year) return;
+    setDraftYears((prev) => prev.filter((y) => `${SURVEY_BASE}/${y}` !== pageId));
+    setDraftSubs((prev) => prev.filter((l) => `layanan/${l.cat}/${l.slug}` !== pageId));
+    setSelectedId(null);
 
-    if (
-      !window.confirm(
-        `Hapus Survei Kepuasan Pelanggan ${year}? Tindakan ini tidak bisa dibatalkan.`
-      )
-    ) {
-      return;
-    }
+    await fetchContents();
 
-    await deleteDynamicPage(
-      selectedId,
-      () =>
-        setDraftYears((prev) =>
-          prev.filter((y) => y !== year)
-        )
-    );
+    if (deletedSub) handleSelect(`layanan/${deletedSub.cat}`);
   };
 
-  const handleDeleteSub = async () => {
-    const sub = subOf(selectedId);
-
-    if (!sub) return;
-
-    const name =
-      subItems.find(
-        (l) =>
-          l.cat === sub.cat &&
-          l.slug === sub.slug
-      )?.title || sub.slug;
-
-    if (
-      !window.confirm(
-        `Hapus sub-halaman "${name}"? Tindakan ini tidak bisa dibatalkan.`
-      )
-    ) {
-      return;
-    }
-
-    const ok = await deleteDynamicPage(
-      selectedId,
-      () =>
-        setDraftSubs((prev) =>
-          prev.filter(
-            (l) =>
-              !(
-                l.cat === sub.cat &&
-                l.slug === sub.slug
-              )
-          )
-        )
-    );
-
-    if (ok) {
-      handleSelect(`layanan/${sub.cat}`);
-    }
+  const survey = {
+    pages: surveyPages,
+    input: {
+      value: newYear,
+      error: yearError,
+      placeholder: 'Tahun, mis. 2019',
+      inputProps: { inputMode: 'numeric', maxLength: 150 },
+      onChange: (value) => {
+        setNewYear(value);
+        setYearError('');
+      },
+      onAdd: handleAddSurvey,
+    },
   };
 
-  const deleteDynamicPage = async (
-    pageId,
-    onRemovedFromDraft
-  ) => {
-    try {
-      setSaving(true);
-
-      const res = await fetch(
-        `/api/v1/admin/page-contents/${pageId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json',
-          },
-        }
-      );
-
-      const data = parseApiJson(
-        await res.text()
-      );
-
-      if (res.ok && data?.success) {
-        onRemovedFromDraft();
-
-        setSelectedId(null);
-
-        await fetchContents();
-
-        return true;
-      }
-
-      setSaveMsg({
-        type: 'error',
-        text:
-          data?.message ||
-          `Gagal menghapus (HTTP ${res.status})`
-      });
-
-      return false;
-    } catch (e) {
-      setSaveMsg({
-        type: 'error',
-        text: 'Terjadi kesalahan, coba lagi'
-      });
-
-      return false;
-    } finally {
-      setSaving(false);
-    }
+  const sub = {
+    info: activeCatInfo,
+    pages: catSubPages,
+    input: {
+      value: newSubName,
+      error: subError,
+      placeholder: 'Nama sub-halaman',
+      inputProps: {},
+      onChange: (value) => {
+        setNewSubName(value);
+        setSubError('');
+      },
+      onAdd: handleAddSub,
+    },
   };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-
-    if (!file) return;
-
-    if (file.size > 2048000) {
-      alert('Ukuran gambar maksimal 2MB');
-      return;
-    }
-
-    setImageFile(file);
-    setImagePreview(
-      URL.createObjectURL(file)
-    );
-  };
-
-  const handleSave = async () => {
-    if (!selectedId) return;
-    const isSub = !!subOf(selectedId);
-    if (isSub && !formData.title.trim()) {
-      setSaveMsg({
-        type: 'error',
-        text: 'Judul halaman tidak boleh kosong'
-      });
-
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setSaveMsg(null);
-
-      const fd = buildContentFormData({ selectedId, formData, isSub, imageFile, removeImage });
-      const res = await fetch('/api/v1/admin/page-contents', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, Accept: 'application/json' },
-        body: fd,
-      });
-      const raw = await res.text();
-      const data = parseApiJson(raw);
-      const error = getContentSaveError(res, raw, data);
-      if (!error) {
-        setSaveMsg({
-          type: 'success',
-          text: 'Konten berhasil disimpan!'
-        });
-
-        await fetchContents();
-
-        setImageFile(null);
-        setRemoveImage(false);
-      } else {
-        setSaveMsg({ type: 'error', text: error });
-      }
-    } catch (e) {
-      setSaveMsg({
-        type: 'error',
-        text: 'Terjadi kesalahan, coba lagi'
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const selectedPage =
-    allPages.find(
-      p => p.id === selectedId
-    )
-    || surveyPages.find(
-      p => p.id === selectedId
-    )
-    || subPages.find(
-      p => p.id === selectedId
-    );
-
-  const selectedContent =
-    selectedId
-      ? getContent(selectedId)
-      : null;
-
-  const selectedLabSlug =
-    subOf(selectedId)?.slug || null;
-
-  const canSave =
-    hasMeaningfulContent(
-      formData.content_id
-    ) &&
-    !saving &&
-    (
-      !selectedLabSlug ||
-      formData.title.trim().length > 0
-    );
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-
-        {/* Header */}
-        <div className="relative overflow-hidden text-white shadow-xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute w-56 h-56 rounded-full -top-10 -right-10 bg-white/5 blur-3xl"></div>
-          </div>
-
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 bg-white/15 rounded-xl">
-                <FaLayerGroup className="text-xl text-white" />
-              </div>
-
-              <div>
-                <h2 className="text-2xl font-black">
-                  Kelola Konten Halaman
-                </h2>
-
-                <p className="text-white/70 text-sm mt-0.5">
-                  Edit konten untuk setiap halaman website KAN
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <div className="px-5 py-3 text-center border bg-white/15 rounded-xl border-white/20">
-                <div className="text-2xl font-black">
-                  {filledCount}
-                </div>
-
-                <div className="text-xs font-semibold text-white/70">
-                  Terisi
-                </div>
-              </div>
-
-              <div className="px-5 py-3 text-center border bg-white/15 rounded-xl border-white/20">
-                <div className="text-2xl font-black">
-                  {allPages.length - filledCount}
-                </div>
-
-                <div className="text-xs font-semibold text-white/70">
-                  Kosong
-                </div>
-              </div>
-
-              <div className="px-5 py-3 text-center border bg-white/10 rounded-xl border-white/20">
-                <div className="text-2xl font-black">
-                  {allPages.length}
-                </div>
-
-                <div className="text-xs font-semibold text-white/70">
-                  Total
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ContentHeader filledCount={filledCount} totalCount={allPages.length} />
 
         {loading ? (
           <div className="flex justify-center py-20">
@@ -969,558 +1355,33 @@ const ContentManagement = () => {
           </div>
         ) : (
           <div className="flex items-start gap-6">
-
-            {/* Sidebar */}
-            <div className="sticky flex-shrink-0 overflow-hidden bg-white border border-gray-200 shadow-sm w-72 rounded-2xl top-6">
-
-              {/* Section Tabs */}
-              <div className="p-3 space-y-1 border-b border-gray-100">
-                {sections.map(s => {
-                  const sectionFilled =
-                    s.pages.filter(
-                      p => hasContent(p.id)
-                    ).length;
-
-                  const isActive =
-                    activeSection === s.key;
-
-                  const c =
-                    colorMap[s.color];
-
-                  return (
-                    <button
-                      key={s.key}
-                      onClick={() =>
-                        setActiveSection(s.key)
-                      }
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all ${
-                        isActive
-                          ? `${c.active} border-l-4 font-bold`
-                          : 'text-gray-600 hover:bg-gray-50 border-l-4 border-transparent'
-                      }`}
-                    >
-                      <span className="text-sm truncate">
-                        {s.label}
-                      </span>
-
-                      <span
-                        className={`text-xs font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                          sectionFilled === s.pages.length
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-gray-100 text-gray-500'
-                        }`}
-                      >
-                        {sectionFilled}/{s.pages.length}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Pages in Active Section */}
-              <div className="p-2">
-                {sections
-                  .find(
-                    s => s.key === activeSection
-                  )
-                  ?.pages.map(page => {
-                    const filled =
-                      hasContent(page.id);
-
-                    const isSelected =
-                      selectedId === page.id;
-
-                    return (
-                      <button
-                        key={page.id}
-                        onClick={() =>
-                          handleSelect(page.id)
-                        }
-                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all group mb-1 ${
-                          isSelected
-                            ? 'bg-primary-600 text-white shadow-md'
-                            : 'hover:bg-gray-50 text-gray-700'
-                        }`}
-                      >
-                        {filled ? (
-                          <FaCheckCircle
-                            className={`flex-shrink-0 text-sm ${
-                              isSelected
-                                ? 'text-green-300'
-                                : 'text-emerald-500'
-                            }`}
-                          />
-                        ) : (
-                          <FaExclamationCircle
-                            className={`flex-shrink-0 text-sm ${
-                              isSelected
-                                ? 'text-yellow-300'
-                                : 'text-amber-400'
-                            }`}
-                          />
-                        )}
-
-                        <span className="flex-1 text-sm font-semibold truncate">
-                          {page.name}
-                        </span>
-
-                        <FaChevronRight
-                          className={`flex-shrink-0 text-xs transition-transform ${
-                            isSelected
-                              ? 'text-white/60'
-                              : 'text-gray-300 group-hover:text-gray-400 group-hover:translate-x-0.5'
-                          }`}
-                        />
-                      </button>
-                    );
-                  })}
-
-                {/* Survei per Tahun (hanya di menu Proses Akreditasi) */}
-                {activeSection === 'proses' && (
-                  <div className="px-1 pt-3 mt-3 border-t border-gray-100">
-                    <p className="px-2 mb-2 text-xs font-bold tracking-wide text-gray-400 uppercase">
-                      Survei per Tahun
-                    </p>
-
-                    {surveyPages.map((page) => {
-                      const filled =
-                        hasContent(page.id);
-
-                      const isSelected =
-                        selectedId === page.id;
-
-                      return (
-                        <button
-                          key={page.id}
-                          onClick={() =>
-                            handleSelect(page.id)
-                          }
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all mb-1 ${
-                            isSelected
-                              ? 'bg-primary-600 text-white shadow-md'
-                              : 'hover:bg-gray-50 text-gray-700'
-                          }`}
-                        >
-                          {filled ? (
-                            <FaCheckCircle
-                              className={`flex-shrink-0 text-sm ${
-                                isSelected
-                                  ? 'text-green-300'
-                                  : 'text-emerald-500'
-                              }`}
-                            />
-                          ) : (
-                            <FaExclamationCircle
-                              className={`flex-shrink-0 text-sm ${
-                                isSelected
-                                  ? 'text-yellow-300'
-                                  : 'text-amber-400'
-                              }`}
-                            />
-                          )}
-
-                          <span className="flex-1 text-sm font-semibold truncate">
-                            {page.name}
-                          </span>
-                        </button>
-                      );
-                    })}
-
-                    <div className="mt-2">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={150}
-                          value={newYear}
-                          onChange={(e) => {
-                            setNewYear(
-                              e.target.value
-                            );
-                            setYearError('');
-                          }}
-                          onKeyDown={(e) =>
-                            e.key === 'Enter' &&
-                            handleAddSurvey()
-                          }
-                          placeholder="Tahun, mis. 2019"
-                          className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400"
-                        />
-
-                        <button
-                          onClick={handleAddSurvey}
-                          className="px-3 py-2 text-sm font-bold text-white rounded-lg bg-primary-600 hover:bg-primary-700"
-                        >
-                          + Tambah
-                        </button>
-                      </div>
-
-                      {yearError && (
-                        <p className="mt-1 text-xs text-red-600">
-                          {yearError}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Sub-halaman */}
-                {activeSection === 'layanan' &&
-                  activeCatInfo && (
-                    <div className="px-1 pt-3 mt-3 border-t border-gray-100">
-                      <p className="px-2 mb-2 text-xs font-bold tracking-wide text-gray-400 uppercase">
-                        {activeCatInfo.name} (Sub-halaman)
-                      </p>
-
-                      {catSubPages.map((page) => {
-                        const filled =
-                          hasContent(page.id);
-
-                        const isSelected =
-                          selectedId === page.id;
-
-                        return (
-                          <button
-                            key={page.id}
-                            onClick={() =>
-                              handleSelect(page.id)
-                            }
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all mb-1 ${
-                              isSelected
-                                ? 'bg-primary-600 text-white shadow-md'
-                                : 'hover:bg-gray-50 text-gray-700'
-                            }`}
-                          >
-                            {filled ? (
-                              <FaCheckCircle
-                                className={`flex-shrink-0 text-sm ${
-                                  isSelected
-                                    ? 'text-green-300'
-                                    : 'text-emerald-500'
-                                }`}
-                              />
-                            ) : (
-                              <FaExclamationCircle
-                                className={`flex-shrink-0 text-sm ${
-                                  isSelected
-                                    ? 'text-yellow-300'
-                                    : 'text-amber-400'
-                                }`}
-                              />
-                            )}
-
-                            <span className="flex-1 text-sm font-semibold truncate">
-                              {page.name}
-                            </span>
-                          </button>
-                        );
-                      })}
-
-                      <div className="mt-2">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={newSubName}
-                            onChange={(e) => {
-                              setNewSubName(
-                                e.target.value
-                              );
-                              setSubError('');
-                            }}
-                            onKeyDown={(e) =>
-                              e.key === 'Enter' &&
-                              handleAddSub()
-                            }
-                            placeholder="Nama sub-halaman"
-                            className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400"
-                          />
-
-                          <button
-                            onClick={handleAddSub}
-                            className="px-3 py-2 text-sm font-bold text-white rounded-lg bg-primary-600 hover:bg-primary-700"
-                          >
-                            + Tambah
-                          </button>
-                        </div>
-
-                        {subError && (
-                          <p className="mt-1 text-xs text-red-600">
-                            {subError}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-              </div>
-            </div>
+            <ContentSidebar
+              activeSection={activeSection}
+              onSectionChange={setActiveSection}
+              selectedId={selectedId}
+              onSelect={handleSelect}
+              hasContent={hasContent}
+              survey={survey}
+              sub={sub}
+            />
 
             {/* Editor Panel */}
             <div className="flex-1 min-w-0">
-              {!selectedId ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
-                  <div className="flex items-center justify-center w-20 h-20 mb-4 bg-gray-100 rounded-2xl">
-                    <FaFileAlt className="text-3xl text-gray-400" />
-                  </div>
-
-                  <h3 className="mb-2 text-lg font-black text-gray-800">
-                    Pilih Halaman
-                  </h3>
-
-                  <p className="max-w-xs text-sm text-gray-500">
-                    Pilih salah satu halaman dari daftar di sebelah kiri untuk mulai mengedit kontennya.
-                  </p>
-                </div>
+              {selectedId ? (
+                <EditorPanel
+                  key={`${selectedId}-${selectCount}`}
+                  selectedId={selectedId}
+                  selectedPage={selectedPage}
+                  content={getContent(selectedId)}
+                  filled={hasContent(selectedId)}
+                  subItems={subItems}
+                  draftSubs={draftSubs}
+                  onSaved={fetchContents}
+                  onClose={() => setSelectedId(null)}
+                  onDeleted={handleDeleted}
+                />
               ) : (
-                <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
-
-                  {/* Editor Header */}
-                  <div className="py-5 border-b border-gray-100 px-7 bg-gradient-to-r from-gray-50 to-white">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                              colorMap[
-                                selectedPage?.color
-                              ]?.badge
-                            }`}
-                          >
-                            {selectedPage?.section}
-                          </span>
-
-                          {selectedContent?.updated_at && (
-                            <span className="flex items-center gap-1 text-xs text-gray-400">
-                              <FaClock className="text-xs" />
-
-                              {new Date(
-                                selectedContent.updated_at
-                              ).toLocaleDateString(
-                                'id-ID',
-                                {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  year: 'numeric'
-                                }
-                              )}
-                            </span>
-                          )}
-                        </div>
-
-                        <h3 className="text-xl font-black text-gray-900">
-                          {selectedPage?.name}
-                        </h3>
-
-                        <p className="text-xs text-gray-400 mt-0.5 font-mono">
-                          /{selectedId}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {hasContent(selectedId) ? (
-                          <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
-                            <FaCheckCircle />
-                            Konten Tersedia
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
-                            <FaExclamationCircle />
-                            Belum Ada Konten
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Editor Form */}
-                  <div className="space-y-6 p-7">
-
-                    {/* Save Message */}
-                    {saveMsg && (
-                      <div
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${
-                          saveMsg.type === 'success'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-red-50 text-red-700 border border-red-200'
-                        }`}
-                      >
-                        {saveMsg.type === 'success' ? (
-                          <FaCheckCircle />
-                        ) : (
-                          <FaExclamationCircle />
-                        )}
-
-                        {saveMsg.text}
-                      </div>
-                    )}
-
-                    {/* Judul Halaman */}
-                    {selectedLabSlug && (
-                      <div>
-                        <label className="block mb-2 text-sm font-bold text-gray-800">
-                          Judul Halaman{' '}
-                          <span className="text-red-500">
-                            *
-                          </span>
-                        </label>
-
-                        <input
-                          type="text"
-                          value={formData.title}
-                          onChange={(e) =>
-                            setFormData(
-                              (prev) => ({
-                                ...prev,
-                                title: e.target.value
-                              })
-                            )
-                          }
-                          placeholder="mis. Laboratorium Penguji"
-                          className="w-full max-w-lg px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400 text-sm"
-                        />
-
-                        <p className="text-xs text-gray-400 mt-1.5">
-                          Judul ini muncul di daftar sub-halaman dan judul halaman, terlepas dari alamat /{selectedId}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Image Upload */}
-                    <div>
-                      <label className="block mb-2 text-sm font-bold text-gray-800">
-                        Gambar Header{' '}
-                        <span className="font-normal text-gray-400">
-                          (Opsional)
-                        </span>
-                      </label>
-
-                      {imagePreview ? (
-                        <div className="relative w-full max-w-lg overflow-hidden border border-gray-200 rounded-xl group">
-                          <img
-                            src={imagePreview}
-                            alt="Preview"
-                            className="object-cover w-full h-44"
-                          />
-
-                          <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-black/40 group-hover:opacity-100">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setImageFile(null);
-                                setImagePreview(null);
-                                setRemoveImage(true);
-                              }}
-                              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700"
-                            >
-                              <FaTrash />
-                              Hapus Gambar
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <label className="flex flex-col items-center justify-center w-full h-40 max-w-lg transition-all border-2 border-gray-300 border-dashed cursor-pointer rounded-xl hover:border-primary-400 hover:bg-primary-50 group">
-                          <FaImage className="mb-2 text-3xl text-gray-300 transition-colors group-hover:text-primary-400" />
-
-                          <span className="text-sm font-semibold text-gray-500 group-hover:text-primary-600">
-                            Klik untuk upload gambar
-                          </span>
-
-                          <span className="mt-1 text-xs text-gray-400">
-                            JPG, PNG — Maks. 2MB
-                          </span>
-
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="hidden"
-                          />
-                        </label>
-                      )}
-                    </div>
-
-                    {/* Content ID */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-bold text-gray-800">
-                          Konten Bahasa Indonesia{' '}
-                          <span className="text-red-500">
-                            *
-                          </span>
-                        </label>
-
-                        <span className="px-2 py-1 font-mono text-xs text-gray-400 bg-gray-100 rounded-md">
-                          HTML
-                        </span>
-                      </div>
-
-                      <QuillEditor
-                        key={selectedId}
-                        value={formData.content_id}
-                        onChange={(value) =>
-                          setFormData(
-                            (prev) => ({
-                              ...prev,
-                              content_id: value
-                            })
-                          )
-                        }
-                        placeholder="Tulis konten bahasa Indonesia..."
-                      />
-
-                      <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
-                        Mendukung tag HTML: &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;a&gt;, &lt;table&gt;, dll.
-                      </p>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-                      <button
-                        onClick={handleSave}
-                        disabled={!canSave}
-                        className="flex items-center gap-2 py-3 font-bold text-white transition-all shadow-md px-7 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl hover:from-primary-700 hover:to-primary-800 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <FaSave />
-
-                        {saving
-                          ? 'Menyimpan...'
-                          : 'Simpan Konten'}
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setSelectedId(null);
-                          setSaveMsg(null);
-                        }}
-                        className="flex items-center gap-2 px-5 py-3 font-bold text-gray-600 transition-all border border-gray-200 rounded-xl hover:bg-gray-50"
-                      >
-                        <FaTimes />
-                        Tutup
-                      </button>
-
-                      {surveyYearOf(selectedId) && (
-                        <button
-                          onClick={handleDeleteSurvey}
-                          disabled={saving}
-                          className="flex items-center gap-2 px-5 py-3 ml-auto font-bold text-red-600 transition-all border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50"
-                        >
-                          <FaTrash />
-                          Hapus Survei
-                        </button>
-                      )}
-
-                      {selectedLabSlug && (
-                        <button
-                          onClick={handleDeleteSub}
-                          disabled={saving}
-                          className="flex items-center gap-2 px-5 py-3 ml-auto font-bold text-red-600 transition-all border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50"
-                        >
-                          <FaTrash />
-                          Hapus Sub-halaman
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <EmptyEditorState />
               )}
             </div>
           </div>
