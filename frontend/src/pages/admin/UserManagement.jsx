@@ -73,7 +73,7 @@ const UserManagement = () => {
   };
 
   useEffect(() => {
-    loadUsers();
+    void loadUsers();
   }, []);
 
   const loadUsers = async () => {
