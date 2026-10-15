@@ -117,7 +117,7 @@ export default function PublicSurvey() {
     };
 
     if (code) {
-      fetchSurvey();
+      void fetchSurvey();
     }
   }, [code]);
 
