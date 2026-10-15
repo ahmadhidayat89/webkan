@@ -133,7 +133,7 @@ const Footer = () => {
           {/* Quick Links */}
           <div>
             <h3 className="flex items-center gap-2 mb-6 text-lg font-black md:text-xl">
-              <span className="w-1 h-6 rounded-full bg-primary-600"></span>
+              <span className="w-1 h-6 rounded-full bg-primary-600"></span>{' '}
               Tautan Cepat
             </h3>
 
@@ -161,7 +161,7 @@ const Footer = () => {
           {/* Contact Info */}
           <div>
             <h3 className="flex items-center gap-2 mb-6 text-lg font-black md:text-xl">
-              <span className="w-1 h-6 rounded-full bg-primary-600"></span>
+              <span className="w-1 h-6 rounded-full bg-primary-600"></span>{' '}
               Kontak
             </h3>
 
