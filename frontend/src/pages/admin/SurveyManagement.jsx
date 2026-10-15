@@ -280,7 +280,7 @@ function useSurveyList() {
   };
 
   useEffect(() => {
-    fetchSurveys();
+    void fetchSurveys();
   }, []);
 
   return { surveys, stats, loading, fetchSurveys };
@@ -453,8 +453,8 @@ function useSurveySave({ title, desc, questions, currentSurvey, onSaved }) {
 
 function useSurveyStatusActions({ currentSurvey, setCurrentSurvey, fetchSurveys, fetchSurveyDetail }) {
   const refresh = () => {
-    fetchSurveys();
-    if (currentSurvey?.id) fetchSurveyDetail(currentSurvey.id);
+    void fetchSurveys();
+    if (currentSurvey?.id) void fetchSurveyDetail(currentSurvey.id);
   };
 
   // updater menerima survei saat ini dan mengembalikan perubahan yang diterapkan
@@ -494,7 +494,7 @@ function useSurveyDelete({ currentSurvey, fetchSurveys, goToList, setDeleteConfi
     setDeleteConfirmId(null);
 
     if (currentSurvey?.id === surveyId) goToList();
-    else fetchSurveys();
+    else void fetchSurveys();
   };
 }
 
@@ -1780,7 +1780,7 @@ export default function SurveyManagement() {
     setView('detail');
     preview.reset();
 
-    if (survey.id) fetchSurveyDetail(survey.id);
+    if (survey.id) void fetchSurveyDetail(survey.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -1791,13 +1791,13 @@ export default function SurveyManagement() {
     setCurrentSurvey(null);
     clearDetail();
     setDeleteConfirmId(null);
-    fetchSurveys();
+    void fetchSurveys();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleTabChange = (key) => {
     setMode(key);
-    if (key === 'res' && currentSurvey?.id) fetchSurveyDetail(currentSurvey.id);
+    if (key === 'res' && currentSurvey?.id) void fetchSurveyDetail(currentSurvey.id);
   };
 
   const { saving, save } = useSurveySave({
@@ -1808,7 +1808,7 @@ export default function SurveyManagement() {
     onSaved: (saved) => {
       setCurrentSurvey(saved);
       editor.replaceQuestions(saved.questions);
-      fetchSurveyDetail(saved.id ?? currentSurvey?.id);
+      void fetchSurveyDetail(saved.id ?? currentSurvey?.id);
     },
   });
 
