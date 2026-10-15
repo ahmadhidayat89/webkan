@@ -65,7 +65,8 @@ const FAQManagement = () => {
      Fetch FAQ
   ========================= */
   useEffect(() => {
-    fetchFaqs();
+    // Tandai Promise sebagai sengaja dijalankan tanpa await di dalam useEffect.
+    void fetchFaqs();
   }, []);
 
   const fetchFaqs = async () => {
