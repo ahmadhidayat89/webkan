@@ -96,22 +96,27 @@ const MenuManagement = () => {
         {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
         <form onSubmit={saveMenu} className="grid gap-4 rounded-2xl border bg-white p-6 md:grid-cols-2">
           <h3 className="text-lg font-bold md:col-span-2">{editing ? 'Ubah Menu' : 'Tambah Menu'}</h3>
-          <label className="space-y-1 text-sm font-semibold">Nama menu (Indonesia)
+          <label className="space-y-1 text-sm font-semibold">
+            <span>Nama menu (Indonesia)</span>
             <input required maxLength="255" value={form.title_id} onChange={(event) => setForm({ ...form, title_id: event.target.value })} className="w-full rounded-lg border px-3 py-2 font-normal" />
           </label>
-          <label className="space-y-1 text-sm font-semibold">Nama menu (English)
+          <label className="space-y-1 text-sm font-semibold">
+            <span>Nama menu (English)</span>
             <input maxLength="255" value={form.title_en} onChange={(event) => setForm({ ...form, title_en: event.target.value })} className="w-full rounded-lg border px-3 py-2 font-normal" />
           </label>
-          <label className="space-y-1 text-sm font-semibold">Route / URL
+          <label className="space-y-1 text-sm font-semibold">
+            <span>Route / URL</span>
             <input required maxLength="2048" placeholder="/nama-halaman" value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} className="w-full rounded-lg border px-3 py-2 font-mono font-normal" />
           </label>
-          <label className="space-y-1 text-sm font-semibold">Menu induk
+          <label className="space-y-1 text-sm font-semibold">
+            <span>Menu induk</span>
             <select value={form.parent_id || ''} onChange={(event) => setForm({ ...form, parent_id: event.target.value ? Number(event.target.value) : null })} className="w-full rounded-lg border px-3 py-2 font-normal">
               <option value="">Menu utama</option>
               {menus.filter((menu) => !menu.parent_id && menu.id !== editing?.id).map((menu) => <option key={menu.id} value={menu.id}>{menu.title_id}</option>)}
             </select>
           </label>
-          <label className="space-y-1 text-sm font-semibold">Urutan
+          <label className="space-y-1 text-sm font-semibold">
+            <span>Urutan</span>
             <input type="number" min="0" max="10000" value={form.order} onChange={(event) => setForm({ ...form, order: Number(event.target.value) })} className="w-full rounded-lg border px-3 py-2 font-normal" />
           </label>
           <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Tampilkan di website</label>
