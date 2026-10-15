@@ -2,9 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import {
-  FaHome, FaChevronRight, FaArrowRight, FaArrowLeft,
+  FaHome, FaChevronRight, FaArrowLeft,
   FaCheckCircle, FaAward, FaUsers, FaGlobe,
-  FaHistory, FaSitemap, FaBalanceScale, FaStar, FaIdCard, FaFileAlt, FaClipboardList,
 } from 'react-icons/fa';
 
 const About = () => {
@@ -20,58 +19,6 @@ const About = () => {
     { href: '/anggota-kan', label: 'Anggota KAN' },
     { href: '/maklumat-layanan', label: 'Maklumat Layanan' },
     { href: '/standar-layanan', label: 'Standar Layanan Akreditasi' },
-  ];
-
-  const subPages = [
-    {
-      icon: FaHistory,
-      href: '/sejarah-fungsi',
-      label: 'Sejarah dan Fungsi KAN',
-      desc: 'Perjalanan dan peran KAN sejak berdiri hingga kini',
-      color: 'from-blue-600 to-blue-700',
-    },
-    {
-      icon: FaSitemap,
-      href: '/struktur-organisasi',
-      label: 'Struktur Organisasi',
-      desc: 'Susunan kepengurusan dan organisasi KAN',
-      color: 'from-indigo-600 to-indigo-700',
-    },
-    {
-      icon: FaBalanceScale,
-      href: '/ketidakberpihakan',
-      label: 'Ketidakberpihakan',
-      desc: 'Komitmen KAN dalam menjaga independensi dan objektivitas',
-      color: 'from-violet-600 to-violet-700',
-    },
-    {
-      icon: FaGlobe,
-      href: '/pengakuan-internasional',
-      label: 'Pengakuan Internasional',
-      desc: 'Keanggotaan dan pengakuan KAN di kancah internasional',
-      color: 'from-cyan-600 to-cyan-700',
-    },
-    {
-      icon: FaIdCard,
-      href: '/anggota-kan',
-      label: 'Anggota KAN',
-      desc: 'Daftar lembaga penilaian kesesuaian yang terakreditasi',
-      color: 'from-teal-600 to-teal-700',
-    },
-    {
-      icon: FaFileAlt,
-      href: '/maklumat-layanan',
-      label: 'Maklumat Layanan',
-      desc: 'Komitmen dan janji pelayanan KAN kepada masyarakat',
-      color: 'from-emerald-600 to-emerald-700',
-    },
-    {
-      icon: FaClipboardList,
-      href: '/standar-layanan',
-      label: 'Standar Layanan Akreditasi',
-      desc: 'Standar dan prosedur layanan akreditasi KAN',
-      color: 'from-green-600 to-green-700',
-    },
   ];
 
   const stats = [
@@ -194,16 +141,14 @@ const About = () => {
                         Lembaga non-struktural yang bertanggung jawab langsung kepada Presiden Republik Indonesia dalam bidang akreditasi.
                       </p>
                       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                        {stats.map((stat, i) => (
-                          <div key={i} className="p-4 text-center bg-primary-50 rounded-xl">
+                        {stats.map((stat) => (
+                          <div key={stat.label} className="p-4 text-center bg-primary-50 rounded-xl">
                             <div className="mb-1 text-2xl font-black md:text-3xl text-primary-700">{stat.value}</div>
                             <div className="text-xs font-semibold text-gray-500">{stat.label}</div>
                           </div>
                         ))}
                       </div>
                     </section>
-
-
 
                     {/* Visi & Misi */}
                     <section>
@@ -231,8 +176,8 @@ const About = () => {
                           </h3>
 
                           <ul className="space-y-3">
-                            {missions.map((m, i) => (
-                              <li key={i} className="flex items-start gap-3">
+                            {missions.map((m) => (
+                              <li key={m} className="flex items-start gap-3">
                                 <FaCheckCircle className="flex-shrink-0 mt-1 text-primary-600" />
                                 <span className="leading-relaxed text-gray-700">
                                   {m}
@@ -244,7 +189,7 @@ const About = () => {
 
                       </div>
                     </section>
-                    
+
                     {/* Nilai-Nilai */}
                     <section>
                       <h2 className="pb-3 mb-4 text-2xl font-black text-gray-900 border-b border-gray-100">
@@ -254,10 +199,10 @@ const About = () => {
                         Prinsip yang menjadi landasan setiap langkah KAN
                       </p>
                       <div className="grid gap-4 sm:grid-cols-2">
-                        {values.map((val, i) => {
+                        {values.map((val) => {
                           const Icon = val.icon;
                           return (
-                            <div key={i} className="bg-gray-50 rounded-xl p-5 border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all group text-center">
+                            <div key={val.label} className="bg-gray-50 rounded-xl p-5 border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all group text-center">
                               <div className={`w-14 h-14 bg-gradient-to-br ${val.color} rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform shadow-lg`}>
                                 <Icon className="text-xl text-white" />
                               </div>
