@@ -556,7 +556,7 @@ const QuestionSettings = ({ q, onPatch, onPatchValidation }) => {
   return (
     <div className="mb-4 space-y-3 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
       <label className="block text-xs font-bold text-gray-600">
-        Unggah gambar pertanyaan (maks. 5 MB)
+        Unggah gambar pertanyaan (maks. 5 MB){' '}
         <input
           type="file"
           accept="image/jpeg,image/png,image/gif,image/webp"
@@ -580,7 +580,7 @@ const QuestionSettings = ({ q, onPatch, onPatchValidation }) => {
 
       {q.type === 'short' && (
         <label className="block text-xs font-bold text-gray-600">
-          Validasi jawaban
+          Validasi jawaban{' '}
           <select
             value={q.validation?.answer_type || 'text'}
             onChange={(e) => onPatchValidation({ answer_type: e.target.value })}
@@ -1218,7 +1218,7 @@ const QuestionFooter = ({ q, qIdx, editor }) => (
         checked={q.req}
         onChange={(e) => editor.setRequired(qIdx, e.target.checked)}
         className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-      />
+      />{' '}
       Wajib diisi
     </label>
   </div>
@@ -1459,7 +1459,7 @@ const ShareLinkCard = ({ survey, link, onToggleActive }) => {
             checked={survey.is_active}
             onChange={onToggleActive}
             className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-          />
+          />{' '}
           Terima jawaban baru
         </label>
       </div>
