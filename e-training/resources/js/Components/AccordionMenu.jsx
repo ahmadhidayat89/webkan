@@ -25,6 +25,16 @@ const typeColors = {
     zoom: 'text-sky-500 bg-sky-50',
 };
 
+function StatusIcon({ isCompleted, isActive }) {
+    if (isCompleted) {
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+    }
+    if (isActive) {
+        return <Play className="w-4 h-4 text-navy-500" />;
+    }
+    return <Circle className="w-4 h-4 text-gray-300" />;
+}
+
 export default function AccordionMenu({ modules, activeLesson, onSelectLesson }) {
     const defaultOpenModules = modules
         .filter((m) => m.lessons.some((l) => l.id === activeLesson?.id))
@@ -111,13 +121,7 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson })
 
                                             {/* Status Icon */}
                                             <div className="flex-shrink-0">
-                                                {lesson.isCompleted ? (
-                                                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                                ) : isActive ? (
-                                                    <Play className="w-4 h-4 text-navy-500" />
-                                                ) : (
-                                                    <Circle className="w-4 h-4 text-gray-300" />
-                                                )}
+                                                <StatusIcon isCompleted={lesson.isCompleted} isActive={isActive} />
                                             </div>
                                         </button>
                                     );
