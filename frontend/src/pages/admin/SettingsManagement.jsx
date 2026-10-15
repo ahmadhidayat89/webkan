@@ -943,10 +943,7 @@ const SettingsManagement = () => {
 
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               Gunakan akun Gmail khusus pengirim dan{' '}
-              <span className="font-semibold">
-                App Password
-              </span>
-              , bukan password utama akun.
+              <span className="font-semibold">App Password</span>, bukan password utama akun.
             </p>
 
             <a
@@ -1155,10 +1152,7 @@ const SettingsManagement = () => {
           <li>
             <span className="font-semibold">2.</span>{' '}
             Buka{' '}
-            <strong>
-              myaccount.google.com/apppasswords
-            </strong>
-            .
+            <strong>myaccount.google.com/apppasswords</strong>.
           </li>
 
           <li>
