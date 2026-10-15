@@ -96,7 +96,7 @@ const SocialMediaManagement = () => {
         setLoading(false);
       }
     };
-    load();
+    void load();
   }, []);
 
   const handleSave = async () => {
