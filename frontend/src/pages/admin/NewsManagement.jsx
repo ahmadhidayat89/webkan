@@ -121,7 +121,6 @@ const NewsManagement = () => {
   const totalNews = news.length;
   const published = news.filter(n => n.published_at).length;
   const drafts = news.filter(n => !n.published_at).length;
-  const announcements = news.filter(n => n.category === 'announcement').length;
 
   return (
     <AdminLayout>
@@ -242,13 +241,15 @@ const NewsManagement = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {loading ? (
+                {loading && (
                   <tr>
                     <td colSpan="6" className="py-16 text-center">
                       <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
                     </td>
                   </tr>
-                ) : news.length === 0 ? (
+                )}
+
+                {!loading && news.length === 0 && (
                   <tr>
                     <td colSpan="6" className="py-20 text-center">
                       <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -263,112 +264,70 @@ const NewsManagement = () => {
                       </button>
                     </td>
                   </tr>
-                ) : (
-                  news.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedNews.includes(item.id)}
-                          onChange={() => handleSelectOne(item.id)}
-                          className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
-                          {item.image ? (
-                            <img
-                              src={`/storage/${item.image}`}
-                              alt={item.title_id}
-                              className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-                              <FaNewspaper className="text-gray-400" />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="font-bold text-gray-900 text-sm line-clamp-1">{item.title_id}</div>
-                            <div className="text-xs text-gray-400 line-clamp-1 mt-0.5">{item.excerpt_id}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                          item.category === 'news'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-rose-100 text-rose-700'
-                        }`}>
-                          {item.category === 'news' ? <FaNewspaper className="text-[10px]" /> : <FaBullhorn className="text-[10px]" />}
-                          {item.category === 'news' ? 'Berita' : 'Pengumuman'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {item.published_at ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
-                            <FaCheckCircle />
-                            Tayang
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
-                            <FaClock />
-                            Draft
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => handleTogglePublish(item.id)}
-                            title={item.published_at ? 'Cabut Tayang' : 'Tayangkan'}
-                            className={`p-2 rounded-lg transition-all text-sm ${
-                              item.published_at
-                                ? 'text-amber-500 hover:bg-amber-50'
-                                : 'text-emerald-600 hover:bg-emerald-50'
-                            }`}
-                          >
-                            {item.published_at ? <FaTimesCircle /> : <FaEye />}
-                          </button>
-                          <button
-                            onClick={() => { setEditingNews(item); setShowModal(true); }}
-                            title="Edit"
-                            className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-all text-sm"
-                          >
-                            <FaEdit />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            title="Hapus"
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all text-sm"
-                          >
-                            <FaTrash />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
 
-      {/* News Form Modal */}
-      <NewsFormModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditingNews(null);
-        }}
-        news={editingNews}
-        onSaved={fetchNews}
-      />
-    </AdminLayout>
-  );
-};
-
-export default NewsManagement;
+                {!loading && news.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedNews.includes(item.id)}
+                        onChange={() => handleSelectOne(item.id)}
+                        className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        {item.image ? (
+                          <img
+                            src={`/storage/${item.image}`}
+                            alt={item.title_id}
+                            className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <FaNewspaper className="text-gray-400" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-bold text-gray-900 text-sm line-clamp-1">{item.title_id}</div>
+                          <div className="text-xs text-gray-400 line-clamp-1 mt-0.5">{item.excerpt_id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                        item.category === 'news'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-rose-100 text-rose-700'
+                      }`}>
+                        {item.category === 'news' ? <FaNewspaper className="text-[10px]" /> : <FaBullhorn className="text-[10px]" />}
+                        {item.category === 'news' ? 'Berita' : 'Pengumuman'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {item.published_at ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+                          <FaCheckCircle />
+                          Tayang
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+                          <FaClock />
+                          Draft
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleTogglePublish(item.id)}
+                          title={item.published_at ? 'Cabut Tayang' : 'Tayangkan'}
+                          className={`p-2 rounded-lg transition-all text-sm ${
+                            item.published_at
+                              ? 'text-amber-500 hover:bg-amber-50'
+                              : 'text-emerald-600 hover:bg-emerald-50'
+                          }`}
