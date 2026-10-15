@@ -65,7 +65,7 @@ const DocumentPage = () => {
       }
     };
 
-    fetchDocuments();
+    void fetchDocuments();
   }, []);
 
   // =========================================================
