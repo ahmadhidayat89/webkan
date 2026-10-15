@@ -179,9 +179,9 @@ const SettingsManagement = () => {
   const isMailGroup = activeGroup === 'mail';
 
   useEffect(() => {
-    fetchGroups();
-    fetchSettings();
-    fetchMailSettings();
+    void fetchGroups();
+    void fetchSettings();
+    void fetchMailSettings();
   }, []);
 
   const fetchGroups = async () => {
@@ -640,16 +640,16 @@ const SettingsManagement = () => {
                 ? 'Ganti Gambar'
                 : 'Upload Gambar'}
             </span>
-
+            
             <input
               id={inputId}
               type="file"
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files[0];
-
+          
                 if (file) {
-                  handleImageUpload(setting.key, file);
+                  void handleImageUpload(setting.key, file);
                 }
               }}
               className="hidden"
