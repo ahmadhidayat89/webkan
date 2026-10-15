@@ -100,6 +100,57 @@ const ContactInbox = () => {
     });
   }, [messages, filter, query]);
 
+  // FIX: ternary bersarang (loading / kosong / daftar) diganti early return
+  const renderMessageList = () => {
+    if (loading) {
+      return <p className="p-8 text-center text-gray-500">Memuat pesan...</p>;
+    }
+
+    if (filteredMessages.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full py-20 text-gray-400">
+          <FaInbox className="mb-3 text-3xl" />
+          <p className="text-sm font-medium">Tidak ada pesan</p>
+        </div>
+      );
+    }
+
+    return (
+      <ul className="divide-y">
+        {filteredMessages.map((message) => (
+          <li key={message.id}>
+            <button
+              onClick={() => {
+                setSelected(message);
+                if (!message.read_at) void markRead(message, true);
+              }}
+              className={`w-full p-4 text-left hover:bg-gray-50 ${
+                selected?.id === message.id ? 'bg-primary-50' : ''
+              } ${!message.read_at ? 'bg-blue-50/60' : ''}`}
+            >
+              <span className="flex items-center gap-2 font-bold text-gray-900">
+                {message.read_at ? (
+                  <FaEnvelopeOpen className="text-gray-400" />
+                ) : (
+                  <FaEnvelope className="text-blue-600" />
+                )}
+                {message.subject}
+              </span>
+
+              <span className="block mt-1 text-sm text-gray-600">
+                {message.name} · {message.email}
+              </span>
+
+              <span className="block mt-1 text-xs text-gray-400">
+                {new Date(message.created_at).toLocaleString('id-ID')}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-5">
@@ -176,6 +227,7 @@ const ContactInbox = () => {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
+              aria-label="Cari pesan"
               placeholder="Cari nama, email, atau subjek..."
               className="w-full py-2.5 pl-10 pr-4 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400"
             />
@@ -191,6 +243,7 @@ const ContactInbox = () => {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
+            aria-label="Filter status pesan"
             className="px-4 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400"
           >
             <option value="all">Semua</option>
@@ -203,47 +256,7 @@ const ContactInbox = () => {
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
           {/* Daftar pesan */}
           <div className="overflow-hidden bg-white border border-gray-200 rounded-2xl min-h-[320px]">
-            {loading ? (
-              <p className="p-8 text-center text-gray-500">Memuat pesan...</p>
-            ) : filteredMessages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full py-20 text-gray-400">
-                <FaInbox className="mb-3 text-3xl" />
-                <p className="text-sm font-medium">Tidak ada pesan</p>
-              </div>
-            ) : (
-              <ul className="divide-y">
-                {filteredMessages.map((message) => (
-                  <li key={message.id}>
-                    <button
-                      onClick={() => {
-                        setSelected(message);
-                        if (!message.read_at) void markRead(message, true);
-                      }}
-                      className={`w-full p-4 text-left hover:bg-gray-50 ${
-                        selected?.id === message.id ? 'bg-primary-50' : ''
-                      } ${!message.read_at ? 'bg-blue-50/60' : ''}`}
-                    >
-                      <span className="flex items-center gap-2 font-bold text-gray-900">
-                        {message.read_at ? (
-                          <FaEnvelopeOpen className="text-gray-400" />
-                        ) : (
-                          <FaEnvelope className="text-blue-600" />
-                        )}
-                        {message.subject}
-                      </span>
-
-                      <span className="block mt-1 text-sm text-gray-600">
-                        {message.name} · {message.email}
-                      </span>
-
-                      <span className="block mt-1 text-xs text-gray-400">
-                        {new Date(message.created_at).toLocaleString('id-ID')}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {renderMessageList()}
           </div>
 
           {/* Detail pesan */}
