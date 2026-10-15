@@ -86,7 +86,7 @@ const LegalManagement = () => {
         setLoading(false);
       }
     };
-    load();
+    void load();
   }, [pageId]);
 
   const canSave =
