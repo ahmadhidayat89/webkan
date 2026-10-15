@@ -287,7 +287,7 @@ const useLpkList = (tab, search, filterType, page) => {
   };
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [tab, search, filterType, page]);
 
   return { data, loading, pagination, fetchData };
@@ -309,7 +309,7 @@ const useLpkTypes = () => {
   };
 
   useEffect(() => {
-    fetchTypes();
+    void fetchTypes();
   }, []);
 
   return { typeOptions, fetchTypes };
@@ -1202,15 +1202,18 @@ const TypeModal = ({ onClose, onSaved }) => {
           )}
           <div>
             <label htmlFor="new-type-name" className="block mb-1 text-sm font-bold text-gray-700">Nama Jenis LPK <Req /></label>
-            <input
-              id="new-type-name"
-              value={newType}
-              onChange={e => setNewType(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && newType.trim() && saveType()}
-              placeholder="Contoh: Lembaga Sertifikasi Hasil Hutan"
-              className={inputCls}
-              autoFocus
-            />
+              <input
+                id="new-type-name"
+                value={newType}
+                onChange={e => setNewType(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && newType.trim()) {
+                    void saveType();
+                  }
+                }}
+                placeholder="Contoh: Lembaga Sertifikasi Hasil Hutan"
+                className={inputCls}
+              />
           </div>
         </div>
 
@@ -1333,7 +1336,7 @@ const DirectoryManagement = () => {
 
   const handleDelete = async (id) => {
     if (await removeLpk(id)) {
-      fetchData();
+      await fetchData();
       setDeleteConfirm(null);
     }
   };
