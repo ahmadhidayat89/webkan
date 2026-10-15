@@ -192,6 +192,82 @@ const Dashboard = () => {
     },
   ];
 
+  // Isi kartu "Berita Terbaru" dihitung di sini supaya tidak ada ternary bersarang
+  let recentNewsContent;
+
+  if (loading) {
+    recentNewsContent = (
+      <div className="p-12 text-center">
+        <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+      </div>
+    );
+  } else if (recentNews.length === 0) {
+    recentNewsContent = (
+      <div className="p-12 text-center">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+          <FaNewspaper className="text-gray-400 text-2xl" />
+        </div>
+        <p className="text-gray-500 font-semibold">Belum ada berita</p>
+        <button
+          onClick={() => navigate('/admin/news')}
+          className="mt-3 text-sm text-primary-600 font-bold hover:underline"
+        >
+          Buat berita pertama
+        </button>
+      </div>
+    );
+  } else {
+    recentNewsContent = (
+      <div className="divide-y divide-gray-50">
+        {recentNews.map((item) => (
+          <button
+            type="button"
+            key={item.id}
+            className="flex w-full items-center gap-4 border-0 bg-transparent px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+            onClick={() => navigate('/admin/news')}
+          >
+            {item.image ? (
+              <img
+                src={`/storage/${item.image}`}
+                alt={item.title}
+                className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <FaNewspaper className="text-gray-400" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                  item.category === 'announcement'
+                    ? 'bg-rose-100 text-rose-700'
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {item.category === 'announcement' ? 'Pengumuman' : 'Berita'}
+                </span>
+                <span className={`text-xs font-semibold flex items-center gap-1 ${
+                  item.published_at ? 'text-emerald-600' : 'text-amber-500'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full inline-block ${
+                    item.published_at ? 'bg-emerald-500' : 'bg-amber-400'
+                  }`}></span>
+                  {item.published_at ? 'Dipublikasikan' : 'Draft'}
+                </span>
+              </div>
+              <p className="font-bold text-sm text-gray-900 truncate">{item.title}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {new Date(item.created_at).toLocaleDateString('id-ID', {
+                  day: 'numeric', month: 'short', year: 'numeric'
+                })}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -234,11 +310,11 @@ const Dashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-          {statCards.map((stat, i) => {
+          {statCards.map((stat) => {
             const Icon = stat.icon;
             return (
               <button
-                key={i}
+                key={stat.label}
                 onClick={() => navigate(stat.link)}
                 className="group bg-white rounded-2xl p-5 shadow-sm border border-gray-200 hover:shadow-md hover:-translate-y-0.5 transition-all text-left"
               >
@@ -266,11 +342,11 @@ const Dashboard = () => {
                 <p className="text-xs text-gray-500 mt-0.5">Pintasan ke menu utama</p>
               </div>
               <div className="p-4 space-y-2">
-                {quickActions.map((action, i) => {
+                {quickActions.map((action) => {
                   const Icon = action.icon;
                   return (
                     <button
-                      key={i}
+                      key={action.label}
                       onClick={() => navigate(action.link)}
                       className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 transition-all group text-left border border-transparent hover:border-gray-200"
                     >
@@ -305,72 +381,7 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              {loading ? (
-                <div className="p-12 text-center">
-                  <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                </div>
-              ) : recentNews.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <FaNewspaper className="text-gray-400 text-2xl" />
-                  </div>
-                  <p className="text-gray-500 font-semibold">Belum ada berita</p>
-                  <button
-                    onClick={() => navigate('/admin/news')}
-                    className="mt-3 text-sm text-primary-600 font-bold hover:underline"
-                  >
-                    Buat berita pertama
-                  </button>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-50">
-                  {recentNews.map((item) => (
-                    <button
-                      type="button"
-                      key={item.id}
-                      className="flex w-full items-center gap-4 border-0 bg-transparent px-6 py-4 text-left hover:bg-gray-50 transition-colors"
-                      onClick={() => navigate('/admin/news')}
-                    >
-                      {item.image ? (
-                        <img
-                          src={`/storage/${item.image}`}
-                          alt={item.title}
-                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-                          <FaNewspaper className="text-gray-400" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                            item.category === 'announcement'
-                              ? 'bg-rose-100 text-rose-700'
-                              : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {item.category === 'announcement' ? 'Pengumuman' : 'Berita'}
-                          </span>
-                          <span className={`text-xs font-semibold flex items-center gap-1 ${
-                            item.published_at ? 'text-emerald-600' : 'text-amber-500'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full inline-block ${
-                              item.published_at ? 'bg-emerald-500' : 'bg-amber-400'
-                            }`}></span>
-                            {item.published_at ? 'Dipublikasikan' : 'Draft'}
-                          </span>
-                        </div>
-                        <p className="font-bold text-sm text-gray-900 truncate">{item.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {new Date(item.created_at).toLocaleDateString('id-ID', {
-                            day: 'numeric', month: 'short', year: 'numeric'
-                          })}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+              {recentNewsContent}
             </div>
           </div>
         </div>
