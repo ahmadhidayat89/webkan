@@ -10,6 +10,11 @@ const DEFAULT_SCALE_LABELS = ['Sangat Tidak Baik', 'Tidak Baik', 'Cukup', 'Baik'
 const scaleLabels = (opts) =>
   Array.isArray(opts) && opts.length === 5 && opts.some(Boolean) ? opts : DEFAULT_SCALE_LABELS;
 
+// Atribut input untuk pertanyaan "short", berdasarkan validation.answer_type
+const SHORT_INPUT_TYPES = { email: 'email', number: 'number' };
+const SHORT_INPUT_MODES = { phone: 'tel', number: 'decimal' };
+const SHORT_PLACEHOLDERS = { email: 'nama@contoh.com', phone: '+62 812 3456 7890' };
+
 const isMissingAnswer = (value) => value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0);
 const isValidEmail = (value) => {
   const email = String(value);
@@ -195,6 +200,10 @@ export default function PublicSurvey() {
     );
   }
 
+  // Tiga tampilan yang saling lepas: ditutup, terima kasih, atau form
+  const showThanks = !isClosed && submitted;
+  const showForm = !isClosed && !submitted;
+
   return (
     <div className="min-h-screen bg-[#f4f7fc] py-8 px-4 sm:px-6">
       <Toaster position="top-right" />
@@ -219,7 +228,7 @@ export default function PublicSurvey() {
           </Link>
         </header>
 
-        {isClosed ? (
+        {isClosed && (
           <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-4 shadow-sm">
             <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-500 mx-auto flex items-center justify-center text-3xl font-extrabold">
               <FaExclamationTriangle />
@@ -232,7 +241,9 @@ export default function PublicSurvey() {
               Kuesioner ini sudah selesai atau saat ini sedang tidak menerima tanggapan baru. Terima kasih atas perhatian Anda.
             </p>
           </div>
-        ) : submitted ? (
+        )}
+
+        {showThanks && (
           <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-4 shadow-sm">
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-3xl font-extrabold">
               <FaCheckCircle />
@@ -250,7 +261,9 @@ export default function PublicSurvey() {
               </Link>
             </div>
           </div>
-        ) : (
+        )}
+
+        {showForm && (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Survey Title & Description Banner */}
             <div className="bg-gradient-to-r from-blue-700 to-indigo-900 text-white rounded-2xl p-6 sm:p-8 shadow-md space-y-3">
@@ -276,9 +289,9 @@ export default function PublicSurvey() {
                 {/* Question Inputs */}
                 {q.type === 'short' && (
                   <input
-                    type={q.validation?.answer_type === 'email' ? 'email' : q.validation?.answer_type === 'number' ? 'number' : 'text'}
-                    inputMode={q.validation?.answer_type === 'phone' ? 'tel' : q.validation?.answer_type === 'number' ? 'decimal' : undefined}
-                    placeholder={q.validation?.answer_type === 'email' ? 'nama@contoh.com' : q.validation?.answer_type === 'phone' ? '+62 812 3456 7890' : 'Jawaban Anda'}
+                    type={SHORT_INPUT_TYPES[q.validation?.answer_type] || 'text'}
+                    inputMode={SHORT_INPUT_MODES[q.validation?.answer_type]}
+                    placeholder={SHORT_PLACEHOLDERS[q.validation?.answer_type] || 'Jawaban Anda'}
                     value={answers[q.id] || ''}
                     onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
                     className="w-full text-sm border-0 border-b-2 border-gray-200 focus:border-blue-600 outline-none pb-1.5 transition"
@@ -323,8 +336,8 @@ export default function PublicSurvey() {
 
                 {q.type === 'choice' && (
                   <div className="space-y-2.5 pt-1">
-                    {q.options?.map((opt, oIdx) => (
-                      <label key={oIdx} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer hover:text-blue-700">
+                    {q.options?.map((opt) => (
+                      <label key={opt} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer hover:text-blue-700">
                         <input
                           type="radio"
                           name={`q_${q.id}`}
@@ -341,11 +354,11 @@ export default function PublicSurvey() {
 
                 {q.type === 'check' && (
                   <div className="space-y-2.5 pt-1">
-                    {q.options?.map((opt, oIdx) => {
+                    {q.options?.map((opt) => {
                       const cur = answers[q.id] || [];
                       const isChecked = cur.includes(opt);
                       return (
-                        <label key={oIdx} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer hover:text-blue-700">
+                        <label key={opt} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer hover:text-blue-700">
                           <input
                             type="checkbox"
                             checked={isChecked}
@@ -371,8 +384,8 @@ export default function PublicSurvey() {
                     className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-600"
                   >
                     <option value="">-- Silakan pilih --</option>
-                    {q.options?.map((opt, oIdx) => (
-                      <option key={oIdx} value={opt}>
+                    {q.options?.map((opt) => (
+                      <option key={opt} value={opt}>
                         {opt}
                       </option>
                     ))}
