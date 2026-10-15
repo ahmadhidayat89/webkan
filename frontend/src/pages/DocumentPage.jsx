@@ -19,6 +19,200 @@ import {
   FaSearch,
 } from 'react-icons/fa';
 
+// =========================================================
+// HELPER (di luar komponen, tidak bergantung pada state)
+// =========================================================
+
+const getIcon = (document) => {
+  const name = (document?.name || '').toLowerCase();
+
+  if (name.includes('internasional')) {
+    return FaGlobe;
+  }
+
+  if (name.includes('artikel')) {
+    return FaNewspaper;
+  }
+
+  if (name.includes('materi')) {
+    return FaBook;
+  }
+
+  if (name.includes('pertemuan') || name.includes('lab')) {
+    return FaFlask;
+  }
+
+  if (name.includes('pedoman')) {
+    return FaBook;
+  }
+
+  if (name.includes('kebijakan')) {
+    return FaBalanceScale;
+  }
+
+  if (name.includes('persyaratan khusus')) {
+    return FaClipboardList;
+  }
+
+  if (name.includes('persyaratan umum')) {
+    return FaFolderOpen;
+  }
+
+  return FaFolderOpen;
+};
+
+const getDefaultDescription = (document) => {
+  const name = (document?.name || '').toLowerCase();
+
+  if (name === 'dokumen akreditasi') {
+    return 'Dokumen persyaratan, pedoman, dan kebijakan yang berkaitan dengan proses akreditasi.';
+  }
+
+  if (name === 'materi kegiatan') {
+    return 'Materi dan dokumen yang digunakan dalam berbagai kegiatan KAN.';
+  }
+
+  if (name === 'artikel penilaian kesesuaian') {
+    return 'Kumpulan artikel dan informasi mengenai penilaian kesesuaian.';
+  }
+
+  if (name === 'dokumen internasional') {
+    return 'Dokumen dan referensi internasional yang berkaitan dengan akreditasi dan penilaian kesesuaian.';
+  }
+
+  return 'Akses dokumen dan informasi yang tersedia pada kategori ini.';
+};
+
+const getDescription = (document) => {
+  return document?.description?.trim()
+    ? document.description
+    : getDefaultDescription(document);
+};
+
+// Cari jalur dari root ke node dengan id tertentu
+const findPathToNode = (items, targetId, parents = []) => {
+  for (const item of items) {
+    const currentPath = [...parents, item];
+
+    if (Number(item.id) === Number(targetId)) {
+      return currentPath;
+    }
+
+    if (Array.isArray(item.children) && item.children.length > 0) {
+      const result = findPathToNode(item.children, targetId, currentPath);
+
+      if (result) {
+        return result;
+      }
+    }
+  }
+
+  return null;
+};
+
+// =========================================================
+// CATEGORY CARD
+// =========================================================
+
+const CategoryCard = ({ category, path, onNavigate }) => {
+  const Icon = getIcon(category);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(path)}
+      className="relative w-full p-6 overflow-hidden text-left transition-all duration-300 bg-white border border-gray-200 cursor-pointer group rounded-2xl md:p-7 hover:-translate-y-1 hover:border-primary-300 hover:shadow-xl"
+    >
+      <div className="absolute w-32 h-32 transition-all duration-500 rounded-full -right-12 -top-12 bg-primary-50 group-hover:scale-125" />
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-center mb-6 transition-all duration-300 w-14 h-14 rounded-xl bg-primary-50 text-primary-700 group-hover:bg-primary-700 group-hover:text-white">
+          <Icon className="text-xl" />
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-900 transition-colors group-hover:text-primary-700">
+          {category.name}
+        </h3>
+
+        <p className="mt-3 text-sm leading-relaxed text-gray-500 md:text-base">
+          {getDescription(category)}
+        </p>
+
+        <div className="flex items-center gap-2 mt-6 text-sm font-semibold transition-all text-primary-700 group-hover:gap-3">
+          <span>Lihat</span>
+          <FaArrowRight className="text-xs transition-transform group-hover:translate-x-1" />
+        </div>
+      </div>
+    </button>
+  );
+};
+
+// =========================================================
+// DOCUMENT CARD
+// =========================================================
+
+const DocumentCard = ({ document }) => {
+  return (
+    <div className="relative overflow-hidden transition-all duration-300 bg-white border border-gray-200 rounded-2xl hover:border-primary-300 hover:shadow-lg">
+      <div className="p-5 md:p-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+          <div className="flex items-center justify-center flex-shrink-0 w-14 h-14 rounded-xl bg-primary-50 text-primary-700">
+            <FaFileAlt className="text-xl" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-gray-900 md:text-lg">
+              {document.name}
+            </h3>
+
+            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+              {document.description ||
+                'Dokumen yang tersedia untuk diakses.'}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              {document.file_type && (
+                <span className="px-2.5 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-600">
+                  {document.file_type}
+                </span>
+              )}
+
+              {document.language && (
+                <span className="px-2.5 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-600">
+                  {document.language}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-shrink-0">
+            {document.link ? (
+              <a
+                href={document.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(event) => event.stopPropagation()}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 rounded-lg bg-primary-700 hover:bg-primary-800"
+              >
+                <span>Buka Dokumen</span>
+                <FaExternalLinkAlt className="text-xs" />
+              </a>
+            ) : (
+              <span className="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-400 bg-gray-100 rounded-lg">
+                Dokumen belum tersedia
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =========================================================
+// HALAMAN
+// =========================================================
+
 const DocumentPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -67,96 +261,6 @@ const DocumentPage = () => {
 
     void fetchDocuments();
   }, []);
-
-  // =========================================================
-  // HELPER
-  // =========================================================
-
-  const getIcon = (document) => {
-    const name = (document?.name || '').toLowerCase();
-
-    if (name.includes('internasional')) {
-      return FaGlobe;
-    }
-
-    if (name.includes('artikel')) {
-      return FaNewspaper;
-    }
-
-    if (name.includes('materi')) {
-      return FaBook;
-    }
-
-    if (name.includes('pertemuan') || name.includes('lab')) {
-      return FaFlask;
-    }
-
-    if (name.includes('pedoman')) {
-      return FaBook;
-    }
-
-    if (name.includes('kebijakan')) {
-      return FaBalanceScale;
-    }
-
-    if (name.includes('persyaratan khusus')) {
-      return FaClipboardList;
-    }
-
-    if (name.includes('persyaratan umum')) {
-      return FaFolderOpen;
-    }
-
-    return FaFolderOpen;
-  };
-
-  const getDefaultDescription = (document) => {
-    const name = (document?.name || '').toLowerCase();
-
-    if (name === 'dokumen akreditasi') {
-      return 'Dokumen persyaratan, pedoman, dan kebijakan yang berkaitan dengan proses akreditasi.';
-    }
-
-    if (name === 'materi kegiatan') {
-      return 'Materi dan dokumen yang digunakan dalam berbagai kegiatan KAN.';
-    }
-
-    if (name === 'artikel penilaian kesesuaian') {
-      return 'Kumpulan artikel dan informasi mengenai penilaian kesesuaian.';
-    }
-
-    if (name === 'dokumen internasional') {
-      return 'Dokumen dan referensi internasional yang berkaitan dengan akreditasi dan penilaian kesesuaian.';
-    }
-
-    return 'Akses dokumen dan informasi yang tersedia pada kategori ini.';
-  };
-
-  const getDescription = (document) => {
-    return document?.description?.trim()
-      ? document.description
-      : getDefaultDescription(document);
-  };
-
-  // =========================================================
-  // FLATTEN TREE
-  // =========================================================
-
-  const flattenTree = (items, result = []) => {
-    items.forEach((item) => {
-      result.push(item);
-
-      if (Array.isArray(item.children) && item.children.length > 0) {
-        flattenTree(item.children, result);
-      }
-    });
-
-    return result;
-  };
-
-  const allDocuments = useMemo(() => {
-    return flattenTree(documents);
-  }, [documents]);
 
   // =========================================================
   // CARI NODE BERDASARKAN PATH
@@ -219,34 +323,6 @@ const DocumentPage = () => {
   }, [currentChildren]);
 
   // =========================================================
-  // BIKIN PATH NODE
-  // =========================================================
-
-  const findPathToNode = (items, targetId, parents = []) => {
-    for (const item of items) {
-      const currentPath = [...parents, item];
-
-      if (Number(item.id) === Number(targetId)) {
-        return currentPath;
-      }
-
-      if (Array.isArray(item.children) && item.children.length > 0) {
-        const result = findPathToNode(
-          item.children,
-          targetId,
-          currentPath
-        );
-
-        if (result) {
-          return result;
-        }
-      }
-    }
-
-    return null;
-  };
-
-  // =========================================================
   // BREADCRUMB
   // =========================================================
 
@@ -303,105 +379,6 @@ const DocumentPage = () => {
       description: getDescription(currentNode),
     };
   }, [currentNode]);
-
-  // =========================================================
-  // CATEGORY CARD
-  // =========================================================
-
-  const CategoryCard = ({ category, path }) => {
-    const Icon = getIcon(category);
-
-    return (
-      <button
-        type="button"
-        onClick={() => navigate(path)}
-        className="relative w-full p-6 overflow-hidden text-left transition-all duration-300 bg-white border border-gray-200 cursor-pointer group rounded-2xl md:p-7 hover:-translate-y-1 hover:border-primary-300 hover:shadow-xl"
-      >
-        <div className="absolute w-32 h-32 transition-all duration-500 rounded-full -right-12 -top-12 bg-primary-50 group-hover:scale-125" />
-
-        <div className="relative z-10">
-          <div className="flex items-center justify-center mb-6 transition-all duration-300 w-14 h-14 rounded-xl bg-primary-50 text-primary-700 group-hover:bg-primary-700 group-hover:text-white">
-            <Icon className="text-xl" />
-          </div>
-
-          <h3 className="text-xl font-bold text-gray-900 transition-colors group-hover:text-primary-700">
-            {category.name}
-          </h3>
-
-          <p className="mt-3 text-sm leading-relaxed text-gray-500 md:text-base">
-            {getDescription(category)}
-          </p>
-
-          <div className="flex items-center gap-2 mt-6 text-sm font-semibold transition-all text-primary-700 group-hover:gap-3">
-            <span>Lihat</span>
-            <FaArrowRight className="text-xs transition-transform group-hover:translate-x-1" />
-          </div>
-        </div>
-      </button>
-    );
-  };
-
-  // =========================================================
-  // DOCUMENT CARD
-  // =========================================================
-
-  const DocumentCard = ({ document }) => {
-    return (
-      <div className="relative overflow-hidden transition-all duration-300 bg-white border border-gray-200 rounded-2xl hover:border-primary-300 hover:shadow-lg">
-        <div className="p-5 md:p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex items-center justify-center flex-shrink-0 w-14 h-14 rounded-xl bg-primary-50 text-primary-700">
-              <FaFileAlt className="text-xl" />
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold text-gray-900 md:text-lg">
-                {document.name}
-              </h3>
-
-              <p className="mt-2 text-sm leading-relaxed text-gray-500">
-                {document.description ||
-                  'Dokumen yang tersedia untuk diakses.'}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                {document.file_type && (
-                  <span className="px-2.5 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-600">
-                    {document.file_type}
-                  </span>
-                )}
-
-                {document.language && (
-                  <span className="px-2.5 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-600">
-                    {document.language}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-shrink-0">
-              {document.link ? (
-                <a
-                  href={document.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(event) => event.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 rounded-lg bg-primary-700 hover:bg-primary-800"
-                >
-                  <span>Buka Dokumen</span>
-                  <FaExternalLinkAlt className="text-xs" />
-                </a>
-              ) : (
-                <span className="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-gray-400 bg-gray-100 rounded-lg">
-                  Dokumen belum tersedia
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // =========================================================
   // SEARCH
@@ -619,6 +596,7 @@ const DocumentPage = () => {
                     key={category.id}
                     category={category}
                     path={categoryPath}
+                    onNavigate={navigate}
                   />
                 );
               })}
@@ -751,12 +729,12 @@ const DocumentPage = () => {
                 pada kategori ini.
               </p>
             </div>
-        )}
-    </main>
+          )}
+      </main>
 
-        <Footer />
+      <Footer />
     </div>
-    );
+  );
 };
 
 export default DocumentPage;
