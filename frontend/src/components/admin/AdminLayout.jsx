@@ -517,7 +517,7 @@ const AdminLayout = ({ children }) => {
                   <button
                     onClick={() => {
                       setHeaderDropdown(false);
-                      handleLogout();
+                      void handleLogout();
                     }}
                     className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors"
                   >
