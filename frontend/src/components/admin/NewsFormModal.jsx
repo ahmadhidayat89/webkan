@@ -163,12 +163,10 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
         onSaved();
         onClose();
         resetForm();
+      } else if (data.errors) {
+        setErrors(data.errors);
       } else {
-        if (data.errors) {
-          setErrors(data.errors);
-        } else {
-          alert(`Gagal menyimpan: ${data.message || 'Unknown error'}`);
-        }
+        alert(`Gagal menyimpan: ${data.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error saving news:', error);
@@ -179,6 +177,14 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
   };
 
   if (!isOpen) return null;
+
+  // Label tombol simpan: sedang menyimpan, mode edit, atau mode tambah
+  let submitLabel = 'Simpan';
+  if (loading) {
+    submitLabel = 'Menyimpan...';
+  } else if (news) {
+    submitLabel = 'Perbarui';
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-black/50">
@@ -466,7 +472,7 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
               disabled={loading}
               className="px-6 py-3 font-bold text-white transition-all shadow-lg bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl hover:scale-105 hover:shadow-primary-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Menyimpan...' : (news ? 'Perbarui' : 'Simpan')}
+              {submitLabel}
             </button>
           </div>
         </form>
