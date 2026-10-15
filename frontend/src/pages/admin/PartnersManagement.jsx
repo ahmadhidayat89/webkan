@@ -17,7 +17,7 @@ const PartnersManagement = () => {
   const [logoPreview, setLogoPreview] = useState(null);
 
   useEffect(() => {
-    fetchPartners();
+    void fetchPartners();
   }, []);
 
   const fetchPartners = async () => {
@@ -105,7 +105,7 @@ const PartnersManagement = () => {
 
       const data = await response.json();
       if (data.success) {
-        fetchPartners();
+        void fetchPartners();
         handleCloseModal();
       } else {
         alert('Failed to save partner');
@@ -128,7 +128,7 @@ const PartnersManagement = () => {
       });
       const data = await response.json();
       if (data.success) {
-        fetchPartners();
+        void fetchPartners();
       }
     } catch (error) {
       console.error('Error deleting partner:', error);
@@ -145,7 +145,7 @@ const PartnersManagement = () => {
       });
       const data = await response.json();
       if (data.success) {
-        fetchPartners();
+        void fetchPartners();
       }
     } catch (error) {
       console.error('Error toggling status:', error);
