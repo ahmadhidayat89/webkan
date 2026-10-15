@@ -53,6 +53,13 @@ function formatEventDate(dateString) {
     return { formatted: `${label} • ${hours}:${mins}`, relative, isPast: diffMs < 0 };
 }
 
+function getRelativeColor(relative, isPast) {
+    if (relative === 'Hari ini') return 'text-red-600';
+    if (relative === 'Besok') return 'text-orange-500';
+    if (isPast) return 'text-red-500';
+    return 'text-gray-500';
+}
+
 function EventItem({ event, index, isPastView }) {
     const config = eventTypeConfig[event.event_type] ?? eventTypeConfig.deadline;
     const Icon   = config.icon;
@@ -60,17 +67,15 @@ function EventItem({ event, index, isPastView }) {
     const overdue = isPast && !event.is_completed;
 
     // Urgency coloring for upcoming
-    const relativeColor =
-        relative === 'Hari ini'  ? 'text-red-600'    :
-        relative === 'Besok'     ? 'text-orange-500'  :
-        isPast                   ? 'text-red-500'     : 'text-gray-500';
+    const relativeColor = getRelativeColor(relative, isPast);
+
+    const cardColor = overdue
+        ? 'border-red-300 bg-red-50/60 hover:bg-red-50'
+        : config.border + ' ' + config.bg + '/40 hover:' + config.bg;
 
     return (
         <div
-            className={`flex items-start gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer group animate-fade-in
-                ${overdue
-                    ? 'border-red-300 bg-red-50/60 hover:bg-red-50'
-                    : `${config.border} ${config.bg}/40 hover:${config.bg}`}`}
+            className={`flex items-start gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer group animate-fade-in ${cardColor}`}
             style={{ animationDelay: `${index * 60}ms` }}
         >
             {/* Icon */}
