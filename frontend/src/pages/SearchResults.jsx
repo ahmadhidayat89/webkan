@@ -132,15 +132,21 @@ const SearchResults = () => {
       new RegExp(`(${escapedKeyword})`, 'gi')
     );
 
-    return parts.map((part, index) =>
-      part.toLowerCase() === keyword.toLowerCase() ? (
-        <strong key={index} className="font-black">
+    // Key memakai posisi karakter bagian tersebut di teks asli (unik per bagian)
+    let offset = 0;
+
+    return parts.map((part) => {
+      const position = offset;
+      offset += part.length;
+
+      return part.toLowerCase() === keyword.toLowerCase() ? (
+        <strong key={position} className="font-black">
           {part}
         </strong>
       ) : (
-        part
-      )
-    );
+        <span key={position}>{part}</span>
+      );
+    });
   };
 
   return (
@@ -262,9 +268,9 @@ const SearchResults = () => {
 
                       {/* Items */}
                       <div className="divide-y divide-gray-100">
-                        {items.map((item, index) => (
+                        {items.map((item) => (
                           <button
-                            key={`${group.key}-${index}`}
+                            key={item.id ?? `${group.key}-${item.url}-${item.title}`}
                             type="button"
                             onClick={() =>
                               handleResultClick(item.url)
