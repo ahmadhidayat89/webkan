@@ -778,6 +778,10 @@ function usePageContent(pageId, isListPage) {
     setPageContent(null);
     fetchApiData(`/api/v1/page-content/${pageId}?lang=id`)
       .then((data) => setPageContent(data || null))
+      .catch((error) => {
+        console.error('Gagal mengambil konten halaman:', error);
+        setPageContent(null);
+      })
       .finally(() => setLoading(false));
   }, [pageId]);
 
@@ -794,7 +798,12 @@ function useSurveyYears(isSurveyList, surveyYear) {
 
     setSurveyLoading(true);
     fetchApiData('/api/v1/survey-years')
-      .then((data) => { if (data) setSurveyYears(data); })
+      .then((data) => {   
+        if (data) setSurveyYears(data);
+      })
+      .catch((error) => {
+        console.error('Gagal mengambil daftar tahun survei:', error);
+      })
       .finally(() => setSurveyLoading(false));
   }, [isSurveyList, surveyYear]);
 
@@ -815,6 +824,9 @@ function useHubSubpages(currentHub) {
     fetchApiData(`/api/v1/layanan-services/${category}`)
       .then((data) => {
         if (data) setSubpagesByHub((prev) => ({ ...prev, [base]: data }));
+      })
+      .catch((error) => {
+        console.error('Gagal mengambil sub-halaman layanan:', error);
       })
       .finally(() => setSubpagesLoading(false));
   }, [base]);
