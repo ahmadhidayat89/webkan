@@ -25,6 +25,18 @@ const bacaTanggalDariTeks = (teks) => {
 };
 
 const KALIMAT_TANGGAL = 'Yang diselesaikan pada tanggal';
+const POLA_TANGGAL = new RegExp(`^${KALIMAT_TANGGAL} \\d{1,2} \\S+ \\d{4}`);
+
+// Ganti hanya kalimat tanggal di awal teks; teks setelahnya (tempat, JP) tidak berubah.
+const gantiKalimatTanggal = (current, awal) => {
+    if (POLA_TANGGAL.test(current)) {
+        return current.replace(POLA_TANGGAL, awal);
+    }
+    if (current) {
+        return `${awal} ${current}`;
+    }
+    return awal;
+};
 
 export default function TabCertificates({ courseId, enrolledStudents, certificates, course }) {
     // Modal edit data sertifikat
@@ -59,12 +71,8 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
         if (!value) return;
         const awal = `${KALIMAT_TANGGAL} ${formatTanggal(value)}`;
         const current = certForm.data.event_text || '';
-        const re = new RegExp(`^${KALIMAT_TANGGAL} \\d{1,2} \\S+ \\d{4}`);
 
-        certForm.setData(
-            'event_text',
-            re.test(current) ? current.replace(re, awal) : awal + (current ? ' ' + current : '')
-        );
+        certForm.setData('event_text', gantiKalimatTanggal(current, awal));
     };
 
     // Template upload
