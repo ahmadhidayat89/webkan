@@ -205,11 +205,13 @@ const PartnersManagement = () => {
 
         {/* Partners Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {loading ? (
+          {loading && (
             <div className="col-span-full flex justify-center py-16">
               <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
-          ) : partners.length === 0 ? (
+          )}
+
+          {!loading && partners.length === 0 && (
             <div className="col-span-full text-center py-20">
               <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <FaUsers className="text-gray-400 text-2xl" />
@@ -219,85 +221,85 @@ const PartnersManagement = () => {
                 Tambah mitra pertama
               </button>
             </div>
-          ) : (
-            partners.map((partner) => (
-              <div
-                key={partner.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all group"
-              >
-                {/* Logo Area */}
-                <div className="relative h-36 bg-gray-50 flex items-center justify-center p-4 border-b border-gray-100">
-                  {partner.logo ? (
-                    <img
-                      src={`/storage/${partner.logo}`}
-                      alt={partner.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center">
-                      <FaUsers className="text-gray-400 text-2xl" />
-                    </div>
-                  )}
-                  <div className="absolute top-3 right-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                      partner.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {partner.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </div>
-                </div>
+          )}
 
-                {/* Info */}
-                <div className="p-5">
-                  <h3 className="font-black text-gray-900 mb-1 text-sm">{partner.name}</h3>
-                  {partner.description && (
-                    <p className="text-xs text-gray-500 line-clamp-2 mb-2">{partner.description}</p>
-                  )}
-                  {partner.url && (
-                    <a
-                      href={partner.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-semibold mb-3"
-                    >
-                      <FaGlobe className="text-[10px]" />
-                      Kunjungi Website
-                    </a>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-1.5 pt-3 border-t border-gray-100">
-                    <button
-                      onClick={() => handleToggleActive(partner.id)}
-                      title={partner.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                      className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                        partner.is_active
-                          ? 'text-amber-600 hover:bg-amber-50'
-                          : 'text-emerald-600 hover:bg-emerald-50'
-                      }`}
-                    >
-                      {partner.is_active ? <FaEyeSlash /> : <FaEye />}
-                      {partner.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                    </button>
-                    <button
-                      onClick={() => handleOpenModal(partner)}
-                      title="Edit"
-                      className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(partner.id)}
-                      title="Hapus"
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                    >
-                      <FaTrash />
-                    </button>
+          {!loading && partners.map((partner) => (
+            <div
+              key={partner.id}
+              className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all group"
+            >
+              {/* Logo Area */}
+              <div className="relative h-36 bg-gray-50 flex items-center justify-center p-4 border-b border-gray-100">
+                {partner.logo ? (
+                  <img
+                    src={`/storage/${partner.logo}`}
+                    alt={partner.name}
+                    className="max-h-full max-w-full object-contain"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center">
+                    <FaUsers className="text-gray-400 text-2xl" />
                   </div>
+                )}
+                <div className="absolute top-3 right-3">
+                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                    partner.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {partner.is_active ? 'Aktif' : 'Nonaktif'}
+                  </span>
                 </div>
               </div>
-            ))
-          )}
+
+              {/* Info */}
+              <div className="p-5">
+                <h3 className="font-black text-gray-900 mb-1 text-sm">{partner.name}</h3>
+                {partner.description && (
+                  <p className="text-xs text-gray-500 line-clamp-2 mb-2">{partner.description}</p>
+                )}
+                {partner.url && (
+                  <a
+                    href={partner.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-semibold mb-3"
+                  >
+                    <FaGlobe className="text-[10px]" />
+                    Kunjungi Website
+                  </a>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-1.5 pt-3 border-t border-gray-100">
+                  <button
+                    onClick={() => handleToggleActive(partner.id)}
+                    title={partner.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
+                      partner.is_active
+                        ? 'text-amber-600 hover:bg-amber-50'
+                        : 'text-emerald-600 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {partner.is_active ? <FaEyeSlash /> : <FaEye />}
+                    {partner.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                  </button>
+                  <button
+                    onClick={() => handleOpenModal(partner)}
+                    title="Edit"
+                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                  >
+                    <FaEdit />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(partner.id)}
+                    title="Hapus"
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
