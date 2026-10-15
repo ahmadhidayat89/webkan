@@ -26,7 +26,7 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    fetchDashboardData();
+    void fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
