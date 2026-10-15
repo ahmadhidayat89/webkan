@@ -41,8 +41,6 @@ class Handler extends ExceptionHandler
      */
     public function register(): void
     {
-        $this->reportable(function (Throwable $e) {
-            //
-        });
+        // Tambahkan callback reportable/renderable di sini bila diperlukan.
     }
 }
