@@ -20,7 +20,7 @@ const NewsDetail = () => {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    fetchNewsDetail();
+      void fetchNewsDetail();
   }, [slug]);
 
   const fetchNewsDetail = async () => {
@@ -52,16 +52,27 @@ const NewsDetail = () => {
     }
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (navigator.share) {
-      navigator.share({
-        title: news.title,
-        text: news.excerpt,
-        url: window.location.href,
-      });
+      try {
+        await navigator.share({
+          title: news.title,
+          text: news.excerpt,
+          url: window.location.href,
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Error sharing news:', error);
+        }
+      }
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
+      } catch (error) {
+        console.error('Error copying link:', error);
+        alert('Gagal menyalin link. Silakan salin URL secara manual.');
+      }
     }
   };
 
