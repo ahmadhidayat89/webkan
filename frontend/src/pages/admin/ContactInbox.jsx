@@ -123,17 +123,11 @@ const ContactInbox = () => {
                   <li>Login ke akun Google yang akan digunakan untuk mengirim email.</li>
                   <li>
                     Aktifkan <strong>2-Step Verification</strong> di{' '}
-                    <code className="px-1.5 py-0.5 text-xs rounded bg-amber-100">
-                      myaccount.google.com → Security
-                    </code>
-                    .
+                    <code className="px-1.5 py-0.5 text-xs rounded bg-amber-100">myaccount.google.com → Security</code>.
                   </li>
                   <li>
                     Buka{' '}
-                    <code className="px-1.5 py-0.5 text-xs rounded bg-amber-100">
-                      myaccount.google.com/apppasswords
-                    </code>
-                    , beri nama bebas (contoh: <em>KAN Admin</em>), lalu klik <strong>Buat</strong>.
+                    <code className="px-1.5 py-0.5 text-xs rounded bg-amber-100">myaccount.google.com/apppasswords</code>, beri nama bebas (contoh: <em>KAN Admin</em>), lalu klik <strong>Buat</strong>.
                   </li>
                   <li>Salin 16 karakter yang muncul (tanpa spasi).</li>
                   <li>
