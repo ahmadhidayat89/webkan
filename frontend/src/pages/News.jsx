@@ -44,7 +44,7 @@ const News = () => {
     // FETCH NEWS
     // ============================================================
     useEffect(() => {
-        fetchNews();
+        void fetchNews();
     }, []);
 
     const fetchNews = async () => {
@@ -691,4 +691,4 @@ const News = () => {
     );
 };
 
-export default News; 
+export default News;
