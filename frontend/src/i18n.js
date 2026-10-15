@@ -92,6 +92,9 @@ i18n
     interpolation: {
       escapeValue: false
     }
+  })
+  .catch((error) => {
+    console.error('Gagal menginisialisasi i18n:', error);
   });
 
 // Simpan pilihan setiap kali bahasa diganti (lewat tombol EN | ID di Header)
