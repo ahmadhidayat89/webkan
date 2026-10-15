@@ -9,6 +9,49 @@ const fetchAttempts = async (quizId) => {
     return res.json();
 };
 
+// FIX: ternary bersarang (loading / kosong / daftar) diganti early return
+function AttemptList({ loading, attempts, selectedAttempt, onSelect }) {
+    if (loading) {
+        return <div className="p-8 text-center text-gray-400">Loading...</div>;
+    }
+
+    if (attempts.length === 0) {
+        return <div className="p-8 text-center text-gray-400 text-sm">Belum ada yang mengerjakan kuis ini.</div>;
+    }
+
+    return (
+        <ul className="divide-y divide-gray-100">
+            {attempts.map(attempt => (
+                <li key={attempt.id}>
+                    <button
+                        type="button"
+                        onClick={() => onSelect(attempt)}
+                        aria-pressed={selectedAttempt?.id === attempt.id}
+                        className={`w-full text-left p-3 cursor-pointer hover:bg-navy-50 transition-colors ${selectedAttempt?.id === attempt.id ? 'bg-navy-50 border-l-4 border-navy-500' : ''}`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="font-bold text-sm text-gray-900">{attempt.user_name}</p>
+                                <p className="text-[10px] text-gray-500">{attempt.started_at}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${attempt.is_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {attempt.score}%
+                                </span>
+                            </div>
+                        </div>
+                        {attempt.pending_grading && (
+                            <div className="mt-2 text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded inline-flex items-center gap-1 font-medium">
+                                <AlertCircle className="w-3 h-3" /> Butuh Koreksi Essay
+                            </div>
+                        )}
+                    </button>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 export default function TabGrading({ courseId, modules }) {
     const [selectedQuizId, setSelectedQuizId] = useState('');
     const [attempts, setAttempts] = useState([]);
@@ -107,7 +150,7 @@ export default function TabGrading({ courseId, modules }) {
                         <div className="p-3 border-b border-gray-100 bg-gray-50">
                             <div className="relative">
                                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input type="text" placeholder="Cari nama peserta..." className="w-full text-xs pl-9 py-2 border-gray-200 rounded-lg" />
+                                <input type="text" aria-label="Cari nama peserta" placeholder="Cari nama peserta..." className="w-full text-xs pl-9 py-2 border-gray-200 rounded-lg" />
                             </div>
                         </div>
                         <div className="flex-1 overflow-y-auto">
@@ -116,41 +159,12 @@ export default function TabGrading({ courseId, modules }) {
                                     {loadError}
                                 </div>
                             )}
-                            {loading ? (
-                                <div className="p-8 text-center text-gray-400">Loading...</div>
-                            ) : attempts.length === 0 ? (
-                                <div className="p-8 text-center text-gray-400 text-sm">Belum ada yang mengerjakan kuis ini.</div>
-                            ) : (
-                                <ul className="divide-y divide-gray-100">
-                                    {attempts.map(attempt => (
-                                        <li key={attempt.id}>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedAttempt(attempt)}
-                                                aria-pressed={selectedAttempt?.id === attempt.id}
-                                                className={`w-full text-left p-3 cursor-pointer hover:bg-navy-50 transition-colors ${selectedAttempt?.id === attempt.id ? 'bg-navy-50 border-l-4 border-navy-500' : ''}`}
-                                            >
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <p className="font-bold text-sm text-gray-900">{attempt.user_name}</p>
-                                                        <p className="text-[10px] text-gray-500">{attempt.started_at}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${attempt.is_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                            {attempt.score}%
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                {attempt.pending_grading && (
-                                                    <div className="mt-2 text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded inline-flex items-center gap-1 font-medium">
-                                                        <AlertCircle className="w-3 h-3" /> Butuh Koreksi Essay
-                                                    </div>
-                                                )}
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
+                            <AttemptList
+                                loading={loading}
+                                attempts={attempts}
+                                selectedAttempt={selectedAttempt}
+                                onSelect={setSelectedAttempt}
+                            />
                         </div>
                     </div>
                 )}
