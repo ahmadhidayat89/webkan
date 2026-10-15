@@ -23,7 +23,7 @@ const SlidersManagement = () => {
   const [removeImage, setRemoveImage] = useState(false);
 
   useEffect(() => {
-    fetchSliders();
+    void fetchSliders();
   }, []);
 
   const fetchSliders = async () => {
@@ -141,7 +141,7 @@ const SlidersManagement = () => {
       const data = await response.json();
       if (data.success) {
         setRemoveImage(false);
-        fetchSliders();
+        void fetchSliders();
         handleCloseModal();
       } else if (data.errors) {
         setErrors(data.errors);
@@ -164,7 +164,7 @@ const SlidersManagement = () => {
       });
       const data = await response.json();
       if (data.success) {
-        fetchSliders();
+        void fetchSliders();
       }
     } catch (error) {
       console.error('Error deleting slider:', error);
