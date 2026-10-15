@@ -327,6 +327,10 @@ const FAQManagement = () => {
     [faqs]
   );
 
+  // Label tombol submit (menggantikan nested ternary)
+  let submitLabel = editingFaq ? 'Simpan Perubahan' : 'Tambah FAQ';
+  if (saving) submitLabel = 'Menyimpan...';
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -395,11 +399,13 @@ const FAQManagement = () => {
             FAQ LIST
         ========================= */}
         <div className="grid grid-cols-1 gap-4">
-          {loading ? (
+          {loading && (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-4 rounded-full animate-spin border-primary-600 border-t-transparent" />
             </div>
-          ) : faqs.length === 0 ? (
+          )}
+
+          {!loading && faqs.length === 0 && (
             <div className="py-16 text-center bg-white border border-gray-200 rounded-2xl">
               <div className="flex items-center justify-center w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-2xl">
                 <FaQuestionCircle className="text-2xl text-gray-400" />
@@ -417,124 +423,124 @@ const FAQManagement = () => {
                 Tambah FAQ pertama
               </button>
             </div>
-          ) : (
-            faqs.map((faq, index) => (
-              <article
-                key={faq.id}
-                className="p-5 transition-all bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md"
-              >
-                {/* TOP SECTION */}
-                <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 inline-flex rounded-lg bg-primary-50 px-2 py-1 text-xs font-bold text-primary-700">
-                      #{index + 1}
-                    </span>
-
-                    <div>
-                      <h3 className="text-base font-black text-gray-900">
-                        {faq.question}
-                      </h3>
-
-                      <p className="mt-1 text-xs text-gray-400">
-                        Order: {faq.order}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${faq.is_active
-                        ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-                        : 'border border-gray-200 bg-gray-100 text-gray-500'
-                      }`}
-                  >
-                    {faq.is_active ? (
-                      <FaCheckCircle />
-                    ) : (
-                      <FaExclamationCircle />
-                    )}
-
-                    {faq.is_active ? 'Aktif' : 'Nonaktif'}
-                  </span>
-                </div>
-
-                {/* HOME STATUS */}
-                <div className="mb-3">
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${faq.show_on_home
-                        ? 'border border-blue-200 bg-blue-50 text-blue-700'
-                        : 'border border-slate-200 bg-slate-100 text-slate-500'
-                      }`}
-                  >
-                    {faq.show_on_home ? <FaEye /> : <FaEyeSlash />}
-
-                    {faq.show_on_home
-                      ? 'Tampil di Beranda'
-                      : 'Hanya Halaman FAQ'}
-                  </span>
-                </div>
-
-                {/* ANSWER */}
-                <div
-                  className="mb-4 text-sm leading-relaxed text-gray-600 line-clamp-3"
-                  dangerouslySetInnerHTML={{
-                    __html: faq.answer || '',
-                  }}
-                />
-
-                {/* ACTIONS */}
-                <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleShowOnHome(faq.id)}
-                    disabled={actionLoading === `home-${faq.id}`}
-                    className={`flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${faq.show_on_home
-                        ? 'text-blue-700 hover:bg-blue-50'
-                        : 'text-slate-600 hover:bg-slate-100'
-                      }`}
-                  >
-                    {faq.show_on_home ? <FaEyeSlash /> : <FaEye />}
-
-                    {faq.show_on_home
-                      ? 'Sembunyikan Beranda'
-                      : 'Tampilkan Beranda'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleToggleActive(faq.id)}
-                    disabled={actionLoading === `active-${faq.id}`}
-                    className={`flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${faq.is_active
-                        ? 'text-amber-600 hover:bg-amber-50'
-                        : 'text-emerald-600 hover:bg-emerald-50'
-                      }`}
-                  >
-                    {faq.is_active ? <FaEyeSlash /> : <FaEye />}
-
-                    {faq.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => openModal(faq)}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-bold transition-all rounded-lg text-primary-600 hover:bg-primary-50"
-                  >
-                    <FaEdit />
-                    Edit
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(faq.id)}
-                    disabled={actionLoading === `delete-${faq.id}`}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-red-500 transition-all rounded-lg hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <FaTrash />
-                    Hapus
-                  </button>
-                </div>
-              </article>
-            ))
           )}
+
+          {!loading && faqs.map((faq, index) => (
+            <article
+              key={faq.id}
+              className="p-5 transition-all bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md"
+            >
+              {/* TOP SECTION */}
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex rounded-lg bg-primary-50 px-2 py-1 text-xs font-bold text-primary-700">
+                    #{index + 1}
+                  </span>
+
+                  <div>
+                    <h3 className="text-base font-black text-gray-900">
+                      {faq.question}
+                    </h3>
+
+                    <p className="mt-1 text-xs text-gray-400">
+                      Order: {faq.order}
+                    </p>
+                  </div>
+                </div>
+
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${faq.is_active
+                      ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : 'border border-gray-200 bg-gray-100 text-gray-500'
+                    }`}
+                >
+                  {faq.is_active ? (
+                    <FaCheckCircle />
+                  ) : (
+                    <FaExclamationCircle />
+                  )}
+
+                  {faq.is_active ? 'Aktif' : 'Nonaktif'}
+                </span>
+              </div>
+
+              {/* HOME STATUS */}
+              <div className="mb-3">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${faq.show_on_home
+                      ? 'border border-blue-200 bg-blue-50 text-blue-700'
+                      : 'border border-slate-200 bg-slate-100 text-slate-500'
+                    }`}
+                >
+                  {faq.show_on_home ? <FaEye /> : <FaEyeSlash />}
+
+                  {faq.show_on_home
+                    ? 'Tampil di Beranda'
+                    : 'Hanya Halaman FAQ'}
+                </span>
+              </div>
+
+              {/* ANSWER */}
+              <div
+                className="mb-4 text-sm leading-relaxed text-gray-600 line-clamp-3"
+                dangerouslySetInnerHTML={{
+                  __html: faq.answer || '',
+                }}
+              />
+
+              {/* ACTIONS */}
+              <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => handleToggleShowOnHome(faq.id)}
+                  disabled={actionLoading === `home-${faq.id}`}
+                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${faq.show_on_home
+                      ? 'text-blue-700 hover:bg-blue-50'
+                      : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                >
+                  {faq.show_on_home ? <FaEyeSlash /> : <FaEye />}
+
+                  {faq.show_on_home
+                    ? 'Sembunyikan Beranda'
+                    : 'Tampilkan Beranda'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleActive(faq.id)}
+                  disabled={actionLoading === `active-${faq.id}`}
+                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${faq.is_active
+                      ? 'text-amber-600 hover:bg-amber-50'
+                      : 'text-emerald-600 hover:bg-emerald-50'
+                    }`}
+                >
+                  {faq.is_active ? <FaEyeSlash /> : <FaEye />}
+
+                  {faq.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => openModal(faq)}
+                  className="flex items-center gap-1 px-3 py-2 text-xs font-bold transition-all rounded-lg text-primary-600 hover:bg-primary-50"
+                >
+                  <FaEdit />
+                  Edit
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDelete(faq.id)}
+                  disabled={actionLoading === `delete-${faq.id}`}
+                  className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-red-500 transition-all rounded-lg hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <FaTrash />
+                  Hapus
+                </button>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
 
@@ -735,11 +741,7 @@ const FAQManagement = () => {
                   disabled={saving}
                   className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-bold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {saving
-                    ? 'Menyimpan...'
-                    : editingFaq
-                      ? 'Simpan Perubahan'
-                      : 'Tambah FAQ'}
+                  {submitLabel}
                 </button>
               </div>
             </form>
