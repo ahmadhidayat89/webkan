@@ -257,6 +257,10 @@ const UserManagement = () => {
     return users.filter((user) => user.role === role).length;
   };
 
+  // Label tombol submit di modal (menggantikan nested ternary)
+  let submitLabel = editingUser ? 'Simpan Perubahan' : 'Buat User';
+  if (saving) submitLabel = 'Menyimpan...';
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -370,16 +374,20 @@ const UserManagement = () => {
 
           </div>
 
-          {loading ? (
+          {loading && (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-4 rounded-full border-primary-600 border-t-transparent animate-spin" />
             </div>
-          ) : users.length === 0 ? (
+          )}
+
+          {!loading && users.length === 0 && (
             <div className="py-16 text-center text-gray-400">
               <FaUsers className="mx-auto mb-3 text-3xl text-gray-300" />
               <p>Belum ada user.</p>
             </div>
-          ) : (
+          )}
+
+          {!loading && users.length > 0 && (
             <div className="overflow-x-auto">
 
               <table className="w-full text-sm">
@@ -658,6 +666,7 @@ const UserManagement = () => {
                   </label>
 
                   <input
+                    id={passwordId}
                     type="password"
                     required={!editingUser}
                     minLength="8"
@@ -724,11 +733,7 @@ const UserManagement = () => {
                   disabled={saving}
                   className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-bold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {saving
-                    ? 'Menyimpan...'
-                    : editingUser
-                      ? 'Simpan Perubahan'
-                      : 'Buat User'}
+                  {submitLabel}
                 </button>
 
               </div>
