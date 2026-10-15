@@ -26,6 +26,12 @@ const initialFormData = {
   description: '',
 };
 
+// FIX: ternary bersarang pada teks tombol diganti fungsi
+const getSubmitLabel = (saving, editingStep) => {
+  if (saving) return 'Menyimpan...';
+  return editingStep ? 'Simpan Perubahan' : 'Tambah Langkah';
+};
+
 const AccreditationStepsManagement = () => {
   const [steps, setSteps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -185,6 +191,121 @@ const AccreditationStepsManagement = () => {
     }
   };
 
+  // FIX: ternary bersarang (loading / kosong / daftar) diganti early return
+  const renderSteps = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 border-4 rounded-full animate-spin border-primary-600 border-t-transparent" />
+        </div>
+      );
+    }
+
+    if (steps.length === 0) {
+      return (
+        <div className="py-16 text-center bg-white border border-gray-200 rounded-2xl">
+          <div className="flex items-center justify-center w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-2xl">
+            <FaListOl className="text-2xl text-gray-400" />
+          </div>
+
+          <p className="mb-1 font-semibold text-gray-500">
+            Belum ada langkah
+          </p>
+
+          <button
+            type="button"
+            onClick={() => openModal()}
+            className="text-sm font-bold text-primary-600 hover:underline"
+          >
+            Tambah langkah pertama
+          </button>
+        </div>
+      );
+    }
+
+    return steps.map((step, index) => (
+      <article
+        key={step.id}
+        className="flex items-start gap-4 p-5 transition-all bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md"
+      >
+        {/* Nomor urut */}
+        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 text-sm font-black text-blue-700 rounded-xl bg-blue-50">
+          {index + 1}
+        </div>
+
+        {/* Icon */}
+        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 text-xl rounded-xl bg-gray-50">
+          {step.icon}
+        </div>
+
+        {/* Konten */}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h3 className="text-sm font-black text-gray-900">
+              {step.title}
+            </h3>
+
+            <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
+              {step.tag}
+            </span>
+          </div>
+
+          <p className="text-xs leading-relaxed text-gray-500 line-clamp-2">
+            {step.description}
+          </p>
+        </div>
+
+        {/* Tombol aksi */}
+        <div className="flex items-center flex-shrink-0 gap-1">
+          <button
+            type="button"
+            onClick={() => handleMove(step.id, 'up')}
+            disabled={
+              index === 0 || movingId === step.id
+            }
+            className="flex items-center justify-center w-8 h-8 text-xs transition-all rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Naikan urutan"
+            aria-label="Naikan urutan"
+          >
+            <FaArrowUp />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleMove(step.id, 'down')}
+            disabled={
+              index === steps.length - 1 ||
+              movingId === step.id
+            }
+            className="flex items-center justify-center w-8 h-8 text-xs transition-all rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Turunkan urutan"
+            aria-label="Turunkan urutan"
+          >
+            <FaArrowDown />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openModal(step)}
+            className="flex items-center gap-1 px-3 py-2 text-xs font-bold transition-all rounded-lg text-primary-600 hover:bg-primary-50"
+          >
+            <FaEdit />
+            Edit
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDelete(step.id)}
+            className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-red-500 transition-all rounded-lg hover:bg-red-50"
+          >
+            <FaTrash />
+            Hapus
+          </button>
+        </div>
+      </article>
+    ));
+  };
+
   return (
     <AdminLayout>
       <ConfirmDialog />
@@ -239,109 +360,7 @@ const AccreditationStepsManagement = () => {
 
         {/* List */}
         <div className="flex flex-col gap-3">
-          {loading ? (
-            <div className="flex justify-center py-16">
-              <div className="w-8 h-8 border-4 rounded-full animate-spin border-primary-600 border-t-transparent" />
-            </div>
-          ) : steps.length === 0 ? (
-            <div className="py-16 text-center bg-white border border-gray-200 rounded-2xl">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-2xl">
-                <FaListOl className="text-2xl text-gray-400" />
-              </div>
-
-              <p className="mb-1 font-semibold text-gray-500">
-                Belum ada langkah
-              </p>
-
-              <button
-                type="button"
-                onClick={() => openModal()}
-                className="text-sm font-bold text-primary-600 hover:underline"
-              >
-                Tambah langkah pertama
-              </button>
-            </div>
-          ) : (
-            steps.map((step, index) => (
-              <article
-                key={step.id}
-                className="flex items-start gap-4 p-5 transition-all bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md"
-              >
-                {/* Nomor urut */}
-                <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 text-sm font-black text-blue-700 rounded-xl bg-blue-50">
-                  {index + 1}
-                </div>
-
-                {/* Icon */}
-                <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 text-xl rounded-xl bg-gray-50">
-                  {step.icon}
-                </div>
-
-                {/* Konten */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <h3 className="text-sm font-black text-gray-900">
-                      {step.title}
-                    </h3>
-
-                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
-                      {step.tag}
-                    </span>
-                  </div>
-
-                  <p className="text-xs leading-relaxed text-gray-500 line-clamp-2">
-                    {step.description}
-                  </p>
-                </div>
-
-                {/* Tombol aksi */}
-                <div className="flex items-center flex-shrink-0 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleMove(step.id, 'up')}
-                    disabled={
-                      index === 0 || movingId === step.id
-                    }
-                    className="flex items-center justify-center w-8 h-8 text-xs transition-all rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Naikan urutan"
-                  >
-                    <FaArrowUp />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleMove(step.id, 'down')}
-                    disabled={
-                      index === steps.length - 1 ||
-                      movingId === step.id
-                    }
-                    className="flex items-center justify-center w-8 h-8 text-xs transition-all rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Turunkan urutan"
-                  >
-                    <FaArrowDown />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => openModal(step)}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-bold transition-all rounded-lg text-primary-600 hover:bg-primary-50"
-                  >
-                    <FaEdit />
-                    Edit
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(step.id)}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-red-500 transition-all rounded-lg hover:bg-red-50"
-                  >
-                    <FaTrash />
-                    Hapus
-                  </button>
-                </div>
-              </article>
-            ))
-          )}
+          {renderSteps()}
         </div>
       </div>
 
@@ -370,6 +389,7 @@ const AccreditationStepsManagement = () => {
               <button
                 type="button"
                 onClick={closeModal}
+                aria-label="Tutup"
                 className="p-2 text-gray-400 transition-colors hover:bg-gray-100 rounded-xl"
               >
                 <svg
@@ -516,11 +536,7 @@ const AccreditationStepsManagement = () => {
                   disabled={saving}
                   className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-bold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {saving
-                    ? 'Menyimpan...'
-                    : editingStep
-                    ? 'Simpan Perubahan'
-                    : 'Tambah Langkah'}
+                  {getSubmitLabel(saving, editingStep)}
                 </button>
               </div>
 
