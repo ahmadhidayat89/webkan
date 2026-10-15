@@ -141,7 +141,7 @@ export default function DiscussionPanel({ lessonId, lessonTitle }) {
     useEffect(() => {
         if (open) {
             setLoading(true);
-            fetchMessages();
+            void fetchMessages();
         }
     }, [open, fetchMessages]);
 
@@ -307,7 +307,7 @@ export default function DiscussionPanel({ lessonId, lessonTitle }) {
                             value={text}
                             onChange={e => setText(e.target.value)}
                             onKeyDown={e => {
-                                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); }
+                                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSend(e); }
                             }}
                             placeholder={isAdmin ? 'Tulis respons sebagai Pengajar...' : 'Tulis pertanyaan atau komentar...'}
                             rows={1}
