@@ -342,8 +342,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                                 className="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white"
                                             >
                                                 Telescope
-                                            </a>
-                                            , and more.
+                                            </a>, and more.
                                         </p>
                                     </div>
                                 </div>
