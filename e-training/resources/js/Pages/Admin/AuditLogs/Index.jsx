@@ -3,6 +3,19 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Shield, Search, Calendar, Activity, MapPin, Hash, User, Filter } from 'lucide-react';
 import { useState } from 'react';
 
+const METHOD_BADGE_COLORS = {
+    POST: 'bg-green-100 text-green-700',
+    PUT: 'bg-blue-100 text-blue-700',
+    PATCH: 'bg-blue-100 text-blue-700',
+    DELETE: 'bg-red-100 text-red-700',
+};
+
+const getPageLinkClass = (link) => {
+    if (link.active) return 'bg-navy-600 text-white';
+    if (link.url) return 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200';
+    return 'text-gray-400 cursor-not-allowed';
+};
+
 export default function Index({ auth, logs, filters }) {
     const [startDate, setStartDate] = useState(filters.start_date || '');
     const [endDate, setEndDate] = useState(filters.end_date || '');
@@ -31,11 +44,7 @@ export default function Index({ auth, logs, filters }) {
             const resource = parts.slice(2).join(' / ');
             return (
                 <span className="inline-flex items-center gap-1.5">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        method === 'POST' ? 'bg-green-100 text-green-700' :
-                        method === 'PUT' || method === 'PATCH' ? 'bg-blue-100 text-blue-700' :
-                        method === 'DELETE' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${METHOD_BADGE_COLORS[method] || 'bg-gray-100 text-gray-700'}`}>
                         {method}
                     </span>
                     <span className="text-gray-700 font-medium capitalize">{resource}</span>
@@ -210,17 +219,11 @@ export default function Index({ auth, logs, filters }) {
                         {/* Pagination */}
                         {logs.links && logs.links.length > 3 && (
                             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-wrap gap-1">
-                                {logs.links.map((link, i) => (
+                                {logs.links.map((link) => (
                                     <Link
-                                        key={i}
+                                        key={link.url ?? link.label}
                                         href={link.url || '#'}
-                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                                            link.active
-                                                ? 'bg-navy-600 text-white'
-                                                : link.url
-                                                    ? 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                                                    : 'text-gray-400 cursor-not-allowed'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${getPageLinkClass(link)}`}
                                         dangerouslySetInnerHTML={{ __html: link.label }}
                                         preserveState
                                     />
