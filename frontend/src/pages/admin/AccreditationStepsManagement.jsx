@@ -401,8 +401,8 @@ const AccreditationStepsManagement = () => {
                   htmlFor="step-icon"
                   className="block mb-2 text-sm font-bold text-gray-800"
                 >
-                  Icon (Emoji)
-                  <span className="text-red-500"> *</span>
+                  Icon (Emoji){' '}
+                  <span className="text-red-500">*</span>
                 </label>
 
                 <input
@@ -428,7 +428,7 @@ const AccreditationStepsManagement = () => {
                   htmlFor="step-title"
                   className="block mb-2 text-sm font-bold text-gray-800"
                 >
-                  Judul Langkah
+                  Judul Langkah{' '}
                   <span className="text-red-500"> *</span>
                 </label>
 
@@ -454,7 +454,7 @@ const AccreditationStepsManagement = () => {
                   htmlFor="step-tag"
                   className="block mb-2 text-sm font-bold text-gray-800"
                 >
-                  Tag / Label
+                  Tag / Label{' '}
                   <span className="text-red-500"> *</span>
                 </label>
 
@@ -481,7 +481,7 @@ const AccreditationStepsManagement = () => {
                   htmlFor="step-description"
                   className="block mb-2 text-sm font-bold text-gray-800"
                 >
-                  Deskripsi
+                  Deskripsi{' '}
                   <span className="text-red-500"> *</span>
                 </label>
 
