@@ -1,18 +1,32 @@
 import { Transition } from '@headlessui/react';
 import { Link } from '@inertiajs/react';
-import { Children, cloneElement, createContext, isValidElement, useContext, useState } from 'react';
+import {
+    Children,
+    cloneElement,
+    createContext,
+    isValidElement,
+    useCallback,
+    useContext,
+    useMemo,
+    useState,
+} from 'react';
 
 const DropDownContext = createContext();
 
 const Dropdown = ({ children }) => {
     const [open, setOpen] = useState(false);
 
-    const toggleOpen = () => {
+    const toggleOpen = useCallback(() => {
         setOpen((previousState) => !previousState);
-    };
+    }, []);
+
+    const contextValue = useMemo(
+        () => ({ open, setOpen, toggleOpen }),
+        [open, toggleOpen]
+    );
 
     return (
-        <DropDownContext.Provider value={{ open, setOpen, toggleOpen }}>
+        <DropDownContext.Provider value={contextValue}>
             <div className="relative">{children}</div>
         </DropDownContext.Provider>
     );
