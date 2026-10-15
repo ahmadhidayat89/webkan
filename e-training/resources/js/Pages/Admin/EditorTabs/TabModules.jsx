@@ -1,8 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { PlusCircle, GripVertical, Trash2, Video, FileText, HelpCircle, ChevronDown, ChevronUp, Upload, X, Save, AlertTriangle } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
+
+// FIX: ternary bersarang diganti fungsi dengan early return
+function getSaveStatusText(isDirty, saved) {
+    if (isDirty) return 'Ada perubahan yang belum disimpan';
+    if (saved) return '✓ Tersimpan';
+    return 'Tidak ada perubahan';
+}
 
 // Modal konfirmasi hapus — menggantikan confirm() bawaan browser
 function ConfirmDeleteModal({ message, onConfirm, onCancel }) {
@@ -151,6 +158,7 @@ export default function TabModules({ courseId, modules }) {
                         type="text"
                         value={newModuleTitle}
                         onChange={e => setNewModuleTitle(e.target.value)}
+                        aria-label="Judul modul baru"
                         placeholder="Judul modul baru..."
                         className="flex-1 border-gray-300 rounded-lg text-sm focus:border-navy-500"
                     />
@@ -166,14 +174,12 @@ export default function TabModules({ courseId, modules }) {
 function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete, onDeleteLesson, onDeleteFile }) {
     const [isOpen, setIsOpen] = useState(true);
     const [title, setTitle] = useState(module.title);
-    const [isSaving, setIsSaving] = useState(false);
 
+    // FIX: state isSaving dihapus karena nilainya tidak pernah dibaca
     const saveModuleTitle = () => {
         if (title.trim() === module.title || !title.trim()) return;
-        setIsSaving(true);
         router.patch(route('admin.modules.update', module.id), { title: title.trim() }, {
-            preserveScroll: true,
-            onFinish: () => setIsSaving(false)
+            preserveScroll: true
         });
     };
 
@@ -197,13 +203,19 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
                     value={title}
                     onChange={e => setTitle(e.target.value)}
                     onBlur={saveModuleTitle}
+                    aria-label={`Judul modul ${index + 1}`}
                     className="flex-1 text-sm font-semibold bg-transparent border-none focus:ring-1 focus:ring-navy-300 rounded px-1 p-0 text-gray-800"
                 />
-                <button onClick={() => setIsOpen(!isOpen)} className="p-1 hover:bg-gray-200 rounded flex-shrink-0">
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    aria-label={isOpen ? 'Tutup modul' : 'Buka modul'}
+                    className="p-1 hover:bg-gray-200 rounded flex-shrink-0"
+                >
                     {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
                 <button
                     onClick={() => onDelete(module.id)}
+                    aria-label="Hapus modul"
                     className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600 flex-shrink-0"
                 >
                     <Trash2 className="w-4 h-4" />
@@ -328,11 +340,13 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                     type="text"
                     value={title}
                     onChange={e => setTitle(e.target.value)}
+                    aria-label="Judul materi"
                     className="flex-1 text-sm bg-transparent border-none focus:ring-1 focus:ring-navy-300 rounded px-1 p-0 font-medium text-gray-800"
                     placeholder="Judul materi..."
                 />
                 <button
                     onClick={() => setIsExpanded(!isExpanded)}
+                    aria-label={isExpanded ? 'Tutup detail materi' : 'Buka detail materi'}
                     className="p-1 hover:bg-white rounded opacity-60 hover:opacity-100 flex-shrink-0"
                 >
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -342,6 +356,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                     type="button"
                     onMouseDown={e => e.preventDefault()} // Cegah blur pada input sebelum klik
                     onClick={onDelete}
+                    aria-label="Hapus materi"
                     className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600 opacity-60 hover:opacity-100 flex-shrink-0"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -369,10 +384,11 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                     {(lesson.type === 'video' || lesson.type === 'zoom') && (
                         <div className="space-y-3">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                <label htmlFor={`lesson-${lesson.id}-url`} className="block text-xs font-bold text-gray-500 uppercase mb-1">
                                     {lesson.type === 'video' ? 'URL YouTube' : 'Link Zoom Meeting'}
                                 </label>
                                 <input
+                                    id={`lesson-${lesson.id}-url`}
                                     type="text"
                                     value={videoUrl}
                                     onChange={e => setVideoUrl(e.target.value)}
@@ -411,6 +427,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                                             type="button"
                                             onMouseDown={e => e.preventDefault()}
                                             onClick={() => onDeleteFile(f)}
+                                            aria-label={`Hapus file ${f.original_name}`}
                                             className="text-gray-400 hover:text-red-500 ml-1"
                                         >
                                             <X className="w-3 h-3" />
@@ -436,7 +453,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                     {lesson.type !== 'quiz' && (
                         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                             <p className="text-xs text-gray-400">
-                                {isDirty ? 'Ada perubahan yang belum disimpan' : saved ? '✓ Tersimpan' : 'Tidak ada perubahan'}
+                                {getSaveStatusText(isDirty, saved)}
                             </p>
                             <button
                                 type="button"
