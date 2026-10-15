@@ -291,31 +291,15 @@ class DocumentController extends Controller
     {
         $document = Document::find($id);
 
-        if (!$document) {
-            return response()->json([
+        $failure = $document === null
+            ? response()->json([
                 'success' => false,
                 'message' => self::NOT_FOUND_MESSAGE,
-            ], 404);
-        }
+            ], 404)
+            : $this->deletionFailure($document);
 
-        /*
-         * Root category tidak boleh dihapus.
-         */
-        if ($document->parent_id === null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kategori utama tidak dapat dihapus.',
-            ], 422);
-        }
-
-        /*
-         * Kategori yang masih memiliki children tidak boleh dihapus.
-         */
-        if ($document->type === 'category' && $document->children()->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kategori yang masih memiliki isi tidak dapat dihapus.',
-            ], 422);
+        if ($failure !== null) {
+            return $failure;
         }
 
         $document->delete();
@@ -324,6 +308,26 @@ class DocumentController extends Controller
             'success' => true,
             'message' => 'Data berhasil dihapus.',
         ]);
+    }
+
+    /**
+     * Mengembalikan response error jika data tidak boleh dihapus, atau null jika boleh.
+     */
+    private function deletionFailure(Document $document): ?JsonResponse
+    {
+        $message = null;
+
+        if ($document->parent_id === null) {
+            // Root category tidak boleh dihapus.
+            $message = 'Kategori utama tidak dapat dihapus.';
+        } elseif ($document->type === 'category' && $document->children()->exists()) {
+            // Kategori yang masih memiliki children tidak boleh dihapus.
+            $message = 'Kategori yang masih memiliki isi tidak dapat dihapus.';
+        }
+
+        return $message === null
+            ? null
+            : response()->json(['success' => false, 'message' => $message], 422);
     }
 
     /**
