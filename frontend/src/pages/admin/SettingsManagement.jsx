@@ -61,13 +61,13 @@ const mailFieldDefs = [
 ];
 
 // Key kontak yang dikelola lewat editor khusus (bukan input biasa)
-const CONTACT_LIST_KEYS = [
+const CONTACT_LIST_KEYS = new Set([
   'contact_email',
   'contact_phone',
   'contact_emails',
   'contact_phones',
   'contact_hours',
-];
+]);
 
 const parseList = (raw) => {
   try {
@@ -76,6 +76,17 @@ const parseList = (raw) => {
   } catch {
     return [];
   }
+};
+
+// Id lokal tiap baris email/telepon untuk key React (tidak ikut disimpan)
+let nextItemId = 0;
+const newItemId = () => `contact-item-${nextItemId++}`;
+const withIds = (list) => list.map((item) => ({ ...item, _id: newItemId() }));
+
+// Pakai daftar tersimpan; kalau kosong, pakai nilai lama sebagai baris pertama
+const buildContactList = (savedList, legacyValue) => {
+  if (savedList.length) return savedList;
+  return legacyValue ? [{ label: '', value: legacyValue }] : [];
 };
 
 const ContactListEditor = ({
@@ -90,23 +101,16 @@ const ContactListEditor = ({
   const update = (i, field, v) =>
     onChange(items.map((it, idx) => (idx === i ? { ...it, [field]: v } : it)));
   const remove = (i) => onChange(items.filter((_, idx) => idx !== i));
-  const add = () => onChange([...items, { label: '', value: '' }]);
+  const add = () => onChange([...items, { _id: newItemId(), label: '', value: '' }]);
 
   return (
-    <div className="border-b border-gray-100 pb-7">
-      {/* FIX: judul grup input, bukan <label> tunggal */}
-      <p id={`${id}-title`} className="block mb-3 text-sm font-bold text-gray-800">
-        {title}
-      </p>
+    <fieldset id={id} className="min-w-0 border-b border-gray-100 pb-7">
+      <legend className="p-0 mb-3 text-sm font-bold text-gray-800">{title}</legend>
 
-      <div
-        role="group"
-        aria-labelledby={`${id}-title`}
-        className="space-y-3"
-      >
+      <div className="space-y-3">
         {items.map((item, i) => (
           <div
-            key={i}
+            key={item._id}
             className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr_auto]"
           >
             <input
@@ -145,7 +149,7 @@ const ContactListEditor = ({
         <FaPlus className="text-xs" />
         {addLabel}
       </button>
-    </div>
+    </fieldset>
   );
 };
 
@@ -247,16 +251,8 @@ const SettingsManagement = () => {
         const phones = parseList(find('contact_phones'));
 
         setContactLists({
-          emails: emails.length
-            ? emails
-            : find('contact_email')
-              ? [{ label: '', value: find('contact_email') }]
-              : [],
-          phones: phones.length
-            ? phones
-            : find('contact_phone')
-              ? [{ label: '', value: find('contact_phone') }]
-              : [],
+          emails: withIds(buildContactList(emails, find('contact_email'))),
+          phones: withIds(buildContactList(phones, find('contact_phone'))),
         });
 
         // Isi jam operasional
@@ -364,7 +360,7 @@ const SettingsManagement = () => {
           (setting) =>
             !(
               activeGroup === 'contact' &&
-              CONTACT_LIST_KEYS.includes(setting.key)
+              CONTACT_LIST_KEYS.has(setting.key)
             )
         )
         .map((setting) => ({
@@ -586,7 +582,7 @@ const SettingsManagement = () => {
       activeGroup !== 'mail' &&
       !(
         activeGroup === 'contact' &&
-        CONTACT_LIST_KEYS.includes(setting.key)
+        CONTACT_LIST_KEYS.has(setting.key)
       )
   );
 
@@ -1177,6 +1173,11 @@ const SettingsManagement = () => {
     </div>
   );
 
+  // Status & label tombol simpan di header (menggantikan nested ternary)
+  const isSavingCurrent = isMailGroup ? mailSaving : saving;
+  let saveButtonLabel = isMailGroup ? 'Simpan Pengaturan Email' : 'Simpan Perubahan';
+  if (isSavingCurrent) saveButtonLabel = 'Menyimpan...';
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -1205,27 +1206,12 @@ const SettingsManagement = () => {
             </div>
 
             <button
-              onClick={
-                isMailGroup
-                  ? saveMailSettings
-                  : handleSave
-              }
-              disabled={
-                isMailGroup
-                  ? mailSaving
-                  : saving
-              }
+              onClick={isMailGroup ? saveMailSettings : handleSave}
+              disabled={isSavingCurrent}
               className="flex items-center gap-2 px-5 py-2.5 bg-white text-primary-700 rounded-xl font-bold text-sm hover:bg-white/90 transition-all shadow-md disabled:opacity-60"
             >
               <FaSave />
-
-              {isMailGroup
-                ? mailSaving
-                  ? 'Menyimpan...'
-                  : 'Simpan Pengaturan Email'
-                : saving
-                  ? 'Menyimpan...'
-                  : 'Simpan Perubahan'}
+              {saveButtonLabel}
             </button>
           </div>
         </div>
