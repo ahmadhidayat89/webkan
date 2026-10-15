@@ -30,7 +30,7 @@ const QuickLinks = ({ links }) => {
         <div className="mb-10 text-center sm:mb-12 md:mb-16 animate-fadeIn">
 
           <h2 className="px-4 mb-3 text-3xl font-black text-gray-900 sm:text-4xl md:text-5xl lg:text-6xl md:mb-4">
-            Layanan
+            Layanan{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800">
               Unggulan
             </span>
