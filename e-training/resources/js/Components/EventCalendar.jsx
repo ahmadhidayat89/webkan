@@ -13,6 +13,11 @@ const MONTH_NAMES = [
 ];
 const DAY_HEADERS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
+const SLIDE_ANIMATION = {
+    'slide-left': 'animate-slide-in-right',
+    'slide-right': 'animate-slide-in-left',
+};
+
 function getDaysInMonth(year, month) {
     return new Date(year, month + 1, 0).getDate();
 }
@@ -25,6 +30,13 @@ function isSameDay(d1, d2) {
     return d1.getFullYear() === d2.getFullYear() &&
            d1.getMonth() === d2.getMonth() &&
            d1.getDate() === d2.getDate();
+}
+
+function getDayCellClasses({ isSelected, isToday, hasEvents }) {
+    if (isSelected) return 'bg-navy-600 text-white shadow-md scale-105';
+    if (isToday) return 'bg-navy-50 text-navy-700 font-bold';
+    if (hasEvents) return 'hover:bg-gray-50 text-gray-700';
+    return 'text-gray-500 hover:bg-gray-50';
 }
 
 export default function EventCalendar({ events = [] }) {
@@ -90,7 +102,7 @@ export default function EventCalendar({ events = [] }) {
     const calendarDays = [];
     // Empty cells before first day
     for (let i = 0; i < firstDay; i++) {
-        calendarDays.push(null);
+        calendarDays.push({ key: `blank-${i}`, isEmpty: true });
     }
     // Actual days
     for (let day = 1; day <= daysInMonth; day++) {
@@ -99,7 +111,7 @@ export default function EventCalendar({ events = [] }) {
         const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
         const isSelected = day === selectedDate;
 
-        calendarDays.push({ day, dateKey, dayEvents, isToday, isSelected });
+        calendarDays.push({ key: dateKey, day, dateKey, dayEvents, isToday, isSelected });
     }
 
     return (
@@ -121,12 +133,14 @@ export default function EventCalendar({ events = [] }) {
                     <div className="flex items-center gap-1">
                         <button
                             onClick={prevMonth}
+                            aria-label="Bulan sebelumnya"
                             className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-all"
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
                         <button
                             onClick={nextMonth}
+                            aria-label="Bulan berikutnya"
                             className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-all"
                         >
                             <ChevronRight className="w-4 h-4" />
@@ -144,13 +158,10 @@ export default function EventCalendar({ events = [] }) {
                 </div>
 
                 {/* Calendar Grid */}
-                <div className={`grid grid-cols-7 gap-0 transition-all duration-300 ${
-                    slideDirection === 'slide-left' ? 'animate-slide-in-right' :
-                    slideDirection === 'slide-right' ? 'animate-slide-in-left' : ''
-                }`}>
-                    {calendarDays.map((cell, index) => {
-                        if (!cell) {
-                            return <div key={`empty-${index}`} className="p-1" />;
+                <div className={`grid grid-cols-7 gap-0 transition-all duration-300 ${SLIDE_ANIMATION[slideDirection] || ''}`}>
+                    {calendarDays.map((cell) => {
+                        if (cell.isEmpty) {
+                            return <div key={cell.key} className="p-1" />;
                         }
 
                         const { day, dayEvents, isToday, isSelected } = cell;
@@ -161,17 +172,9 @@ export default function EventCalendar({ events = [] }) {
 
                         return (
                             <button
-                                key={day}
+                                key={cell.key}
                                 onClick={() => setSelectedDate(isSelected ? null : day)}
-                                className={`relative flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 min-h-[40px] ${
-                                    isSelected
-                                        ? 'bg-navy-600 text-white shadow-md scale-105'
-                                        : isToday
-                                            ? 'bg-navy-50 text-navy-700 font-bold'
-                                            : hasEvents
-                                                ? 'hover:bg-gray-50 text-gray-700'
-                                                : 'text-gray-500 hover:bg-gray-50'
-                                }`}
+                                className={`relative flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 min-h-[40px] ${getDayCellClasses({ isSelected, isToday, hasEvents })}`}
                             >
                                 <span className={`text-xs ${isToday && !isSelected ? 'font-bold' : 'font-medium'}`}>
                                     {day}
@@ -218,6 +221,7 @@ export default function EventCalendar({ events = [] }) {
                         </h4>
                         <button
                             onClick={() => setSelectedDate(null)}
+                            aria-label="Tutup detail tanggal"
                             className="w-5 h-5 rounded flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors"
                         >
                             <X className="w-3 h-3" />
