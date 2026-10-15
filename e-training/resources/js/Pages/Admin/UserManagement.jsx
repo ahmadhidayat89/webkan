@@ -68,6 +68,22 @@ function UserFormModal({ isOpen, onClose, editUser = null }) {
         </div>
     );
 
+    // Ikon dan label tombol submit dihitung di sini supaya tidak ada ternary bersarang
+    let submitIcon = <UserPlus className="w-4 h-4" />;
+    if (isEdit) {
+        submitIcon = <Pencil className="w-4 h-4" />;
+    }
+    if (processing) {
+        submitIcon = <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />;
+    }
+
+    let submitLabel = 'Tambah User';
+    if (processing) {
+        submitLabel = 'Menyimpan...';
+    } else if (isEdit) {
+        submitLabel = 'Simpan Perubahan';
+    }
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <button type="button" aria-label="Tutup dialog pengguna" className="absolute inset-0 border-0 bg-black/50 p-0 backdrop-blur-sm" onClick={onClose} />
@@ -159,10 +175,8 @@ function UserFormModal({ isOpen, onClose, editUser = null }) {
                         </button>
                         <button type="submit" disabled={processing}
                             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-navy-600 hover:bg-navy-700 disabled:opacity-60 rounded-xl text-sm font-semibold text-white shadow-sm">
-                            {processing
-                                ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                : isEdit ? <Pencil className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                            {processing ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Tambah User'}
+                            {submitIcon}
+                            {submitLabel}
                         </button>
                     </div>
                 </form>
@@ -305,56 +319,53 @@ export default function UserManagement({ users = [], flash = {} }) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
-                                    {filtered.map((user) => {
-                                        const cfg = ROLE_CONFIG[user.role] ?? ROLE_CONFIG.peserta;
-                                        return (
-                                            <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0
-                                                            ${user.role === 'admin' ? 'bg-gradient-to-br from-purple-400 to-purple-600' : 'bg-gradient-to-br from-navy-400 to-navy-600'}`}>
-                                                            {user.name.charAt(0).toUpperCase()}
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                                                            <p className="text-xs text-gray-400">{user.email}</p>
-                                                        </div>
+                                    {filtered.map((user) => (
+                                        <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0
+                                                        ${user.role === 'admin' ? 'bg-gradient-to-br from-purple-400 to-purple-600' : 'bg-gradient-to-br from-navy-400 to-navy-600'}`}>
+                                                        {user.name.charAt(0).toUpperCase()}
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="inline-flex items-center gap-1 text-sm text-gray-600 font-mono">
-                                                        <AtSign className="w-3 h-3 text-gray-400" />
-                                                        {user.username || <span className="text-gray-300 font-sans">—</span>}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <RoleBadge role={user.role} />
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="text-sm text-gray-500">{user.organization || '—'}</span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                                                        <Calendar className="w-3.5 h-3.5" /> {user.created_at}
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                                                        <p className="text-xs text-gray-400">{user.email}</p>
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        <button onClick={() => setEditTarget(user)}
-                                                            className="p-2 text-gray-400 hover:text-navy-600 hover:bg-navy-50 rounded-lg transition-colors"
-                                                            title="Edit user">
-                                                            <Pencil className="w-4 h-4" />
-                                                        </button>
-                                                        <button onClick={() => setDeleteTarget(user)}
-                                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                            title="Hapus user">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="inline-flex items-center gap-1 text-sm text-gray-600 font-mono">
+                                                    <AtSign className="w-3 h-3 text-gray-400" />
+                                                    {user.username || <span className="text-gray-300 font-sans">—</span>}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <RoleBadge role={user.role} />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-sm text-gray-500">{user.organization || '—'}</span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                                                    <Calendar className="w-3.5 h-3.5" /> {user.created_at}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button onClick={() => setEditTarget(user)}
+                                                        className="p-2 text-gray-400 hover:text-navy-600 hover:bg-navy-50 rounded-lg transition-colors"
+                                                        title="Edit user">
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button onClick={() => setDeleteTarget(user)}
+                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Hapus user">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
