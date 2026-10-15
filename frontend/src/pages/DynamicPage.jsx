@@ -82,9 +82,10 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
   const [zoom, setZoom] = useState(1);
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [dragStart, setDragStart] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const imgRef = useRef(null);
+  const offsetRef = useRef(offset);
+  offsetRef.current = offset;
 
   const goNext = useCallback(() => {
     setCurrent((c) => (c + 1) % images.length);
@@ -116,22 +117,47 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
     };
   }, [onClose, goNext, goPrev]);
 
-  const handleMouseDown = (e) => {
-    if (zoom > 1) {
+  // Geser gambar saat di-zoom: mousedown di gambar, mousemove/mouseup di window
+  useEffect(() => {
+    const imgEl = imgRef.current;
+    if (!imgEl || zoom <= 1) return;
+
+    let start = null;
+
+    const handleMove = (e) => {
+      setOffset({ x: e.clientX - start.x, y: e.clientY - start.y });
+    };
+
+    const handleUp = () => {
+      start = null;
+      setDragging(false);
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+
+    const handleDown = (e) => {
+      e.preventDefault();
+      start = {
+        x: e.clientX - offsetRef.current.x,
+        y: e.clientY - offsetRef.current.y,
+      };
       setDragging(true);
-      setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
-    }
-  };
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+    };
 
-  const handleMouseMove = (e) => {
-    if (dragging && dragStart) {
-      setOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
-    }
-  };
-
-  const handleMouseUp = () => setDragging(false);
+    imgEl.addEventListener('mousedown', handleDown);
+    return () => {
+      imgEl.removeEventListener('mousedown', handleDown);
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+  }, [zoom]);
 
   const img = images[current];
+
+  let cursor = 'default';
+  if (zoom > 1) cursor = dragging ? 'grabbing' : 'grab';
 
   return (
     <dialog
@@ -184,13 +210,8 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
 
       {/* Image area */}
       <div
-        role="presentation"
         className="flex-1 flex items-center justify-center relative overflow-hidden select-none"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        style={{ cursor: zoom > 1 ? (dragging ? 'grabbing' : 'grab') : 'default' }}
+        style={{ cursor }}
       >
         {/* Loading spinner */}
         {isLoading && (
@@ -240,7 +261,7 @@ const Lightbox = ({ images, initialIndex, onClose }) => {
         >
           {images.map((im, i) => (
             <button
-              key={i}
+              key={im.src}
               onClick={() => { setCurrent(i); setZoom(1); setOffset({ x: 0, y: 0 }); setIsLoading(true); }}
               className={`flex-shrink-0 w-14 h-10 rounded-lg overflow-hidden border-2 transition-all ${
                 i === current ? 'border-white scale-110' : 'border-white/20 opacity-50 hover:opacity-80'
