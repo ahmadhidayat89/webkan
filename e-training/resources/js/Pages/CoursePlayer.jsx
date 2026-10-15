@@ -1,3 +1,6 @@
+// import { Head, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
+
 // Format sisa waktu: 75 -> "01:15", 3725 -> "1:02:05"
 function formatTime(totalSeconds) {
     const h = Math.floor(totalSeconds / 3600);
@@ -52,13 +55,17 @@ function formatErrorMessage(errors) {
 }
 
 function postQuizAnswers({ courseId, quizId, payload, onSuccess, onError }) {
-    import('@inertiajs/react').then(({ router }) => {
+    try {
         router.post(
             route('courses.quizzes.submit', { course: courseId, quiz: quizId }),
             { answers: payload },
             { preserveScroll: true, onSuccess, onError }
         );
-    });
+    } catch (error) {
+        // Jaga-jaga jika route() atau router.post melempar error sinkron,
+        // supaya `processing` tetap direset dan tombol kirim tidak terkunci.
+        onError({ message: 'Gagal mengirim jawaban. Silakan coba lagi.' });
+    }
 }
 
 function getTimerClass(timeLeft) {
