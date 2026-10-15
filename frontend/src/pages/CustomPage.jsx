@@ -42,17 +42,34 @@ const CustomPage = () => {
   const title = isEnglish ? page?.title_en || page?.title_id : page?.title_id;
   const content = isEnglish ? page?.content_en || page?.content_id : page?.content_id;
 
+  // Isi halaman ditentukan dengan if biasa (urutan sama seperti sebelumnya):
+  // memuat -> gagal -> tidak ditemukan -> tampilkan halaman
+  const renderBody = () => {
+    if (loading) {
+      return <p className="py-20 text-center text-gray-500">Memuat...</p>;
+    }
+    if (loadError) {
+      return <p role="alert" className="py-20 text-center text-red-600">{loadError}</p>;
+    }
+    if (notFound || !page) {
+      return <h1 className="py-20 text-center text-2xl font-bold">Halaman tidak ditemukan</h1>;
+    }
+    return (
+      <article className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-sm md:p-10">
+        <h1 className="mb-8 text-3xl font-black text-gray-900">{title}</h1>
+        <div
+          className="prose max-w-none"
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content || '') }}
+        />
+      </article>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="container mx-auto min-h-[60vh] px-4 pb-16 pt-36">
-        {loading ? <p className="py-20 text-center text-gray-500">Memuat...</p>
-          : loadError ? <p role="alert" className="py-20 text-center text-red-600">{loadError}</p>
-            : notFound || !page ? <h1 className="py-20 text-center text-2xl font-bold">Halaman tidak ditemukan</h1>
-            : <article className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-sm md:p-10">
-              <h1 className="mb-8 text-3xl font-black text-gray-900">{title}</h1>
-              <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content || '') }} />
-            </article>}
+        {renderBody()}
       </main>
       <Footer />
     </div>
