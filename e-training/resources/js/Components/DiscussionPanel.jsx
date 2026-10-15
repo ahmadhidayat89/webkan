@@ -17,6 +17,17 @@ function isImage(mimeType) {
     return mimeType && mimeType.startsWith('image/');
 }
 
+// ─── Bubble color ─────────────────────────────────────────────────────────────
+function bubbleColorClass(own, senderIsAdmin) {
+    if (own) {
+        return 'bg-navy-600 text-white rounded-br-sm';
+    }
+    if (senderIsAdmin) {
+        return 'bg-gradient-to-br from-gold-50 to-amber-50 border border-gold-200 text-gray-800 rounded-bl-sm';
+    }
+    return 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm';
+}
+
 // ─── File Preview Badge ───────────────────────────────────────────────────────
 function FileAttachment({ msg, own }) {
     if (!msg.file_path) return null;
@@ -75,11 +86,7 @@ function Bubble({ msg, onDelete, currentUserId, isAdmin }) {
 
                 {/* Bubble */}
                 <div className={`relative px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm
-                    ${own
-                        ? 'bg-navy-600 text-white rounded-br-sm'
-                        : senderIsAdmin
-                            ? 'bg-gradient-to-br from-gold-50 to-amber-50 border border-gold-200 text-gray-800 rounded-bl-sm'
-                            : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'}`}>
+                    ${bubbleColorClass(own, senderIsAdmin)}`}>
                     {msg.message && <p className="whitespace-pre-wrap">{msg.message}</p>}
                     <FileAttachment msg={msg} own={own} />
 
@@ -103,6 +110,37 @@ function Bubble({ msg, onDelete, currentUserId, isAdmin }) {
             </div>
         </div>
     );
+}
+
+// ─── Message List (loading / empty / filled) ──────────────────────────────────
+function MessageList({ loading, messages, onDelete, currentUserId, isAdmin }) {
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-6 h-6 text-navy-500 animate-spin" />
+            </div>
+        );
+    }
+
+    if (messages.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+                <MessageCircle className="w-10 h-10 text-gray-200 mb-2" />
+                <p className="text-sm font-semibold text-gray-400">Belum ada diskusi</p>
+                <p className="text-xs text-gray-300 mt-0.5">Jadilah yang pertama bertanya!</p>
+            </div>
+        );
+    }
+
+    return messages.map(msg => (
+        <Bubble
+            key={msg.id}
+            msg={msg}
+            onDelete={onDelete}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+        />
+    ));
 }
 
 // ─── Main Discussion Component ────────────────────────────────────────────────
@@ -238,27 +276,13 @@ export default function DiscussionPanel({ lessonId, lessonTitle }) {
 
                     {/* Messages */}
                     <div className="h-80 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/30">
-                        {loading ? (
-                            <div className="flex items-center justify-center h-full">
-                                <Loader2 className="w-6 h-6 text-navy-500 animate-spin" />
-                            </div>
-                        ) : messages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center">
-                                <MessageCircle className="w-10 h-10 text-gray-200 mb-2" />
-                                <p className="text-sm font-semibold text-gray-400">Belum ada diskusi</p>
-                                <p className="text-xs text-gray-300 mt-0.5">Jadilah yang pertama bertanya!</p>
-                            </div>
-                        ) : (
-                            messages.map(msg => (
-                                <Bubble
-                                    key={msg.id}
-                                    msg={msg}
-                                    onDelete={handleDelete}
-                                    currentUserId={currentUser?.id}
-                                    isAdmin={isAdmin}
-                                />
-                            ))
-                        )}
+                        <MessageList
+                            loading={loading}
+                            messages={messages}
+                            onDelete={handleDelete}
+                            currentUserId={currentUser?.id}
+                            isAdmin={isAdmin}
+                        />
                         <div ref={bottomRef} />
                     </div>
 
