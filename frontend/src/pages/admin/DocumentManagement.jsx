@@ -1139,7 +1139,8 @@ const DocumentManagement = () => {
     };
 
     useEffect(() => {
-        fetchData();
+        // Tandai Promise sebagai sengaja dijalankan tanpa await di dalam useEffect.
+        void fetchData();
     }, []);
 
     const fetchData = async () => {
