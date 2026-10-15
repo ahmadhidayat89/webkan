@@ -229,12 +229,14 @@ const DirectoryPage = () => {
 
         {/* Table */}
         <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
-          {loading ? (
+          {loading && (
             <div className="flex flex-col items-center gap-3 py-24">
               <FaSpinner className="text-3xl text-primary-500 animate-spin" />
               <p className="text-sm text-gray-400">Memuat data...</p>
             </div>
-          ) : data.length === 0 ? (
+          )}
+
+          {!loading && data.length === 0 && (
             <div className="py-20 text-center">
               <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full">
                 <FaBuilding className="text-3xl text-gray-300" />
@@ -247,7 +249,9 @@ const DirectoryPage = () => {
                 </button>
               )}
             </div>
-          ) : (
+          )}
+
+          {!loading && data.length > 0 && (
             <>
               {/* Desktop Table */}
               <div className="hidden overflow-x-auto md:block">
