@@ -13,7 +13,7 @@ function formatTime(totalSeconds) {
 
 /* ---------- Helper murni (tanpa state) ---------- */
 
-const ESSAY_MODES = ['essay', 'custom'];
+const ESSAY_MODES = new Set(['essay', 'custom']);
 
 const PREVENT_CHEAT_MESSAGE =
     '⚠️ PERINGATAN ⚠️\n\nAksi klik-kanan dan salin-tempel (copy-paste) dinonaktifkan selama kuis berlangsung.';
@@ -558,7 +558,7 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
         return <QuizIntro lesson={lesson} quiz={quiz} attempts={attempts} isExpired={isExpired} onStart={handleStart} />;
     }
 
-    if (submitted && ESSAY_MODES.includes(quiz.quiz_mode)) {
+    if (submitted && ESSAY_MODES.has(quiz.quiz_mode)) {
         return <QuizPendingResult onBack={handleReset} />;
     }
 
