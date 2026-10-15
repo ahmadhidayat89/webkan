@@ -59,9 +59,9 @@ const Partners = ({ partners }) => {
             {/* Partners */}
             <div className="flex flex-wrap gap-3 sm:gap-4">
 
-              {displayPartners.map((partner, index) => (
+              {displayPartners.map((partner) => (
                 <a
-                  key={partner.id || index}
+                  key={partner.id ?? partner.name}
                   href={partner.url || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -117,7 +117,7 @@ const Partners = ({ partners }) => {
             {stats.map((stat, i) => (
 
               <div
-                key={i}
+                key={stat.label}
                 className={`
                   py-6
                   ${i !== 0 ? 'border-t border-gray-200' : ''}
