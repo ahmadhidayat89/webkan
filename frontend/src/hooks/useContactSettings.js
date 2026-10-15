@@ -56,25 +56,20 @@ const writeStored = (lang, value) => {
   }
 };
 
-const normalize = (d = {}) => {
-  const emails = parseList(d.contact_emails);
-  const phones = parseList(d.contact_phones);
-
-  return {
-    address: d.contact_address || '',
-    hours: d.contact_hours || '',
-    emails: emails.length
-      ? emails
-      : d.contact_email
-        ? [{ label: '', value: d.contact_email }]
-        : [],
-    phones: phones.length
-      ? phones
-      : d.contact_phone
-        ? [{ label: '', value: d.contact_phone }]
-        : [],
-  };
+// FIX: ternary bersarang diganti early return.
+// Pakai daftar baru kalau ada; kalau tidak, pakai satu nilai lama (legacy); kalau tidak ada, kosong.
+const withLegacyFallback = (list, legacyValue) => {
+  if (list.length) return list;
+  if (legacyValue) return [{ label: '', value: legacyValue }];
+  return [];
 };
+
+const normalize = (d = {}) => ({
+  address: d.contact_address || '',
+  hours: d.contact_hours || '',
+  emails: withLegacyFallback(parseList(d.contact_emails), d.contact_email),
+  phones: withLegacyFallback(parseList(d.contact_phones), d.contact_phone),
+});
 
 const load = (lang) => {
   if (!pending[lang]) {
