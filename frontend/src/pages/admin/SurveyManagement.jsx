@@ -52,22 +52,45 @@ const detectScalePreset = (opts = []) => {
 // Kunci unik di sisi frontend supaya editor tidak tertukar saat duplikat/hapus
 let keySeed = 0;
 const uid = () => `k${Date.now()}_${keySeed++}`;
-const blankQuestion = () => ({ _key: uid(), type: 'short', text: '', req: false, opts: [], image_url: '', validation: {} });
 
-const mapSurveyQuestions = (surveyQuestions = []) => surveyQuestions.length > 0
-  ? surveyQuestions.map((q) => ({
-      _key: uid(),
-      id: q.id,
-      type: ['email', 'phone'].includes(q.type) ? 'short' : q.type,
-      text: q.text,
-      image_url: q.image_url || '',
-      validation: { ...(q.validation || {}), ...(['email', 'phone'].includes(q.type) ? { answer_type: q.type } : {}) },
-      req: Boolean(q.is_required),
-      opts: q.type === 'scale'
-        ? normalizeScale(q.options)
-        : q.options || (hasOptions(q.type) ? ['Opsi 1'] : []),
-    }))
-  : [blankQuestion()];
+// Setiap opsi punya kunci tetap (optKeys) yang sejajar dengan opts,
+// supaya input opsi tidak kehilangan fokus saat teksnya diketik
+const newOptKeys = (opts) => (opts || []).map(() => uid());
+
+const blankQuestion = () => ({
+  _key: uid(),
+  type: 'short',
+  text: '',
+  req: false,
+  opts: [],
+  optKeys: [],
+  image_url: '',
+  validation: {},
+});
+
+const getQuestionOptions = (q) => {
+  if (q.type === 'scale') return normalizeScale(q.options);
+  if (q.options) return q.options;
+  return hasOptions(q.type) ? ['Opsi 1'] : [];
+};
+
+const mapSurveyQuestion = (q) => {
+  const opts = getQuestionOptions(q);
+  return {
+    _key: uid(),
+    id: q.id,
+    type: ['email', 'phone'].includes(q.type) ? 'short' : q.type,
+    text: q.text,
+    image_url: q.image_url || '',
+    validation: { ...(q.validation || {}), ...(['email', 'phone'].includes(q.type) ? { answer_type: q.type } : {}) },
+    req: Boolean(q.is_required),
+    opts,
+    optKeys: newOptKeys(opts),
+  };
+};
+
+const mapSurveyQuestions = (surveyQuestions = []) =>
+  surveyQuestions.length > 0 ? surveyQuestions.map(mapSurveyQuestion) : [blankQuestion()];
 
 const isPreviewAnswerMissing = (answer) => answer === undefined || answer === '' || (Array.isArray(answer) && answer.length === 0);
 
@@ -205,6 +228,21 @@ const isEmptyResult = (data) => !data || !data.stats || data.stats.total_respons
 const getVisibleResponses = (responses, showAll) =>
   showAll ? responses : responses?.slice(0, 8);
 
+// Label skor pada grafik skala, mis. "Skor 5 · Sangat Baik"
+const getScaleLabel = (qSum, score) => {
+  const text = qSum.options?.[score - 1];
+  return text ? `Skor ${score} · ${text}` : `Skor ${score}`;
+};
+
+// Kunci unik untuk teks yang bisa sama: "Baik#0", "Baik#1", ...
+const withOccurrenceKeys = (texts) => {
+  const seen = {};
+  return texts.map((text) => {
+    seen[text] = (seen[text] ?? -1) + 1;
+    return { text, key: `${text}#${seen[text]}` };
+  });
+};
+
 // Pemanggilan API: mengembalikan body kalau sukses, null kalau gagal (toast otomatis)
 const callApi = async (request, failMessage) => {
   try {
@@ -231,6 +269,7 @@ const insertAt = (list, idx, item) => [...list.slice(0, idx), item, ...list.slic
 const cloneQuestion = (q) => {
   const copy = { ...JSON.parse(JSON.stringify(q)), _key: uid() };
   delete copy.id; // salinan harus dianggap pertanyaan baru oleh backend
+  copy.optKeys = newOptKeys(copy.opts);
   return copy;
 };
 
@@ -242,7 +281,11 @@ const withScaleLabel = (q, labelIdx, val) => {
 
 const withNewOption = (q) => {
   const opts = q.opts || [];
-  return { ...q, opts: [...opts, `Opsi ${opts.length + 1}`] };
+  return {
+    ...q,
+    opts: [...opts, `Opsi ${opts.length + 1}`],
+    optKeys: [...(q.optKeys || []), uid()],
+  };
 };
 
 const withOption = (q, optIdx, val) => ({
@@ -251,7 +294,23 @@ const withOption = (q, optIdx, val) => ({
 });
 
 const withoutOption = (q, optIdx) =>
-  q.opts.length <= 1 ? q : { ...q, opts: q.opts.filter((_, i) => i !== optIdx) };
+  q.opts.length <= 1
+    ? q
+    : {
+        ...q,
+        opts: q.opts.filter((_, i) => i !== optIdx),
+        optKeys: q.optKeys.filter((_, i) => i !== optIdx),
+      };
+
+const withQuestionType = (q, newType) => {
+  const opts = optsForType(q.type, newType, q.opts);
+  return {
+    ...q,
+    type: newType,
+    opts,
+    optKeys: opts === q.opts ? q.optKeys : newOptKeys(opts),
+  };
+};
 
 const collectPreviewErrors = (questions, answers) =>
   questions.reduce((errors, question, index) => {
@@ -333,9 +392,7 @@ function useQuestionEditor() {
   };
 
   const changeQuestionType = (idx, newType) =>
-    setQuestions((prev) =>
-      mapAt(prev, idx, (q) => ({ ...q, type: newType, opts: optsForType(q.type, newType, q.opts) }))
-    );
+    setQuestions((prev) => mapAt(prev, idx, (q) => withQuestionType(q, newType)));
 
   const patchQuestion = (qIdx, patch) => setQuestions((prev) => patchAt(prev, qIdx, patch));
 
@@ -676,7 +733,7 @@ const PreviewFile = () => (
 const PreviewChoice = ({ q, idx, value, onChange }) => (
   <div className="space-y-2 pt-1">
     {q.opts.map((opt, oIdx) => (
-      <label key={oIdx} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
+      <label key={q.optKeys[oIdx]} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
         <input
           type="radio"
           name={`preview_q_${idx}`}
@@ -699,7 +756,7 @@ const PreviewCheck = ({ q, value, onChange }) => {
   return (
     <div className="space-y-2 pt-1">
       {q.opts.map((opt, oIdx) => (
-        <label key={oIdx} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
+        <label key={q.optKeys[oIdx]} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
           <input
             type="checkbox"
             checked={current.includes(opt)}
@@ -721,7 +778,7 @@ const PreviewDrop = ({ q, value, onChange }) => (
   >
     <option value="">-- Pilih salah satu --</option>
     {q.opts.map((opt, oIdx) => (
-      <option key={oIdx} value={opt}>{opt}</option>
+      <option key={q.optKeys[oIdx]} value={opt}>{opt}</option>
     ))}
   </select>
 );
@@ -1085,7 +1142,7 @@ const OptionMarker = ({ type, index }) => {
 const OptionsEditor = ({ q, qIdx, editor }) => (
   <div className="space-y-2">
     {q.opts.map((opt, optIdx) => (
-      <div key={optIdx} className="flex items-center gap-2.5">
+      <div key={q.optKeys[optIdx]} className="flex items-center gap-2.5">
         <OptionMarker type={q.type} index={optIdx} />
         <input
           type="text"
@@ -1620,7 +1677,7 @@ const ScaleCounts = ({ qSum }) => (
     {[5, 4, 3, 2, 1].map((score) => (
       <BarRow
         key={score}
-        label={`Skor ${score}${qSum.options?.[score - 1] ? ` · ${qSum.options[score - 1]}` : ''}`}
+        label={getScaleLabel(qSum, score)}
         count={qSum.scale_counts[score] || 0}
         total={qSum.total_answers}
         barClass="bg-indigo-600"
@@ -1634,12 +1691,12 @@ const SampleAnswers = ({ qSum }) => (
     {qSum.sample_answers.length === 0 ? (
       <p className="text-xs text-gray-400 italic">Belum ada tanggapan teks.</p>
     ) : (
-      qSum.sample_answers.slice(0, 4).map((ansText, aIdx) => (
+      withOccurrenceKeys(qSum.sample_answers.slice(0, 4)).map(({ text, key }) => (
         <div
-          key={aIdx}
+          key={key}
           className="p-3 bg-gray-50 rounded-xl border-l-4 border-l-blue-600 text-xs text-gray-700 italic"
         >
-          &ldquo;{ansText}&rdquo;
+          &ldquo;{text}&rdquo;
         </div>
       ))
     )}
