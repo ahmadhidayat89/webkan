@@ -2,10 +2,18 @@ import { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import { CheckCircle2, XCircle, Search, Save, AlertCircle } from 'lucide-react';
 
+// FIX: satu helper untuk memuat attempt, dengan pengecekan status HTTP
+const fetchAttempts = async (quizId) => {
+    const res = await fetch(route('admin.grading.attempts', quizId));
+    if (!res.ok) throw new Error(`Gagal memuat data (HTTP ${res.status})`);
+    return res.json();
+};
+
 export default function TabGrading({ courseId, modules }) {
     const [selectedQuizId, setSelectedQuizId] = useState('');
     const [attempts, setAttempts] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState(null);
     const [selectedAttempt, setSelectedAttempt] = useState(null);
 
     // Get all quizzes from modules
@@ -18,18 +26,38 @@ export default function TabGrading({ courseId, modules }) {
     );
 
     useEffect(() => {
-        if (selectedQuizId) {
-            setLoading(true);
-            fetch(route('admin.grading.attempts', selectedQuizId))
-                .then(res => res.json())
-                .then(data => {
-                    setAttempts(data);
-                    setLoading(false);
-                });
-        } else {
+        if (!selectedQuizId) {
             setAttempts([]);
             setSelectedAttempt(null);
+            setLoadError(null);
+            return;
         }
+
+        let cancelled = false;
+
+        // FIX: async/await + try/catch/finally, tidak ada promise yang menggantung
+        const load = async () => {
+            setLoading(true);
+            setLoadError(null);
+            try {
+                const data = await fetchAttempts(selectedQuizId);
+                if (!cancelled) setAttempts(data);
+            } catch (error) {
+                console.error('Error fetching attempts:', error);
+                if (!cancelled) {
+                    setAttempts([]);
+                    setLoadError('Gagal memuat data peserta. Coba lagi.');
+                }
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        void load();
+
+        return () => {
+            cancelled = true;
+        };
     }, [selectedQuizId]);
 
     const handleSaveManualScore = (answerId, score, feedback) => {
@@ -38,17 +66,19 @@ export default function TabGrading({ courseId, modules }) {
             admin_feedback: feedback
         }, {
             preserveScroll: true,
-            onSuccess: () => {
-                // Refresh data
-                fetch(route('admin.grading.attempts', selectedQuizId))
-                    .then(res => res.json())
-                    .then(data => {
-                        setAttempts(data);
-                        // update selected attempt
-                        if (selectedAttempt) {
-                            setSelectedAttempt(data.find(a => a.id === selectedAttempt.id));
-                        }
-                    });
+            // FIX: callback async dengan try/catch untuk refresh data
+            onSuccess: async () => {
+                try {
+                    const data = await fetchAttempts(selectedQuizId);
+                    setAttempts(data);
+                    // update selected attempt
+                    if (selectedAttempt) {
+                        setSelectedAttempt(data.find(a => a.id === selectedAttempt.id) ?? null);
+                    }
+                } catch (error) {
+                    console.error('Error refreshing attempts:', error);
+                    setLoadError('Nilai tersimpan, tetapi gagal memuat ulang data. Muat ulang halaman.');
+                }
             }
         });
     };
@@ -81,6 +111,11 @@ export default function TabGrading({ courseId, modules }) {
                             </div>
                         </div>
                         <div className="flex-1 overflow-y-auto">
+                            {loadError && (
+                                <div role="alert" className="m-3 p-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg">
+                                    {loadError}
+                                </div>
+                            )}
                             {loading ? (
                                 <div className="p-8 text-center text-gray-400">Loading...</div>
                             ) : attempts.length === 0 ? (
