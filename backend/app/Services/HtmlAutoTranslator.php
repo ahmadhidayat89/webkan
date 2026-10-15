@@ -33,15 +33,15 @@ class HtmlAutoTranslator
         if ($html === '') {
             return $html;
         }
-    
+
         $dom = $this->loadHtmlDocument($html);
         if ($dom === null || !$this->translateTextNodes($dom, $from, $to)) {
             return null;
         }
-    
+
         return $this->extractRootHtml($dom);
     }
-    
+
     /**
      * Parse HTML ke DOM dengan wrapper #translate-root. Null jika gagal di-parse.
      */
@@ -49,16 +49,16 @@ class HtmlAutoTranslator
     {
         $dom = new \DOMDocument('1.0', 'UTF-8');
         libxml_use_internal_errors(true);
-    
+
         $loaded = $dom->loadHTML(
             '<?xml encoding="UTF-8"><div id="translate-root">' . $html . '</div>',
             LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
         );
         libxml_clear_errors();
-    
+
         return $loaded ? $dom : null;
     }
-    
+
     /**
      * Terjemahkan semua text node (kecuali script/style). False jika node tidak bisa di-query.
      */
@@ -66,42 +66,42 @@ class HtmlAutoTranslator
     {
         $xpath = new \DOMXPath($dom);
         $nodes = $xpath->query('//text()[normalize-space(.) != "" and not(ancestor::script) and not(ancestor::style)]');
-    
+
         if (!$nodes) {
             return false;
         }
-    
+
         $cache = [];
         foreach ($nodes as $node) {
             $original = $node->nodeValue;
             if ($original === null) {
                 continue;
             }
-    
+
             if (!array_key_exists($original, $cache)) {
                 $cache[$original] = $this->translateText($original, $from, $to);
             }
-    
+
             if ($cache[$original] !== null) {
                 $node->nodeValue = $cache[$original];
             }
         }
-    
+
         return true;
     }
-    
+
     private function extractRootHtml(\DOMDocument $dom): ?string
     {
         $root = $dom->getElementById('translate-root');
         if (!$root) {
             return null;
         }
-    
+
         $result = '';
         foreach ($root->childNodes as $child) {
             $result .= $dom->saveHTML($child);
         }
-    
+
         return $result;
     }
 
@@ -162,6 +162,9 @@ class HtmlAutoTranslator
         return $results;
     }
 
+    /**
+     * Terjemahkan satu teks: cek cache dulu, lalu panggil API dan simpan hasilnya.
+     */
     private function translateText(string $text, string $from, string $to): ?string
     {
         $text = trim($text);
@@ -175,34 +178,26 @@ class HtmlAutoTranslator
             return $cached;
         }
 
+        $translated = $this->requestTranslation($text, $from, $to);
+        if ($translated !== null) {
+            Cache::put($cacheKey, $translated, self::CACHE_TTL_SECONDS);
+        }
+
+        return $translated;
+    }
+
+    /**
+     * Panggil API LibreTranslate untuk satu teks. Null jika gagal.
+     */
+    private function requestTranslation(string $text, string $from, string $to): ?string
+    {
         try {
-            $payload = [
-                'q' => $text,
-                'source' => $from,
-                'target' => $to,
-                'format' => 'text',
-            ];
-            if ($this->libreTranslateApiKey) {
-                $payload['api_key'] = $this->libreTranslateApiKey;
-            }
+            $response = Http::timeout(20)->post(
+                $this->libreTranslateUrl . '/translate',
+                $this->translationPayload($text, $from, $to)
+            );
 
-            $response = Http::timeout(20)->post($this->libreTranslateUrl . '/translate', $payload);
-
-            if (!$response->ok()) {
-                return null;
-            }
-
-            $json = $response->json();
-            $translated = is_array($json) ? ($json['translatedText'] ?? null) : null;
-            if (!is_string($translated) || trim($translated) === '') {
-                return null;
-            }
-
-            $result = $translated;
-            if ($result !== null) {
-                Cache::put($cacheKey, $result, self::CACHE_TTL_SECONDS);
-            }
-            return $result;
+            return $this->parseTranslationResponse($response);
         } catch (\Throwable $e) {
             Log::warning('Auto translate failed: ' . $e->getMessage());
             return null;
@@ -309,4 +304,4 @@ class HtmlAutoTranslator
 
         return trim($translated) !== '' ? $translated : null;
     }
-}
+} 
