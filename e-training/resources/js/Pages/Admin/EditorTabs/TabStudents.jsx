@@ -16,9 +16,14 @@ export default function TabStudents({ course, allStudents }) {
         }
     };
 
-    const copyReferral = () => {
-        navigator.clipboard.writeText(referralCode);
-        alert('Kode referral dicopy: ' + referralCode);
+    const copyReferral = async () => {
+        try {
+            await navigator.clipboard.writeText(referralCode);
+            alert('Kode referral dicopy: ' + referralCode);
+        } catch (error) {
+            console.error('Gagal menyalin kode referral:', error);
+            alert('Gagal menyalin kode referral. Salin secara manual: ' + referralCode);
+        }
     };
 
     const enrollStudent = (e) => {
@@ -112,6 +117,7 @@ export default function TabStudents({ course, allStudents }) {
                             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
                                 type="text"
+                                aria-label="Cari peserta berdasarkan nama atau email"
                                 placeholder="Cari nama/email..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
@@ -153,6 +159,7 @@ export default function TabStudents({ course, allStudents }) {
                                                 onClick={() => unenrollStudent(student.user_id, student.name)}
                                                 className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                                                 title="Keluarkan dari pelatihan"
+                                                aria-label={`Keluarkan ${student.name} dari pelatihan`}
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
