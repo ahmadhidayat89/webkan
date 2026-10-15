@@ -113,6 +113,310 @@ function validatePreviewQuestion(question, answer) {
     || validatePreviewSelections(question, answer);
 }
 
+// ── Helper murni (dipindah keluar dari komponen) ──
+
+const toOptionalNumber = (value) => (value === '' ? undefined : Number(value));
+
+const isRangeInvalid = (min, max) => min != null && max != null && min > max;
+
+const hasInvalidValidationRule = (questions) =>
+  questions.some((q) => {
+    const v = q.validation || {};
+    return isRangeInvalid(v.min_length, v.max_length)
+      || isRangeInvalid(v.min_selections, v.max_selections)
+      || (v.max_selections != null && v.max_selections > q.opts.length);
+  });
+
+const buildSurveyPayload = ({ title, desc, survey, questions }) => ({
+  title,
+  description: desc,
+  is_published: survey?.is_published ?? false,
+  is_active: survey?.is_active ?? true,
+  questions: questions.map((q, idx) => ({
+    id: q.id,
+    order: idx + 1,
+    text: stripHtml(q.text).trim() ? q.text : `Pertanyaan ${idx + 1}`,
+    type: q.type,
+    is_required: q.req,
+    options: hasOptions(q.type) || q.type === 'scale' ? q.opts : [],
+    image_url: q.image_url || null,
+    validation: q.validation || {},
+  })),
+});
+
+const getSaveErrorMessage = (err) => {
+  const validationMessage = Object.values(err.response?.data?.errors || {}).flat()[0];
+  return validationMessage
+    || err.response?.data?.message
+    || 'Gagal menyimpan kuesioner. Periksa koneksi dan konfigurasi server.';
+};
+
+const optsForType = (oldType, newType, oldOpts) => {
+  if (newType === 'scale') {
+    return oldType === 'scale' ? oldOpts : [...SCALE_PRESETS.kualitas.labels];
+  }
+  if (!hasOptions(newType)) return [];
+  const keep = oldType !== 'scale' && oldOpts?.length > 0;
+  return keep ? oldOpts : ['Opsi 1'];
+};
+
+const getSurveyStatus = (item) => {
+  if (!item.is_published) {
+    return { label: 'Draf', className: 'bg-gray-100 text-gray-700 border-gray-200' };
+  }
+  if (item.is_active) {
+    return { label: 'Aktif', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+  }
+  return { label: 'Ditutup', className: 'bg-rose-50 text-rose-700 border-rose-200' };
+};
+
+// ── Komponen: pengaturan pertanyaan (gambar + validasi) ──
+
+const NumberField = ({ label, value, min, max, onChange }) => (
+  <label className="text-xs font-semibold text-gray-600">
+    {label}
+    <input
+      type="number"
+      min={min}
+      max={max}
+      value={value ?? ''}
+      onChange={(e) => onChange(toOptionalNumber(e.target.value))}
+      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+    />
+  </label>
+);
+
+const QuestionSettings = ({ q, onPatch, onPatchValidation }) => {
+  const handleImageChange = async (e) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const result = await uploadSurveyImage(file);
+      onPatch({ image_url: result.data?.data?.url });
+      toast.success('Gambar berhasil diunggah.');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Gagal mengunggah gambar.');
+    }
+    input.value = '';
+  };
+
+  const isText = ['short', 'para'].includes(q.type);
+
+  return (
+    <div className="mb-4 space-y-3 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+      <label className="block text-xs font-bold text-gray-600">
+        Unggah gambar pertanyaan (maks. 5 MB)
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          onChange={handleImageChange}
+          className="mt-2 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal"
+        />
+      </label>
+
+      {q.image_url && (
+        <div className="flex items-start gap-3">
+          <img src={q.image_url} alt="Pratinjau gambar pertanyaan" className="max-h-48 rounded-lg object-contain" />
+          <button
+            type="button"
+            onClick={() => onPatch({ image_url: '' })}
+            className="text-xs font-semibold text-rose-600"
+          >
+            Hapus gambar
+          </button>
+        </div>
+      )}
+
+      {q.type === 'short' && (
+        <label className="block text-xs font-bold text-gray-600">
+          Validasi jawaban
+          <select
+            value={q.validation?.answer_type || 'text'}
+            onChange={(e) => onPatchValidation({ answer_type: e.target.value })}
+            className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal"
+          >
+            <option value="text_number">Teks</option>
+            <option value="email">Email</option>
+            <option value="phone">Nomor telepon</option>
+            <option value="number">Angka</option>
+          </select>
+        </label>
+      )}
+
+      {isText && (
+        <div className="grid grid-cols-2 gap-3">
+          <NumberField label="Minimal karakter" min="0" max="10000" value={q.validation?.min_length}
+            onChange={(v) => onPatchValidation({ min_length: v })} />
+          <NumberField label="Maksimal karakter" min="1" max="10000" value={q.validation?.max_length}
+            onChange={(v) => onPatchValidation({ max_length: v })} />
+        </div>
+      )}
+
+      {q.type === 'check' && (
+        <div className="grid grid-cols-2 gap-3">
+          <NumberField label="Minimal pilihan" min="0" max={q.opts.length} value={q.validation?.min_selections}
+            onChange={(v) => onPatchValidation({ min_selections: v })} />
+          <NumberField label="Maksimal pilihan" min="1" max={q.opts.length} value={q.validation?.max_selections}
+            onChange={(v) => onPatchValidation({ max_selections: v })} />
+        </div>
+      )}
+
+      <p className="text-[11px] text-gray-500">Aturan ini diterapkan saat responden mengirim jawaban.</p>
+    </div>
+  );
+};
+
+// ── Komponen: field pratinjau per tipe pertanyaan ──
+
+const SHORT_INPUT = {
+  email: { type: 'email', placeholder: 'nama@contoh.com' },
+  phone: { type: 'text', inputMode: 'tel', placeholder: '+62 812 3456 7890' },
+  number: { type: 'number', inputMode: 'decimal', placeholder: 'Jawaban Anda' },
+};
+const DEFAULT_SHORT = { type: 'text', placeholder: 'Jawaban Anda' };
+
+const PreviewShort = ({ q, value, onChange }) => {
+  const cfg = SHORT_INPUT[q.validation?.answer_type] || DEFAULT_SHORT;
+  return (
+    <input
+      type={cfg.type}
+      inputMode={cfg.inputMode}
+      placeholder={cfg.placeholder}
+      minLength={q.validation?.min_length}
+      maxLength={q.validation?.max_length}
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full text-sm border-0 border-b-2 border-gray-200 focus:border-blue-600 outline-none pb-1.5 transition"
+    />
+  );
+};
+
+const PreviewPara = ({ q, value, onChange }) => (
+  <textarea
+    placeholder="Jawaban Anda"
+    rows={3}
+    minLength={q.validation?.min_length}
+    maxLength={q.validation?.max_length}
+    value={value || ''}
+    onChange={(e) => onChange(e.target.value)}
+    className="w-full text-sm border-0 border-b-2 border-gray-200 focus:border-blue-600 outline-none pb-1.5 transition resize-y"
+  />
+);
+
+// Tipe lama 'email' dan 'phone' (sebelum jadi validasi pada jawaban singkat)
+const PreviewLegacyInput = ({ q, value, onChange }) => (
+  <input
+    type={q.type === 'email' ? 'email' : 'tel'}
+    placeholder={q.type === 'email' ? 'nama@contoh.com' : '+62 812 3456 7890'}
+    value={value || ''}
+    onChange={(e) => onChange(e.target.value)}
+    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+  />
+);
+
+const PreviewFile = () => (
+  <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
+    Kolom unggah file ditampilkan pada survei yang diterbitkan.
+  </div>
+);
+
+const PreviewChoice = ({ q, idx, value, onChange }) => (
+  <div className="space-y-2 pt-1">
+    {q.opts.map((opt, oIdx) => (
+      <label key={oIdx} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
+        <input
+          type="radio"
+          name={`preview_q_${idx}`}
+          value={opt}
+          checked={value === opt}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+        />
+        <span>{opt}</span>
+      </label>
+    ))}
+  </div>
+);
+
+const PreviewCheck = ({ q, value, onChange }) => {
+  const current = value || [];
+  const toggle = (opt, checked) =>
+    onChange(checked ? [...current, opt] : current.filter((x) => x !== opt));
+
+  return (
+    <div className="space-y-2 pt-1">
+      {q.opts.map((opt, oIdx) => (
+        <label key={oIdx} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={current.includes(opt)}
+            onChange={(e) => toggle(opt, e.target.checked)}
+            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+          />
+          <span>{opt}</span>
+        </label>
+      ))}
+    </div>
+  );
+};
+
+const PreviewDrop = ({ q, value, onChange }) => (
+  <select
+    value={value || ''}
+    onChange={(e) => onChange(e.target.value)}
+    className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-600"
+  >
+    <option value="">-- Pilih salah satu --</option>
+    {q.opts.map((opt, oIdx) => (
+      <option key={oIdx} value={opt}>{opt}</option>
+    ))}
+  </select>
+);
+
+const PreviewScale = ({ q, idx, value, onChange }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+    {[1, 2, 3, 4, 5].map((n) => (
+      <label
+        key={n}
+        className={`flex sm:flex-col items-center gap-3 sm:gap-2 p-2 rounded-lg cursor-pointer sm:text-center transition ${
+          Number(value) === n ? 'bg-blue-50' : 'hover:bg-white'
+        }`}
+      >
+        <span className="text-sm font-bold text-gray-800 w-5 sm:w-auto">{n}</span>
+        <input
+          type="radio"
+          name={`preview_scale_${idx}`}
+          value={n}
+          checked={Number(value) === n}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="w-5 h-5 text-blue-600 focus:ring-blue-500"
+        />
+        <span className="text-xs text-gray-600 leading-snug sm:min-h-[2rem] break-words">
+          {q.opts?.[n - 1] || ''}
+        </span>
+      </label>
+    ))}
+  </div>
+);
+
+const PREVIEW_FIELDS = {
+  short: PreviewShort,
+  para: PreviewPara,
+  email: PreviewLegacyInput,
+  phone: PreviewLegacyInput,
+  file: PreviewFile,
+  choice: PreviewChoice,
+  check: PreviewCheck,
+  drop: PreviewDrop,
+  scale: PreviewScale,
+};
+
+const PreviewField = ({ q, idx, value, onChange }) => {
+  const Field = PREVIEW_FIELDS[q.type];
+  return Field ? <Field q={q} idx={idx} value={value} onChange={onChange} /> : null;
+};
+
 export default function SurveyManagement() {
   const [surveys, setSurveys] = useState([]);
   const [stats, setStats] = useState({ total: 0, active: 0, responses: 0 });
@@ -236,57 +540,30 @@ export default function SurveyManagement() {
       toast.error('Judul kuesioner wajib diisi.');
       return;
     }
-    const invalidRule = questions.some((q) => {
-      const v = q.validation || {};
-      return (v.min_length != null && v.max_length != null && v.min_length > v.max_length)
-        || (v.min_selections != null && v.max_selections != null && v.min_selections > v.max_selections)
-      || (v.max_selections != null && v.max_selections > q.opts.length);
-    });
-    if (invalidRule) {
+    if (hasInvalidValidationRule(questions)) {
       toast.error('Rentang validasi tidak sesuai. Periksa batas minimum dan maksimum.');
       return;
     }
 
     setSaving(true);
-    const payload = {
-      title,
-      description: desc,
-      is_published: currentSurvey?.is_published ?? false,
-      is_active: currentSurvey?.is_active ?? true,
-      questions: questions.map((q, idx) => ({
-        id: q.id,
-        order: idx + 1,
-        text: stripHtml(q.text).trim() ? q.text : `Pertanyaan ${idx + 1}`,
-        type: q.type,
-        is_required: q.req,
-        options: hasOptions(q.type) || q.type === 'scale' ? q.opts : [],
-        image_url: q.image_url || null,
-        validation: q.validation || {},
-      })),
-    };
+    const payload = buildSurveyPayload({ title, desc, survey: currentSurvey, questions });
+    const isUpdate = Boolean(currentSurvey?.id);
 
     try {
-      if (currentSurvey?.id) {
-        const res = await updateAdminSurvey(currentSurvey.id, payload);
-        if (res.data?.success) {
-          toast.success('Kuesioner berhasil diperbarui.');
-          setCurrentSurvey(res.data.data);
-          setQuestions(mapSurveyQuestions(res.data.data.questions));
-          fetchSurveyDetail(currentSurvey.id);
-        }
-      } else {
-        const res = await createAdminSurvey(payload);
-        if (res.data?.success) {
-          toast.success('Kuesioner berhasil dibuat.');
-          setCurrentSurvey(res.data.data);
-          setQuestions(mapSurveyQuestions(res.data.data.questions));
-          fetchSurveyDetail(res.data.data.id);
-        }
+      const res = isUpdate
+        ? await updateAdminSurvey(currentSurvey.id, payload)
+        : await createAdminSurvey(payload);
+
+      if (res.data?.success) {
+        const saved = res.data.data;
+        toast.success(isUpdate ? 'Kuesioner berhasil diperbarui.' : 'Kuesioner berhasil dibuat.');
+        setCurrentSurvey(saved);
+        setQuestions(mapSurveyQuestions(saved.questions));
+        fetchSurveyDetail(isUpdate ? currentSurvey.id : saved.id);
       }
     } catch (err) {
       console.error(err);
-      const validationMessage = Object.values(err.response?.data?.errors || {}).flat()[0];
-      toast.error(validationMessage || err.response?.data?.message || 'Gagal menyimpan kuesioner. Periksa koneksi dan konfigurasi server.');
+      toast.error(getSaveErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -374,20 +651,25 @@ export default function SurveyManagement() {
   };
 
   const changeQuestionType = (idx, newType) => {
-    const next = [...questions];
-    const oldType = next[idx].type;
-    next[idx] = { ...next[idx], type: newType };
-
-    if (newType === 'scale') {
-      next[idx].opts = oldType === 'scale' ? next[idx].opts : [...SCALE_PRESETS.kualitas.labels];
-    } else if (hasOptions(newType)) {
-      const keep = oldType !== 'scale' && next[idx].opts && next[idx].opts.length > 0;
-      next[idx].opts = keep ? next[idx].opts : ['Opsi 1'];
-    } else {
-      next[idx].opts = [];
-    }
-    setQuestions(next);
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === idx ? { ...q, type: newType, opts: optsForType(q.type, newType, q.opts) } : q
+      )
+    );
   };
+
+  const patchQuestion = (qIdx, patch) =>
+    setQuestions((prev) => prev.map((it, i) => (i === qIdx ? { ...it, ...patch } : it)));
+
+  const patchValidation = (qIdx, patch) =>
+    setQuestions((prev) =>
+      prev.map((it, i) =>
+        i === qIdx ? { ...it, validation: { ...it.validation, ...patch } } : it
+      )
+    );
+
+  const setPreviewAnswer = (idx, value) =>
+    setPreviewAnswers((prev) => ({ ...prev, [idx]: value }));
 
   const applyScalePreset = (qIdx, key) => {
     if (!SCALE_PRESETS[key]) return;
@@ -624,12 +906,7 @@ export default function SurveyManagement() {
               </div>
             ) : (
               surveys.map((item, idx) => {
-                const statusLabel = !item.is_published ? 'Draf' : item.is_active ? 'Aktif' : 'Ditutup';
-                const statusBadgeClass = !item.is_published
-                  ? 'bg-gray-100 text-gray-700 border-gray-200'
-                  : item.is_active
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-rose-50 text-rose-700 border-rose-200';
+                const status = getSurveyStatus(item);
 
                 return (
                   <div
@@ -643,8 +920,8 @@ export default function SurveyManagement() {
                         </span>
                         <h2 className="text-lg font-bold text-gray-900">{item.title || 'Kuesioner tanpa judul'}</h2>
                       </div>
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${statusBadgeClass}`}>
-                        {statusLabel}
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${status.className}`}>
+                        {status.label}
                       </span>
                     </div>
 
@@ -819,38 +1096,11 @@ export default function SurveyManagement() {
                   {/* Body sesuai tipe pertanyaan */}
                   <div className="pt-2">
                     {isSelected && (
-                      <div className="mb-4 space-y-3 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-                        <label className="block text-xs font-bold text-gray-600">Unggah gambar pertanyaan (maks. 5 MB)
-                          <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            try {
-                              const result = await uploadSurveyImage(file);
-                              const url = result.data?.data?.url;
-                              setQuestions((prev) => prev.map((it, i) => i === qIdx ? { ...it, image_url: url } : it));
-                              toast.success('Gambar berhasil diunggah.');
-                            } catch (error) {
-                              toast.error(error.response?.data?.message || 'Gagal mengunggah gambar.');
-                            }
-                            e.target.value = '';
-                          }} className="mt-2 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal" />
-                        </label>
-                        {q.image_url && <div className="flex items-start gap-3"><img src={q.image_url} alt="Pratinjau gambar pertanyaan" className="max-h-48 rounded-lg object-contain" /><button type="button" onClick={() => setQuestions((prev) => prev.map((it, i) => i === qIdx ? { ...it, image_url: '' } : it))} className="text-xs font-semibold text-rose-600">Hapus gambar</button></div>}
-                        {q.type === 'short' && <label className="block text-xs font-bold text-gray-600">Validasi jawaban
-                          <select value={q.validation?.answer_type || 'text'} onChange={(e) => setQuestions((prev) => prev.map((it, i) => i === qIdx ? { ...it, validation: { ...it.validation, answer_type: e.target.value } } : it))} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal">
-                            <option value="text_number">Teks</option><option value="email">Email</option><option value="phone">Nomor telepon</option><option value="number">Angka</option>
-                          </select>
-                        </label>}
-                        {['short', 'para'].includes(q.type) && <div className="grid grid-cols-2 gap-3">
-                          <label className="text-xs font-semibold text-gray-600">Minimal karakter<input type="number" min="0" max="10000" value={q.validation?.min_length ?? ''} onChange={(e) => setQuestions((prev) => prev.map((it, i) => i === qIdx ? { ...it, validation: { ...it.validation, min_length: e.target.value === '' ? undefined : Number(e.target.value) } } : it))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" /></label>
-                          <label className="text-xs font-semibold text-gray-600">Maksimal karakter<input type="number" min="1" max="10000" value={q.validation?.max_length ?? ''} onChange={(e) => setQuestions((prev) => prev.map((it, i) => i === qIdx ? { ...it, validation: { ...it.validation, max_length: e.target.value === '' ? undefined : Number(e.target.value) } } : it))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" /></label>
-                        </div>}
-                        {q.type === 'check' && <div className="grid grid-cols-2 gap-3">
-                          <label className="text-xs font-semibold text-gray-600">Minimal pilihan<input type="number" min="0" max={q.opts.length} value={q.validation?.min_selections ?? ''} onChange={(e) => setQuestions((prev) => prev.map((it, i) => i === qIdx ? { ...it, validation: { ...it.validation, min_selections: e.target.value === '' ? undefined : Number(e.target.value) } } : it))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" /></label>
-                          <label className="text-xs font-semibold text-gray-600">Maksimal pilihan<input type="number" min="1" max={q.opts.length} value={q.validation?.max_selections ?? ''} onChange={(e) => setQuestions((prev) => prev.map((it, i) => i === qIdx ? { ...it, validation: { ...it.validation, max_selections: e.target.value === '' ? undefined : Number(e.target.value) } } : it))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" /></label>
-                        </div>}
-                        <p className="text-[11px] text-gray-500">Aturan ini diterapkan saat responden mengirim jawaban.</p>
-                      </div>
+                      <QuestionSettings
+                        q={q}
+                        onPatch={(patch) => patchQuestion(qIdx, patch)}
+                        onPatchValidation={(patch) => patchValidation(qIdx, patch)}
+                      />
                     )}
                     {hasOptions(q.type) && (
                       <div className="space-y-2">
@@ -1067,121 +1317,15 @@ export default function SurveyManagement() {
                         : `Pertanyaan ${idx + 1}`}
                       {q.req && <span className="text-rose-500 ml-1 font-bold">*</span>}
                     </label>
+
                     {q.image_url && <img src={q.image_url} alt="Ilustrasi pertanyaan" className="max-h-72 w-auto rounded-xl object-contain" />}
 
-                    {q.type === 'short' && (
-                      <input
-                        type={q.validation?.answer_type === 'email' ? 'email' : q.validation?.answer_type === 'number' ? 'number' : 'text'}
-                        inputMode={q.validation?.answer_type === 'phone' ? 'tel' : q.validation?.answer_type === 'number' ? 'decimal' : undefined}
-                        placeholder={q.validation?.answer_type === 'email' ? 'nama@contoh.com' : q.validation?.answer_type === 'phone' ? '+62 812 3456 7890' : 'Jawaban Anda'}
-                        minLength={q.validation?.min_length}
-                        maxLength={q.validation?.max_length}
-                        value={previewAnswers[idx] || ''}
-                        onChange={(e) => setPreviewAnswers({ ...previewAnswers, [idx]: e.target.value })}
-                        className="w-full text-sm border-0 border-b-2 border-gray-200 focus:border-blue-600 outline-none pb-1.5 transition"
-                      />
-                    )}
-
-                    {q.type === 'para' && (
-                      <textarea
-                        placeholder="Jawaban Anda"
-                        rows={3}
-                        minLength={q.validation?.min_length}
-                        maxLength={q.validation?.max_length}
-                        value={previewAnswers[idx] || ''}
-                        onChange={(e) => setPreviewAnswers({ ...previewAnswers, [idx]: e.target.value })}
-                        className="w-full text-sm border-0 border-b-2 border-gray-200 focus:border-blue-600 outline-none pb-1.5 transition resize-y"
-                      />
-                    )}
-
-                    {q.type === 'email' && <input type="email" placeholder="nama@contoh.com" value={previewAnswers[idx] || ''} onChange={(e) => setPreviewAnswers({ ...previewAnswers, [idx]: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />}
-                    {q.type === 'phone' && <input type="tel" placeholder="+62 812 3456 7890" value={previewAnswers[idx] || ''} onChange={(e) => setPreviewAnswers({ ...previewAnswers, [idx]: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />}
-                    {q.type === 'file' && <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">Kolom unggah file ditampilkan pada survei yang diterbitkan.</div>}
-                    {previewErrors[idx] && <p className="text-xs font-semibold text-rose-600">{previewErrors[idx]}</p>}
-
-                    {q.type === 'choice' && (
-                      <div className="space-y-2 pt-1">
-                        {q.opts.map((opt, oIdx) => (
-                          <label key={oIdx} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
-                            <input
-                              type="radio"
-                              name={`preview_q_${idx}`}
-                              value={opt}
-                              checked={previewAnswers[idx] === opt}
-                              onChange={(e) => setPreviewAnswers({ ...previewAnswers, [idx]: e.target.value })}
-                              className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span>{opt}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-
-                    {q.type === 'check' && (
-                      <div className="space-y-2 pt-1">
-                        {q.opts.map((opt, oIdx) => {
-                          const currentArr = previewAnswers[idx] || [];
-                          const checked = currentArr.includes(opt);
-                          return (
-                            <label key={oIdx} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={(e) => {
-                                  const nextArr = e.target.checked
-                                    ? [...currentArr, opt]
-                                    : currentArr.filter((x) => x !== opt);
-                                  setPreviewAnswers({ ...previewAnswers, [idx]: nextArr });
-                                }}
-                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-                              />
-                              <span>{opt}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {q.type === 'drop' && (
-                      <select
-                        value={previewAnswers[idx] || ''}
-                        onChange={(e) => setPreviewAnswers({ ...previewAnswers, [idx]: e.target.value })}
-                        className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-600"
-                      >
-                        <option value="">-- Pilih salah satu --</option>
-                        {q.opts.map((opt, oIdx) => (
-                          <option key={oIdx} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-
-                    {q.type === 'scale' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <label
-                            key={n}
-                            className={`flex sm:flex-col items-center gap-3 sm:gap-2 p-2 rounded-lg cursor-pointer sm:text-center transition ${
-                              Number(previewAnswers[idx]) === n ? 'bg-blue-50' : 'hover:bg-white'
-                            }`}
-                          >
-                            <span className="text-sm font-bold text-gray-800 w-5 sm:w-auto">{n}</span>
-                            <input
-                              type="radio"
-                              name={`preview_scale_${idx}`}
-                              value={n}
-                              checked={Number(previewAnswers[idx]) === n}
-                              onChange={(e) => setPreviewAnswers({ ...previewAnswers, [idx]: Number(e.target.value) })}
-                              className="w-5 h-5 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="text-xs text-gray-600 leading-snug sm:min-h-[2rem] break-words">
-                              {q.opts?.[n - 1] || ''}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
+                    <PreviewField
+                      q={q}
+                      idx={idx}
+                      value={previewAnswers[idx]}
+                      onChange={(value) => setPreviewAnswer(idx, value)}
+                    />
 
                     {previewErrors[idx] && (
                       <p className="text-xs text-rose-600 font-semibold mt-1">{previewErrors[idx]}</p>
