@@ -27,6 +27,17 @@ const CountUp = ({ end, duration = 1500, suffix = '', prefix = '' }) => {
   return <span>{prefix}{count.toLocaleString('id-ID')}{suffix}</span>;
 };
 
+// Class transisi untuk tiap slide: aktif, sebelumnya, atau lainnya
+const slideStateClass = (index, currentSlide, total) => {
+  if (index === currentSlide) {
+    return 'opacity-100 scale-100 z-10';
+  }
+  if (index === (currentSlide - 1 + total) % total) {
+    return 'opacity-0 scale-110 z-0';
+  }
+  return 'opacity-0 scale-95 z-0';
+};
+
 const HeroSlider = ({ sliders }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -129,13 +140,7 @@ const HeroSlider = ({ sliders }) => {
       {sliders.map((slide, index) => (
         <div
           key={slide.id}
-          className={`absolute inset-0 transition-all duration-1000 ${
-            index === currentSlide 
-              ? 'opacity-100 scale-100 z-10' 
-              : index === (currentSlide - 1 + sliders.length) % sliders.length
-              ? 'opacity-0 scale-110 z-0'
-              : 'opacity-0 scale-95 z-0'
-          }`}
+          className={`absolute inset-0 transition-all duration-1000 ${slideStateClass(index, currentSlide, sliders.length)}`}
         >
           {/* Background Image with Parallax - only on desktop */}
           <div 
@@ -262,9 +267,9 @@ const HeroSlider = ({ sliders }) => {
 
       {/* Dots Indicator - polos, tanpa angka */}
       <div className="absolute z-30 flex items-center gap-2 -translate-x-1/2 bottom-6 sm:bottom-8 md:bottom-12 left-1/2 md:gap-3">
-        {sliders.map((_, index) => (
+        {sliders.map((slide, index) => (
           <button
-            key={index}
+            key={slide.id}
             onClick={() => goToSlide(index)}
             disabled={isTransitioning}
             className="relative group disabled:opacity-50"
