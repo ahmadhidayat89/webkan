@@ -185,7 +185,7 @@ const AutoPageTranslator = () => {
     }
 
     loadCacheFromStorage();
-    translateVisibleTexts();
+    void translateVisibleTexts();
 
     const root = document.getElementById('root');
     if (!root) return;
@@ -194,7 +194,7 @@ const AutoPageTranslator = () => {
       if (isApplyingRef.current) return;
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(() => {
-        translateVisibleTexts();
+        void translateVisibleTexts();
       }, 120);
     });
     observer.observe(root, {
