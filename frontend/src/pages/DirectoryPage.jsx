@@ -49,7 +49,7 @@ const DirectoryPage = () => {
     focusRef.current = new URLSearchParams(location.search).get('focus');
   }, [pageId, location.search]);
 
-  useEffect(() => { fetchData(); }, [activeTab.segment, search, filterType, page]);
+  useEffect(() => { void fetchData(); }, [activeTab.segment, search, filterType, page]);
 
   const fetchData = async () => {
     try {
