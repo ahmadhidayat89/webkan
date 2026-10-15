@@ -30,7 +30,7 @@ const MenuManagement = () => {
     }
   };
 
-  useEffect(() => { loadMenus(); }, []);
+  useEffect(() => { void loadMenus(); }, []);
 
   const saveMenu = async (event) => {
     event.preventDefault();
