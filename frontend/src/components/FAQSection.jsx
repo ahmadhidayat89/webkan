@@ -42,7 +42,7 @@ const FAQSection = () => {
             href="/faq"
             className="inline-flex items-center gap-2 mb-10 text-sm font-semibold text-white transition-all hover:underline underline-offset-4"
           >
-            Lihat Semua FAQ
+            Lihat Semua FAQ{' '}
             <span aria-hidden="true">→</span>
           </a>
         </div>
