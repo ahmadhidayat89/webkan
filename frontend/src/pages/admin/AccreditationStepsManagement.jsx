@@ -191,7 +191,8 @@ const AccreditationStepsManagement = () => {
     }
   };
 
-  // FIX: ternary bersarang (loading / kosong / daftar) diganti early return
+  // FIX: ternary bersarang (loading / kosong / daftar) diganti early return.
+  // Semua cabang mengembalikan satu elemen JSX (daftar dibungkus Fragment).
   const renderSteps = () => {
     if (loading) {
       return (
@@ -223,87 +224,91 @@ const AccreditationStepsManagement = () => {
       );
     }
 
-    return steps.map((step, index) => (
-      <article
-        key={step.id}
-        className="flex items-start gap-4 p-5 transition-all bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md"
-      >
-        {/* Nomor urut */}
-        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 text-sm font-black text-blue-700 rounded-xl bg-blue-50">
-          {index + 1}
-        </div>
-
-        {/* Icon */}
-        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 text-xl rounded-xl bg-gray-50">
-          {step.icon}
-        </div>
-
-        {/* Konten */}
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <h3 className="text-sm font-black text-gray-900">
-              {step.title}
-            </h3>
-
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
-              {step.tag}
-            </span>
-          </div>
-
-          <p className="text-xs leading-relaxed text-gray-500 line-clamp-2">
-            {step.description}
-          </p>
-        </div>
-
-        {/* Tombol aksi */}
-        <div className="flex items-center flex-shrink-0 gap-1">
-          <button
-            type="button"
-            onClick={() => handleMove(step.id, 'up')}
-            disabled={
-              index === 0 || movingId === step.id
-            }
-            className="flex items-center justify-center w-8 h-8 text-xs transition-all rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Naikan urutan"
-            aria-label="Naikan urutan"
+    return (
+      <>
+        {steps.map((step, index) => (
+          <article
+            key={step.id}
+            className="flex items-start gap-4 p-5 transition-all bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md"
           >
-            <FaArrowUp />
-          </button>
+            {/* Nomor urut */}
+            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 text-sm font-black text-blue-700 rounded-xl bg-blue-50">
+              {index + 1}
+            </div>
 
-          <button
-            type="button"
-            onClick={() => handleMove(step.id, 'down')}
-            disabled={
-              index === steps.length - 1 ||
-              movingId === step.id
-            }
-            className="flex items-center justify-center w-8 h-8 text-xs transition-all rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Turunkan urutan"
-            aria-label="Turunkan urutan"
-          >
-            <FaArrowDown />
-          </button>
+            {/* Icon */}
+            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 text-xl rounded-xl bg-gray-50">
+              {step.icon}
+            </div>
 
-          <button
-            type="button"
-            onClick={() => openModal(step)}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-bold transition-all rounded-lg text-primary-600 hover:bg-primary-50"
-          >
-            <FaEdit />
-            Edit
-          </button>
+            {/* Konten */}
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <h3 className="text-sm font-black text-gray-900">
+                  {step.title}
+                </h3>
 
-          <button
-            type="button"
-            onClick={() => handleDelete(step.id)}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-red-500 transition-all rounded-lg hover:bg-red-50"
-          >
-            <FaTrash />
-            Hapus
-          </button>
-        </div>
-      </article>
-    ));
+                <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
+                  {step.tag}
+                </span>
+              </div>
+
+              <p className="text-xs leading-relaxed text-gray-500 line-clamp-2">
+                {step.description}
+              </p>
+            </div>
+
+            {/* Tombol aksi */}
+            <div className="flex items-center flex-shrink-0 gap-1">
+              <button
+                type="button"
+                onClick={() => handleMove(step.id, 'up')}
+                disabled={
+                  index === 0 || movingId === step.id
+                }
+                className="flex items-center justify-center w-8 h-8 text-xs transition-all rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Naikan urutan"
+                aria-label="Naikan urutan"
+              >
+                <FaArrowUp />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleMove(step.id, 'down')}
+                disabled={
+                  index === steps.length - 1 ||
+                  movingId === step.id
+                }
+                className="flex items-center justify-center w-8 h-8 text-xs transition-all rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Turunkan urutan"
+                aria-label="Turunkan urutan"
+              >
+                <FaArrowDown />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => openModal(step)}
+                className="flex items-center gap-1 px-3 py-2 text-xs font-bold transition-all rounded-lg text-primary-600 hover:bg-primary-50"
+              >
+                <FaEdit />
+                Edit
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDelete(step.id)}
+                className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-red-500 transition-all rounded-lg hover:bg-red-50"
+              >
+                <FaTrash />
+                Hapus
+              </button>
+            </div>
+          </article>
+        ))}
+      </>
+    );
   };
 
   return (
