@@ -13,7 +13,16 @@ class SurveySeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Survei Kepuasan Layanan Akreditasi
+        $this->seedSatisfactionSurvey();
+        $this->seedTrainingEvaluation();
+        $this->seedWebsiteFeedback();
+    }
+
+    // ------------------------------------------------------------------
+    // 1. Survei Kepuasan Layanan Akreditasi
+    // ------------------------------------------------------------------
+    private function seedSatisfactionSurvey(): void
+    {
         $s1 = Survey::create([
             'code' => 'k7x2m9',
             'title' => 'Survei Kepuasan Layanan Akreditasi',
@@ -23,7 +32,7 @@ class SurveySeeder extends Seeder
             'created_by' => 1,
         ]);
 
-        $q1_1 = SurveyQuestion::create([
+        $q1 = SurveyQuestion::create([
             'survey_id' => $s1->id,
             'order' => 1,
             'text' => 'Anda mewakili jenis lembaga apa?',
@@ -32,7 +41,7 @@ class SurveySeeder extends Seeder
             'options' => ['Laboratorium penguji', 'Laboratorium kalibrasi', 'Lembaga inspeksi', 'Lembaga sertifikasi', 'Lainnya'],
         ]);
 
-        $q1_2 = SurveyQuestion::create([
+        $q2 = SurveyQuestion::create([
             'survey_id' => $s1->id,
             'order' => 2,
             'text' => 'Seberapa mudah proses pendaftaran akreditasi menurut Anda?',
@@ -41,7 +50,7 @@ class SurveySeeder extends Seeder
             'options' => [],
         ]);
 
-        $q1_3 = SurveyQuestion::create([
+        $q3 = SurveyQuestion::create([
             'survey_id' => $s1->id,
             'order' => 3,
             'text' => 'Layanan KAN mana yang pernah Anda gunakan?',
@@ -50,7 +59,7 @@ class SurveySeeder extends Seeder
             'options' => ['Pendaftaran akreditasi', 'Asesmen', 'Surveilen', 'Pelatihan e-Training', 'Layanan informasi'],
         ]);
 
-        $q1_4 = SurveyQuestion::create([
+        $q4 = SurveyQuestion::create([
             'survey_id' => $s1->id,
             'order' => 4,
             'text' => 'Apa saran Anda untuk meningkatkan layanan KAN?',
@@ -68,63 +77,34 @@ class SurveySeeder extends Seeder
             'Sistem pendaftaran kadang lambat saat jam sibuk.',
         ];
 
-        // Seed 48 realistic respondents for s1
+        // 48 responden contoh
         for ($i = 0; $i < 48; $i++) {
             $created = Carbon::now()->subHours(fake()->numberBetween(1, 300));
-            $resp = SurveyResponse::create([
-                'survey_id' => $s1->id,
-                'ip_address' => '127.0.0.1',
-                'user_agent' => 'Mozilla/5.0 Sample Browser',
-                'created_at' => $created,
-                'updated_at' => $created,
-            ]);
+            $resp = $this->createResponse($s1, $created);
 
-            // Answer 1: choice
-            $opts1 = $q1_1->options;
-            $chosen1 = fake()->randomElement($opts1);
-            SurveyAnswer::create([
-                'response_id' => $resp->id,
-                'question_id' => $q1_1->id,
-                'answer_value' => $chosen1,
-                'created_at' => $created,
-                'updated_at' => $created,
-            ]);
+            $this->createAnswer($resp, $q1, $created, fake()->randomElement($q1->options));
 
-            // Answer 2: scale (weighted towards 4-5)
+            // Skala condong ke 4-5
             $scaleVal = fake()->randomElement([3, 4, 4, 4, 5, 5, 5, 2]);
-            SurveyAnswer::create([
-                'response_id' => $resp->id,
-                'question_id' => $q1_2->id,
-                'answer_value' => (string)$scaleVal,
-                'created_at' => $created,
-                'updated_at' => $created,
-            ]);
+            $this->createAnswer($resp, $q2, $created, (string) $scaleVal);
 
-            // Answer 3: check (1 to 3 items)
-            $opts3 = $q1_3->options;
-            $opts3 = fake()->shuffleArray($opts3);
-            $chosen3 = array_slice($opts3, 0, fake()->numberBetween(1, 3));
-            SurveyAnswer::create([
-                'response_id' => $resp->id,
-                'question_id' => $q1_3->id,
-                'answer_value' => json_encode($chosen3),
-                'created_at' => $created,
-                'updated_at' => $created,
-            ]);
+            // Checkbox: 1 sampai 3 pilihan
+            $shuffled = fake()->shuffleArray($q3->options);
+            $chosen = array_slice($shuffled, 0, fake()->numberBetween(1, 3));
+            $this->createAnswer($resp, $q3, $created, json_encode($chosen));
 
-            // Answer 4: para (randomly filled)
+            // Paragraf: terisi secara acak
             if (fake()->numberBetween(0, 10) > 4) {
-                SurveyAnswer::create([
-                    'response_id' => $resp->id,
-                    'question_id' => $q1_4->id,
-                    'answer_value' => fake()->randomElement($suggestions),
-                    'created_at' => $created,
-                    'updated_at' => $created,
-                ]);
+                $this->createAnswer($resp, $q4, $created, fake()->randomElement($suggestions));
             }
         }
+    }
 
-        // 2. Evaluasi Pelatihan e-Training
+    // ------------------------------------------------------------------
+    // 2. Evaluasi Pelatihan e-Training
+    // ------------------------------------------------------------------
+    private function seedTrainingEvaluation(): void
+    {
         $s2 = Survey::create([
             'code' => 'p3q8wd',
             'title' => 'Evaluasi Pelatihan e-Training',
@@ -134,7 +114,7 @@ class SurveySeeder extends Seeder
             'created_by' => 1,
         ]);
 
-        $q2_1 = SurveyQuestion::create([
+        $q1 = SurveyQuestion::create([
             'survey_id' => $s2->id,
             'order' => 1,
             'text' => 'Materi pelatihan mana yang Anda ikuti?',
@@ -143,7 +123,7 @@ class SurveySeeder extends Seeder
             'options' => ['Persyaratan umum', 'Audit internal', 'Ketidakpastian pengukuran'],
         ]);
 
-        $q2_2 = SurveyQuestion::create([
+        $q2 = SurveyQuestion::create([
             'survey_id' => $s2->id,
             'order' => 2,
             'text' => 'Seberapa jelas penyampaian materi oleh pengajar?',
@@ -152,7 +132,7 @@ class SurveySeeder extends Seeder
             'options' => [],
         ]);
 
-        $q2_3 = SurveyQuestion::create([
+        $q3 = SurveyQuestion::create([
             'survey_id' => $s2->id,
             'order' => 3,
             'text' => 'Apa yang perlu ditingkatkan dari pelatihan ini?',
@@ -161,47 +141,27 @@ class SurveySeeder extends Seeder
             'options' => [],
         ]);
 
-        // Seed 126 respondents for s2
+        // 126 responden contoh
         for ($i = 0; $i < 126; $i++) {
             $created = Carbon::now()->subDays(fake()->numberBetween(5, 45));
-            $resp = SurveyResponse::create([
-                'survey_id' => $s2->id,
-                'ip_address' => '127.0.0.1',
-                'user_agent' => 'Mozilla/5.0 Sample Browser',
-                'created_at' => $created,
-                'updated_at' => $created,
-            ]);
+            $resp = $this->createResponse($s2, $created);
 
-            $opts2 = $q2_1->options;
-            SurveyAnswer::create([
-                'response_id' => $resp->id,
-                'question_id' => $q2_1->id,
-                'answer_value' => fake()->randomElement($opts2),
-                'created_at' => $created,
-                'updated_at' => $created,
-            ]);
+            $this->createAnswer($resp, $q1, $created, fake()->randomElement($q1->options));
 
             $scaleVal = fake()->randomElement([4, 5, 5, 4, 3, 5]);
-            SurveyAnswer::create([
-                'response_id' => $resp->id,
-                'question_id' => $q2_2->id,
-                'answer_value' => (string)$scaleVal,
-                'created_at' => $created,
-                'updated_at' => $created,
-            ]);
+            $this->createAnswer($resp, $q2, $created, (string) $scaleVal);
 
             if (fake()->numberBetween(0, 10) > 4) {
-                SurveyAnswer::create([
-                    'response_id' => $resp->id,
-                    'question_id' => $q2_3->id,
-                    'answer_value' => 'Waktu latihan studi kasus diperbanyak.',
-                    'created_at' => $created,
-                    'updated_at' => $created,
-                ]);
+                $this->createAnswer($resp, $q3, $created, 'Waktu latihan studi kasus diperbanyak.');
             }
         }
+    }
 
-        // 3. Umpan Balik Website KAN (Draf)
+    // ------------------------------------------------------------------
+    // 3. Umpan Balik Website KAN (Draf)
+    // ------------------------------------------------------------------
+    private function seedWebsiteFeedback(): void
+    {
         $s3 = Survey::create([
             'code' => 'w9b1fk',
             'title' => 'Umpan Balik Website KAN',
@@ -227,6 +187,31 @@ class SurveySeeder extends Seeder
             'type' => 'check',
             'is_required' => false,
             'options' => ['Beranda', 'Direktori LPK', 'Unduh Dokumen', 'E-Training'],
+        ]);
+    }
+
+    // ------------------------------------------------------------------
+    // Fungsi bantu
+    // ------------------------------------------------------------------
+    private function createResponse(Survey $survey, Carbon $created): SurveyResponse
+    {
+        return SurveyResponse::create([
+            'survey_id' => $survey->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Mozilla/5.0 Sample Browser',
+            'created_at' => $created,
+            'updated_at' => $created,
+        ]);
+    }
+
+    private function createAnswer(SurveyResponse $resp, SurveyQuestion $question, Carbon $created, string $value): void
+    {
+        SurveyAnswer::create([
+            'response_id' => $resp->id,
+            'question_id' => $question->id,
+            'answer_value' => $value,
+            'created_at' => $created,
+            'updated_at' => $created,
         ]);
     }
 }
