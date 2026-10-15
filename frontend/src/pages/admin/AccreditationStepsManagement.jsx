@@ -38,7 +38,7 @@ const AccreditationStepsManagement = () => {
   const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
-    fetchSteps();
+    void fetchSteps();
   }, []);
 
   const fetchSteps = async () => {
