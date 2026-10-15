@@ -136,7 +136,6 @@ export default function TabDetail({ course, categories }) {
                             <div className="flex gap-2">
                                 <input
                                     id="detail-category"
-                                    autoFocus
                                     type="text"
                                     placeholder="Nama kategori..."
                                     value={catData.name}
