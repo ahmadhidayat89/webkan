@@ -2,7 +2,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Bold, Italic, List, ListOrdered, Link as LinkIcon, Heading2 } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Heading2 } from 'lucide-react';
 
 const MenuBar = ({ editor }) => {
     if (!editor) return null;
