@@ -129,6 +129,7 @@ const LegalManagement = () => {
         });
       }
     } catch (e) {
+      console.error('Gagal menyimpan halaman legal:', e);
       setSaveMsg({ type: 'error', text: 'Terjadi kesalahan, coba lagi' });
     } finally {
       setSaving(false);
