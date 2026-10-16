@@ -14,7 +14,7 @@ function fmtSize(bytes) {
 }
 
 function isImage(mimeType) {
-    return mimeType && mimeType.startsWith('image/');
+    return mimeType?.startsWith('image/');
 }
 
 // ─── Bubble color ─────────────────────────────────────────────────────────────
