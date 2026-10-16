@@ -21,7 +21,7 @@ import {
 
 // ─── Dashboard Peserta ────────────────────────────────────────────────────────
 function PelajarDashboard() {
-    const { auth, upcomingEvents = [], calendarEvents = [], enrolledCourses = [], availableCourses = [], studentStats = {}, onlineUsers = [] } = usePage().props;
+    const { auth, upcomingEvents = [], calendarEvents = [], enrolledCourses = [], studentStats = {}, onlineUsers = [] } = usePage().props;
     const user = auth?.user;
     const stats = studentStats;
 
