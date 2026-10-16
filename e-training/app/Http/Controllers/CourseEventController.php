@@ -13,7 +13,7 @@ class CourseEventController extends Controller
     public function getUpcoming()
     {
         $user = auth()->user();
-        
+
         $enrolledCourseIds = [];
         if ($user && $user->role === 'peserta') {
             $enrolledCourseIds = \App\Models\Enrollment::where('user_id', $user->id)->pluck('course_id')->toArray();
@@ -23,13 +23,13 @@ class CourseEventController extends Controller
         $quizzesQuery = \App\Models\Quiz::with('lesson.module.course')
             ->whereNotNull('deadline_at')
             ->where('deadline_at', '>=', now());
-            
+
         if ($user && $user->role === 'peserta') {
             $quizzesQuery->whereHas('lesson.module.course', function($q) use ($enrolledCourseIds) {
                 $q->whereIn('id', $enrolledCourseIds);
             });
         }
-        
+
         $quizzes = $quizzesQuery->get()->map(function($quiz) {
             $course = $quiz->lesson->module->course;
             return [
@@ -51,13 +51,13 @@ class CourseEventController extends Controller
             ->where('type', 'zoom')
             ->whereNotNull('start_datetime')
             ->where('start_datetime', '>=', now());
-            
+
         if ($user && $user->role === 'peserta') {
             $zoomQuery->whereHas('module.course', function($q) use ($enrolledCourseIds) {
                 $q->whereIn('id', $enrolledCourseIds);
             });
         }
-        
+
         $zooms = $zoomQuery->get()->map(function($lesson) {
             $course = $lesson->module->course;
             return [
@@ -74,9 +74,7 @@ class CourseEventController extends Controller
             ];
         });
 
-        $events = $quizzes->concat($zooms)->sortBy('start_datetime')->values()->take(5);
-
-        return $events;
+        return $quizzes->concat($zooms)->sortBy('start_datetime')->values()->take(5);
     }
 
     /**
@@ -85,7 +83,7 @@ class CourseEventController extends Controller
     public function getCalendarEvents(Request $request)
     {
         $user = auth()->user();
-        
+
         $enrolledCourseIds = [];
         if ($user && $user->role === 'peserta') {
             $enrolledCourseIds = \App\Models\Enrollment::where('user_id', $user->id)->pluck('course_id')->toArray();
@@ -145,8 +143,6 @@ class CourseEventController extends Controller
             ];
         });
 
-        $events = $quizzes->concat($zooms)->sortBy('start_datetime')->values();
-
-        return $events;
+        return $quizzes->concat($zooms)->sortBy('start_datetime')->values();
     }
 }
