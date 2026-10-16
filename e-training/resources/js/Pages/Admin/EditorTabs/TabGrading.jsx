@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
-import { CheckCircle2, XCircle, Search, Save, AlertCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Search, AlertCircle } from 'lucide-react';
 
 // FIX: satu helper untuk memuat attempt, dengan pengecekan status HTTP
 const fetchAttempts = async (quizId) => {
