@@ -1,6 +1,6 @@
 import { Head, router, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Shield, Search, Calendar, Activity, MapPin, Hash, User, Filter } from 'lucide-react';
+import { Search, Calendar, Activity, MapPin, Hash, User, Filter } from 'lucide-react';
 import { useState } from 'react';
 
 const METHOD_BADGE_COLORS = {
