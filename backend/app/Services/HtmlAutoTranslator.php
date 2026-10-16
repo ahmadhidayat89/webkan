@@ -304,4 +304,4 @@ class HtmlAutoTranslator
 
         return trim($translated) !== '' ? $translated : null;
     }
-} 
+}
