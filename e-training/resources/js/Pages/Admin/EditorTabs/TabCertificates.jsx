@@ -25,7 +25,7 @@ const bacaTanggalDariTeks = (teks) => {
 };
 
 const KALIMAT_TANGGAL = 'Yang diselesaikan pada tanggal';
-const POLA_TANGGAL = new RegExp(`^${KALIMAT_TANGGAL} \\d{1,2} \\S+ \\d{4}`);
+const POLA_TANGGAL = new RegExp(String.raw`^${KALIMAT_TANGGAL} \d{1,2} \S+ \d{4}`);
 
 // Ganti hanya kalimat tanggal di awal teks; teks setelahnya (tempat, JP) tidak berubah.
 const gantiKalimatTanggal = (current, awal) => {
