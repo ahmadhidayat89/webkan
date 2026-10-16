@@ -13,7 +13,7 @@ const MAX_TEXT_LENGTH = 1000;
 const STORAGE_KEY = 'kan_auto_translate_cache_v2';
 
 const isTranslatableTextNode = (node) => {
-  if (!node || node.nodeType !== Node.TEXT_NODE) return false;
+  if (node?.nodeType !== Node.TEXT_NODE) return false;
   const text = node.nodeValue?.trim() || '';
   if (text.length < MIN_TEXT_LENGTH) return false;
 
