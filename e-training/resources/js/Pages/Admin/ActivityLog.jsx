@@ -1,10 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, router } from '@inertiajs/react';
 import {
     Activity, UserPlus, Award, HelpCircle,
     CheckCircle2, XCircle, ChevronLeft, ChevronRight,
-    Filter, Clock, Search, X,
+    Clock,
 } from 'lucide-react';
 
 // ─── Config per tipe ─────────────────────────────────────────────────────────
