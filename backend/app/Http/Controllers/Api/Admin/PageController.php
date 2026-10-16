@@ -30,8 +30,8 @@ class PageController extends Controller
             $search = $request->string('search');
             $query->where(function($q) use ($search) {
                 $q->where('title_id', 'like', "%{$search}%")
-                  ->orWhere('title_en', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%");
+                ->orWhere('title_en', 'like', "%{$search}%")
+                ->orWhere('slug', 'like', "%{$search}%");
             });
         }
 
@@ -71,7 +71,7 @@ class PageController extends Controller
 
         // Generate a route from the title when no explicit slug is provided.
         $validated['slug'] = Str::slug($validated['slug'] ?? $validated['title_id']);
-        
+
         // Ensure unique slug
         $originalSlug = $validated['slug'];
         $count = 1;
