@@ -419,7 +419,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                         <div>
                             <p className="block text-xs font-bold text-gray-500 uppercase mb-2">File Dokumen (PDF, PPT, Word — Maks 50MB)</p>
                             <div className="flex flex-wrap gap-2 mb-2">
-                                {lesson.files && lesson.files.map(f => (
+                                {lesson.files?.map(f => (
                                     <div key={f.id} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm">
                                         <FileText className="w-3 h-3 text-red-500" />
                                         <span className="truncate max-w-[150px] text-xs">{f.original_name}</span>
