@@ -23,8 +23,8 @@ class SettingController extends Controller
         }
 
         $settings = $query->get()->mapWithKeys(function ($setting) use ($lang) {
-            $value = $lang === 'en' && $setting->value_en 
-                ? $setting->value_en 
+            $value = $lang === 'en' && $setting->value_en
+                ? $setting->value_en
                 : $setting->value_id;
 
             if ($setting->type === 'image' && $value) {
