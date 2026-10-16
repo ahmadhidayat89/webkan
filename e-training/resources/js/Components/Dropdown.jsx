@@ -83,7 +83,6 @@ const Content = ({
     }
 
     return (
-        <>
             <Transition
                 show={open}
                 enter="transition ease-out duration-200"
@@ -106,7 +105,6 @@ const Content = ({
                     </div>
                 </div>
             </Transition>
-        </>
     );
 };
 
