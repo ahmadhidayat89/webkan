@@ -121,28 +121,33 @@ const AutoPageTranslator = () => {
     return texts.filter((text) => text.length <= MAX_TEXT_LENGTH);
   };
 
-  const fetchMissingTranslations = async (texts) => {
-    for (const chunk of chunkArray(texts, MAX_ITEMS_PER_REQUEST)) {
-      try {
-        const response = await fetch('/api/v1/translate/texts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ from: 'id', to: 'en', texts: chunk }),
-        });
-        const data = await response.json();
-        if (!response.ok || !data?.success || !Array.isArray(data?.data?.items)) continue;
-        data.data.items.forEach((item) => {
-          const source = normalizeText(item?.source || '');
-          if (source && typeof item?.translated === 'string' && item.translated) {
-            translatedCacheRef.current.set(source, item.translated);
-          }
-        });
-        persistCacheToStorage();
-      } catch {
-        // Best-effort translation only; keep original text on failure.
-      }
+  const translateChunk = async (chunk) => {
+    try {
+      const response = await fetch('/api/v1/translate/texts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ from: 'id', to: 'en', texts: chunk }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.success || !Array.isArray(data?.data?.items)) return;
+      data.data.items.forEach((item) => {
+        const source = normalizeText(item?.source || '');
+        if (source && typeof item?.translated === 'string' && item.translated) {
+          translatedCacheRef.current.set(source, item.translated);
+        }
+      });
+      persistCacheToStorage();
+    } catch {
+      // Best-effort translation only; keep original text on failure.
     }
   };
+
+  // Chunk diproses satu per satu (berurutan), tanpa await di dalam loop
+  const fetchMissingTranslations = (texts) =>
+    chunkArray(texts, MAX_ITEMS_PER_REQUEST).reduce(
+      (previous, chunk) => previous.then(() => translateChunk(chunk)),
+      Promise.resolve(),
+    );
 
   const applyTranslationsToNodes = (nodes) => {
     for (const node of nodes) {
