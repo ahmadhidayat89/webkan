@@ -82,7 +82,7 @@ const mapSurveyQuestion = (q) => {
     type: ['email', 'phone'].includes(q.type) ? 'short' : q.type,
     text: q.text,
     image_url: q.image_url || '',
-    validation: { ...(q.validation || {}), ...(['email', 'phone'].includes(q.type) && { answer_type: q.type }) },
+    validation: { ...q.validation, ...(['email', 'phone'].includes(q.type) && { answer_type: q.type }) },
     req: Boolean(q.is_required),
     opts,
     optKeys: newOptKeys(opts),
