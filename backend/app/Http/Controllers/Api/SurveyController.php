@@ -69,21 +69,21 @@ class SurveyController extends Controller
             ->where('code', $code)
             ->where('is_published', true)
             ->first();
-    
+
         $unavailable = $this->unavailableResponse($survey);
         if ($unavailable) {
             return $unavailable;
         }
-    
+
         $answers = $request->input('answers', []);
         $validationResponse = $this->validateAnswers($survey, $answers);
         if ($validationResponse) {
             return $validationResponse;
         }
-    
+
         return $this->storeAnswers($survey, $answers, $request);
     }
-    
+
     /**
      * Respons error kalau kuesioner tidak ada atau sedang ditutup, null kalau boleh diisi.
      */
@@ -95,7 +95,7 @@ class SurveyController extends Controller
         if (!$survey->is_active) {
             return response()->json(['success' => false, 'message' => 'Kuesioner ini sedang ditutup dan tidak menerima jawaban baru.'], 422);
         }
-    
+
         return null;
     }
 
@@ -224,7 +224,10 @@ class SurveyController extends Controller
             'question_id' => 'required|integer|exists:survey_questions,id',
             'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,webp,txt,csv|max:1024',
         ]);
-        $question = $survey->questions()->where('id', $validated['question_id'])->where('type', 'file')->firstOrFail();
+
+        // Pastikan pertanyaan milik survei ini dan bertipe file (404 kalau tidak cocok)
+        $survey->questions()->where('id', $validated['question_id'])->where('type', 'file')->firstOrFail();
+
         $file = $request->file('file');
         $path = $file->store('surveys/' . $code . '/responses', 'public');
         return response()->json(['success' => true, 'data' => [
