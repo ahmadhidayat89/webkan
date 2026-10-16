@@ -56,7 +56,7 @@ export default function CreatorStudio({ courses }) {
 
     const filteredCourses = courses.filter(c =>
         c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.category && c.category.toLowerCase().includes(searchQuery.toLowerCase()))
+        c.category?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const handleDeleteConfirm = (id) => {
