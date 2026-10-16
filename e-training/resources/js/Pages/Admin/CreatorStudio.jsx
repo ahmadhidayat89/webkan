@@ -46,7 +46,7 @@ export default function CreatorStudio({ courses }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [courseToDelete, setCourseToDelete] = useState(null);
     const { post, processing } = useForm({
-        title: 'Kursus Baru ' + new Date().getTime(),
+        title: 'Kursus Baru ' + Date.now(),
         level: 'pemula'
     });
 
