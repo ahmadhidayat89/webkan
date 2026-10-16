@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
     MessageCircle, Send, Paperclip, X, FileText,
-    Download, Trash2, Shield, GraduationCap, Loader2,
+    Download, Trash2, Shield, Loader2,
 } from 'lucide-react';
 
 // ─── Format file size ─────────────────────────────────────────────────────────
