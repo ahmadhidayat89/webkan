@@ -22,7 +22,7 @@ const PagesManagement = () => {
   });
 
   useEffect(() => {
-    fetchPages();
+    void fetchPages();
   }, []);
 
   const fetchPages = async () => {
@@ -119,7 +119,7 @@ const PagesManagement = () => {
 
       // Check content type before parsing
       const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      if (!contentType?.includes('application/json')) {
         const text = await response.text();
         console.error('Non-JSON response received:', text.substring(0, 500));
         alert(`Backend error: Server returned HTML instead of JSON.\n\nStatus: ${response.status}\n\nPossible causes:\n- Backend not running\n- Wrong API endpoint\n- CORS or routing issue\n\nCheck backend logs.`);
@@ -130,7 +130,7 @@ const PagesManagement = () => {
       console.log('Response:', data);
 
       if (response.ok && data.success) {
-        fetchPages();
+        await fetchPages();
         handleCloseModal();
         alert('Halaman berhasil disimpan!');
       } else {
@@ -159,7 +159,7 @@ const PagesManagement = () => {
       });
       const data = await response.json();
       if (data.success) {
-        fetchPages();
+        await fetchPages();
       }
     } catch (error) {
       console.error('Error deleting page:', error);
@@ -174,7 +174,7 @@ const PagesManagement = () => {
       });
       const data = await response.json();
       if (data.success) {
-        fetchPages();
+        await fetchPages();
       }
     } catch (error) {
       console.error('Error toggling publish:', error);
@@ -186,14 +186,14 @@ const PagesManagement = () => {
       <div className="space-y-6">
         {/* Header */}
         {/* Header Banner */}
-        <div className="relative bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7 text-white shadow-xl overflow-hidden">
+        <div className="relative overflow-hidden text-white shadow-xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 rounded-2xl p-7">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-10 -right-10 w-56 h-56 bg-white/5 rounded-full blur-3xl"></div>
+            <div className="absolute w-56 h-56 rounded-full -top-10 -right-10 bg-white/5 blur-3xl"></div>
           </div>
-          <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center">
-                <FaFileAlt className="text-white text-xl" />
+              <div className="flex items-center justify-center w-12 h-12 bg-white/15 rounded-xl">
+                <FaFileAlt className="text-xl text-white" />
               </div>
               <div>
                 <h2 className="text-2xl font-black">Kelola Halaman</h2>
@@ -201,18 +201,18 @@ const PagesManagement = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex gap-2">
+              <div className="hidden gap-2 sm:flex">
                 <div className="text-center px-4 py-2.5 bg-white/15 rounded-xl border border-white/20">
                   <div className="text-xl font-black">{pages.filter((p) => p.is_published).length}</div>
-                  <div className="text-white/70 text-xs font-semibold">Publish</div>
+                  <div className="text-xs font-semibold text-white/70">Publish</div>
                 </div>
                 <div className="text-center px-4 py-2.5 bg-white/10 rounded-xl border border-white/20">
                   <div className="text-xl font-black">{pages.filter((p) => !p.is_published).length}</div>
-                  <div className="text-white/70 text-xs font-semibold">Draft</div>
+                  <div className="text-xs font-semibold text-white/70">Draft</div>
                 </div>
                 <div className="text-center px-4 py-2.5 bg-white/10 rounded-xl border border-white/20">
                   <div className="text-xl font-black">{pages.length}</div>
-                  <div className="text-white/70 text-xs font-semibold">Total</div>
+                  <div className="text-xs font-semibold text-white/70">Total</div>
                 </div>
               </div>
               <button
@@ -235,7 +235,7 @@ const PagesManagement = () => {
               placeholder="Cari halaman..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && fetchPages()}
+              onKeyDown={(e) => e.key === 'Enter' && void fetchPages()}
               className="w-full py-3 pl-12 pr-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
@@ -255,19 +255,21 @@ const PagesManagement = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {loading ? (
+                {loading && (
                   <tr>
                     <td colSpan="5" className="px-6 py-12 text-center">
                       <div className="w-8 h-8 mx-auto border-4 rounded-full border-primary-600 border-t-transparent animate-spin"></div>
                     </td>
                   </tr>
-                ) : pages.length === 0 ? (
+                )}
+                {!loading && pages.length === 0 && (
                   <tr>
                     <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                       Belum ada halaman. Buat halaman pertama Anda!
                     </td>
                   </tr>
-                ) : (
+                )}
+                {!loading && pages.length > 0 &&
                   pages.map((page) => (
                     <tr key={page.id} className="transition-colors hover:bg-gray-50">
                       <td className="px-6 py-4">
@@ -321,8 +323,7 @@ const PagesManagement = () => {
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
+                  ))}
               </tbody>
             </table>
           </div>
