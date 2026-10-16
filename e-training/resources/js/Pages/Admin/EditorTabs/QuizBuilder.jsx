@@ -277,16 +277,16 @@ export default function QuizBuilder({ quiz }) {
                                                     }}
                                                     className={`w-8 h-8 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${opt.is_correct ? 'border-green-500 bg-green-500 text-white shadow-sm' : 'border-gray-300 hover:border-green-400 bg-gray-50'}`}
                                                     title={opt.is_correct ? "Jawaban Benar" : "Tandai sebagai Benar"}
-                                                    aria-label={opt.is_correct ? `Opsi ${String.fromCharCode(65 + oIdx)} adalah jawaban benar` : `Tandai opsi ${String.fromCharCode(65 + oIdx)} sebagai benar`}
+                                                    aria-label={opt.is_correct ? `Opsi ${String.fromCodePoint(65 + oIdx)} adalah jawaban benar` : `Tandai opsi ${String.fromCodePoint(65 + oIdx)} sebagai benar`}
                                                 >
-                                                    {opt.is_correct ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-xs font-bold text-gray-400">{String.fromCharCode(65 + oIdx)}</span>}
+                                                    {opt.is_correct ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-xs font-bold text-gray-400">{String.fromCodePoint(65 + oIdx)}</span>}
                                                 </button>
                                                 <input
                                                     type="text"
-                                                    aria-label={`Teks opsi ${String.fromCharCode(65 + oIdx)}`}
+                                                    aria-label={`Teks opsi ${String.fromCodePoint(65 + oIdx)}`}
                                                     className={`flex-1 border-gray-300 rounded-lg py-2.5 px-4 text-sm focus:ring-navy-500 focus:border-navy-500 transition-colors ${opt.is_correct ? 'bg-green-50 border-green-200' : 'bg-white'}`}
                                                     value={opt.option_text}
-                                                    placeholder={`Opsi ${String.fromCharCode(65 + oIdx)}`}
+                                                    placeholder={`Opsi ${String.fromCodePoint(65 + oIdx)}`}
                                                     onChange={e => {
                                                         const newOpts = activeQ.options.map((o, i) =>
                                                             i === oIdx ? { ...o, option_text: e.target.value } : o
@@ -301,7 +301,7 @@ export default function QuizBuilder({ quiz }) {
                                                     }}
                                                     className="flex items-center justify-center w-10 h-10 text-red-400 transition-colors border border-transparent rounded-lg hover:text-red-600 hover:bg-red-50 hover:border-red-100"
                                                     title="Hapus Opsi"
-                                                    aria-label={`Hapus opsi ${String.fromCharCode(65 + oIdx)}`}
+                                                    aria-label={`Hapus opsi ${String.fromCodePoint(65 + oIdx)}`}
                                                 >
                                                     <Trash2 className="w-5 h-5" />
                                                 </button>

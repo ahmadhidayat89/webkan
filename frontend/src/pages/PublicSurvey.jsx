@@ -128,7 +128,7 @@ export default function PublicSurvey() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!survey || !survey.questions) return;
+    if (!survey?.questions) return;
 
     // Validate configured question constraints before posting responses.
     const errs = {};

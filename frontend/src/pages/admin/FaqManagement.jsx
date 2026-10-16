@@ -8,8 +8,6 @@ import {
   FaEyeSlash,
   FaCheckCircle,
   FaExclamationCircle,
-  FaCommentDots,
-  FaLightbulb,
 } from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
 import QuillEditor from '../../components/admin/QuillEditor';
@@ -147,8 +145,8 @@ const FAQManagement = () => {
 
     // [^<>]* (bukan [^>]*) supaya waktu prosesnya linear dan tidak backtracking
     const answerText = (formData.answer || '')
-      .replace(/<[^<>]*>/g, '')
-      .replace(/&nbsp;/g, ' ')
+      .replaceAll(/<[^<>]*>/g, '')
+      .replaceAll('&nbsp;', ' ')
       .trim();
 
     if (!formData.question.trim() || !answerText) {

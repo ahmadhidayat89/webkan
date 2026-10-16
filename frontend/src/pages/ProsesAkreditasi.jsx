@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import SEO from '../components/SEO';
+import SEOComponent from '../components/SEO';
 import AccreditationTimeline from '../components/AccreditationTimeline';
 import { FaHome, FaChevronRight, FaArrowLeft } from 'react-icons/fa';
 
@@ -39,7 +39,7 @@ export default function ProsesAkreditasi() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <SEO
+      <SEOComponent
         title="Proses Akreditasi — KAN"
         description="Pelajari tahapan lengkap proses akreditasi KAN dari permohonan hingga penerbitan sertifikat."
       />

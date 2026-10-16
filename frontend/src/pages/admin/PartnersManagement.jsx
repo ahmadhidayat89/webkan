@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaUsers, FaEye, FaEyeSlash, FaImage, FaCheckCircle, FaTimesCircle, FaGlobe } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaUsers, FaEye, FaEyeSlash, FaImage, FaGlobe } from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
 
 const PartnersManagement = () => {

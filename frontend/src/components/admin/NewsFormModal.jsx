@@ -149,7 +149,7 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
 
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      if (!contentType?.includes('application/json')) {
         const text = await response.text();
         console.error('Non-JSON response:', text.substring(0, 1000));
         alert(`Server error (${response.status}): Server tidak mengembalikan JSON.\nCek browser console (F12) dan backend log.`);

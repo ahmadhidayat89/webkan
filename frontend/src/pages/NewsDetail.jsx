@@ -343,7 +343,7 @@ const NewsDetail = () => {
                     className="prose prose-lg max-w-none prose-headings:font-black prose-headings:text-gray-900 prose-h2:text-3xl prose-h3:text-2xl prose-p:text-gray-700 prose-p:leading-relaxed prose-a:text-primary-600 prose-a:font-semibold hover:prose-a:text-primary-700 prose-img:rounded-xl prose-img:shadow-lg prose-li:text-gray-700"
                     dangerouslySetInnerHTML={{
                       __html: DOMPurify.sanitize(
-                        content?.replace(/\n/g, '<br/>') ||
+                        content?.replaceAll('\n', '<br/>') ||
                         excerpt ||
                         ''
                       ),

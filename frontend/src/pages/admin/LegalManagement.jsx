@@ -47,7 +47,7 @@ const trimEmptyTail = (html) => {
 const hasMeaningfulContent = (html) => {
   if (!html) return false;
   return (
-    html.replace(/<[^<>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0
+    html.replaceAll(/<[^<>]*>/g, '').replaceAll('&nbsp;', ' ').trim().length > 0
   );
 };
 

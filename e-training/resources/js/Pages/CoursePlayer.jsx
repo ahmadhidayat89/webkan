@@ -338,7 +338,7 @@ function AnswerInput({ question, answer, processing, onAnswer }) {
                     <OptionButton
                         key={option.id}
                         option={option}
-                        letter={String.fromCharCode(65 + oIdx)}
+                        letter={String.fromCodePoint(65 + oIdx)}
                         selected={answer === option.id}
                         disabled={processing}
                         onSelect={onAnswer}

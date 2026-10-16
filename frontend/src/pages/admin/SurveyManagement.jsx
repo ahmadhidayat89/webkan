@@ -82,7 +82,7 @@ const mapSurveyQuestion = (q) => {
     type: ['email', 'phone'].includes(q.type) ? 'short' : q.type,
     text: q.text,
     image_url: q.image_url || '',
-    validation: { ...(q.validation || {}), ...(['email', 'phone'].includes(q.type) ? { answer_type: q.type } : {}) },
+    validation: { ...(q.validation || {}), ...(['email', 'phone'].includes(q.type) && { answer_type: q.type }) },
     req: Boolean(q.is_required),
     opts,
     optKeys: newOptKeys(opts),
@@ -223,7 +223,7 @@ const newSurvey = () => ({
 
 const percentOf = (count, total) => (total > 0 ? Math.round((count / total) * 100) : 0);
 
-const isEmptyResult = (data) => !data || !data.stats || data.stats.total_responses === 0;
+const isEmptyResult = (data) => !data?.stats || data.stats.total_responses === 0;
 
 const getVisibleResponses = (responses, showAll) =>
   showAll ? responses : responses?.slice(0, 8);
@@ -267,7 +267,7 @@ const patchValidationAt = (list, idx, patch) =>
 const insertAt = (list, idx, item) => [...list.slice(0, idx), item, ...list.slice(idx)];
 
 const cloneQuestion = (q) => {
-  const copy = { ...JSON.parse(JSON.stringify(q)), _key: uid() };
+  const copy = { ...structuredClone(q), _key: uid() };
   delete copy.id; // salinan harus dianggap pertanyaan baru oleh backend
   copy.optKeys = newOptKeys(copy.opts);
   return copy;

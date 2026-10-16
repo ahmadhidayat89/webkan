@@ -125,7 +125,7 @@ const SearchResults = () => {
 
     const escapedKeyword = keyword.replace(
       /[.*+?^${}()|[\]\\]/g,
-      '\\$&'
+      String.raw`\$&`
     );
 
     const parts = text.split(

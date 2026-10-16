@@ -74,7 +74,7 @@ const SUBPAGE_HUBS = [
 ];
 
 const humanizeSlug = (slug) =>
-  slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  slug.replaceAll('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 // ─── Lightbox Component ───────────────────────────────────────────────────────
 const Lightbox = ({ images, initialIndex, onClose }) => {
@@ -624,7 +624,7 @@ const formatDate = (value) =>
     : null;
 
 const sanitizeContent = (content) =>
-  DOMPurify.sanitize(content, { FORBID_TAGS: ['iframe'] }).replace(/&nbsp;/g, ' ');
+  DOMPurify.sanitize(content, { FORBID_TAGS: ['iframe'] }).replaceAll('&nbsp;', ' ');
 
 /* ───────────────── Penyempurnaan DOM konten (lightbox, video, tabel, galeri) ───────────────── */
 
