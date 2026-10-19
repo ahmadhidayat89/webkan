@@ -542,7 +542,7 @@ const usePageContents = () => {
   }, []);
 
   useEffect(() => {
-    void fetchContents();
+    fetchContents();
   }, [fetchContents]);
 
   const getContent = (pageId) => dbContents.find((p) => p.page_id === pageId);
@@ -830,3 +830,565 @@ const ContentHeader = ({ filledCount, totalCount }) => (
 
         <div>
           <h2 className="text-2xl font-black">
+            Kelola Konten Halaman
+          </h2>
+
+          <p className="text-white/70 text-sm mt-0.5">
+            Edit konten untuk setiap halaman website KAN
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <div className="px-5 py-3 text-center border bg-white/15 rounded-xl border-white/20">
+          <div className="text-2xl font-black">{filledCount}</div>
+          <div className="text-xs font-semibold text-white/70">Terisi</div>
+        </div>
+
+        <div className="px-5 py-3 text-center border bg-white/15 rounded-xl border-white/20">
+          <div className="text-2xl font-black">{totalCount - filledCount}</div>
+          <div className="text-xs font-semibold text-white/70">Kosong</div>
+        </div>
+
+        <div className="px-5 py-3 text-center border bg-white/10 rounded-xl border-white/20">
+          <div className="text-2xl font-black">{totalCount}</div>
+          <div className="text-xs font-semibold text-white/70">Total</div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const EmptyEditorState = () => (
+  <div className="flex flex-col items-center justify-center py-24 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
+    <div className="flex items-center justify-center w-20 h-20 mb-4 bg-gray-100 rounded-2xl">
+      <FaFileAlt className="text-3xl text-gray-400" />
+    </div>
+
+    <h3 className="mb-2 text-lg font-black text-gray-800">
+      Pilih Halaman
+    </h3>
+
+    <p className="max-w-xs text-sm text-gray-500">
+      Pilih salah satu halaman dari daftar di sebelah kiri untuk mulai mengedit kontennya.
+    </p>
+  </div>
+);
+
+const EditorHeader = ({ page, content, selectedId, filled }) => (
+  <div className="py-5 border-b border-gray-100 px-7 bg-gradient-to-r from-gray-50 to-white">
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <span
+            className={`text-xs font-bold px-2 py-0.5 rounded-full ${colorMap[page?.color]?.badge}`}
+          >
+            {page?.section}
+          </span>
+
+          {content?.updated_at && (
+            <span className="flex items-center gap-1 text-xs text-gray-400">
+              <FaClock className="text-xs" />
+
+              {new Date(content.updated_at).toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+              })}
+            </span>
+          )}
+        </div>
+
+        <h3 className="text-xl font-black text-gray-900">
+          {page?.name}
+        </h3>
+
+        <p className="text-xs text-gray-400 mt-0.5 font-mono">
+          /{selectedId}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {filled ? (
+          <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+            <FaCheckCircle />
+            Konten Tersedia
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+            <FaExclamationCircle />
+            Belum Ada Konten
+          </span>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const SaveMessage = ({ msg }) => {
+  const isSuccess = msg.type === 'success';
+
+  return (
+    <div
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${
+        isSuccess
+          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+          : 'bg-red-50 text-red-700 border border-red-200'
+      }`}
+    >
+      {isSuccess ? <FaCheckCircle /> : <FaExclamationCircle />}
+
+      {msg.text}
+    </div>
+  );
+};
+
+const ImageUploadField = ({ preview, onSelect, onRemove }) => {
+  const handleChange = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    if (file.size > 2048000) {
+      alert('Ukuran gambar maksimal 2MB');
+      return;
+    }
+
+    onSelect(file);
+  };
+
+  return (
+    <div>
+      <p className="block mb-2 text-sm font-bold text-gray-800">
+        Gambar Header{' '}
+        <span className="font-normal text-gray-400">
+          (Opsional)
+        </span>
+      </p>
+
+      {preview ? (
+        <div className="relative w-full max-w-lg overflow-hidden border border-gray-200 rounded-xl group">
+          <img
+            src={preview}
+            alt="Preview"
+            className="object-cover w-full h-44"
+          />
+
+          <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-black/40 group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={onRemove}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700"
+            >
+              <FaTrash />
+              Hapus Gambar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <label className="flex flex-col items-center justify-center w-full h-40 max-w-lg transition-all border-2 border-gray-300 border-dashed cursor-pointer rounded-xl hover:border-primary-400 hover:bg-primary-50 group">
+          <FaImage className="mb-2 text-3xl text-gray-300 transition-colors group-hover:text-primary-400" />
+
+          <span className="text-sm font-semibold text-gray-500 group-hover:text-primary-600">
+            Klik untuk upload gambar
+          </span>
+
+          <span className="mt-1 text-xs text-gray-400">
+            JPG, PNG — Maks. 2MB
+          </span>
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleChange}
+            className="hidden"
+          />
+        </label>
+      )}
+    </div>
+  );
+};
+
+const EditorActions = ({ canSave, saving, isSurvey, isSub, onSave, onClose, onDelete }) => (
+  <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+    <button
+      onClick={onSave}
+      disabled={!canSave}
+      className="flex items-center gap-2 py-3 font-bold text-white transition-all shadow-md px-7 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl hover:from-primary-700 hover:to-primary-800 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <FaSave />
+
+      {saving ? 'Menyimpan...' : 'Simpan Konten'}
+    </button>
+
+    <button
+      onClick={onClose}
+      className="flex items-center gap-2 px-5 py-3 font-bold text-gray-600 transition-all border border-gray-200 rounded-xl hover:bg-gray-50"
+    >
+      <FaTimes />
+      Tutup
+    </button>
+
+    {isSurvey && (
+      <button
+        onClick={onDelete}
+        disabled={saving}
+        className="flex items-center gap-2 px-5 py-3 ml-auto font-bold text-red-600 transition-all border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50"
+      >
+        <FaTrash />
+        Hapus Survei
+      </button>
+    )}
+
+    {isSub && (
+      <button
+        onClick={onDelete}
+        disabled={saving}
+        className="flex items-center gap-2 px-5 py-3 ml-auto font-bold text-red-600 transition-all border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50"
+      >
+        <FaTrash />
+        Hapus Sub-halaman
+      </button>
+    )}
+  </div>
+);
+
+// Panel editor. Dipasang ulang (key) setiap halaman dipilih, sehingga
+// state form otomatis kembali ke isi halaman yang baru dipilih.
+const EditorPanel = ({
+  selectedId,
+  selectedPage,
+  content,
+  filled,
+  subItems,
+  draftSubs,
+  onSaved,
+  onClose,
+  onDeleted,
+}) => {
+  const [initial] = useState(() => buildFormState(selectedId, content, subItems, draftSubs));
+  const [formData, setFormData] = useState(initial.formData);
+  const [imagePreview, setImagePreview] = useState(initial.imagePreview);
+  const [imageFile, setImageFile] = useState(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState(null);
+
+  const isSurvey = Boolean(surveyYearOf(selectedId));
+  const isSub = Boolean(subOf(selectedId));
+
+  const canSave =
+    hasMeaningfulContent(formData.content_id) &&
+    !saving &&
+    (!isSub || formData.title.trim().length > 0);
+
+  const handleImageSelect = (file) => {
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleImageRemove = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveImage(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveMsg(null);
+
+    const error = await savePageContent({ selectedId, formData, imageFile, removeImage });
+
+    if (error) {
+      setSaveMsg({ type: 'error', text: error });
+      setSaving(false);
+      return;
+    }
+
+    setSaveMsg({ type: 'success', text: 'Konten berhasil disimpan!' });
+
+    await onSaved();
+
+    setImageFile(null);
+    setRemoveImage(false);
+    setSaving(false);
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete(selectedId, subItems)) return;
+
+    setSaving(true);
+
+    const result = await requestDeletePage(selectedId);
+
+    if (!result.ok) {
+      setSaveMsg({ type: 'error', text: result.message });
+      setSaving(false);
+      return;
+    }
+
+    await onDeleted(selectedId);
+
+    setSaving(false);
+  };
+
+  return (
+    <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+      <EditorHeader
+        page={selectedPage}
+        content={content}
+        selectedId={selectedId}
+        filled={filled}
+      />
+
+      <div className="space-y-6 p-7">
+        {saveMsg && <SaveMessage msg={saveMsg} />}
+
+        {/* Judul Halaman */}
+        {isSub && (
+          <div>
+            <label htmlFor="page_title" className="block mb-2 text-sm font-bold text-gray-800">
+              Judul Halaman{' '}
+              <span className="text-red-500">
+                *
+              </span>
+            </label>
+
+            <input
+              id="page_title"
+              type="text"
+              value={formData.title}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  title: e.target.value
+                }))
+              }
+              placeholder="mis. Laboratorium Penguji"
+              className="w-full max-w-lg px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400 text-sm"
+            />
+
+            <p className="text-xs text-gray-400 mt-1.5">
+              Judul ini muncul di daftar sub-halaman dan judul halaman, terlepas dari alamat /{selectedId}
+            </p>
+          </div>
+        )}
+
+        <ImageUploadField
+          preview={imagePreview}
+          onSelect={handleImageSelect}
+          onRemove={handleImageRemove}
+        />
+
+        {/* Content ID */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-bold text-gray-800">
+              Konten Bahasa Indonesia{' '}
+              <span className="text-red-500">
+                *
+              </span>
+            </p>
+
+            <span className="px-2 py-1 font-mono text-xs text-gray-400 bg-gray-100 rounded-md">
+              HTML
+            </span>
+          </div>
+
+          <QuillEditor
+            key={selectedId}
+            value={formData.content_id}
+            onChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                content_id: value
+              }))
+            }
+            placeholder="Tulis konten bahasa Indonesia..."
+          />
+
+          <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+            Mendukung tag HTML: &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;a&gt;, &lt;table&gt;, dll.
+          </p>
+        </div>
+
+        <EditorActions
+          canSave={canSave}
+          saving={saving}
+          isSurvey={isSurvey}
+          isSub={isSub}
+          onSave={handleSave}
+          onClose={onClose}
+          onDelete={handleDelete}
+        />
+      </div>
+    </div>
+  );
+};
+
+const ContentManagement = () => {
+  const [searchParams] = useSearchParams();
+  const requestedSection = searchParams.get('section');
+
+  const { dbContents, loading, fetchContents, getContent, hasContent } = usePageContents();
+
+  const [selectedId, setSelectedId] = useState(null);
+  const [selectCount, setSelectCount] = useState(0);
+  const [activeSection, setActiveSection] = useState(resolveSection(requestedSection));
+  const [draftYears, setDraftYears] = useState([]);
+  const [newYear, setNewYear] = useState('');
+  const [yearError, setYearError] = useState('');
+  const [draftSubs, setDraftSubs] = useState([]);
+  const [newSubName, setNewSubName] = useState('');
+  const [subError, setSubError] = useState('');
+
+  useEffect(() => {
+    setActiveSection(resolveSection(requestedSection));
+    setSelectedId(null);
+  }, [requestedSection]);
+
+  const filledCount = allPages.filter((p) => hasContent(p.id)).length;
+
+  const surveyYears = getSurveyYears(dbContents, draftYears);
+  const surveyPages = surveyYears.map(buildSurveyPage);
+
+  const subItems = getSubItems(dbContents, draftSubs);
+  const subPages = subItems.map(buildSubPage);
+
+  const activeCat = getActiveCat(selectedId);
+  const activeCatInfo = SUB_CATS.find((c) => c.slug === activeCat);
+  const catSubPages = subPages.filter((p) => p.cat === activeCat);
+
+  const selectedPage =
+    allPages.find((p) => p.id === selectedId) ||
+    surveyPages.find((p) => p.id === selectedId) ||
+    subPages.find((p) => p.id === selectedId);
+
+  const handleSelect = (pageId) => {
+    setSelectedId(pageId);
+    setSelectCount((count) => count + 1);
+  };
+
+  const handleAddSurvey = () => {
+    const year = newYear.trim();
+    const error = validateSurveyYear(year, surveyYears);
+
+    if (error) {
+      setYearError(error);
+      return;
+    }
+
+    setDraftYears((prev) => [...prev, year]);
+    setNewYear('');
+    setYearError('');
+
+    handleSelect(`${SURVEY_BASE}/${year}`);
+  };
+
+  const handleAddSub = () => {
+    const result = buildSubDraft(newSubName.trim(), activeCat, subItems);
+
+    if (result.error) {
+      setSubError(result.error);
+      return;
+    }
+
+    setDraftSubs((prev) => [...prev, result.item]);
+    setNewSubName('');
+    setSubError('');
+
+    handleSelect(result.id);
+  };
+
+  // Dipanggil setelah halaman dinamis (survei / sub-halaman) berhasil dihapus
+  const handleDeleted = async (pageId) => {
+    const deletedSub = subOf(pageId);
+
+    setDraftYears((prev) => prev.filter((y) => `${SURVEY_BASE}/${y}` !== pageId));
+    setDraftSubs((prev) => prev.filter((l) => `layanan/${l.cat}/${l.slug}` !== pageId));
+    setSelectedId(null);
+
+    await fetchContents();
+
+    if (deletedSub) handleSelect(`layanan/${deletedSub.cat}`);
+  };
+
+  const survey = {
+    pages: surveyPages,
+    input: {
+      value: newYear,
+      error: yearError,
+      placeholder: 'Tahun, mis. 2019',
+      inputProps: { inputMode: 'numeric', maxLength: 150 },
+      onChange: (value) => {
+        setNewYear(value);
+        setYearError('');
+      },
+      onAdd: handleAddSurvey,
+    },
+  };
+
+  const sub = {
+    info: activeCatInfo,
+    pages: catSubPages,
+    input: {
+      value: newSubName,
+      error: subError,
+      placeholder: 'Nama sub-halaman',
+      inputProps: {},
+      onChange: (value) => {
+        setNewSubName(value);
+        setSubError('');
+      },
+      onAdd: handleAddSub,
+    },
+  };
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <ContentHeader filledCount={filledCount} totalCount={allPages.length} />
+
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-8 h-8 border-4 rounded-full border-primary-600 border-t-transparent animate-spin"></div>
+          </div>
+        ) : (
+          <div className="flex items-start gap-6">
+            <ContentSidebar
+              activeSection={activeSection}
+              onSectionChange={setActiveSection}
+              selectedId={selectedId}
+              onSelect={handleSelect}
+              hasContent={hasContent}
+              survey={survey}
+              sub={sub}
+            />
+
+            {/* Editor Panel */}
+            <div className="flex-1 min-w-0">
+              {selectedId ? (
+                <EditorPanel
+                  key={`${selectedId}-${selectCount}`}
+                  selectedId={selectedId}
+                  selectedPage={selectedPage}
+                  content={getContent(selectedId)}
+                  filled={hasContent(selectedId)}
+                  subItems={subItems}
+                  draftSubs={draftSubs}
+                  onSaved={fetchContents}
+                  onClose={() => setSelectedId(null)}
+                  onDeleted={handleDeleted}
+                />
+              ) : (
+                <EmptyEditorState />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </AdminLayout>
+  );
+};
+
+export default ContentManagement;
