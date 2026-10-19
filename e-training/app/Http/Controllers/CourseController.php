@@ -124,7 +124,7 @@ class CourseController extends Controller
         ])->values();
 
         // All pelajar (for enroll dropdown)
-        $allStudents = \App\Models\User::where('role', 'pelajar')
+        $allStudents = \App\Models\User::where('role', 'peserta')
             ->whereNotIn('id', $course->enrollments->pluck('user_id'))
             ->get(['id', 'name', 'email', 'organization']);
 
