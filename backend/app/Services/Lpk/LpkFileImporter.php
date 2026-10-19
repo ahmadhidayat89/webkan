@@ -30,6 +30,9 @@ class LpkFileImporter
     // Dipakai hanya kalau kolom E-mail tidak ditemukan
     private const SCOPE_FALLBACK = ['LINGKUP', 'RUANG LINGKUP', 'KELOMPOK LINGKUP', 'PRODUK', 'BIDANG PEMERIKSAAN'];
 
+    // Nilai STATUS di file yang dibaca sebagai "active" tanpa pembekuan
+    private const ACTIVE_STATUS_KEYS = ['active', 'expired', 'kadaluarsaonprocess', 'kadaluarsa'];
+
     public function __construct(private LpkImportSupport $support)
     {
     }
@@ -54,11 +57,18 @@ class LpkFileImporter
         if ($request->boolean('dry_run')) {
             return $this->fileImportPreview($records, $errors, $warnings, $scopeLabel, $new, $updated);
         }
+
+        return $this->commitFileImport($request, $records, $errors, $new, $updated);
+    }
+
+    private function commitFileImport(Request $request, array $records, array $errors, int $new, int $updated): JsonResponse
+    {
         if (!$records) {
             return $this->support->emptyImportResponse($errors);
         }
 
         $this->persistFileImportRecords($records, $request->type);
+
         return $this->support->importResultResponse($records, $errors, $new, $updated);
     }
 
@@ -228,29 +238,37 @@ class LpkFileImporter
 
         $k = preg_replace('/[^a-z0-9]/', '', strtolower($raw));
 
-        if ($k === 'inactivewithdrawn') {
+        if ($k === 'activebeku' || ($k === 'active' && $suspensionText !== null)) {
+            return $this->resolveSuspendedFileStatus($k, $suspensionText);
+        }
+
+        return $this->resolveSimpleFileStatus($k, $raw);
+    }
+
+    /** Status yang dibaca sebagai Pembekuan (beserta peringatan bila datanya janggal). */
+    private function resolveSuspendedFileStatus(string $key, ?string $suspensionText): array
+    {
+        $result = $this->suspendedFrom($suspensionText);
+
+        if ($key === 'activebeku' && $suspensionText === null) {
+            $result['warning'] = 'Status "Active (beku)" tetapi Status Pembekuan kosong, jenis pembekuan belum ditentukan';
+        } elseif ($key === 'active') {
+            // STATUS masih Active, tetapi Status Pembekuan terisi: dibaca sebagai Pembekuan
+            $result['warning'] = 'STATUS "Active" tetapi Status Pembekuan terisi, dibaca sebagai Pembekuan';
+        }
+
+        return $result;
+    }
+
+    /** Status tanpa pembekuan: dicabut, aktif, atau tidak dikenali. */
+    private function resolveSimpleFileStatus(string $key, string $raw): array
+    {
+        if ($key === 'inactivewithdrawn') {
             return ['status' => 'revoked', 'suspension_scope' => null, 'suspension_status' => null];
         }
-
-        if ($k === 'activebeku') {
-            $result = $this->suspendedFrom($suspensionText);
-            if ($suspensionText === null) {
-                $result['warning'] = 'Status "Active (beku)" tetapi Status Pembekuan kosong, jenis pembekuan belum ditentukan';
-            }
-            return $result;
-        }
-
-        // STATUS masih Active, tetapi Status Pembekuan terisi: dibaca sebagai Pembekuan
-        if ($k === 'active' && $suspensionText !== null) {
-            $result = $this->suspendedFrom($suspensionText);
-            $result['warning'] = 'STATUS "Active" tetapi Status Pembekuan terisi, dibaca sebagai Pembekuan';
-            return $result;
-        }
-
-        if (in_array($k, ['active', 'expired', 'kadaluarsaonprocess', 'kadaluarsa'], true)) {
+        if (in_array($key, self::ACTIVE_STATUS_KEYS, true)) {
             return ['status' => 'active', 'suspension_scope' => null, 'suspension_status' => null];
         }
-
         return ['error' => "Nilai STATUS tidak dikenali: $raw"];
     }
 
