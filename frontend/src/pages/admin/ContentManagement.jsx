@@ -110,7 +110,7 @@ const allPages = sections.flatMap(s =>
 const SURVEY_BASE = 'survey-kepuasan-pelanggan';
 
 const surveyYearOf = (pageId) =>
-  pageId && pageId.startsWith(`${SURVEY_BASE}/`)
+  pageId?.startsWith(`${SURVEY_BASE}/`)
     ? pageId.slice(SURVEY_BASE.length + 1)
     : null;
 
@@ -218,7 +218,7 @@ const colorMap = {
 // Didaftarkan ke SUBCLASS (TableQuill), bukan ke Quill global, supaya
 // modul tabel ini tidak memengaruhi editor Quill lain di aplikasi
 // (mis. editor FAQ) yang tidak membutuhkan fitur tabel.
-class TableQuill extends Quill {}
+class TableQuill extends Quill { }
 TableQuill.register({ 'modules/table-better': QuillTableBetter }, true);
 
 const quillModules = {
@@ -430,8 +430,8 @@ const getActiveCat = (selectedId) => {
 
   if (r) return r.cat;
 
-  const m = selectedId && selectedId.match(/^layanan\/([^/]+)$/);
-
+  const m = selectedId?.match(/^layanan\/([^/]+)$/);
+  
   return m && SUB_CATS.some((c) => c.slug === m[1]) ? m[1] : null;
 };
 
@@ -542,7 +542,7 @@ const usePageContents = () => {
   }, []);
 
   useEffect(() => {
-    fetchContents();
+    void fetchContents();
   }, [fetchContents]);
 
   const getContent = (pageId) => dbContents.find((p) => p.page_id === pageId);
@@ -610,7 +610,7 @@ const QuillEditor = ({ value, onChange, placeholder }) => {
         trimEmptyTail(
           quill
             .getSemanticHTML()
-            .replace(/&nbsp;/g, ' ')
+            .replaceAll('&nbsp;', ' ')
         )
       );
     });
@@ -647,13 +647,11 @@ const PageStatusIcon = ({ filled, isSelected }) => {
 const PageButton = ({ page, filled, isSelected, onSelect, withChevron = false }) => (
   <button
     onClick={() => onSelect(page.id)}
-    className={`w-full flex items-center gap-3 px-3 rounded-xl text-left transition-all mb-1 ${
-      withChevron ? 'py-3 group' : 'py-2.5'
-    } ${
-      isSelected
+    className={`w-full flex items-center gap-3 px-3 rounded-xl text-left transition-all mb-1 ${withChevron ? 'py-3 group' : 'py-2.5'
+      } ${isSelected
         ? 'bg-primary-600 text-white shadow-md'
         : 'hover:bg-gray-50 text-gray-700'
-    }`}
+      }`}
   >
     <PageStatusIcon filled={filled} isSelected={isSelected} />
 
@@ -663,11 +661,10 @@ const PageButton = ({ page, filled, isSelected, onSelect, withChevron = false })
 
     {withChevron && (
       <FaChevronRight
-        className={`flex-shrink-0 text-xs transition-transform ${
-          isSelected
+        className={`flex-shrink-0 text-xs transition-transform ${isSelected
             ? 'text-white/60'
             : 'text-gray-300 group-hover:text-gray-400 group-hover:translate-x-0.5'
-        }`}
+          }`}
       />
     )}
   </button>
@@ -679,22 +676,20 @@ const SectionTab = ({ section, filledCount, isActive, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all ${
-        isActive
+      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all ${isActive
           ? `${c.active} border-l-4 font-bold`
           : 'text-gray-600 hover:bg-gray-50 border-l-4 border-transparent'
-      }`}
+        }`}
     >
       <span className="text-sm truncate">
         {section.label}
       </span>
 
       <span
-        className={`text-xs font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-          filledCount === section.pages.length
+        className={`text-xs font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${filledCount === section.pages.length
             ? 'bg-emerald-100 text-emerald-700'
             : 'bg-gray-100 text-gray-500'
-        }`}
+          }`}
       >
         {filledCount}/{section.pages.length}
       </span>
@@ -930,11 +925,10 @@ const SaveMessage = ({ msg }) => {
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${
-        isSuccess
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${isSuccess
           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
           : 'bg-red-50 text-red-700 border border-red-200'
-      }`}
+        }`}
     >
       {isSuccess ? <FaCheckCircle /> : <FaExclamationCircle />}
 
