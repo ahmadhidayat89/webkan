@@ -9,9 +9,25 @@ use App\Models\SurveyQuestion;
 use App\Models\SurveyResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SurveyController extends Controller
 {
+    /**
+     * FIX: pola SQL injection (lapisan tambahan; perlindungan utama tetap query
+     * berparameter Eloquent). Dipindah ke sini supaya tidak butuh file Rules.
+     */
+    private const SQLI_PATTERNS = [
+        '/[\'"]\s*(or|and)\s+\S+\s*=\s*\S+/i',
+        '/\b(or|and)\s+(\d+)\s*=\s*\2\b/i',
+        '/\bunion\s+(all\s+)?select\b/i',
+        '/\b(drop|truncate|alter)\s+table\b/i',
+        '/[\'"]\s*--/',
+        '/\bxp_cmdshell\b/i',
+        '/\bsleep\s*\(\s*\d+\s*\)/i',
+        '/\bbenchmark\s*\(/i',
+    ];
+
     /**
      * Display the specified public survey by code.
      */
@@ -76,6 +92,12 @@ class SurveyController extends Controller
         }
 
         $answers = $request->input('answers', []);
+
+        // "answers" harus array, kalau tidak, type hint array di bawah melempar error 500
+        if (!is_array($answers)) {
+            return response()->json(['success' => false, 'message' => 'Format jawaban tidak valid.'], 422);
+        }
+
         $validationResponse = $this->validateAnswers($survey, $answers);
         if ($validationResponse) {
             return $validationResponse;
@@ -114,21 +136,77 @@ class SurveyController extends Controller
 
     private function validateAnswer(SurveyQuestion $question, $answer, Survey $survey): ?string
     {
-        $error = null;
         if ($this->isEmptyAnswer($answer)) {
-            $error = $question->is_required ? 'Pertanyaan ini wajib diisi.' : null;
-        } else {
-            $rules = $question->validation ?? [];
-            if (in_array($question->type, ['short', 'para'], true) && is_string($answer)) {
-                $error = $this->validateTextAnswer($question, $answer, $rules);
-            } elseif ($question->type === 'check' && is_array($answer)) {
-                $error = $this->validateCheckAnswer($question, $answer, $rules);
-            } else {
-                $error = $this->validateOtherAnswer($question, $answer, $survey);
+            return $question->is_required ? 'Pertanyaan ini wajib diisi.' : null;
+        }
+
+        // Urutan pemeriksaan: bentuk data -> pola SQL injection -> aturan per tipe
+        return $this->validateShape($question, $answer)
+            ?? $this->validateInjection($question, $answer)
+            ?? $this->validateByType($question, $answer, $survey);
+    }
+
+    private function validateByType(SurveyQuestion $question, $answer, Survey $survey): ?string
+    {
+        $rules = $question->validation ?? [];
+
+        if (in_array($question->type, ['short', 'para'], true)) {
+            return $this->validateTextAnswer($question, $answer, $rules);
+        }
+        if ($question->type === 'check') {
+            return $this->validateCheckAnswer($question, $answer, $rules);
+        }
+
+        return $this->validateOtherAnswer($question, $answer, $survey);
+    }
+
+    /**
+     * Pastikan bentuk jawaban sesuai tipe. Sebelumnya jawaban teks berbentuk array
+     * bisa lolos tanpa pemeriksaan apa pun, lalu disimpan sebagai JSON.
+     */
+    private function validateShape(SurveyQuestion $question, $answer): ?string
+    {
+        $expectsArray = in_array($question->type, ['check', 'file'], true);
+        if ($expectsArray !== is_array($answer)) {
+            return 'Format jawaban tidak valid.';
+        }
+
+        if ($question->type === 'check' && array_filter($answer, fn ($item) => !is_string($item))) {
+            return 'Pilihan jawaban tidak valid.';
+        }
+
+        return null;
+    }
+
+    /**
+     * FIX: tolak jawaban teks (dan nama file) yang cocok dengan pola SQL injection.
+     * Pilihan ganda, dropdown, kotak centang, dan skala sudah dibatasi whitelist/angka.
+     */
+    private function validateInjection(SurveyQuestion $question, $answer): ?string
+    {
+        $value = match ($question->type) {
+            'short', 'para', 'email', 'phone' => $answer,
+            'file' => $answer['name'] ?? '',
+            default => null,
+        };
+
+        if (!is_string($value)) {
+            return null;
+        }
+
+        foreach (self::SQLI_PATTERNS as $pattern) {
+            if (preg_match($pattern, $value) === 1) {
+                // Isi jawaban sengaja tidak dicatat di log
+                Log::warning('Survey answer blocked by SQLi pattern filter', [
+                    'question_id' => $question->id,
+                    'pattern' => $pattern,
+                ]);
+
+                return 'Jawaban mengandung pola yang tidak diizinkan.';
             }
         }
 
-        return $error;
+        return null;
     }
 
     private function isEmptyAnswer($answer): bool
@@ -188,7 +266,10 @@ class SurveyController extends Controller
 
     private function isSurveyUpload($answer, Survey $survey): bool
     {
-        return is_array($answer) && !empty($answer['url']) && !empty($answer['name'])
+        // url dan name harus string (sebelumnya bisa array dan memicu error)
+        return is_array($answer)
+            && !empty($answer['url']) && is_string($answer['url'])
+            && !empty($answer['name']) && is_string($answer['name'])
             && str_starts_with($answer['url'], asset('storage/surveys/' . $survey->code . '/responses/'));
     }
 
