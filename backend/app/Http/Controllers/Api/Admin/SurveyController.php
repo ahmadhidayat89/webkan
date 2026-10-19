@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Survey;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyResponse;
+use App\Services\Survey\SurveyContentSanitizer;
+use App\Services\Survey\SurveyCsvExporter;
+use App\Services\Survey\SurveyResultsBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -13,7 +16,12 @@ use Illuminate\Validation\Rule;
 
 class SurveyController extends Controller
 {
-    private const DISPLAY_DATE_TIME_FORMAT = 'd/m/Y H:i';
+    public function __construct(
+        private SurveyContentSanitizer $sanitizer,
+        private SurveyResultsBuilder $results,
+        private SurveyCsvExporter $csvExporter,
+    ) {
+    }
 
     /**
      * Display a listing of surveys with statistics.
@@ -73,7 +81,7 @@ class SurveyController extends Controller
             $survey = Survey::create([
                 'code' => $code,
                 'title' => $validated['title'],
-                'description' => $this->sanitizeRichText($validated['description'] ?? null),
+                'description' => $this->sanitizer->sanitizeRichText($validated['description'] ?? null),
                 'is_published' => $validated['is_published'] ?? false,
                 'is_active' => $validated['is_active'] ?? true,
                 'created_by' => $request->user()?->id,
@@ -84,10 +92,10 @@ class SurveyController extends Controller
                     SurveyQuestion::create([
                         'survey_id' => $survey->id,
                         'order' => $index + 1,
-                        'text' => $this->cleanQuestionText($qData['text'], $index),
+                        'text' => $this->sanitizer->cleanQuestionText($qData['text'], $index),
                         'type' => $qData['type'],
                         'is_required' => $qData['is_required'] ?? false,
-                        'options' => $this->cleanOptions($qData['type'], $qData['options'] ?? []),
+                        'options' => $this->sanitizer->cleanOptions($qData['type'], $qData['options'] ?? []),
                         'image_url' => $qData['image_url'] ?? null,
                         'validation' => $qData['validation'] ?? null,
                     ]);
@@ -119,15 +127,11 @@ class SurveyController extends Controller
         $totalResponses = $responses->count();
         $lastResponse = $responses->first()?->created_at;
 
-        $scaleScores = [];
-        $questionsSummary = $survey->questions
-            ->map(fn ($question) => $this->questionSummary($question, $responses, $scaleScores))
-            ->all();
-
-        $averageScale = count($scaleScores) > 0 ? round(array_sum($scaleScores) / count($scaleScores), 1) : null;
+        $summary = $this->results->summarize($survey->questions, $responses);
+        $averageScale = $summary['average_scale'];
 
         // Prepare respondent rows for table display
-        $respondentRows = $responses->map(fn ($response) => $this->formatRespondent($response));
+        $respondentRows = $responses->map(fn ($response) => $this->results->formatRespondent($response));
 
         return response()->json([
             'success' => true,
@@ -137,88 +141,14 @@ class SurveyController extends Controller
                     'total_responses' => $totalResponses,
                     'average_scale' => $averageScale ? $averageScale . ' / 5' : '-',
                     'last_response_at' => $lastResponse ? $lastResponse->format('d/m/Y') : '-',
-                    'last_response_time' => $lastResponse ? $lastResponse->format(self::DISPLAY_DATE_TIME_FORMAT) : '-',
+                    'last_response_time' => $lastResponse
+                        ? $lastResponse->format(SurveyResultsBuilder::DISPLAY_DATE_TIME_FORMAT)
+                        : '-',
                 ],
-                'summary' => $questionsSummary,
+                'summary' => $summary['questions'],
                 'responses' => $respondentRows,
             ],
         ]);
-    }
-
-    private function questionSummary(SurveyQuestion $question, $responses, array &$scaleScores): array
-    {
-        $answers = $this->answersForQuestion($question, $responses);
-        $summary = [
-            'id' => $question->id,
-            'text' => $question->text,
-            'type' => $question->type,
-            'is_required' => $question->is_required,
-            'options' => $question->options ?? [],
-            'total_answers' => count($answers),
-        ];
-
-        if (in_array($question->type, ['choice', 'check', 'drop'], true)) {
-            $summary['counts'] = $this->choiceCounts($question->options ?? [], $answers);
-        } elseif ($question->type === 'scale') {
-            $summary['scale_counts'] = $this->scaleCounts($answers, $scaleScores);
-        } else {
-            $summary['sample_answers'] = array_slice($answers, 0, 10);
-        }
-
-        return $summary;
-    }
-
-    private function answersForQuestion(SurveyQuestion $question, $responses): array
-    {
-        $answers = [];
-        foreach ($responses as $response) {
-            $answer = $response->answers->firstWhere('question_id', $question->id);
-            if ($answer && $answer->answer_value !== null && $answer->answer_value !== '') {
-                $answers[] = $answer->answer_value;
-            }
-        }
-        return $answers;
-    }
-
-    private function choiceCounts(array $options, array $answers): array
-    {
-        $counts = array_fill_keys($options, 0);
-        foreach ($answers as $answer) {
-            $values = json_decode($answer, true);
-            foreach (is_array($values) ? $values : [$answer] as $value) {
-                $counts[$value] = ($counts[$value] ?? 0) + 1;
-            }
-        }
-        return $counts;
-    }
-
-    private function scaleCounts(array $answers, array &$scaleScores): array
-    {
-        $counts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
-        foreach ($answers as $answer) {
-            $score = (int) $answer;
-            if ($score >= 1 && $score <= 5) {
-                $counts[$score]++;
-                $scaleScores[] = $score;
-            }
-        }
-        return $counts;
-    }
-
-    private function formatRespondent(SurveyResponse $response): array
-    {
-        $answers = [];
-        foreach ($response->answers as $answer) {
-            $decoded = json_decode($answer->answer_value, true);
-            $answers[$answer->question_id] = is_array($decoded) ? implode('; ', $decoded) : $answer->answer_value;
-        }
-
-        return [
-            'id' => $response->id,
-            'created_at' => $response->created_at->format('Y-m-d H:i:s'),
-            'created_at_human' => $response->created_at->format(self::DISPLAY_DATE_TIME_FORMAT),
-            'answers' => $answers,
-        ];
     }
 
     /**
@@ -262,7 +192,7 @@ class SurveyController extends Controller
         return DB::transaction(function () use ($validated, $survey) {
             $survey->update([
                 'title' => $validated['title'],
-                'description' => $this->sanitizeRichText($validated['description'] ?? null),
+                'description' => $this->sanitizer->sanitizeRichText($validated['description'] ?? null),
                 'is_published' => $validated['is_published'] ?? $survey->is_published,
                 'is_active' => $validated['is_active'] ?? $survey->is_active,
             ]);
@@ -277,10 +207,10 @@ class SurveyController extends Controller
 
                     $question->fill([
                         'order' => $index + 1,
-                        'text' => $this->cleanQuestionText($qData['text'], $index),
+                        'text' => $this->sanitizer->cleanQuestionText($qData['text'], $index),
                         'type' => $qData['type'],
                         'is_required' => $qData['is_required'] ?? false,
-                        'options' => $this->cleanOptions($qData['type'], $qData['options'] ?? []),
+                        'options' => $this->sanitizer->cleanOptions($qData['type'], $qData['options'] ?? []),
                         'image_url' => $qData['image_url'] ?? null,
                         'validation' => $qData['validation'] ?? null,
                     ]);
@@ -379,40 +309,9 @@ class SurveyController extends Controller
             'Content-Disposition' => 'attachment; filename="hasil-kuesioner-' . $survey->code . '.csv"',
         ];
 
-        $callback = fn () => $this->writeSurveyCsv($survey, $responses);
+        $callback = fn () => $this->csvExporter->write($survey, $responses);
 
         return response()->stream($callback, 200, $headers);
-    }
-
-    private function writeSurveyCsv(Survey $survey, $responses): void
-    {
-        $file = fopen('php://output', 'w');
-        fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-        fputcsv($file, $this->surveyCsvHeaders($survey));
-        foreach ($responses as $index => $response) {
-            fputcsv($file, $this->surveyCsvResponseRow($response, $survey->questions, $index));
-        }
-        fclose($file);
-    }
-
-    private function surveyCsvHeaders(Survey $survey): array
-    {
-        $headers = ['#', 'Waktu Pengisian'];
-        foreach ($survey->questions as $question) {
-            $headers[] = trim(html_entity_decode(strip_tags($question->text)));
-        }
-        return $headers;
-    }
-
-    private function surveyCsvResponseRow(SurveyResponse $response, $questions, int $index): array
-    {
-        $row = [$index + 1, $response->created_at->format(self::DISPLAY_DATE_TIME_FORMAT)];
-        foreach ($questions as $question) {
-            $value = $response->answers->firstWhere('question_id', $question->id)?->answer_value;
-            $decoded = $value !== null ? json_decode($value, true) : null;
-            $row[] = is_array($decoded) ? implode('; ', $decoded) : ($value ?? '');
-        }
-        return $row;
     }
 
     /**
@@ -426,83 +325,4 @@ class SurveyController extends Controller
 
         return $code;
     }
-
-    /**
-     * Skala 1–5 selalu menyimpan tepat 5 label (boleh kosong, maks 100 karakter).
-     * Jika semua kosong, pakai label bawaan. Tipe lain dikembalikan apa adanya.
-     */
-    private function cleanOptions(string $type, array $options): array
-    {
-        if ($type !== 'scale') {
-            return $options;
-        }
-
-        $labels = [];
-        for ($i = 0; $i < 5; $i++) {
-            $label = trim(strip_tags((string) ($options[$i] ?? '')));
-            $labels[] = mb_substr($label, 0, 100);
-        }
-
-        if (count(array_filter($labels, fn ($l) => $l !== '')) === 0) {
-            return ['Sangat Tidak Baik', 'Tidak Baik', 'Cukup', 'Baik', 'Sangat Baik'];
-        }
-
-        return $labels;
-    }
-
-    /**
-     * Bersihkan teks pertanyaan (rich text). Jika kosong, pakai teks default.
-     */
-    private function cleanQuestionText(?string $html, int $index): string
-    {
-        $clean = $this->sanitizeRichText($html);
-
-        if (trim(html_entity_decode(strip_tags($clean))) === '') {
-            return 'Pertanyaan ' . ($index + 1);
-        }
-
-        return $clean;
-    }
-
-    /**
-     * Sanitasi HTML sederhana: hanya tag p, br, strong, em, u, a.
-     * Semua atribut dibuang kecuali href (hanya http/https/mailto) pada <a>.
-     */
-    private function sanitizeRichText(?string $html): string
-    {
-        $html = html_entity_decode((string) $html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $html = $this->normalizeRichTextLists($html);
-        $html = strip_tags($html, '<p><br><strong><em><u><a><ul><ol><li>');
-
-        return preg_replace_callback('/<(\/?)([a-z0-9]+)([^>]*)>/i', fn ($match) => $this->sanitizeRichTextTag($match), $html);
-    }
-
-    private function normalizeRichTextLists(string $html): string
-    {
-        return preg_replace_callback('/<ol\b[^>]*>(.*?)<\/ol>/is', function ($match) {
-            $isBulletList = preg_match('/<li\b[^>]*data-list=["\']bullet["\']/i', $match[1]) === 1;
-            $inner = preg_replace('/<li\b[^>]*data-list=["\'](?:bullet|ordered)["\'][^>]*>/', '<li>', $match[1]);
-            $inner = preg_replace('/<span\b[^>]*class=["\'][^"\']*ql-ui[^"\']*["\'][^>]*><\/span>/i', '', $inner);
-            $tag = $isBulletList ? 'ul' : 'ol';
-            return '<' . $tag . '>' . $inner . '</' . $tag . '>';
-        }, $html);
-    }
-
-    private function sanitizeRichTextTag(array $match): string
-    {
-        [, $closing, $tag, $attributes] = $match;
-        $tag = strtolower($tag);
-        $result = "<$tag>";
-        if ($closing) {
-            $result = "</$tag>";
-        } elseif ($tag === 'a' && preg_match('/href\s*=\s*(?:"([^"]*)"|\'([^\']*)\')/i', $attributes, $hrefMatch)) {
-            $rawHref = $hrefMatch[1] !== '' ? $hrefMatch[1] : ($hrefMatch[2] ?? '');
-            $href = trim(html_entity_decode($rawHref));
-            if (preg_match('#^(https?://|mailto:)#i', $href)) {
-                $result = '<a href="' . e($href) . '" target="_blank" rel="noopener noreferrer">';
-            }
-        }
-        return $result;
-    }
-
 }
