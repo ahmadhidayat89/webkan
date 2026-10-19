@@ -5,10 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Discussion;
 use App\Models\Lesson;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class DiscussionController extends Controller
 {
+    private const SQLI_PATTERNS = [
+        '/[\'"]\s*(or|and)\s+\S+\s*=\s*\S+/i',
+        '/\b(or|and)\s+(\d+)\s*=\s*\2\b/i',
+        '/\bunion\s+(all\s+)?select\b/i',
+        '/\b(drop|truncate|alter)\s+table\b/i',
+        '/[\'"]\s*--/',
+        '/\bxp_cmdshell\b/i',
+        '/\bsleep\s*\(\s*\d+\s*\)/i',
+        '/\bbenchmark\s*\(/i',
+    ];
+
     /**
      * Ambil semua pesan diskusi untuk lesson tertentu (JSON).
      */
@@ -35,6 +47,17 @@ class DiscussionController extends Controller
 
         if (!$request->filled('message') && !$request->hasFile('file')) {
             return response()->json(['error' => 'Pesan atau file harus diisi.'], 422);
+        }
+
+        if ($request->filled('message') && $this->looksLikeSqli($request->input('message'))) {
+            Log::warning('Discussion message blocked by SQLi filter', [
+                'user_id'   => $request->user()?->id,
+                'lesson_id' => $lesson->id,
+            ]);
+
+            return response()->json([
+                'error' => 'Jawaban mengandung pola yang tidak diizinkan.',
+            ], 422);
         }
 
         $filePath = $fileName = $fileType = $fileSize = null;
@@ -80,6 +103,16 @@ class DiscussionController extends Controller
         $discussion->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    private function looksLikeSqli(string $value): bool
+    {
+        foreach (self::SQLI_PATTERNS as $pattern) {
+            if (preg_match($pattern, $value)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function formatMessage(Discussion $d): array
