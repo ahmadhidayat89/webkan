@@ -57,6 +57,11 @@ class LpkManualImporter
         $existing = $this->support->existingRecords($records);
         $records = $this->excludeRevokedRecords($records, $group, $existing, $errors);
 
+        return $this->finishImport($request, $records, $errors, $existing, $choice, $group);
+    }
+
+    private function finishImport(Request $request, array $records, array $errors, array $existing, string $choice, string $group): JsonResponse
+    {
         $new     = count(array_filter($records, fn($r) => !isset($existing[$r['certificate_number']])));
         $updated = count($records) - $new;
 
