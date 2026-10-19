@@ -9,16 +9,30 @@ use Illuminate\Http\Request;
 class SettingController extends Controller
 {
     /**
-     * Get all settings.
+     * Hanya group ini yang boleh dibaca publik.
+     * Group baru (misalnya untuk email/SMTP) tidak akan ikut terbuka
+     * kecuali sengaja ditambahkan di sini.
+     */
+    private const PUBLIC_GROUPS = ['about', 'contact', 'general', 'social'];
+
+    /**
+     * Key di dalam group publik yang tetap disembunyikan.
+     */
+    private const HIDDEN_KEYS = ['contact_inbox_email'];
+
+    /**
+     * Get all public settings.
      */
     public function index(Request $request)
     {
-        $lang = $request->get('lang', 'id');
-        $group = $request->get('group');
+        $lang = $request->query('lang', 'id');
+        $group = $request->query('group');
 
-        $query = Setting::query();
+        $query = Setting::query()
+            ->whereIn('group', self::PUBLIC_GROUPS)
+            ->whereNotIn('key', self::HIDDEN_KEYS);
 
-        if ($group) {
+        if (is_string($group) && $group !== '') {
             $query->where('group', $group);
         }
 
@@ -41,12 +55,18 @@ class SettingController extends Controller
     }
 
     /**
-     * Get setting by key.
+     * Get a public setting by key.
      */
     public function show(Request $request, $key)
     {
-        $lang = $request->get('lang', 'id');
-        $value = Setting::get($key, $lang);
+        $lang = $request->query('lang', 'id');
+
+        $isPublic = !in_array($key, self::HIDDEN_KEYS, true)
+            && Setting::where('key', $key)
+                ->whereIn('group', self::PUBLIC_GROUPS)
+                ->exists();
+
+        $value = $isPublic ? Setting::get($key, $lang) : null;
 
         if ($value === null) {
             return response()->json([

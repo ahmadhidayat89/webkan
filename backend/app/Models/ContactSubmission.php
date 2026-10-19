@@ -12,7 +12,6 @@ class ContactSubmission extends Model
         'phone',
         'subject',
         'message',
-        'read_at',
     ];
 
     protected $casts = [

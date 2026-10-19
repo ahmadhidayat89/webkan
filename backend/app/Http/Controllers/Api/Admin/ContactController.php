@@ -17,19 +17,24 @@ class ContactController extends Controller
     public function submit(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'subject' => 'required|string|max:255',
-            'message' => 'required|string|max:5000',
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:255', 'regex:/^[^\s?&=]+@[^\s?&=]+$/'],
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]*$/'],
+            'subject' => ['required', 'string', 'max:200'],
+            'message' => ['required', 'string', 'max:5000'],
         ]);
 
+        // Buang baris baru dari field yang dipakai di header email
+        foreach (['name', 'subject'] as $field) {
+            $validated[$field] = trim(preg_replace('/[\r\n]+/', ' ', $validated[$field]));
+        }
+
+        // Pesan disimpan dulu, supaya tidak hilang walau email gagal
         ContactSubmission::create($validated);
 
         try {
-            // Send email notification to admin
-            $adminEmail = Setting::get('contact_inbox_email') ?: env('MAIL_TO_ADDRESS', 'info@kan.go.id');
-            
+            $adminEmail = Setting::get('contact_inbox_email') ?: config('mail.to_address');
+
             Mail::send('emails.contact', [
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -39,59 +44,20 @@ class ContactController extends Controller
                 'submittedAt' => now()->format('d F Y, H:i'),
             ], function ($message) use ($validated, $adminEmail) {
                 $message->to($adminEmail)
-                        ->subject('New Contact Form Submission: ' . $validated['subject'])
-                        ->from(config('mail.from.address'), config('mail.from.name'))
-                        ->replyTo($validated['email'], $validated['name']);
+                    ->subject('New Contact Form Submission: ' . $validated['subject'])
+                    ->from(config('mail.from.address'), config('mail.from.name'))
+                    ->replyTo($validated['email'], $validated['name']);
             });
-
-            // Optional: Store in database for records
-            // ContactSubmission::create($validated);
-
-            // Log the submission
-            Log::info('Contact form submitted', [
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'subject' => $validated['subject'],
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Your message has been sent successfully. We will get back to you soon!',
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Contact form submission failed', [
+        } catch (\Throwable $e) {
+            // Email gagal tidak membatalkan pesan yang sudah tersimpan
+            Log::error('Contact notification email failed', [
                 'error' => $e->getMessage(),
             ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send message. Please try again later or contact us directly.',
-            ], 500);
         }
-    }
 
-    /**
-     * Test email configuration
-     */
-    public function testEmail()
-    {
-        try {
-            Mail::raw('This is a test email from KAN website.', function ($message) {
-                $message->to(env('MAIL_TO_ADDRESS', 'info@kan.go.id'))
-                        ->subject('KAN Website - Test Email')
-                        ->from(config('mail.from.address'), config('mail.from.name'));
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Test email sent successfully!',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send test email: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Your message has been sent successfully. We will get back to you soon!',
+        ]);
     }
 }
