@@ -47,10 +47,12 @@ Route::prefix('v1')->group(function () {
     Route::get('/settings/{key}', [SettingController::class, 'show']);
 
     // Auth
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1');
 
     // Contact Form
-    Route::post('/contact', [ContactController::class, 'submit']);
+    Route::post('/contact', [ContactController::class, 'submit'])
+        ->middleware('throttle:5,15');
 
     // FAQ (public)
     Route::get('/faqs', [FaqController::class, 'index']);
@@ -65,7 +67,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/pages/{slug}', [CustomPageController::class, 'show']);
 
     // Auto-translate plain UI text for EN toggle
-    Route::post('/translate/texts', [TranslateController::class, 'texts']);
+    Route::post('/translate/texts', [TranslateController::class, 'texts'])
+        ->middleware('throttle:30,1');
 
     // News (public)
     Route::get('/news', [PublicNewsController::class, 'index']);
@@ -93,9 +96,11 @@ Route::prefix('v1')->group(function () {
 
     // Surveys (public)
     Route::get('/surveys/{code}', [PublicSurveyController::class, 'show']);
-    Route::post('/surveys/{code}/upload', [PublicSurveyController::class, 'upload']);
-    Route::post('/surveys/{code}/submit', [PublicSurveyController::class, 'submit']);
-
+    Route::post('/surveys/{code}/upload', [PublicSurveyController::class, 'upload'])
+        ->middleware('throttle:10,1');
+    Route::post('/surveys/{code}/submit', [PublicSurveyController::class, 'submit'])
+        ->middleware('throttle:10,1');
+        
     // Sitemap & Robots
     Route::get('/sitemap.xml', [SitemapController::class, 'index']);
     Route::get('/robots.txt', [SitemapController::class, 'robots']);
