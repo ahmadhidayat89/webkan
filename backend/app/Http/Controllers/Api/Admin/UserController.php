@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
@@ -32,7 +33,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
             'role' => ['required', Rule::in($this->assignableRoles($request))],
-            'password' => 'required|string|min:8|max:128',
+            'password' => ['required', 'string', 'max:128', Password::min(8)->letters()->mixedCase()->numbers()],
         ]);
 
         $user = User::create([
@@ -60,7 +61,7 @@ class UserController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['sometimes', 'required', Rule::in($assignableRoles)],
-            'password' => 'sometimes|required|string|min:8|max:128',
+            'password' => ['sometimes', 'required', 'string', 'max:128', Password::min(8)->letters()->mixedCase()->numbers()],
         ]);
 
         if ($actor->is($user) && isset($validated['role']) && $validated['role'] !== $user->role) {
