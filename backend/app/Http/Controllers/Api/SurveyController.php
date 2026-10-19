@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\Log;
 class SurveyController extends Controller
 {
     /**
-     * FIX: pola SQL injection (lapisan tambahan; perlindungan utama tetap query
-     * berparameter Eloquent). Dipindah ke sini supaya tidak butuh file Rules.
+     * Pola SQL injection (lapisan tambahan; perlindungan utama tetap query
+     * berparameter Eloquent).
      */
     private const SQLI_PATTERNS = [
         '/[\'"]\s*(or|and)\s+\S+\s*=\s*\S+/i',
@@ -79,6 +79,7 @@ class SurveyController extends Controller
     /**
      * Submit responses to the public survey.
      */
+    // FIX: submit hanya punya 2 return; pemeriksaan awal dipindah ke preflightResponse
     public function submit(Request $request, $code)
     {
         $survey = Survey::with('questions')
@@ -86,24 +87,33 @@ class SurveyController extends Controller
             ->where('is_published', true)
             ->first();
 
+        $answers = $request->input('answers', []);
+
+        $error = $this->preflightResponse($survey, $answers);
+        if ($error) {
+            return $error;
+        }
+
+        return $this->storeAnswers($survey, $answers, $request);
+    }
+
+    /**
+     * Semua pemeriksaan sebelum menyimpan: kuesioner tersedia, bentuk "answers" benar,
+     * dan setiap jawaban valid. Mengembalikan respons error, atau null kalau lolos.
+     */
+    private function preflightResponse(?Survey $survey, $answers)
+    {
         $unavailable = $this->unavailableResponse($survey);
         if ($unavailable) {
             return $unavailable;
         }
-
-        $answers = $request->input('answers', []);
 
         // "answers" harus array, kalau tidak, type hint array di bawah melempar error 500
         if (!is_array($answers)) {
             return response()->json(['success' => false, 'message' => 'Format jawaban tidak valid.'], 422);
         }
 
-        $validationResponse = $this->validateAnswers($survey, $answers);
-        if ($validationResponse) {
-            return $validationResponse;
-        }
-
-        return $this->storeAnswers($survey, $answers, $request);
+        return $this->validateAnswers($survey, $answers);
     }
 
     /**
@@ -179,7 +189,7 @@ class SurveyController extends Controller
     }
 
     /**
-     * FIX: tolak jawaban teks (dan nama file) yang cocok dengan pola SQL injection.
+     * Tolak jawaban teks (dan nama file) yang cocok dengan pola SQL injection.
      * Pilihan ganda, dropdown, kotak centang, dan skala sudah dibatasi whitelist/angka.
      */
     private function validateInjection(SurveyQuestion $question, $answer): ?string
