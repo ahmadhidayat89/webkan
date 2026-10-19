@@ -15,14 +15,35 @@ class ContactController extends Controller
      * Handle contact form submission
      */
     public function submit(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:255', 'regex:/^[^\s?&=]+@[^\s?&=]+$/'],
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]*$/'],
-            'subject' => ['required', 'string', 'max:200'],
-            'message' => ['required', 'string', 'max:5000'],
-        ]);
+{
+    // 1. DEFINISIKAN dulu
+    $noSqli = function (string $attribute, mixed $value, \Closure $fail) {
+        $patterns = [
+            '/[\'"]\s*(or|and)\s+\S+\s*=\s*\S+/i',
+            '/\b(or|and)\s+(\d+)\s*=\s*\2\b/i',
+            '/\bunion\s+(all\s+)?select\b/i',
+            '/\b(drop|truncate|alter)\s+table\b/i',
+            '/[\'"]\s*--/',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $value)) {
+                $fail('Isi :attribute mengandung pola yang tidak diizinkan.');
+                return;
+            }
+        }
+    };
+
+    // 2. BARU dipakai di validasi
+    $validated = $request->validate([
+        'name' => ['required', 'string', 'max:100'],
+        'email' => ['required', 'email', 'max:255', 'regex:/^[^\s?&=]+@[^\s?&=]+$/'],
+        'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]*$/'],
+        'subject' => ['required', 'string', 'max:200', $noSqli],
+        'message' => ['required', 'string', 'max:5000', $noSqli],
+    ]);
+
+    // ... sisanya (foreach, ContactSubmission::create, Mail) tetap
 
         // Buang baris baru dari field yang dipakai di header email
         foreach (['name', 'subject'] as $field) {
