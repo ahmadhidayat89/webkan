@@ -15,35 +15,38 @@ class ContactController extends Controller
      * Handle contact form submission
      */
     public function submit(Request $request)
-{
-    // 1. DEFINISIKAN dulu
-    $noSqli = function (string $attribute, mixed $value, \Closure $fail) {
-        $patterns = [
-            '/[\'"]\s*(or|and)\s+\S+\s*=\s*\S+/i',
-            '/\b(or|and)\s+(\d+)\s*=\s*\2\b/i',
-            '/\bunion\s+(all\s+)?select\b/i',
-            '/\b(drop|truncate|alter)\s+table\b/i',
-            '/[\'"]\s*--/',
-        ];
+    {
+        $noSqli = function (string $attribute, mixed $value, \Closure $fail) {
+            $patterns = [
+                '/[\'"]\s*(or|and)\s+\S+\s*=\s*\S+/i',
+                '/\b(or|and)\s+(\d+)\s*=\s*\2\b/i',
+                '/\bunion\s+(all\s+)?select\b/i',
+                '/\b(drop|truncate|alter)\s+table\b/i',
+                '/[\'"]\s*--/',
+                '/\bxp_cmdshell\b/i',
+                '/\bsleep\s*\(\s*\d+\s*\)/i',
+                '/\bbenchmark\s*\(/i',
+            ];
 
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $value)) {
-                $fail('Isi :attribute mengandung pola yang tidak diizinkan.');
-                return;
+            foreach ($patterns as $pattern) {
+                if (preg_match($pattern, $value)) {
+                    Log::warning('Contact form blocked by SQLi filter', [
+                        'field' => $attribute,
+                        'pattern' => $pattern,
+                    ]);
+                    $fail('Isi :attribute mengandung pola yang tidak diizinkan.');
+                    return;
+                }
             }
-        }
-    };
+        };
 
-    // 2. BARU dipakai di validasi
-    $validated = $request->validate([
-        'name' => ['required', 'string', 'max:100'],
-        'email' => ['required', 'email', 'max:255', 'regex:/^[^\s?&=]+@[^\s?&=]+$/'],
-        'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]*$/'],
-        'subject' => ['required', 'string', 'max:200', $noSqli],
-        'message' => ['required', 'string', 'max:5000', $noSqli],
-    ]);
-
-    // ... sisanya (foreach, ContactSubmission::create, Mail) tetap
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:255', 'regex:/^[^\s?&=]+@[^\s?&=]+$/'],
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]*$/'],
+            'subject' => ['required', 'string', 'max:200', $noSqli],
+            'message' => ['required', 'string', 'max:5000', $noSqli],
+        ]);
 
         // Buang baris baru dari field yang dipakai di header email
         foreach (['name', 'subject'] as $field) {
@@ -65,12 +68,11 @@ class ContactController extends Controller
                 'submittedAt' => now()->format('d F Y, H:i'),
             ], function ($message) use ($validated, $adminEmail) {
                 $message->to($adminEmail)
-                    ->subject('New Contact Form Submission: ' . $validated['subject'])
-                    ->from(config('mail.from.address'), config('mail.from.name'))
-                    ->replyTo($validated['email'], $validated['name']);
+                        ->subject('New Contact Form Submission: ' . $validated['subject'])
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                        ->replyTo($validated['email'], $validated['name']);
             });
         } catch (\Throwable $e) {
-            // Email gagal tidak membatalkan pesan yang sudah tersimpan
             Log::error('Contact notification email failed', [
                 'error' => $e->getMessage(),
             ]);
