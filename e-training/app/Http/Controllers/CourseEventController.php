@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CourseEvent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class CourseEventController extends Controller
 {
@@ -74,7 +75,15 @@ class CourseEventController extends Controller
             ];
         });
 
-        return $quizzes->concat($zooms)->sortBy('start_datetime')->values()->take(5);
+        // Deadline Events dari Batas Penyelesaian Kursus
+        $courseDeadlines = $this->courseDeadlineEvents($user, $enrolledCourseIds, null, null, true);
+
+        return $quizzes
+            ->concat($zooms)
+            ->concat($courseDeadlines)
+            ->sortBy('start_datetime')
+            ->values()
+            ->take(5);
     }
 
     /**
@@ -91,6 +100,9 @@ class CourseEventController extends Controller
 
         $quizzesQuery = \App\Models\Quiz::with('lesson.module.course')->whereNotNull('deadline_at');
         $zoomQuery = \App\Models\Lesson::with('module.course')->where('type', 'zoom')->whereNotNull('start_datetime');
+
+        $month = null;
+        $year = null;
 
         // Filter berdasarkan bulan jika parameter diberikan
         if ($request->has('month') && $request->has('year')) {
@@ -143,6 +155,51 @@ class CourseEventController extends Controller
             ];
         });
 
-        return $quizzes->concat($zooms)->sortBy('start_datetime')->values();
+        // Deadline Events dari Batas Penyelesaian Kursus (titik merah)
+        $courseDeadlines = $this->courseDeadlineEvents($user, $enrolledCourseIds, $month, $year);
+
+        return $quizzes
+            ->concat($zooms)
+            ->concat($courseDeadlines)
+            ->sortBy('start_datetime')
+            ->values();
+    }
+
+    /**
+     * Event "deadline" dari kolom courses.deadline_at (Batas Penyelesaian Kursus).
+     * Peserta hanya melihat kursus published yang diikutinya; admin melihat semua.
+     */
+    private function courseDeadlineEvents($user, array $enrolledCourseIds, ?int $month = null, ?int $year = null, bool $onlyFuture = false)
+    {
+        $query = \App\Models\Course::whereNotNull('deadline_at');
+
+        if ($onlyFuture) {
+            $query->where('deadline_at', '>=', now());
+        }
+
+        if ($month && $year) {
+            $query->whereMonth('deadline_at', $month)->whereYear('deadline_at', $year);
+        }
+
+        if ($user && $user->role === 'peserta') {
+            $query->where('status', 'published')->whereIn('id', $enrolledCourseIds);
+        }
+
+        return $query->get()->map(function ($course) {
+            $deadline = Carbon::parse($course->deadline_at);
+            return [
+                'id' => 'c_' . $course->id,
+                'title' => 'Batas Penyelesaian: ' . $course->title,
+                'description' => 'Batas akhir penyelesaian kursus.',
+                'start_datetime' => $deadline->toISOString(),
+                'end_datetime' => null,
+                'event_type' => 'deadline',
+                'course_title' => $course->title ?? '',
+                'course_slug' => $course->slug ?? '',
+                'course_id' => $course->id,
+                'lesson_id' => null,
+                'date' => $deadline->format('Y-m-d'),
+            ];
+        });
     }
 }
