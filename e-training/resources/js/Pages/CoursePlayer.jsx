@@ -270,7 +270,6 @@ function PdfContent({ lesson }) {
     );
 }
 
-
 // Format sisa waktu: 75 -> "01:15", 3725 -> "1:02:05"
 function formatTime(totalSeconds) {
     const h = Math.floor(totalSeconds / 3600);
@@ -281,287 +280,227 @@ function formatTime(totalSeconds) {
     return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
-    const quiz = lesson.quiz;
-    const [currentQuestion, setCurrentQuestion] = useState(0);
-    const [answers, setAnswers] = useState({});
-    const [submitted, setSubmitted] = useState(false);
-    const [started, setStarted] = useState(false);
-    const [processing, setProcessing] = useState(false);
-    // Hasil attempt yang baru saja dikirim, diambil langsung dari respons server (lihat onSuccess)
-    const [result, setResult] = useState(null);
+// ───────────────────────────────────────────────────────────────────────────
+// Helper murni (tanpa state React), dipisah dari handleSubmit supaya
+// logikanya gampang dibaca dan dites terpisah.
+// ───────────────────────────────────────────────────────────────────────────
 
-    // Hitung mundur: yang disimpan adalah batas waktu (timestamp), bukan sisa detik,
-    // supaya tetap akurat walaupun tab di background atau timer browser ditahan.
-    const [deadline, setDeadline] = useState(null);
+function buildAnswerPayload(quiz, answers) {
+    const payload = {};
+    quiz.questions.forEach((q) => {
+        payload[q.id] = answers[q.id] ?? null;
+    });
+    return payload;
+}
+
+// Percobaan terbaru = id terbesar (tidak bergantung urutan array dari backend)
+function pickLatestAttempt(attempts) {
+    return attempts.reduce((best, a) => (!best || a.id > best.id ? a : best), null);
+}
+
+// Ambil daftar attempt terbaru dari props Inertia yang baru diterima setelah submit,
+// supaya tidak bergantung pada kapan React selesai re-render (tidak bisa basi).
+function findFreshAttempts(page, lessonId) {
+    const freshLesson = page?.props?.courseData?.modules
+        ?.flatMap((m) => m.lessons)
+        ?.find((l) => l.id === lessonId);
+    return freshLesson?.quiz?.attempts || [];
+}
+
+function preventCheat(e) {
+    e.preventDefault();
+    alert('⚠️ PERINGATAN ⚠️\n\nAksi klik-kanan dan salin-tempel (copy-paste) dinonaktifkan selama kuis berlangsung.');
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Custom hooks, memisahkan efek samping (timer & anti-nyontek) dari
+// render logic supaya tidak menumpuk kompleksitas di satu komponen.
+// ───────────────────────────────────────────────────────────────────────────
+
+// Hitung mundur: disimpan sebagai batas waktu (timestamp), bukan sisa detik,
+// supaya tetap akurat walau tab di background. Memanggil submitRef.current(true)
+// sekali saat waktu benar-benar habis.
+function useQuizCountdown(deadline, active, submitRef) {
     const [timeLeft, setTimeLeft] = useState(null);
-    const [autoSubmitted, setAutoSubmitted] = useState(false);
-    const submitRef = useRef(null); // selalu menunjuk handleSubmit terbaru
-    const autoSubmitFiredRef = useRef(false);
+    const firedRef = useRef(false);
 
     useEffect(() => {
-        if (!started || submitted || deadline === null) return;
+        if (!active || deadline === null) return undefined;
+
+        firedRef.current = false;
 
         const tick = () => {
             const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
             setTimeLeft(remaining);
 
-            if (remaining <= 0 && !autoSubmitFiredRef.current) {
-                autoSubmitFiredRef.current = true;
-                submitRef.current?.(true); // waktu habis: kirim otomatis
+            if (remaining <= 0 && !firedRef.current) {
+                firedRef.current = true;
+                submitRef.current?.(true);
             }
         };
 
         tick();
         const id = setInterval(tick, 1000);
         return () => clearInterval(id);
-    }, [started, submitted, deadline]);
+    }, [active, deadline, submitRef]);
 
-    // Fitur Anti-Nyontek: Deteksi pindah tab
+    return timeLeft;
+}
+
+// Fitur Anti-Nyontek: peringatan saat peserta pindah tab/aplikasi selama kuis aktif.
+function useTabSwitchWarning(active) {
     useEffect(() => {
-        if (!started || submitted) return;
+        if (!active) return undefined;
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'hidden') {
-                alert("⚠️ PERINGATAN SISTEM ⚠️\n\nSistem mendeteksi Anda meninggalkan halaman ujian (pindah tab/aplikasi). Mohon jaga integritas akademik dengan tidak mencari referensi dari luar selama kuis berlangsung.");
+                alert('⚠️ PERINGATAN SISTEM ⚠️\n\nSistem mendeteksi Anda meninggalkan halaman ujian (pindah tab/aplikasi). Mohon jaga integritas akademik dengan tidak mencari referensi dari luar selama kuis berlangsung.');
             }
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, [started, submitted]);
+    }, [active]);
+}
 
-    // Fitur Anti-Nyontek: Blokir Copy Paste & Klik Kanan
-    const handlePreventCheat = (e) => {
-        e.preventDefault();
-        alert("⚠️ PERINGATAN ⚠️\n\nAksi klik-kanan dan salin-tempel (copy-paste) dinonaktifkan selama kuis berlangsung.");
-    };
+// ───────────────────────────────────────────────────────────────────────────
+// Sub-komponen kuis: masing-masing menangani satu "layar", supaya QuizContent
+// tidak lagi memuat semua kondisi render sekaligus.
+// ───────────────────────────────────────────────────────────────────────────
 
-    if (!quiz || !quiz.questions || quiz.questions.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center h-64 text-center text-gray-500">
-                <AlertCircle className="w-12 h-12 mb-4 text-gray-300" />
-                <h2 className="text-lg font-bold text-gray-700">Kuis Belum Tersedia</h2>
-                <p className="mt-1 text-sm">Belum ada pertanyaan yang dibuat untuk kuis ini.</p>
-            </div>
-        );
-    }
+function QuizIntro({ lesson, quiz, attempts, isExpired, limitReached, onStart }) {
+    return (
+        <div className="max-w-2xl mx-auto animate-fade-in">
+            <div className="p-8 text-center border border-gray-200 shadow-sm card">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full">
+                    <HelpCircle className="w-8 h-8 text-purple-600" />
+                </div>
+                <h2 className="mb-2 text-xl font-bold text-gray-900">{lesson.title}</h2>
+                <div className="flex justify-center gap-6 mb-6 text-sm text-gray-600">
+                    <span className="flex items-center gap-1.5"><FileText className="w-4 h-4" /> {quiz.questions.length} Soal</span>
+                    <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {quiz.duration_minutes ? `${quiz.duration_minutes} Menit` : 'Tanpa Batas'}</span>
+                    <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> Min. {quiz.passing_score}</span>
+                </div>
 
-    const question = quiz.questions[currentQuestion];
-    const totalQuestions = quiz.questions.length;
-    const allAnswered = quiz.questions.every(q => answers[q.id] !== undefined && answers[q.id] !== '');
-    const attempts = quiz.attempts || [];
-
-    const handleAnswer = (value) => {
-        if (submitted || processing) return;
-        setAnswers({ ...answers, [question.id]: value });
-    };
-
-    const handleSubmit = (auto = false) => {
-        // onClick mengirim event sebagai argumen, jadi hanya nilai `true` yang dianggap otomatis
-        const isAuto = auto === true;
-
-        if (processing) return;
-        if (!isAuto && !allAnswered && timeLeft !== 0) return;
-
-        if (isAuto) setAutoSubmitted(true);
-        setProcessing(true);
-
-        // Kirim semua soal; yang belum dijawab dikirim null (penting saat waktu habis)
-        const payload = {};
-        quiz.questions.forEach((q) => {
-            payload[q.id] = answers[q.id] ?? null;
-        });
-
-        import('@inertiajs/react').then(({ router }) => {
-            router.post(route('courses.quizzes.submit', { course: courseId, quiz: quiz.id }), {
-                answers: payload
-            }, {
-                preserveScroll: true,
-                onSuccess: (page) => {
-                    onQuizActiveChange(false);
-                    // Baca attempt terbaru dari props yang BARU diterima dari server.
-                    // Tidak bergantung pada kapan React me-render ulang, jadi tidak bisa basi.
-                    const freshLesson = page?.props?.courseData?.modules
-                        ?.flatMap((m) => m.lessons)
-                        ?.find((l) => l.id === lesson.id);
-                    const freshAttempts = freshLesson?.quiz?.attempts || [];
-                    const newest = freshAttempts.reduce(
-                        (best, a) => (!best || a.id > best.id ? a : best),
-                        null
-                    );
-
-                    // DEBUG sementara: hapus baris ini kalau sudah beres
-                    console.debug('[Kuis] attempt terbaru dari server:', newest, 'semua:', freshAttempts);
-
-                    setResult(newest);
-                    setProcessing(false);
-                    setSubmitted(true);
-                },
-                onError: (errors) => {
-                    setProcessing(false);
-                    alert(
-                        errors?.message ||
-                        Object.values(errors || {}).join('\n') ||
-                        'Terjadi kesalahan saat mengirim jawaban.'
-                    );
-                }
-            });
-        });
-    };
-
-    // Selalu simpan handleSubmit terbaru untuk dipanggil oleh timer
-    submitRef.current = handleSubmit;
-
-    const handleStart = () => {
-        const minutes = Number(quiz.duration_minutes);
-        const hasLimit = minutes > 0;
-
-        autoSubmitFiredRef.current = false;
-        setAutoSubmitted(false);
-        setDeadline(hasLimit ? Date.now() + minutes * 60 * 1000 : null);
-        setTimeLeft(hasLimit ? minutes * 60 : null);
-        setStarted(true);
-        onQuizActiveChange(true);
-    };
-
-    const handleReset = () => {
-        setAnswers({});
-        setResult(null);
-        setDeadline(null);
-        setTimeLeft(null);
-        setSubmitted(false);
-        setStarted(false); // Kembali ke halaman awal
-        setCurrentQuestion(0);
-    };
-
-    // Percobaan terbaru = id terbesar (tidak bergantung pada urutan array dari backend)
-    const latestAttempt = attempts.reduce(
-        (best, a) => (!best || a.id > best.id ? a : best),
-        null
-    );
-
-    // Batas percobaan (max_attempts dikirim dari controller)
-    const limitReached = !!quiz.max_attempts && attempts.length >= quiz.max_attempts;
-
-    if (!started && !submitted) {
-        return (
-            <div className="max-w-2xl mx-auto animate-fade-in">
-                <div className="p-8 text-center border border-gray-200 shadow-sm card">
-                    <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full">
-                        <HelpCircle className="w-8 h-8 text-purple-600" />
-                    </div>
-                    <h2 className="mb-2 text-xl font-bold text-gray-900">{lesson.title}</h2>
-                    <div className="flex justify-center gap-6 mb-6 text-sm text-gray-600">
-                        <span className="flex items-center gap-1.5"><FileText className="w-4 h-4" /> {quiz.questions.length} Soal</span>
-                        <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {quiz.duration_minutes ? `${quiz.duration_minutes} Menit` : 'Tanpa Batas'}</span>
-                        <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> Min. {quiz.passing_score}</span>
-                    </div>
-
-                    {attempts.length > 0 && (
-                        <div className="p-4 mb-6 text-left border border-gray-200 bg-gray-50 rounded-xl">
-                            <h3 className="mb-3 text-sm font-bold text-gray-800">Riwayat Percobaan Anda</h3>
-                            <div className="space-y-2">
-                                {attempts.map((attempt, idx) => (
-                                    <div key={attempt.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg">
-                                        <div>
-                                            <p className="text-xs text-gray-500">Percobaan #{attempts.length - idx} &bull; {attempt.created_at}</p>
-                                            <p className={`text-sm font-bold mt-0.5 ${attempt.is_passed === null ? 'text-blue-500' : attempt.is_passed ? 'text-green-600' : 'text-red-500'}`}>
-                                                {attempt.is_passed === null ? 'Menunggu Penilaian' : attempt.is_passed ? 'Lulus' : 'Belum Lulus'}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs text-gray-500">Nilai</p>
-                                            <p className="text-lg font-black text-gray-800">{attempt.is_passed === null ? '-' : attempt.score}</p>
-                                        </div>
+                {attempts.length > 0 && (
+                    <div className="p-4 mb-6 text-left border border-gray-200 bg-gray-50 rounded-xl">
+                        <h3 className="mb-3 text-sm font-bold text-gray-800">Riwayat Percobaan Anda</h3>
+                        <div className="space-y-2">
+                            {attempts.map((attempt, idx) => (
+                                <div key={attempt.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg">
+                                    <div>
+                                        <p className="text-xs text-gray-500">Percobaan #{attempts.length - idx} &bull; {attempt.created_at}</p>
+                                        <p className={`text-sm font-bold mt-0.5 ${attempt.is_passed === null ? 'text-blue-500' : attempt.is_passed ? 'text-green-600' : 'text-red-500'}`}>
+                                            {attempt.is_passed === null ? 'Menunggu Penilaian' : attempt.is_passed ? 'Lulus' : 'Belum Lulus'}
+                                        </p>
                                     </div>
-                                ))}
-                            </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-gray-500">Nilai</p>
+                                        <p className="text-lg font-black text-gray-800">{attempt.is_passed === null ? '-' : attempt.score}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    )}
-
-                    {isExpired ? (
-                        <p className="text-sm font-medium text-amber-600">
-                            Masa kursus telah berakhir. Kuis tidak dapat dikerjakan, tapi riwayat nilai tetap bisa dilihat.
-                        </p>
-                    ) : limitReached ? (
-                        <p className="text-sm font-medium text-red-500">
-                            Batas percobaan tercapai ({attempts.length}/{quiz.max_attempts}).
-                        </p>
-                    ) : (
-                        <button
-                            onClick={handleStart}
-                            className="flex items-center justify-center gap-2 px-8 py-3 mx-auto text-sm btn-gold"
-                        >
-                            {attempts.length > 0 ? (
-                                <><RotateCcw className="w-4 h-4" /> Ulangi Kuis</>
-                            ) : (
-                                <><Play className="w-4 h-4" /> Mulai Kuis</>
-                            )}
-                        </button>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
-    if (submitted) {
-        if (quiz.quiz_mode === 'essay' || quiz.quiz_mode === 'custom') {
-            return (
-                <div className="max-w-2xl mx-auto animate-fade-in">
-                    <div className="p-8 text-center border-2 border-blue-200 shadow-sm card bg-blue-50/50">
-                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full">
-                            <CheckCircle2 className="w-8 h-8 text-blue-600" />
-                        </div>
-                        <h2 className="mb-2 text-xl font-bold text-gray-900">
-                            Jawaban Berhasil Terkirim!
-                        </h2>
-                        <p className="max-w-md mx-auto mb-6 text-sm text-gray-600">
-                            Kuis ini mengandung soal essay. Nilai akhir Anda akan muncul setelah instruktur selesai mengoreksi dan memberikan penilaian.
-                        </p>
-                        <button onClick={handleReset} className="flex items-center gap-2 mx-auto text-sm btn-primary">
-                            <RotateCcw className="w-4 h-4" /> Kembali
-                        </button>
                     </div>
-                </div>
-            );
-        }
+                )}
 
-        // Hasil attempt yang baru saja dikirim (dari respons server). latestAttempt hanya cadangan.
-        const shownAttempt = result ?? latestAttempt;
-        const score = shownAttempt?.score ?? null;
-        const passed = shownAttempt ? shownAttempt.is_passed === true : false;
-        return (
-            <div className="max-w-2xl mx-auto animate-fade-in">
-                <div className={`card p-8 text-center border-2 shadow-sm ${passed ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}>
-                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${passed ? 'bg-green-100' : 'bg-red-100'}`}>
-                        {passed ? <CheckCircle2 className="w-8 h-8 text-green-600" /> : <AlertCircle className="w-8 h-8 text-red-600" />}
-                    </div>
-                    <h2 className="mb-2 text-xl font-bold text-gray-900">
-                        {passed ? 'Selamat! Anda Lulus! 🎉' : 'Belum Lulus'}
-                    </h2>
-                    <p className="mb-6 text-sm text-gray-600">
-                        Skor Anda: <span className="text-lg font-bold">{score ?? '-'}</span> / 100
-                        {autoSubmitted && (
-                            <><br /><span className="text-xs text-amber-600">Waktu habis, jawaban dikirim otomatis.</span></>
-                        )}
-                        <br /><span className="text-xs text-gray-400">Skor minimum: {quiz.passing_score}</span>
+                {isExpired ? (
+                    <p className="text-sm font-medium text-amber-600">
+                        Masa kursus telah berakhir. Kuis tidak dapat dikerjakan, tapi riwayat nilai tetap bisa dilihat.
                     </p>
-                    <button onClick={handleReset} className="flex items-center gap-2 mx-auto text-sm btn-primary">
-                        <RotateCcw className="w-4 h-4" /> Kembali
+                ) : limitReached ? (
+                    <p className="text-sm font-medium text-red-500">
+                        Batas percobaan tercapai ({attempts.length}/{quiz.max_attempts}).
+                    </p>
+                ) : (
+                    <button
+                        onClick={onStart}
+                        className="flex items-center justify-center gap-2 px-8 py-3 mx-auto text-sm btn-gold"
+                    >
+                        {attempts.length > 0 ? (
+                            <><RotateCcw className="w-4 h-4" /> Ulangi Kuis</>
+                        ) : (
+                            <><Play className="w-4 h-4" /> Mulai Kuis</>
+                        )}
                     </button>
-                </div>
+                )}
             </div>
-        );
-    }
+        </div>
+    );
+}
+
+function QuizEssayPendingResult({ onReset }) {
+    return (
+        <div className="max-w-2xl mx-auto animate-fade-in">
+            <div className="p-8 text-center border-2 border-blue-200 shadow-sm card bg-blue-50/50">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full">
+                    <CheckCircle2 className="w-8 h-8 text-blue-600" />
+                </div>
+                <h2 className="mb-2 text-xl font-bold text-gray-900">
+                    Jawaban Berhasil Terkirim!
+                </h2>
+                <p className="max-w-md mx-auto mb-6 text-sm text-gray-600">
+                    Kuis ini mengandung soal essay. Nilai akhir Anda akan muncul setelah instruktur selesai mengoreksi dan memberikan penilaian.
+                </p>
+                <button onClick={onReset} className="flex items-center gap-2 mx-auto text-sm btn-primary">
+                    <RotateCcw className="w-4 h-4" /> Kembali
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function QuizScoreResult({ quiz, shownAttempt, autoSubmitted, onReset }) {
+    const score = shownAttempt?.score ?? null;
+    const passed = shownAttempt ? shownAttempt.is_passed === true : false;
+
+    return (
+        <div className="max-w-2xl mx-auto animate-fade-in">
+            <div className={`card p-8 text-center border-2 shadow-sm ${passed ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}>
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${passed ? 'bg-green-100' : 'bg-red-100'}`}>
+                    {passed ? <CheckCircle2 className="w-8 h-8 text-green-600" /> : <AlertCircle className="w-8 h-8 text-red-600" />}
+                </div>
+                <h2 className="mb-2 text-xl font-bold text-gray-900">
+                    {passed ? 'Selamat! Anda Lulus! 🎉' : 'Belum Lulus'}
+                </h2>
+                <p className="mb-6 text-sm text-gray-600">
+                    Skor Anda: <span className="text-lg font-bold">{score ?? '-'}</span> / 100
+                    {autoSubmitted && (
+                        <><br /><span className="text-xs text-amber-600">Waktu habis, jawaban dikirim otomatis.</span></>
+                    )}
+                    <br /><span className="text-xs text-gray-400">Skor minimum: {quiz.passing_score}</span>
+                </p>
+                <button onClick={onReset} className="flex items-center gap-2 mx-auto text-sm btn-primary">
+                    <RotateCcw className="w-4 h-4" /> Kembali
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function QuizTakingView({
+    lesson,
+    quiz,
+    question,
+    currentQuestion,
+    totalQuestions,
+    answers,
+    allAnswered,
+    processing,
+    timeLeft,
+    onAnswer,
+    onNavigate,
+    onSubmit,
+}) {
+    const canSubmit = (allAnswered || timeLeft === 0) && !processing;
 
     return (
         <div
             className="animate-fade-in"
-            onContextMenu={handlePreventCheat}
-            onCopy={handlePreventCheat}
-            onPaste={handlePreventCheat}
-            onCut={handlePreventCheat}
+            onContextMenu={preventCheat}
+            onCopy={preventCheat}
+            onPaste={preventCheat}
+            onCut={preventCheat}
         >
             {/* Quiz Header */}
             <div className="flex items-center justify-between p-4 mb-6 card">
@@ -614,7 +553,7 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
                                 <button
                                     key={option.id}
                                     disabled={processing}
-                                    onClick={() => handleAnswer(option.id)}
+                                    onClick={() => onAnswer(option.id)}
                                     className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${answers[question.id] === option.id
                                         ? 'border-navy-500 bg-navy-50'
                                         : 'border-gray-100 hover:border-navy-200 hover:bg-gray-50'
@@ -639,7 +578,7 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
                             rows="6"
                             placeholder="Ketik jawaban Anda di sini..."
                             value={answers[question.id] || ''}
-                            onChange={(e) => handleAnswer(e.target.value)}
+                            onChange={(e) => onAnswer(e.target.value)}
                             disabled={processing}
                         />
                     )}
@@ -647,7 +586,7 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
                     {/* Navigation arrows */}
                     <div className="flex items-center justify-between pt-6 mt-8 border-t border-gray-100">
                         <button
-                            onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
+                            onClick={() => onNavigate(Math.max(0, currentQuestion - 1))}
                             disabled={currentQuestion === 0 || processing}
                             className="flex items-center gap-2 text-sm btn-secondary disabled:opacity-40"
                         >
@@ -656,15 +595,15 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
 
                         {currentQuestion === totalQuestions - 1 ? (
                             <button
-                                onClick={handleSubmit}
-                                disabled={(!allAnswered && timeLeft !== 0) || processing}
+                                onClick={() => onSubmit()}
+                                disabled={!canSubmit}
                                 className="flex items-center gap-2 text-sm btn-gold disabled:opacity-40"
                             >
                                 <Send className="w-4 h-4" /> {processing ? 'Memproses...' : 'Kirim Jawaban'}
                             </button>
                         ) : (
                             <button
-                                onClick={() => setCurrentQuestion(Math.min(totalQuestions - 1, currentQuestion + 1))}
+                                onClick={() => onNavigate(Math.min(totalQuestions - 1, currentQuestion + 1))}
                                 disabled={processing}
                                 className="flex items-center gap-2 text-sm btn-primary"
                             >
@@ -685,7 +624,7 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
                             {quiz.questions.map((q, idx) => (
                                 <button
                                     key={q.id}
-                                    onClick={() => setCurrentQuestion(idx)}
+                                    onClick={() => onNavigate(idx)}
                                     disabled={processing}
                                     className={`aspect-square flex items-center justify-center rounded font-bold text-sm transition-all border-2 ${currentQuestion === idx
                                         ? 'bg-navy-600 text-white border-navy-600 shadow-md scale-105'
@@ -706,8 +645,8 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
                     </div>
 
                     <button
-                        onClick={handleSubmit}
-                        disabled={(!allAnswered && timeLeft !== 0) || processing}
+                        onClick={() => onSubmit()}
+                        disabled={!canSubmit}
                         className="flex items-center justify-center w-full gap-2 py-3 text-sm btn-gold disabled:opacity-40"
                     >
                         <Send className="w-4 h-4" /> {processing ? 'Memproses...' : 'Selesai & Kirim'}
@@ -723,6 +662,160 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
     );
 }
 
+// ───────────────────────────────────────────────────────────────────────────
+// Komponen utama kuis. Sekarang hanya berisi: state, kalkulasi, dan beberapa
+// "if (...) return <Komponen />" — logika per layar sudah dipindah ke
+// komponen di atas, dan efek samping (timer, anti-tab-switch) dipindah ke hook.
+// ───────────────────────────────────────────────────────────────────────────
+
+function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
+    const quiz = lesson.quiz;
+    const [currentQuestion, setCurrentQuestion] = useState(0);
+    const [answers, setAnswers] = useState({});
+    const [submitted, setSubmitted] = useState(false);
+    const [started, setStarted] = useState(false);
+    const [processing, setProcessing] = useState(false);
+    const [result, setResult] = useState(null);
+    const [deadline, setDeadline] = useState(null);
+    const [autoSubmitted, setAutoSubmitted] = useState(false);
+
+    const submitRef = useRef(null); // selalu menunjuk handleSubmit terbaru
+
+    const handleSubmit = (auto = false) => {
+        // onClick mengirim event sebagai argumen, jadi hanya nilai `true` yang dianggap otomatis
+        const isAuto = auto === true;
+
+        if (processing) return;
+        if (!isAuto && !allAnswered && timeLeft !== 0) return;
+
+        if (isAuto) setAutoSubmitted(true);
+        setProcessing(true);
+
+        const payload = buildAnswerPayload(quiz, answers);
+
+        import('@inertiajs/react').then(({ router }) => {
+            router.post(route('courses.quizzes.submit', { course: courseId, quiz: quiz.id }), {
+                answers: payload
+            }, {
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    onQuizActiveChange(false);
+                    const freshAttempts = findFreshAttempts(page, lesson.id);
+                    setResult(pickLatestAttempt(freshAttempts));
+                    setProcessing(false);
+                    setSubmitted(true);
+                },
+                onError: (errors) => {
+                    setProcessing(false);
+                    alert(
+                        errors?.message ||
+                        Object.values(errors || {}).join('\n') ||
+                        'Terjadi kesalahan saat mengirim jawaban.'
+                    );
+                }
+            });
+        });
+    };
+
+    // Selalu simpan handleSubmit terbaru, supaya hook timer memanggil versi yang
+    // tahu nilai `answers` dan `timeLeft` paling baru, bukan versi lama (closure basi).
+    submitRef.current = handleSubmit;
+
+    const timeLeft = useQuizCountdown(deadline, started && !submitted, submitRef);
+    useTabSwitchWarning(started && !submitted);
+
+    if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 text-center text-gray-500">
+                <AlertCircle className="w-12 h-12 mb-4 text-gray-300" />
+                <h2 className="text-lg font-bold text-gray-700">Kuis Belum Tersedia</h2>
+                <p className="mt-1 text-sm">Belum ada pertanyaan yang dibuat untuk kuis ini.</p>
+            </div>
+        );
+    }
+
+    const question = quiz.questions[currentQuestion];
+    const totalQuestions = quiz.questions.length;
+    const allAnswered = quiz.questions.every(q => answers[q.id] !== undefined && answers[q.id] !== '');
+    const attempts = quiz.attempts || [];
+
+    const handleAnswer = (value) => {
+        if (submitted || processing) return;
+        setAnswers({ ...answers, [question.id]: value });
+    };
+
+    const handleStart = () => {
+        const minutes = Number(quiz.duration_minutes);
+        const hasLimit = minutes > 0;
+
+        setAutoSubmitted(false);
+        setDeadline(hasLimit ? Date.now() + minutes * 60 * 1000 : null);
+        setStarted(true);
+        onQuizActiveChange(true);
+    };
+
+    const handleReset = () => {
+        setAnswers({});
+        setResult(null);
+        setDeadline(null);
+        setSubmitted(false);
+        setStarted(false); // Kembali ke halaman awal
+        setCurrentQuestion(0);
+    };
+
+    const latestAttempt = pickLatestAttempt(attempts);
+
+    // Batas percobaan (max_attempts dikirim dari controller)
+    const limitReached = !!quiz.max_attempts && attempts.length >= quiz.max_attempts;
+
+    if (!started && !submitted) {
+        return (
+            <QuizIntro
+                lesson={lesson}
+                quiz={quiz}
+                attempts={attempts}
+                isExpired={isExpired}
+                limitReached={limitReached}
+                onStart={handleStart}
+            />
+        );
+    }
+
+    if (submitted) {
+        if (quiz.quiz_mode === 'essay' || quiz.quiz_mode === 'custom') {
+            return <QuizEssayPendingResult onReset={handleReset} />;
+        }
+
+        // Hasil attempt yang baru saja dikirim (dari respons server). latestAttempt hanya cadangan.
+        const shownAttempt = result ?? latestAttempt;
+
+        return (
+            <QuizScoreResult
+                quiz={quiz}
+                shownAttempt={shownAttempt}
+                autoSubmitted={autoSubmitted}
+                onReset={handleReset}
+            />
+        );
+    }
+
+    return (
+        <QuizTakingView
+            lesson={lesson}
+            quiz={quiz}
+            question={question}
+            currentQuestion={currentQuestion}
+            totalQuestions={totalQuestions}
+            answers={answers}
+            allAnswered={allAnswered}
+            processing={processing}
+            timeLeft={timeLeft}
+            onAnswer={handleAnswer}
+            onNavigate={setCurrentQuestion}
+            onSubmit={handleSubmit}
+        />
+    );
+}
 
 export default function CoursePlayer({ courseData, initialLessonId }) {
     const course = courseData;
