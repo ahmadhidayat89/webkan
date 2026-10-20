@@ -104,7 +104,7 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
       }
 
       const formDataToSend = new FormData();
-      
+
       // Append all text fields
       Object.keys(formData).forEach(key => {
         if (formData[key]) {
@@ -117,10 +117,10 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
         formDataToSend.append('image', imageFile);
       }
 
-      const url = news 
+      const url = news
         ? `/api/v1/admin/news/${news.id}`
         : '/api/v1/admin/news';
-      
+
       if (news) {
         formDataToSend.append('_method', 'PUT');
       }
@@ -216,7 +216,7 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
           {/* Category (grup radio, bukan satu kontrol, jadi memakai <p> + radiogroup) */}
           <div>
             <p id="news_category_label" className="block mb-2 text-sm font-bold text-gray-700">
-              Kategori *
+              Kategori <span className="text-red-500">*</span>
             </p>
             <div className="flex gap-4" role="radiogroup" aria-labelledby="news_category_label">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -288,7 +288,7 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
           {/* Title - Indonesian */}
           <div>
             <label htmlFor="news_title" className="block mb-2 text-sm font-bold text-gray-700">
-              Judul (Bahasa Indonesia) *
+              Judul (Bahasa Indonesia) <span className="text-red-500">*</span>
             </label>
             <input
               id="news_title"
@@ -356,7 +356,7 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
           {/* Content - Indonesian */}
           <div>
             <label htmlFor="news_content" className="block mb-2 text-sm font-bold text-gray-700">
-              Konten (Bahasa Indonesia) *
+              Konten (Bahasa Indonesia) <span className="text-red-500">*</span>
             </label>
             <textarea
               id="news_content"
@@ -408,7 +408,7 @@ const NewsFormModal = ({ isOpen, onClose, news, onSaved }) => {
           {/* SEO Section */}
           <div className="pt-6 border-t">
             <h4 className="mb-4 text-lg font-black text-gray-900">Pengaturan SEO</h4>
-            
+
             <div className="space-y-4">
               <div>
                 <label htmlFor="news_meta_title" className="block mb-2 text-sm font-bold text-gray-700">
