@@ -33,6 +33,37 @@ const ROLE_LABELS = {
   },
 };
 
+// Syarat password, dicek live waktu user ngetik
+const PASSWORD_RULES = [
+  { key: 'length', label: 'Minimal 8 karakter', test: (v) => v.length >= 8 },
+  { key: 'upper', label: 'Ada huruf besar', test: (v) => /[A-Z]/.test(v) },
+  { key: 'lower', label: 'Ada huruf kecil', test: (v) => /[a-z]/.test(v) },
+  { key: 'number', label: 'Ada angka', test: (v) => /[0-9]/.test(v) },
+];
+
+function PasswordHints({ password, show }) {
+  if (!show) return null;
+
+  return (
+    <ul className="mt-2 space-y-1">
+      {PASSWORD_RULES.map((rule) => {
+        const passed = rule.test(password);
+        return (
+          <li
+            key={rule.key}
+            className={`flex items-center gap-1.5 text-xs ${
+              passed ? 'text-emerald-600' : 'text-gray-400'
+            }`}
+          >
+            <FaCheckCircle className={passed ? 'opacity-100' : 'opacity-30'} />
+            {rule.label}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +75,9 @@ const UserManagement = () => {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [msg, setMsg] = useState(null);
+
+  // Error per-field, ditampilkan di bawah kolom masing-masing
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const nameId = useId();
   const emailId = useId();
@@ -110,6 +144,7 @@ const UserManagement = () => {
 
   const openAdd = () => {
     setEditingUser(null);
+    setFieldErrors({});
 
     setForm({
       ...emptyForm,
@@ -121,6 +156,7 @@ const UserManagement = () => {
 
   const openEdit = (user) => {
     setEditingUser(user);
+    setFieldErrors({});
 
     setForm({
       name: user.name || '',
@@ -136,6 +172,19 @@ const UserManagement = () => {
     setShowModal(false);
     setEditingUser(null);
     setForm(emptyForm);
+    setFieldErrors({});
+  };
+
+  // Ganti satu field form, sekaligus bersihkan error field itu
+  // supaya pesan error hilang begitu user mulai memperbaiki.
+  const updateField = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
 
   const saveUser = async (event) => {
@@ -143,6 +192,7 @@ const UserManagement = () => {
 
     setSaving(true);
     setMsg(null);
+    setFieldErrors({});
 
     const isEdit = Boolean(editingUser);
 
@@ -170,13 +220,22 @@ const UserManagement = () => {
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        const firstError = result.errors
-          ? Object.values(result.errors).flat()[0]
-          : result.message;
+        // result.errors (dari validasi Laravel) berbentuk:
+        // { password: ["Password harus..."], email: ["Email sudah dipakai"] }
+        // Kita ambil pesan pertama tiap field, taruh di bawah kolomnya masing-masing.
+        if (result.errors) {
+          const perField = Object.fromEntries(
+            Object.entries(result.errors).map(([field, msgs]) => [
+              field,
+              Array.isArray(msgs) ? msgs[0] : String(msgs),
+            ])
+          );
+          setFieldErrors(perField);
+          // Modal tetap terbuka, data form tidak hilang, user tinggal perbaiki.
+          return;
+        }
 
-        throw new Error(
-          firstError || 'Gagal menyimpan pengguna.'
-        );
+        throw new Error(result.message || 'Gagal menyimpan pengguna.');
       }
 
       showMessage(
@@ -189,6 +248,7 @@ const UserManagement = () => {
       closeModal();
       await loadUsers();
     } catch (error) {
+      // Error umum (bukan soal validasi field) tetap tampil di banner atas
       showMessage(
         'error',
         error.message || 'Terjadi kesalahan, coba lagi.'
@@ -260,6 +320,10 @@ const UserManagement = () => {
   // Label tombol submit di modal (menggantikan nested ternary)
   let submitLabel = editingUser ? 'Simpan Perubahan' : 'Buat User';
   if (saving) submitLabel = 'Menyimpan...';
+
+  // Checklist syarat password ditampilkan kalau: user baru (wajib isi password),
+  // atau sedang edit dan mulai mengetik password baru.
+  const showPasswordHints = !editingUser || form.password.length > 0;
 
   return (
     <AdminLayout>
@@ -606,7 +670,7 @@ const UserManagement = () => {
                   <label htmlFor={nameId} className="block mb-2 text-sm font-bold text-gray-800">
                     Nama <span className="text-red-500">*</span>
                   </label>
-                  
+
                   <input
                     id={nameId}
                     type="text"
@@ -614,14 +678,22 @@ const UserManagement = () => {
                     maxLength="255"
                     value={form.name}
                     onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        name: event.target.value,
-                      }))
+                      updateField('name', event.target.value)
                     }
                     placeholder="Nama lengkap"
-                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
+                    className={`w-full px-4 py-3 text-sm transition-colors border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      fieldErrors.name
+                        ? 'border-red-300 focus:border-red-400'
+                        : 'border-gray-200 focus:border-primary-400'
+                    }`}
                   />
+
+                  {fieldErrors.name && (
+                    <p className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-red-600">
+                      <FaExclamationCircle />
+                      {fieldErrors.name}
+                    </p>
+                  )}
                 </div>
 
                 {/* Email */}
@@ -629,7 +701,7 @@ const UserManagement = () => {
                   <label htmlFor={emailId} className="block mb-2 text-sm font-bold text-gray-800">
                     Email <span className="text-red-500">*</span>
                   </label>
-                  
+
                   <input
                     id={emailId}
                     type="email"
@@ -637,14 +709,22 @@ const UserManagement = () => {
                     maxLength="255"
                     value={form.email}
                     onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        email: event.target.value,
-                      }))
+                      updateField('email', event.target.value)
                     }
                     placeholder="email@domain.com"
-                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
+                    className={`w-full px-4 py-3 text-sm transition-colors border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      fieldErrors.email
+                        ? 'border-red-300 focus:border-red-400'
+                        : 'border-gray-200 focus:border-primary-400'
+                    }`}
                   />
+
+                  {fieldErrors.email && (
+                    <p className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-red-600">
+                      <FaExclamationCircle />
+                      {fieldErrors.email}
+                    </p>
+                  )}
                 </div>
 
                 {/* Password */}
@@ -669,22 +749,36 @@ const UserManagement = () => {
                     id={passwordId}
                     type="password"
                     required={!editingUser}
-                    minLength="8"
                     maxLength="128"
                     autoComplete="new-password"
                     value={form.password}
                     onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        password: event.target.value,
-                      }))
+                      updateField('password', event.target.value)
                     }
                     placeholder={
                       editingUser
                         ? '••••••••'
                         : 'Min. 8 karakter'
                     }
-                    className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
+                    className={`w-full px-4 py-3 text-sm transition-colors border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      fieldErrors.password
+                        ? 'border-red-300 focus:border-red-400'
+                        : 'border-gray-200 focus:border-primary-400'
+                    }`}
+                  />
+
+                  {/* Error dari backend, muncul setelah submit gagal */}
+                  {fieldErrors.password && (
+                    <p className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-red-600">
+                      <FaExclamationCircle />
+                      {fieldErrors.password}
+                    </p>
+                  )}
+
+                  {/* Checklist syarat, update live waktu mengetik */}
+                  <PasswordHints
+                    password={form.password}
+                    show={showPasswordHints}
                   />
                 </div>
 
@@ -693,15 +787,12 @@ const UserManagement = () => {
                   <label htmlFor={roleId} className="block mb-2 text-sm font-bold text-gray-800">
                     Role <span className="text-red-500">*</span>
                   </label>
-                  
+
                   <select
                     id={roleId}
                     value={form.role}
                     onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        role: event.target.value,
-                      }))
+                      updateField('role', event.target.value)
                     }
                     className="w-full px-4 py-3 text-sm transition-colors border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
                   >
