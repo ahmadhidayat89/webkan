@@ -1,12 +1,9 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import CoursePlayerLayout from '@/Layouts/CoursePlayerLayout';
 import DiscussionPanel from '@/Components/DiscussionPanel';
 import { useState, useEffect, useRef } from 'react';
 import {
     Play,
-    Pause,
-    Volume2,
-    Maximize,
     FileText,
     Download,
     CheckCircle2,
@@ -94,8 +91,7 @@ function VideoContent({ lesson }) {
                 {embedUrl ? (
                     <iframe
                         src={embedUrl}
-                        className="absolute inset-0 w-full h-full"
-                        frameBorder="0"
+                        className="absolute inset-0 w-full h-full border-0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                         title={lesson.title}
@@ -131,8 +127,18 @@ function VideoContent({ lesson }) {
     );
 }
 
+const FILE_ICONS = {
+    'application/pdf': '📄',
+    'application/msword': '📝',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📝',
+    'application/vnd.ms-powerpoint': '📊',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': '📊',
+    'application/vnd.ms-excel': '📊',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '📊',
+};
+
 function PdfContent({ lesson }) {
-    const hasFile = lesson.files && lesson.files.length > 0;
+    const hasFile = (lesson.files?.length ?? 0) > 0;
     const [selectedFileIdx, setSelectedFileIdx] = useState(0);
     const [showPreview, setShowPreview] = useState(false);
 
@@ -140,19 +146,72 @@ function PdfContent({ lesson }) {
     const fileUrl = selectedFile ? selectedFile.file_path : null;
 
     // Detect if it's a PDF by mime_type OR by file extension
-    const isPdf = selectedFile && (
-        selectedFile.mime_type === 'application/pdf' ||
-        (selectedFile.original_name && selectedFile.original_name.toLowerCase().endsWith('.pdf'))
+    const isPdf = Boolean(
+        selectedFile?.mime_type === 'application/pdf' ||
+        selectedFile?.original_name?.toLowerCase().endsWith('.pdf')
     );
 
-    const fileIcons = {
-        'application/pdf': '📄',
-        'application/msword': '📝',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📝',
-        'application/vnd.ms-powerpoint': '📊',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation': '📊',
-        'application/vnd.ms-excel': '📊',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '📊',
+    // Satu fungsi dengan if berurutan menggantikan ternary bersarang
+    const renderViewer = () => {
+        if (isPdf && fileUrl && showPreview) {
+            return (
+                <iframe
+                    key={fileUrl}
+                    src={fileUrl}
+                    className="w-full border border-t-0 border-gray-200 rounded-b-xl"
+                    style={{ height: '75vh', minHeight: '500px' }}
+                    title={selectedFile?.original_name || lesson.title}
+                />
+            );
+        }
+
+        if (isPdf && fileUrl) {
+            return (
+                <div className="flex flex-col items-center justify-center p-10 text-center bg-white border border-t-0 border-gray-200 rounded-b-xl">
+                    <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 text-4xl rounded-2xl bg-red-50">
+                        📄
+                    </div>
+                    <h3 className="mb-1 text-base font-bold text-gray-800">{selectedFile?.original_name}</h3>
+                    <p className="max-w-sm mb-6 text-xs text-gray-400">
+                        Dokumen PDF siap dilihat. Klik tombol di bawah untuk menampilkan preview dokumen, atau unduh langsung ke perangkat Anda.
+                    </p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setShowPreview(true)} className="inline-flex items-center gap-2 bg-navy-600 hover:bg-navy-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-colors">
+                            <Eye className="w-4 h-4" /> Lihat Preview
+                        </button>
+                        <a href={fileUrl} download={selectedFile?.original_name} className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm px-6 py-2.5 rounded-xl transition-colors border border-gray-200">
+                            <Download className="w-4 h-4" /> Unduh
+                        </a>
+                    </div>
+                </div>
+            );
+        }
+
+        if (hasFile && fileUrl) {
+            return (
+                <div className="flex flex-col items-center justify-center p-8 text-center bg-white border border-t-0 border-gray-200 rounded-b-xl">
+                    <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 text-4xl rounded-2xl bg-blue-50">
+                        {FILE_ICONS[selectedFile?.mime_type] || '📄'}
+                    </div>
+                    <h3 className="mb-1 text-base font-bold text-gray-800">{selectedFile?.original_name}</h3>
+                    <p className="max-w-xs mb-6 text-xs text-gray-400">
+                        File {selectedFile?.mime_type?.split('/')[1]?.toUpperCase() || 'dokumen'} ini tidak dapat dipreview langsung di browser.
+                        Silakan unduh untuk membuka.
+                    </p>
+                    <a href={fileUrl} download={selectedFile?.original_name} className="inline-flex items-center gap-2 bg-navy-600 hover:bg-navy-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-colors">
+                        <Download className="w-4 h-4" /> Unduh &amp; Buka
+                    </a>
+                </div>
+            );
+        }
+
+        return (
+            <div className="flex flex-col items-center justify-center p-10 text-center bg-white border border-t-0 border-gray-200 rounded-b-xl">
+                <FileText className="w-10 h-10 mb-3 text-gray-200" />
+                <p className="text-sm font-medium text-gray-500">Dokumen belum diunggah</p>
+                <p className="mt-1 text-xs text-gray-400">Instruktur belum mengunggah file untuk materi ini.</p>
+            </div>
+        );
     };
 
     return (
@@ -172,7 +231,7 @@ function PdfContent({ lesson }) {
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
-                            <span>{fileIcons[f.mime_type] || '📄'}</span>
+                            <span>{FILE_ICONS[f.mime_type] || '📄'}</span>
                             <span className="truncate max-w-[120px]">{f.original_name}</span>
                         </button>
                     ))}
@@ -209,55 +268,7 @@ function PdfContent({ lesson }) {
             </div>
 
             {/* Viewer */}
-            {isPdf && fileUrl ? (
-                showPreview ? (
-                    <iframe
-                        key={fileUrl}
-                        src={fileUrl}
-                        className="w-full border border-t-0 border-gray-200 rounded-b-xl"
-                        style={{ height: '75vh', minHeight: '500px' }}
-                        title={selectedFile?.original_name || lesson.title}
-                    />
-                ) : (
-                    <div className="flex flex-col items-center justify-center p-10 text-center bg-white border border-t-0 border-gray-200 rounded-b-xl">
-                        <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 text-4xl rounded-2xl bg-red-50">
-                            📄
-                        </div>
-                        <h3 className="mb-1 text-base font-bold text-gray-800">{selectedFile?.original_name}</h3>
-                        <p className="max-w-sm mb-6 text-xs text-gray-400">
-                            Dokumen PDF siap dilihat. Klik tombol di bawah untuk menampilkan preview dokumen, atau unduh langsung ke perangkat Anda.
-                        </p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowPreview(true)} className="inline-flex items-center gap-2 bg-navy-600 hover:bg-navy-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-colors">
-                                <Eye className="w-4 h-4" /> Lihat Preview
-                            </button>
-                            <a href={fileUrl} download={selectedFile?.original_name} className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm px-6 py-2.5 rounded-xl transition-colors border border-gray-200">
-                                <Download className="w-4 h-4" /> Unduh
-                            </a>
-                        </div>
-                    </div>
-                )
-            ) : hasFile && fileUrl ? (
-                <div className="flex flex-col items-center justify-center p-8 text-center bg-white border border-t-0 border-gray-200 rounded-b-xl">
-                    <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 text-4xl rounded-2xl bg-blue-50">
-                        {fileIcons[selectedFile?.mime_type] || '📄'}
-                    </div>
-                    <h3 className="mb-1 text-base font-bold text-gray-800">{selectedFile?.original_name}</h3>
-                    <p className="max-w-xs mb-6 text-xs text-gray-400">
-                        File {selectedFile?.mime_type?.split('/')[1]?.toUpperCase() || 'dokumen'} ini tidak dapat dipreview langsung di browser.
-                        Silakan unduh untuk membuka.
-                    </p>
-                    <a href={fileUrl} download={selectedFile?.original_name} className="inline-flex items-center gap-2 bg-navy-600 hover:bg-navy-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-colors">
-                        <Download className="w-4 h-4" /> Unduh &amp; Buka
-                    </a>
-                </div>
-            ) : (
-                <div className="flex flex-col items-center justify-center p-10 text-center bg-white border border-t-0 border-gray-200 rounded-b-xl">
-                    <FileText className="w-10 h-10 mb-3 text-gray-200" />
-                    <p className="text-sm font-medium text-gray-500">Dokumen belum diunggah</p>
-                    <p className="mt-1 text-xs text-gray-400">Instruktur belum mengunggah file untuk materi ini.</p>
-                </div>
-            )}
+            {renderViewer()}
 
             {/* Description */}
             {lesson.description && (
@@ -310,6 +321,31 @@ function findFreshAttempts(page, lessonId) {
 function preventCheat(e) {
     e.preventDefault();
     alert('⚠️ PERINGATAN ⚠️\n\nAksi klik-kanan dan salin-tempel (copy-paste) dinonaktifkan selama kuis berlangsung.');
+}
+
+// Status satu percobaan: label dan warna teks (menggantikan ternary bersarang)
+function getAttemptStatus(attempt) {
+    if (attempt.is_passed === null) {
+        return { label: 'Menunggu Penilaian', colorClass: 'text-blue-500' };
+    }
+    if (attempt.is_passed) {
+        return { label: 'Lulus', colorClass: 'text-green-600' };
+    }
+    return { label: 'Belum Lulus', colorClass: 'text-red-500' };
+}
+
+// Warna timer berdasarkan sisa waktu
+function getTimerClass(timeLeft) {
+    if (timeLeft <= 60) return 'bg-red-50 text-red-600 border-red-200 animate-pulse';
+    if (timeLeft <= 300) return 'bg-amber-50 text-amber-600 border-amber-200';
+    return 'bg-gray-50 text-gray-700 border-gray-200';
+}
+
+// Warna tombol navigasi soal: aktif / sudah dijawab / belum dijawab
+function getNavButtonClass(isCurrent, isAnswered) {
+    if (isCurrent) return 'bg-navy-600 text-white border-navy-600 shadow-md scale-105';
+    if (isAnswered) return 'bg-navy-100 text-navy-700 border-navy-200';
+    return 'bg-white text-gray-700 border-gray-200 hover:border-navy-300 hover:bg-navy-50';
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -368,6 +404,38 @@ function useTabSwitchWarning(active) {
 // tidak lagi memuat semua kondisi render sekaligus.
 // ───────────────────────────────────────────────────────────────────────────
 
+// Aksi di bagian bawah intro: pesan kursus berakhir, batas percobaan, atau tombol mulai
+function QuizIntroAction({ isExpired, limitReached, attempts, quiz, onStart }) {
+    if (isExpired) {
+        return (
+            <p className="text-sm font-medium text-amber-600">
+                Masa kursus telah berakhir. Kuis tidak dapat dikerjakan, tapi riwayat nilai tetap bisa dilihat.
+            </p>
+        );
+    }
+
+    if (limitReached) {
+        return (
+            <p className="text-sm font-medium text-red-500">
+                Batas percobaan tercapai ({attempts.length}/{quiz.max_attempts}).
+            </p>
+        );
+    }
+
+    return (
+        <button
+            onClick={onStart}
+            className="flex items-center justify-center gap-2 px-8 py-3 mx-auto text-sm btn-gold"
+        >
+            {attempts.length > 0 ? (
+                <><RotateCcw className="w-4 h-4" /> Ulangi Kuis</>
+            ) : (
+                <><Play className="w-4 h-4" /> Mulai Kuis</>
+            )}
+        </button>
+    );
+}
+
 function QuizIntro({ lesson, quiz, attempts, isExpired, limitReached, onStart }) {
     return (
         <div className="max-w-2xl mx-auto animate-fade-in">
@@ -386,44 +454,35 @@ function QuizIntro({ lesson, quiz, attempts, isExpired, limitReached, onStart })
                     <div className="p-4 mb-6 text-left border border-gray-200 bg-gray-50 rounded-xl">
                         <h3 className="mb-3 text-sm font-bold text-gray-800">Riwayat Percobaan Anda</h3>
                         <div className="space-y-2">
-                            {attempts.map((attempt, idx) => (
-                                <div key={attempt.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg">
-                                    <div>
-                                        <p className="text-xs text-gray-500">Percobaan #{attempts.length - idx} &bull; {attempt.created_at}</p>
-                                        <p className={`text-sm font-bold mt-0.5 ${attempt.is_passed === null ? 'text-blue-500' : attempt.is_passed ? 'text-green-600' : 'text-red-500'}`}>
-                                            {attempt.is_passed === null ? 'Menunggu Penilaian' : attempt.is_passed ? 'Lulus' : 'Belum Lulus'}
-                                        </p>
+                            {attempts.map((attempt, idx) => {
+                                const status = getAttemptStatus(attempt);
+
+                                return (
+                                    <div key={attempt.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg">
+                                        <div>
+                                            <p className="text-xs text-gray-500">Percobaan #{attempts.length - idx} &bull; {attempt.created_at}</p>
+                                            <p className={`text-sm font-bold mt-0.5 ${status.colorClass}`}>
+                                                {status.label}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-gray-500">Nilai</p>
+                                            <p className="text-lg font-black text-gray-800">{attempt.is_passed === null ? '-' : attempt.score}</p>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-xs text-gray-500">Nilai</p>
-                                        <p className="text-lg font-black text-gray-800">{attempt.is_passed === null ? '-' : attempt.score}</p>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
 
-                {isExpired ? (
-                    <p className="text-sm font-medium text-amber-600">
-                        Masa kursus telah berakhir. Kuis tidak dapat dikerjakan, tapi riwayat nilai tetap bisa dilihat.
-                    </p>
-                ) : limitReached ? (
-                    <p className="text-sm font-medium text-red-500">
-                        Batas percobaan tercapai ({attempts.length}/{quiz.max_attempts}).
-                    </p>
-                ) : (
-                    <button
-                        onClick={onStart}
-                        className="flex items-center justify-center gap-2 px-8 py-3 mx-auto text-sm btn-gold"
-                    >
-                        {attempts.length > 0 ? (
-                            <><RotateCcw className="w-4 h-4" /> Ulangi Kuis</>
-                        ) : (
-                            <><Play className="w-4 h-4" /> Mulai Kuis</>
-                        )}
-                    </button>
-                )}
+                <QuizIntroAction
+                    isExpired={isExpired}
+                    limitReached={limitReached}
+                    attempts={attempts}
+                    quiz={quiz}
+                    onStart={onStart}
+                />
             </div>
         </div>
     );
@@ -510,12 +569,7 @@ function QuizTakingView({
                 </div>
                 {timeLeft !== null ? (
                     <div
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold tabular-nums border ${timeLeft <= 60
-                            ? 'bg-red-50 text-red-600 border-red-200 animate-pulse'
-                            : timeLeft <= 300
-                                ? 'bg-amber-50 text-amber-600 border-amber-200'
-                                : 'bg-gray-50 text-gray-700 border-gray-200'
-                            }`}
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold tabular-nums border ${getTimerClass(timeLeft)}`}
                         title="Sisa waktu pengerjaan"
                     >
                         <Clock className="w-4 h-4" />
@@ -563,7 +617,7 @@ function QuizTakingView({
                                         ? 'border-navy-500 bg-navy-500 text-white'
                                         : 'border-gray-300 text-gray-500'
                                         }`}>
-                                        {String.fromCharCode(65 + oIdx)}
+                                        {String.fromCodePoint(65 + oIdx)}
                                     </div>
                                     <span className={`text-sm ${answers[question.id] === option.id ? 'text-navy-800 font-medium' : 'text-gray-700'
                                         }`}>
@@ -626,12 +680,7 @@ function QuizTakingView({
                                     key={q.id}
                                     onClick={() => onNavigate(idx)}
                                     disabled={processing}
-                                    className={`aspect-square flex items-center justify-center rounded font-bold text-sm transition-all border-2 ${currentQuestion === idx
-                                        ? 'bg-navy-600 text-white border-navy-600 shadow-md scale-105'
-                                        : answers[q.id]
-                                            ? 'bg-navy-100 text-navy-700 border-navy-200'
-                                            : 'bg-white text-gray-700 border-gray-200 hover:border-navy-300 hover:bg-navy-50'
-                                        } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`aspect-square flex items-center justify-center rounded font-bold text-sm transition-all border-2 ${getNavButtonClass(currentQuestion === idx, Boolean(answers[q.id]))} ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {idx + 1}
                                 </button>
@@ -693,27 +742,25 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
 
         const payload = buildAnswerPayload(quiz, answers);
 
-        import('@inertiajs/react').then(({ router }) => {
-            router.post(route('courses.quizzes.submit', { course: courseId, quiz: quiz.id }), {
-                answers: payload
-            }, {
-                preserveScroll: true,
-                onSuccess: (page) => {
-                    onQuizActiveChange(false);
-                    const freshAttempts = findFreshAttempts(page, lesson.id);
-                    setResult(pickLatestAttempt(freshAttempts));
-                    setProcessing(false);
-                    setSubmitted(true);
-                },
-                onError: (errors) => {
-                    setProcessing(false);
-                    alert(
-                        errors?.message ||
-                        Object.values(errors || {}).join('\n') ||
-                        'Terjadi kesalahan saat mengirim jawaban.'
-                    );
-                }
-            });
+        router.post(route('courses.quizzes.submit', { course: courseId, quiz: quiz.id }), {
+            answers: payload
+        }, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                onQuizActiveChange(false);
+                const freshAttempts = findFreshAttempts(page, lesson.id);
+                setResult(pickLatestAttempt(freshAttempts));
+                setProcessing(false);
+                setSubmitted(true);
+            },
+            onError: (errors) => {
+                setProcessing(false);
+                alert(
+                    errors?.message ||
+                    Object.values(errors || {}).join('\n') ||
+                    'Terjadi kesalahan saat mengirim jawaban.'
+                );
+            }
         });
     };
 
@@ -724,7 +771,7 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
     const timeLeft = useQuizCountdown(deadline, started && !submitted, submitRef);
     useTabSwitchWarning(started && !submitted);
 
-    if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+    if (!quiz?.questions?.length) {
         return (
             <div className="flex flex-col items-center justify-center h-64 text-center text-gray-500">
                 <AlertCircle className="w-12 h-12 mb-4 text-gray-300" />
@@ -864,8 +911,15 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
         if (currentIndex < allLessons.length - 1) setActiveLessonId(allLessons[currentIndex + 1].id);
     };
 
-    const isQuizActive =
-        activeLesson?.type === 'quiz' && quizActive;
+    const handleComplete = () => {
+        if (activeLesson.isCompleted || isExpired) return;
+
+        router.post(
+            route('course.lesson.complete', { course: course.id, lesson: activeLesson.id }),
+            {},
+            { preserveScroll: true }
+        );
+    };
 
     const renderContent = () => {
         switch (activeLesson.type) {
@@ -931,15 +985,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                                 Sebelumnya
                             </button>
                             <button
-                                onClick={() => {
-                                    if (!activeLesson.isCompleted && !isExpired) {
-                                        import('@inertiajs/react').then(({ router }) => {
-                                            router.post(route('course.lesson.complete', { course: course.id, lesson: activeLesson.id }), {}, {
-                                                preserveScroll: true
-                                            });
-                                        });
-                                    }
-                                }}
+                                onClick={handleComplete}
                                 disabled={activeLesson.isCompleted || isExpired}
                                 className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors border w-full sm:w-auto ${(activeLesson.isCompleted || isExpired)
                                     ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
