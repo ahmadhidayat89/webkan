@@ -54,17 +54,6 @@ const sections = [
       { id: 'layanan/sertifikasi-pembangunan-berkelanjutan', name: 'Sertifikasi Pembangunan Berkelanjutan' },
     ],
   },
-  {
-    key: 'direktori',
-    label: 'Direktori LPK',
-    color: 'amber',
-    pages: [
-      { id: 'direktori/terakreditasi', name: 'Terakreditasi' },
-      { id: 'direktori/akreditasi-dibekukan', name: 'Akreditasi Dibekukan' },
-      { id: 'direktori/akreditasi-dicabut', name: 'Akreditasi Dicabut' },
-    ],
-  },
-
   /*
   |--------------------------------------------------------------------------
   | UNDuh - DINONAKTIFKAN
@@ -806,6 +795,7 @@ const ContentSidebar = ({
             input={sub.input}
           />
         )}
+
       </div>
     </div>
   );
