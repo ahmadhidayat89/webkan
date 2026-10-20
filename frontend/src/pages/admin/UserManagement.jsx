@@ -38,7 +38,7 @@ const PASSWORD_RULES = [
   { key: 'length', label: 'Minimal 8 karakter', test: (v) => v.length >= 8 },
   { key: 'upper', label: 'Ada huruf besar', test: (v) => /[A-Z]/.test(v) },
   { key: 'lower', label: 'Ada huruf kecil', test: (v) => /[a-z]/.test(v) },
-  { key: 'number', label: 'Ada angka', test: (v) => /[0-9]/.test(v) },
+  { key: 'number', label: 'Ada angka', test: (v) => /\d/.test(v) },
 ];
 
 function PasswordHints({ password, show }) {
@@ -51,9 +51,8 @@ function PasswordHints({ password, show }) {
         return (
           <li
             key={rule.key}
-            className={`flex items-center gap-1.5 text-xs ${
-              passed ? 'text-emerald-600' : 'text-gray-400'
-            }`}
+            className={`flex items-center gap-1.5 text-xs ${passed ? 'text-emerald-600' : 'text-gray-400'
+              }`}
           >
             <FaCheckCircle className={passed ? 'opacity-100' : 'opacity-30'} />
             {rule.label}
@@ -409,11 +408,10 @@ const UserManagement = () => {
         ========================= */}
         {msg && (
           <div
-            className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold ${
-              msg.type === 'success'
+            className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold ${msg.type === 'success'
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                 : 'border-red-200 bg-red-50 text-red-700'
-            }`}
+              }`}
           >
             {msg.type === 'success' ? (
               <FaCheckCircle />
@@ -542,15 +540,15 @@ const UserManagement = () => {
                         <td className="px-6 py-4 text-gray-500">
                           {user.created_at
                             ? new Date(
-                                user.created_at
-                              ).toLocaleDateString(
-                                'id-ID',
-                                {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                }
-                              )
+                              user.created_at
+                            ).toLocaleDateString(
+                              'id-ID',
+                              {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              }
+                            )
                             : '-'}
                         </td>
 
@@ -681,11 +679,10 @@ const UserManagement = () => {
                       updateField('name', event.target.value)
                     }
                     placeholder="Nama lengkap"
-                    className={`w-full px-4 py-3 text-sm transition-colors border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      fieldErrors.name
+                    className={`w-full px-4 py-3 text-sm transition-colors border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${fieldErrors.name
                         ? 'border-red-300 focus:border-red-400'
                         : 'border-gray-200 focus:border-primary-400'
-                    }`}
+                      }`}
                   />
 
                   {fieldErrors.name && (
@@ -712,11 +709,10 @@ const UserManagement = () => {
                       updateField('email', event.target.value)
                     }
                     placeholder="email@domain.com"
-                    className={`w-full px-4 py-3 text-sm transition-colors border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      fieldErrors.email
+                    className={`w-full px-4 py-3 text-sm transition-colors border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${fieldErrors.email
                         ? 'border-red-300 focus:border-red-400'
                         : 'border-gray-200 focus:border-primary-400'
-                    }`}
+                      }`}
                   />
 
                   {fieldErrors.email && (
@@ -760,11 +756,10 @@ const UserManagement = () => {
                         ? '••••••••'
                         : 'Min. 8 karakter'
                     }
-                    className={`w-full px-4 py-3 text-sm transition-colors border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      fieldErrors.password
+                    className={`w-full px-4 py-3 text-sm transition-colors border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${fieldErrors.password
                         ? 'border-red-300 focus:border-red-400'
                         : 'border-gray-200 focus:border-primary-400'
-                    }`}
+                      }`}
                   />
 
                   {/* Error dari backend, muncul setelah submit gagal */}
