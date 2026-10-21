@@ -125,7 +125,7 @@ class SurveyController extends Controller
             ->get();
 
         $totalResponses = $responses->count();
-        $lastResponse = $responses->first()?->created_at;
+        $lastResponse = $responses->first()?->created_at?->copy()->timezone('Asia/Jakarta');
 
         $summary = $this->results->summarize($survey->questions, $responses);
         $averageScale = $summary['average_scale'];
