@@ -26,7 +26,7 @@ class AdminRoleAccessTest extends TestCase
             'name' => 'Social Admin',
             'email' => 'social-admin@example.com',
             'role' => 'adminsosmed',
-            'password' => 'secure-password',
+            'password' => 'Secure-Password1',
         ])->assertCreated();
     }
 
