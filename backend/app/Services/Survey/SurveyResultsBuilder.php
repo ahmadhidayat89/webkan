@@ -44,8 +44,8 @@ class SurveyResultsBuilder
 
         return [
             'id' => $response->id,
-            'created_at' => $response->created_at->format('Y-m-d H:i:s'),
-            'created_at_human' => $response->created_at->format(self::DISPLAY_DATE_TIME_FORMAT),
+            'created_at' => $response->created_at->copy()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'created_at_human' => $response->created_at->copy()->timezone('Asia/Jakarta')->format(self::DISPLAY_DATE_TIME_FORMAT),
             'answers' => $answers,
         ];
     }
