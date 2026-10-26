@@ -31,7 +31,7 @@ class SurveyCsvExporter
     {
         $row = [
             $index + 1,
-            $response->created_at->copy()->timezone('Asia/Jakarta')->format(SurveyResultsBuilder::DISPLAY_DATE_TIME_FORMAT),    
+            $response->created_at->copy()->timezone('Asia/Jakarta')->format(SurveyResultsBuilder::DISPLAY_DATE_TIME_FORMAT),
         ];
         foreach ($questions as $question) {
             $value = $response->answers->firstWhere('question_id', $question->id)?->answer_value;
