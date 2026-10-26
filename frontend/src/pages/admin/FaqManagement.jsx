@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
 import QuillEditor from '../../components/admin/QuillEditor';
+import DOMPurify from 'dompurify';
 
 const initialFormData = {
   question: '',
@@ -482,7 +483,7 @@ const FAQManagement = () => {
               <div
                 className="mb-4 text-sm leading-relaxed text-gray-600 line-clamp-3"
                 dangerouslySetInnerHTML={{
-                  __html: faq.answer || '',
+                  __html: DOMPurify.sanitize(faq.answer || ''),
                 }}
               />
 

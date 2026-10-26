@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import DOMPurify from 'dompurify';
 
 // Isi halaman: memuat, ada isi, atau belum tersedia
 const LegalBody = ({ loading, body }) => {
@@ -24,7 +25,7 @@ const LegalBody = ({ loading, body }) => {
           [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_ol]:space-y-1
           [&_a]:text-primary-600 [&_a]:underline
           [&_strong]:text-gray-800"
-        dangerouslySetInnerHTML={{ __html: body }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(body) }}
       />
     );
   }
