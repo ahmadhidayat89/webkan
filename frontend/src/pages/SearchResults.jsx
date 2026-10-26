@@ -109,7 +109,7 @@ const SearchResults = () => {
     if (!url) return;
 
     if (url.startsWith('/')) {
-      navigate(url);
+      void navigate(url);
     } else {
       window.location.href = url;
     }

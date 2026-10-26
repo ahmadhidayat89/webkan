@@ -258,7 +258,7 @@ const AdminLayout = ({ children }) => {
     } finally {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      navigate('/admin/login');
+      void navigate('/admin/login');
     }
   };
 
@@ -533,7 +533,7 @@ const AdminLayout = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="min-w-0 overflow-x-hidden p-6">
+        <main className="min-w-0 p-6 overflow-x-hidden">
           {children}
         </main>
 

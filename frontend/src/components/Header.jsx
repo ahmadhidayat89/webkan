@@ -171,7 +171,7 @@ const Header = () => {
     e.preventDefault();
     const trimmed = searchQuery.trim();
     if (!trimmed) return;
-    navigate(`/cari?q=${encodeURIComponent(trimmed)}`);
+    void navigate(`/cari?q=${encodeURIComponent(trimmed)}`);
     setIsMobileMenuOpen(false);
   };
 
