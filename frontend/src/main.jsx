@@ -6,7 +6,9 @@ import './index.css'
 import { i18nReady } from './i18n'
 import './utils/authFetch';
 
-i18nReady.then(() => {
+try {
+  await i18nReady
+
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
       <HelmetProvider>
@@ -14,4 +16,6 @@ i18nReady.then(() => {
       </HelmetProvider>
     </React.StrictMode>,
   )
-})
+} catch (error) {
+  console.error('Failed to initialize i18n:', error)
+}
