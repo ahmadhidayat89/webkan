@@ -26,12 +26,12 @@
     "dependencies": {
         "@hello-pangea/dnd": "^18.0.1",
         "@radix-ui/react-accordion": "^1.2.12",
-        "@tiptap/extension-image": "^3.22.5",
-        "@tiptap/extension-link": "^3.22.5",
-        "@tiptap/extension-placeholder": "^3.22.5",
-        "@tiptap/pm": "^3.22.5",
-        "@tiptap/react": "^3.22.5",
-        "@tiptap/starter-kit": "^3.22.5",
+        "@tiptap/extension-image": "^3.32.0",
+        "@tiptap/extension-link": "^3.32.0",
+        "@tiptap/extension-placeholder": "^3.32.0",
+        "@tiptap/pm": "^3.32.0",
+        "@tiptap/react": "^3.32.0",
+        "@tiptap/starter-kit": "^3.32.0",
         "lucide-react": "^1.8.0"
     }
 }
