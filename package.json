@@ -1,0 +1,10 @@
+{
+  "name": "newwebkan-workspace",
+  "private": true,
+  "engines": {
+    "node": "24.22.1"
+  },
+  "scripts": {
+    "dev:all": "npm --prefix e-training exec -- concurrently -k -n backend,frontend,e-training,e-training-vite,queue \"cd backend && php artisan serve --host=127.0.0.1 --port=8000\" \"npm --prefix frontend run dev\" \"cd e-training && php artisan serve --host=127.0.0.1 --port=8001\" \"npm --prefix e-training run dev -- --port=5174\" \"cd e-training && php artisan queue:listen --tries=1 --timeout=0\""
+  }
+}

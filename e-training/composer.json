@@ -6,7 +6,7 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.3.36",
         "barryvdh/laravel-dompdf": "^3.1",
         "chillerlan/php-qrcode": "^6.0",
         "dompdf/dompdf": "^3.1",
