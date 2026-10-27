@@ -15,11 +15,17 @@ class LpkController extends Controller
     public function __construct(
         private LpkManualImporter $manualImporter,
         private LpkFileImporter $fileImporter,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
+        $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'type'   => ['nullable', 'string', 'max:191'],
+            'tab'    => ['nullable', 'string', 'max:50'],
+            'page'   => ['nullable', 'integer', 'min:1'],
+        ]);
+
         // tab: semua | terakreditasi | dibekukan | dicabut
         $query = Lpk::query()->inTab($request->get('tab', 'semua'));
 
@@ -28,7 +34,9 @@ class LpkController extends Controller
         }
 
         if ($request->filled('search')) {
-            $s = '%' . strtolower($request->search) . '%';
+            $term = addcslashes(mb_strtolower($request->search), '%_\\');
+            $s = "%{$term}%";
+
             $query->where(function ($q) use ($s) {
                 $q->whereRaw('LOWER(name) LIKE ?', [$s])
                     ->orWhereRaw('LOWER(certificate_number) LIKE ?', [$s])
@@ -38,8 +46,7 @@ class LpkController extends Controller
         }
 
         $data = $query->naturalOrder()
-            ->paginate(min((int) $request->get('per_page', 10), 50));
-
+            ->paginate(max(1, min((int) $request->get('per_page', 10), 50)));
         return response()->json(['success' => true, 'data' => $data]);
     }
 
@@ -106,8 +113,7 @@ class LpkController extends Controller
             'email'              => ['nullable', 'string'],
             'scope'              => ['nullable', 'string'],
             'expiry_date'        => ['nullable', 'date'],
-            'certificate_link'   => ['nullable', 'string', 'max:500'],
-
+            'certificate_link'   => ['nullable', 'url:http,https', 'max:500'],
             'status'             => ['required', Rule::in(['active', 'suspended', 'revoked'])],
             'suspension_scope'   => ['required_if:status,suspended', 'nullable', Rule::in(['full', 'partial'])],
             'suspension_status'  => ['nullable', 'string'],
