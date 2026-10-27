@@ -39,7 +39,7 @@ const DirectoryPage = () => {
   // Klik pill -> buka tab sesuai status, langsung ke halaman yang memuat LPK itu
   const handlePillClick = (item) => {
     const target = STATUS_TARGET[item.status] || 'terakreditasi';
-    navigate(`/direktori/${target}?focus=${encodeURIComponent(item.certificate_number)}`);
+    void navigate(`/direktori/${target}?focus=${encodeURIComponent(item.certificate_number)}`);
   };
   const renderOpts = { onPillClick: handlePillClick };
 
@@ -290,7 +290,7 @@ const DirectoryPage = () => {
                           type="button"
                           aria-expanded={expandedId === item.id}
                           aria-label={`Lihat detail ${item.name}`}
-                          className="flex flex-1 items-start justify-between gap-3 border-0 bg-transparent p-0 text-left"
+                          className="flex items-start justify-between flex-1 gap-3 p-0 text-left bg-transparent border-0"
                           onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                         >
                           <div className="flex-1 min-w-0">

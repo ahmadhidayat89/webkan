@@ -33,28 +33,28 @@ class SearchController extends Controller
         'layanan/laboratorium' => 'Laboratorium',
         'layanan/lembaga-inspeksi' => 'Lembaga Inspeksi',
         'layanan/lembaga-verifikasi-validasi-grk' =>
-            'Lembaga Verifikasi dan/atau Validasi Gas Rumah Kaca',
+        'Lembaga Verifikasi dan/atau Validasi Gas Rumah Kaca',
         'layanan/penyelenggara-uji-profisiensi' =>
-            'Penyelenggara Uji Profisiensi',
+        'Penyelenggara Uji Profisiensi',
         'layanan/produsen-bahan-acuan' =>
-            'Produsen Bahan Acuan',
+        'Produsen Bahan Acuan',
         'layanan/sistem-manajemen' =>
-            'Sistem Manajemen',
+        'Sistem Manajemen',
         'layanan/sertifikasi-person' =>
-            'Sertifikasi Person',
+        'Sertifikasi Person',
         'layanan/sertifikasi-sni-iso-iec-17065' =>
-            'Sertifikasi Berdasarkan SNI ISO/IEC 17065',
+        'Sertifikasi Berdasarkan SNI ISO/IEC 17065',
         'layanan/sertifikasi-pembangunan-berkelanjutan' =>
-            'Sertifikasi Pembangunan Berkelanjutan',
+        'Sertifikasi Pembangunan Berkelanjutan',
 
         'unduh/dokumen-akreditasi' =>
-            'Dokumen Akreditasi',
+        'Dokumen Akreditasi',
         'unduh/materi-kegiatan' =>
-            'Materi Kegiatan',
+        'Materi Kegiatan',
         'unduh/artikel-penilaian-kesesuaian' =>
-            'Artikel Penilaian Kesesuaian',
+        'Artikel Penilaian Kesesuaian',
         'unduh/dokumen-internasional' =>
-            'Dokumen Internasional',
+        'Dokumen Internasional',
     ];
 
     /**
@@ -62,6 +62,10 @@ class SearchController extends Controller
      */
     public function index(Request $request)
     {
+        $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
+
         $q = trim((string) $request->query('q', ''));
 
         if (mb_strlen($q) < 2) {
@@ -90,13 +94,15 @@ class SearchController extends Controller
      */
     private function searchNews(string $q): array
     {
+        $like = '%' . addcslashes($q, '%_\\') . '%';
+
         try {
             $query = News::query()
-                ->where(function ($query) use ($q) {
-                    $query->where('title_id', 'ilike', "%{$q}%")
-                        ->orWhere('title_en', 'ilike', "%{$q}%")
-                        ->orWhere('excerpt_id', 'ilike', "%{$q}%")
-                        ->orWhere('excerpt_en', 'ilike', "%{$q}%");
+                ->where(function ($query) use ($like) {
+                    $query->where('title_id', 'ilike', $like)
+                        ->orWhere('title_en', 'ilike', $like)
+                        ->orWhere('excerpt_id', 'ilike', $like)
+                        ->orWhere('excerpt_en', 'ilike', $like);
                 });
 
             if (Schema::hasColumn('news', 'is_published')) {
@@ -128,11 +134,13 @@ class SearchController extends Controller
      */
     private function searchPages(string $q): array
     {
+        $like = '%' . addcslashes($q, '%_\\') . '%';
+
         try {
             $items = PageContent::query()
-                ->where(function ($query) use ($q) {
-                    $query->where('content_id', 'ilike', "%{$q}%")
-                        ->orWhere('title', 'ilike', "%{$q}%");
+                ->where(function ($query) use ($like) {
+                    $query->where('content_id', 'ilike', $like)
+                        ->orWhere('title', 'ilike', $like);
                 })
                 ->limit(8)
                 ->get();
@@ -171,11 +179,13 @@ class SearchController extends Controller
      */
     private function searchFaqs(string $q): array
     {
+        $like = '%' . addcslashes($q, '%_\\') . '%';
+
         try {
             $items = Faq::query()
-                ->where(function ($query) use ($q) {
-                    $query->where('question', 'ilike', "%{$q}%")
-                        ->orWhere('answer', 'ilike', "%{$q}%");
+                ->where(function ($query) use ($like) {
+                    $query->where('question', 'ilike', $like)
+                        ->orWhere('answer', 'ilike', $like);
                 })
                 ->limit(5)
                 ->get();

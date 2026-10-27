@@ -10,4 +10,7 @@ export default defineConfig({
         }),
         react(),
     ],
+    build: {
+        target: 'es2022',
+    },
 });

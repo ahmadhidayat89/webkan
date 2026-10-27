@@ -82,29 +82,32 @@ const resources = {
   }
 };
 
-// FIX: promise chain diganti top-level await
-try {
-  await i18n
-    .use(initReactI18next)
-    .init({
-      resources,
-      lng: getInitialLang(),
-      fallbackLng: 'id',
-      supportedLngs: SUPPORTED,
-      interpolation: {
-        escapeValue: false
-      }
-    });
-} catch (error) {
-  console.error('Gagal menginisialisasi i18n:', error);
+async function initializeI18n() {
+  try {
+    await i18n
+      .use(initReactI18next)
+      .init({
+        resources,
+        lng: getInitialLang(),
+        fallbackLng: 'id',
+        supportedLngs: SUPPORTED,
+        interpolation: {
+          escapeValue: false
+        }
+      });
+  } catch (error) {
+    console.error('Gagal menginisialisasi i18n:', error);
+  }
+
+  // Simpan pilihan setiap kali bahasa diganti (lewat tombol EN | ID di Header)
+  i18n.on('languageChanged', (lng) => {
+    try {
+      sessionStorage.setItem(LANG_KEY, lng);
+    } catch { }
+    document.documentElement.lang = lng;
+  });
 }
 
-// Simpan pilihan setiap kali bahasa diganti (lewat tombol EN | ID di Header)
-i18n.on('languageChanged', (lng) => {
-  try {
-    sessionStorage.setItem(LANG_KEY, lng);
-  } catch { }
-  document.documentElement.lang = lng;
-});
+export const i18nReady = initializeI18n();
 
 export default i18n;
