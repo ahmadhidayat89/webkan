@@ -201,7 +201,7 @@ Pastikan backend telah berjalan agar frontend dapat berkomunikasi dengan API.
 Buka terminal baru dan masuk ke direktori E-Training:
 
 ```powershell
-cd D:\MAGANGHUB\PROJECT\masha-1.2\e-training
+cd e-training
 ```
 
 Instal dependensi PHP:
