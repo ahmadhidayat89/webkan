@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, useCallback } from "react";
 import { bindSpeechNavigationStops, createSpeechReader } from "../utils/speech";
 
-export function useSpeech(language = "id-ID", navigationKey) {
+export function useSpeech({ language = "id-ID", navigationKey } = {}) {
   const supported = typeof window !== "undefined"
     && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
   const [status, setStatus] = useState("idle");
