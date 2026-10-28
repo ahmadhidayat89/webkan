@@ -96,7 +96,7 @@ export default function ProsesAkreditasi() {
           <div className="mx-auto max-w-7xl">
             <div className="flex items-start gap-8">
               {/* SIDEBAR */}
-              <aside className="flex-shrink-0 hidden lg:block w-72">
+              <aside data-no-speech className="flex-shrink-0 hidden lg:block w-72">
                 <div className="sticky space-y-4 top-28">
                   <button
                     onClick={() => navigate('/')}

@@ -1,17 +1,9 @@
 import { useLocation } from "react-router-dom";
 import { useSpeech } from "../hooks/useSpeech";
+import { getPageSpeechText } from "../utils/speech";
 
 // Rute yang TIDAK menampilkan tombol
 const EXCLUDED_PREFIXES = ["/admin", "/survei"];
-
-function getPageText() {
-  const root = document.querySelector("main") || document.body;
-  const clone = root.cloneNode(true);
-  clone
-    .querySelectorAll("[data-no-speech], [data-speak-ui], script, style, nav, header, footer")
-    .forEach((el) => el.remove());
-  return (clone.textContent || "").replace(/\s+/g, " ").trim();
-}
 
 const btnStyle = {
   background: "#0b5cad",
@@ -66,7 +58,7 @@ export default function GlobalSpeakButton() {
       <legend style={srOnly}>Pembaca teks halaman</legend>
 
       {status === "idle" && (
-        <button type="button" style={btnStyle} onClick={() => speak(getPageText())}>
+        <button type="button" style={btnStyle} onClick={() => speak(getPageSpeechText(document.querySelector("main") || document.body))}>
           🔊 Dengarkan halaman
         </button>
       )}
