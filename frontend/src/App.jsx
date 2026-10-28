@@ -24,6 +24,7 @@ const ContentManagement = lazy(() => import('./pages/admin/ContentManagement'));
 import DirectoryManagement from './pages/admin/DirectoryManagement';
 import DocumentManagement from './pages/admin/DocumentManagement';
 import AutoPageTranslator from './components/AutoPageTranslator';
+import GlobalSpeakButton from './components/GlobalSpeakButton';
 
 import ProtectedRoute from './components/admin/ProtectedRoute';
 import LegalManagement from './pages/admin/LegalManagement';
@@ -48,6 +49,7 @@ function App() {
   return (
     <Router>
       <AutoPageTranslator />
+      <GlobalSpeakButton />
 
       <Routes>
 
