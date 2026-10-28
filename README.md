@@ -171,7 +171,7 @@ Backend dapat diakses melalui `http://localhost:8000`.
 Buka terminal baru dan masuk ke direktori frontend:
 
 ```powershell
-cd D:\MAGANGHUB\PROJECT\masha-1.2\frontend
+cd frontend
 ```
 
 Instal dependensi:
