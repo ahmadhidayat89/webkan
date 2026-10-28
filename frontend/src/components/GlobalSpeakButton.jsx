@@ -1,18 +1,10 @@
-import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useSpeech } from "../hooks/useSpeech";
+import { getPageSpeechText } from "../utils/speech";
 
 // Rute yang TIDAK menampilkan tombol
 const EXCLUDED_PREFIXES = ["/admin", "/survei"];
-
-function getPageText() {
-  const root = document.querySelector("main") || document.body;
-  const clone = root.cloneNode(true);
-  clone
-    .querySelectorAll("[data-no-speech], [data-speak-ui], script, style, nav, header, footer")
-    .forEach((el) => el.remove());
-  return (clone.textContent || "").replace(/\s+/g, " ").trim();
-}
 
 const btnStyle = {
   background: "#0b5cad",
@@ -27,13 +19,11 @@ const btnStyle = {
 };
 
 export default function GlobalSpeakButton() {
-  const { supported, status, speak, pause, resume, stop } = useSpeech();
-  const { pathname } = useLocation();
-
-  // Hentikan suara saat pindah halaman
-  useEffect(() => {
-    stop();
-  }, [pathname, stop]);
+  const { i18n } = useTranslation();
+  const english = (i18n.resolvedLanguage || i18n.language || "id").startsWith("en");
+  const language = english ? "en-US" : "id-ID";
+  const { pathname, key } = useLocation();
+  const { supported, status, speak, pause, resume, stop } = useSpeech(language, key);
 
   const excluded = EXCLUDED_PREFIXES.some((p) => pathname.startsWith(p));
   if (!supported || excluded) return null;
@@ -41,8 +31,10 @@ export default function GlobalSpeakButton() {
   return (
     <div
       data-speak-ui
+      data-no-auto-translate="true"
+      lang={language}
       role="group"
-      aria-label="Pembaca teks halaman"
+      aria-label={english ? "Page reader" : "Pembaca teks halaman"}
       style={{
         position: "fixed",
         right: 16,
@@ -53,19 +45,19 @@ export default function GlobalSpeakButton() {
       }}
     >
       {status === "idle" && (
-        <button type="button" style={btnStyle} onClick={() => speak(getPageText())}>
-          🔊 Dengarkan halaman
+        <button type="button" style={btnStyle} onClick={() => speak(getPageSpeechText(document.querySelector("main") || document.body))}>
+          🔊 {english ? "Read page aloud" : "Dengarkan halaman"}
         </button>
       )}
       {status === "speaking" && (
-        <button type="button" style={btnStyle} onClick={pause}>⏸ Jeda</button>
+        <button type="button" style={btnStyle} onClick={pause}>⏸ {english ? "Pause" : "Jeda"}</button>
       )}
       {status === "paused" && (
-        <button type="button" style={btnStyle} onClick={resume}>▶ Lanjut</button>
+        <button type="button" style={btnStyle} onClick={resume}>▶ {english ? "Resume" : "Lanjut"}</button>
       )}
       {status !== "idle" && (
         <button type="button" style={{ ...btnStyle, background: "#b91c1c" }} onClick={stop}>
-          ⏹ Berhenti
+          ⏹ {english ? "Stop" : "Berhenti"}
         </button>
       )}
     </div>

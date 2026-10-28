@@ -95,7 +95,7 @@ const About = () => {
             <div className="flex items-start gap-8">
 
               {/* Sidebar */}
-              <aside className="flex-shrink-0 hidden lg:block w-72">
+              <aside data-no-speech className="flex-shrink-0 hidden lg:block w-72">
                 <div className="sticky space-y-4 top-28">
                   <button
                     onClick={() => navigate('/')}

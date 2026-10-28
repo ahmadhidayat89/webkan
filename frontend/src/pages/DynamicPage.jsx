@@ -959,7 +959,7 @@ function SidebarLink({ page, active, onClick }) {
 
 function Sidebar({ siblings, activeId, navigate }) {
   return (
-    <aside className="hidden lg:block w-72 flex-shrink-0">
+    <aside data-no-speech className="hidden lg:block w-72 flex-shrink-0">
       <div className="sticky top-28 space-y-4">
         <button
           onClick={() => navigate('/')}
@@ -1016,6 +1016,7 @@ function MobileSectionNav({ sectionKey, siblings, activeId, navigate }) {
 function BackButton({ onClick }) {
   return (
     <button
+      data-no-speech
       onClick={onClick}
       className="inline-flex items-center gap-2 mb-6 px-5 py-3 bg-gray-50 hover:bg-gray-200 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 transition-colors"
     >
@@ -1177,6 +1178,7 @@ function EmptyContent({ navigate }) {
       <button
         onClick={() => navigate('/')}
         className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors"
+        data-no-speech
       >
         <FaHome />
         <span>Kembali ke Beranda</span>
