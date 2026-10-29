@@ -101,7 +101,7 @@ const Contact = () => {
       submitting: "Mengirim...",
       success: "Pesan berhasil dikirim! Kami akan menghubungi Anda segera.",
       consentText:
-        "Saya menyetujui Komite Akreditasi Nasional mengumpulkan dan memproses data pribadi saya (nama, email, nomor telepon) untuk menanggapi pesan ini sesuai dengan",
+        "Saya menyetujui Komite Akreditasi Nasional mengumpulkan dan memproses data pribadi saya untuk menanggapi pesan ini sesuai dengan",
       privacyLink: "Kebijakan Privasi",
     },
   };
