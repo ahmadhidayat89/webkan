@@ -73,13 +73,18 @@ class CertificateAdminController extends Controller
         ]));
 
         // Klik cepat (tanpa modal): kalau keterangan masih kosong, isi otomatis
-        // dengan tanggal selesai peserta (atau hari ini kalau belum tercatat).
+        // dengan tanggal selesai peserta (atau hari ini kalau belum tercatat)
+        // dan durasi pelatihan dari detail kursus.
         if (! $request->has('event_text') && empty($cert->event_text)) {
             $tanggal = ($enrollment->completed_at ?? now())
                 ->locale('id')
                 ->isoFormat('D MMMM YYYY');
 
             $cert->event_text = "Yang diselesaikan pada tanggal {$tanggal}";
+
+            if ($course->duration_hours) {
+                $cert->event_text .= ", dilaksanakan secara daring selama {$course->duration_hours} jam";
+            }
         }
 
         // Simpan dulu agar punya ID untuk generate
@@ -181,7 +186,10 @@ class CertificateAdminController extends Controller
             'certificate_number' => 'KAN-' . now()->year . '-PREVIEW-000001',
             'recipient_name'     => 'Nama Peserta Contoh',
             'status'             => 'lulus',
-            'event_text'         => 'Yang diselesaikan pada tanggal ' . now()->locale('id')->isoFormat('D MMMM YYYY') . ' secara luring di Surabaya dengan 40 JP',
+            'event_text'         => 'Yang diselesaikan pada tanggal '
+                . now()->locale('id')->isoFormat('D MMMM YYYY')
+                . ' secara daring dengan '
+                . ($course->duration_hours ?: 0) . ' JP',
         ]);
 
         $user = new User();
