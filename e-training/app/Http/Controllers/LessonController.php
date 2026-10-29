@@ -55,7 +55,12 @@ class LessonController extends Controller
         ]);
 
         $lesson->update($request->only([
-            'title', 'description', 'video_url', 'duration_minutes', 'is_published', 'start_datetime',
+            'title',
+            'description',
+            'video_url',
+            'duration_minutes',
+            'is_published',
+            'start_datetime',
         ]));
 
         return back()->with('success', 'Materi berhasil diperbarui.');
