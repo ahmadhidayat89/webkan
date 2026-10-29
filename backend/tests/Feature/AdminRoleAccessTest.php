@@ -91,12 +91,29 @@ class AdminRoleAccessTest extends TestCase
             'phone' => '08123456789',
             'subject' => 'Test message',
             'message' => 'Message body',
+            'consent' => true,
         ])->assertOk()->assertJsonPath('success', true);
 
         $this->assertDatabaseHas('contact_submissions', [
             'email' => 'sender@example.com',
             'subject' => 'Test message',
             'message' => 'Message body',
+        ]);
+    }
+
+    public function test_public_contact_message_is_rejected_without_consent(): void
+    {
+        Mail::fake();
+
+        $this->postJson('/api/v1/contact', [
+            'name' => 'Test Sender',
+            'email' => 'sender@example.com',
+            'subject' => 'Test message',
+            'message' => 'Message body',
+        ])->assertUnprocessable()->assertJsonValidationErrors('consent');
+
+        $this->assertDatabaseMissing('contact_submissions', [
+            'email' => 'sender@example.com',
         ]);
     }
 

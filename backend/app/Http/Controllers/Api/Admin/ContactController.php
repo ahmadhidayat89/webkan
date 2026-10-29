@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ContactSubmission;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
@@ -46,6 +47,9 @@ class ContactController extends Controller
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]*$/'],
             'subject' => ['required', 'string', 'max:200', $noSqli],
             'message' => ['required', 'string', 'max:5000', $noSqli],
+            'consent' => ['accepted'],
+        ], [
+            'consent.accepted' => 'Anda harus menyetujui pemrosesan data pribadi.',
         ]);
 
         // Buang baris baru dari field yang dipakai di header email
@@ -53,8 +57,9 @@ class ContactController extends Controller
             $validated[$field] = trim(preg_replace('/[\r\n]+/', ' ', $validated[$field]));
         }
 
-        // Pesan disimpan dulu, supaya tidak hilang walau email gagal
-        ContactSubmission::create($validated);
+        // Pesan disimpan dulu, supaya tidak hilang walau email gagal.
+        // 'consent' hanya untuk validasi, bukan kolom di tabel.
+        ContactSubmission::create(Arr::except($validated, ['consent']));
 
         try {
             $adminEmail = Setting::get('contact_inbox_email') ?: config('mail.to_address');
