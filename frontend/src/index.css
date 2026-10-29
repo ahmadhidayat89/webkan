@@ -10,23 +10,23 @@
 
 @layer components {
   .container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply px-4 mx-auto max-w-7xl sm:px-6 lg:px-8;
   }
 
   .btn {
-    @apply px-6 py-3 rounded-lg font-medium transition-all duration-300;
+    @apply px-6 py-3 font-medium transition-all duration-300 rounded-lg;
   }
 
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
+    @apply text-white bg-primary-600 hover:bg-primary-700 active:bg-primary-800;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 active:bg-gray-400;
+    @apply text-gray-800 bg-gray-200 hover:bg-gray-300 active:bg-gray-400;
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl;
+    @apply overflow-hidden transition-all duration-300 bg-white rounded-lg shadow-md hover:shadow-xl;
   }
 }
 
@@ -52,3 +52,8 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Alignment dari Quill editor */
+.ql-align-center  { text-align: center; }
+.ql-align-right   { text-align: right; }
+.ql-align-justify { text-align: justify; }

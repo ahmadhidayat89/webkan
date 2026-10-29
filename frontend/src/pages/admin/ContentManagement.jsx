@@ -215,6 +215,7 @@ const quillModules = {
     [{ header: [2, 3, false] }],
     ['bold', 'italic', 'underline', 'strike'],
     [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ align: [] }],
     ['blockquote', 'link'],
     ['table-better'],
     ['clean'],
