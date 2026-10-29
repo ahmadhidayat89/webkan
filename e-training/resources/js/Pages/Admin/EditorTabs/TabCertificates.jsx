@@ -25,9 +25,18 @@ const bacaTanggalDariTeks = (teks) => {
 };
 
 const KALIMAT_TANGGAL = 'Yang diselesaikan pada tanggal';
-const POLA_TANGGAL = new RegExp(String.raw`^${KALIMAT_TANGGAL} \d{1,2} \S+ \d{4}`);
 
-// Ganti hanya kalimat tanggal di awal teks; teks setelahnya (tempat, JP) tidak berubah.
+// ", dilaksanakan secara daring selama 3 jam" (kosong kalau durasi tidak ada)
+const klausaDurasi = (jam) =>
+    jam ? `, dilaksanakan secara daring selama ${jam} jam` : '';
+
+// Cocok dengan kalimat tanggal + (opsional) klausa durasi di awal teks,
+// supaya saat tanggal diganti, durasi lama tidak dobel.
+const POLA_TANGGAL = new RegExp(
+    String.raw`^${KALIMAT_TANGGAL} \d{1,2} \S+ \d{4}(?:, dilaksanakan secara daring selama [\d.,]+ jam)?`
+);
+
+// Ganti hanya kalimat tanggal+durasi di awal teks; teks setelahnya (tempat, JP) tidak berubah.
 const gantiKalimatTanggal = (current, awal) => {
     if (POLA_TANGGAL.test(current)) {
         return current.replace(POLA_TANGGAL, awal);
@@ -39,6 +48,9 @@ const gantiKalimatTanggal = (current, awal) => {
 };
 
 export default function TabCertificates({ courseId, enrolledStudents, certificates, course }) {
+    // Durasi kursus (jam) dari detail kursus
+    const durasiJam = course.duration_hours;
+
     // Modal edit data sertifikat
     const [modalStudent, setModalStudent] = useState(null);
     const [generatingId, setGeneratingId] = useState(null);
@@ -66,10 +78,10 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
     // Tanggal selesai (hanya untuk membantu mengisi event_text)
     const [eventDate, setEventDate] = useState('');
 
-    // Ganti hanya bagian tanggal; teks setelahnya (tempat, JP) tidak ikut berubah.
+    // Ganti hanya bagian tanggal + durasi; teks setelahnya (tempat, JP) tidak ikut berubah.
     const applyDate = (value) => {
         if (!value) return;
-        const awal = `${KALIMAT_TANGGAL} ${formatTanggal(value)}`;
+        const awal = `${KALIMAT_TANGGAL} ${formatTanggal(value)}${klausaDurasi(durasiJam)}`;
         const current = certForm.data.event_text || '';
 
         certForm.setData('event_text', gantiKalimatTanggal(current, awal));
@@ -105,9 +117,9 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
             user_id: student.user_id,
             recipient_name: cert?.recipient_name || student.name,
             status: cert?.status || 'lulus',
-            // Sudah pernah diisi -> pakai yang tersimpan. Belum -> isi dari tanggal default.
+            // Sudah pernah diisi -> pakai yang tersimpan. Belum -> isi dari tanggal default + durasi kursus.
             event_text: cert?.event_text
-                || `${KALIMAT_TANGGAL} ${formatTanggal(defaultDate)}`,
+                || `${KALIMAT_TANGGAL} ${formatTanggal(defaultDate)}${klausaDurasi(durasiJam)}`,
             signer_name: cert?.signer_name || '',
             signer_title: cert?.signer_title || '',
         });
@@ -378,7 +390,6 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
 
                         {/* Nama di sertifikat */}
                         <div>
-                            {/* FIX: label dihubungkan ke kontrol lewat htmlFor + id */}
                             <label
                                 htmlFor="cert-recipient-name"
                                 className="block text-xs font-semibold text-gray-700 mb-1"
@@ -453,11 +464,11 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                                 onChange={e => certForm.setData('event_text', e.target.value)}
                                 rows={3}
                                 maxLength={500}
-                                placeholder="Pilih tanggal di atas, lalu tambahkan: secara luring di Surabaya dengan 40 JP"
+                                placeholder="Pilih tanggal di atas, lalu tambahkan: di Surabaya dengan 40 JP"
                                 className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
                             />
                             <p className="text-[10px] text-gray-400 mt-1">
-                                Kalimat tanggal terisi otomatis dan masih bisa diedit. Tambahkan tempat dan JP setelahnya.
+                                Tanggal dan durasi terisi otomatis dan masih bisa diedit. Tambahkan tempat setelahnya.
                             </p>
                             {certForm.errors.event_text && (
                                 <p className="text-xs text-red-600 mt-1">{certForm.errors.event_text}</p>
