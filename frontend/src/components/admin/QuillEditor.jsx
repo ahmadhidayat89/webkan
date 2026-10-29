@@ -8,6 +8,10 @@ const BUTTONS = [
   { key: 'underline', label: 'U', title: 'Garis bawah', className: 'underline' },
   { key: 'ordered', label: '1.', title: 'Daftar angka' },
   { key: 'bullet', label: '•', title: 'Daftar poin' },
+  { key: 'align-left', label: '⇤', title: 'Rata kiri' },
+  { key: 'align-center', label: '↔', title: 'Rata tengah' },
+  { key: 'align-right', label: '⇥', title: 'Rata kanan' },
+  { key: 'align-justify', label: '☰', title: 'Rata kiri-kanan' },
   { key: 'link', label: 'Link', title: 'Tautan' },
   { key: 'clean', label: 'Tx', title: 'Hapus format' },
 ];
@@ -37,6 +41,10 @@ const applyFormatAction = (quill, range, current, key) => {
   } else if (key === 'ordered' || key === 'bullet') {
     const list = key === 'ordered' ? 'ordered' : 'bullet';
     quill.format('list', current.list === list ? false : list);
+  } else if (key.startsWith('align-')) {
+    const align = key.replace('align-', '');
+    // Quill: rata kiri = default (false), lainnya = 'center' | 'right' | 'justify'
+    quill.format('align', align === 'left' || current.align === align ? false : align);
   } else if (key === 'link') {
     applyLinkFormat(quill, range, current);
   } else if (key === 'clean') {
@@ -128,6 +136,10 @@ const QuillEditor = ({ value, onChange, placeholder }) => {
   const isActive = (key) => {
     if (key === 'ordered') return formats.list === 'ordered';
     if (key === 'bullet') return formats.list === 'bullet';
+    if (key.startsWith('align-')) {
+      const align = key.replace('align-', '');
+      return align === 'left' ? !formats.align : formats.align === align;
+    }
     return Boolean(formats[key]);
   };
 
@@ -141,13 +153,11 @@ const QuillEditor = ({ value, onChange, placeholder }) => {
             title={btn.title}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => applyFormat(btn.key)}
-            className={`min-w-[32px] rounded-md px-2 py-1 text-xs transition-colors ${
-              btn.className || 'font-bold'
-            } ${
-              isActive(btn.key)
+            className={`min-w-[32px] rounded-md px-2 py-1 text-xs transition-colors ${btn.className || 'font-bold'
+              } ${isActive(btn.key)
                 ? 'bg-blue-600 text-white'
                 : 'text-gray-700 hover:bg-gray-200'
-            }`}
+              }`}
           >
             {btn.label}
           </button>
