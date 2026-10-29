@@ -82,7 +82,7 @@ class LessonController extends Controller
     public function uploadFile(Request $request, Lesson $lesson): RedirectResponse
     {
         $request->validate([
-            'file' => 'required|file|max:8192|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt',
+            'file' => 'required|file|max:8000|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt',
         ]);
 
         $file = $request->file('file');
