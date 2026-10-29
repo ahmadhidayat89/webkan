@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -9,6 +9,7 @@ import {
   FaClock,
   FaPaperPlane,
   FaExternalLinkAlt,
+  FaExclamationCircle,
 } from "react-icons/fa";
 import useContactSettings, {
   phoneLink,
@@ -25,6 +26,12 @@ const MAP_EMBED =
 // Cadangan kalau pin di atas belum pas (pakai koordinat):
 // const MAP_EMBED = "https://www.google.com/maps?q=-6.236362,106.8233071&z=18&hl=id&output=embed";
 
+// Halaman Kebijakan Privasi (diatur dari admin: Kelola Halaman Legal)
+const PRIVACY_LINK = "/privacy";
+
+// Tanda wajib diisi (bintang merah)
+const Required = () => <span className="text-red-500">*</span>;
+
 // Kotak abu-abu yang tampil selama data dari admin dimuat
 const CardSkeleton = () => (
   <div className="space-y-2 animate-pulse">
@@ -33,12 +40,41 @@ const CardSkeleton = () => (
   </div>
 );
 
+// Cek nomor telepon: hanya angka dan + - ( ), minimal 10 digit angka.
+// Mengembalikan pesan error, atau "" kalau sudah sesuai.
+const cekTelepon = (value) => {
+  if (!value) return "";
+  if (!/^[0-9+\-\s()]+$/.test(value)) {
+    return "Nomor telepon hanya boleh berisi angka dan tanda + - ( ).";
+  }
+  if (value.replaceAll(/\D/g, "").length < 10) {
+    return "Nomor telepon minimal 10 digit angka.";
+  }
+  return "";
+};
+
+// Pesan bawaan browser (Inggris) diganti bahasa Indonesia
+const handleInvalid = (e) => {
+  const el = e.target;
+  if (el.validity.valueMissing) {
+    el.setCustomValidity(
+      el.type === "checkbox"
+        ? "Centang persetujuan terlebih dahulu."
+        : "Kolom ini wajib diisi."
+    );
+  } else if (el.validity.typeMismatch) {
+    el.setCustomValidity("Format email tidak valid.");
+  }
+};
+
 const Contact = () => {
   const { i18n } = useTranslation();
   const lang = (i18n.resolvedLanguage || i18n.language || "id").startsWith("en")
     ? "en"
     : "id";
   const contact = useContactSettings(lang);
+
+  const formRef = useRef(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -47,8 +83,10 @@ const Contact = () => {
     subject: "",
     message: "",
   });
+  const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const content = {
     title: "Hubungi Kami",
@@ -62,29 +100,44 @@ const Contact = () => {
       submit: "Kirim Pesan",
       submitting: "Mengirim...",
       success: "Pesan berhasil dikirim! Kami akan menghubungi Anda segera.",
+      consentText:
+        "Saya menyetujui Komite Akreditasi Nasional mengumpulkan dan memproses data pribadi saya (nama, email, nomor telepon) untuk menanggapi pesan ini sesuai dengan",
+      privacyLink: "Kebijakan Privasi",
     },
   };
 
   const t = content;
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Hapus pesan error lama, lalu cek ulang khusus nomor telepon
+    e.target.setCustomValidity(name === "phone" ? cekTelepon(value) : "");
+  };
+
+  const handleConsentChange = (e) => {
+    setConsent(e.target.checked);
+    e.target.setCustomValidity("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!consent) return;
+
     setSubmitting(true);
+    setErrorMsg("");
 
     try {
       const response = await fetch("/api/v1/contact", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, consent }),
       });
 
       const data = await response.json();
@@ -99,16 +152,29 @@ const Contact = () => {
           subject: "",
           message: "",
         });
+        setConsent(false);
 
         setTimeout(() => {
           setSubmitted(false);
         }, 5000);
-      } else {
-        alert(data.message || "Failed to send message. Please try again.");
+        return;
       }
+
+      // Error validasi dari server: tampilkan di kolom yang bermasalah
+      if (response.status === 422 && data.errors) {
+        const [field, messages] = Object.entries(data.errors)[0];
+        const el = formRef.current?.elements?.[field];
+        if (el) {
+          el.setCustomValidity(messages[0]);
+          el.reportValidity();
+          return;
+        }
+      }
+
+      setErrorMsg(data.message || "Pesan gagal dikirim. Silakan coba lagi.");
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("An error occurred. Please try again later.");
+      setErrorMsg("Terjadi kesalahan. Silakan coba lagi nanti.");
     } finally {
       setSubmitting(false);
     }
@@ -210,6 +276,9 @@ const Contact = () => {
     },
   ];
 
+  const inputClass =
+    "w-full px-4 py-3 transition-all border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent";
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -287,84 +356,152 @@ const Contact = () => {
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                {errorMsg && (
+                  <div className="p-4 mb-6 border-2 border-red-500 bg-red-50 rounded-xl">
+                    <p className="flex items-center gap-2 font-semibold text-red-800">
+                      <FaExclamationCircle />
+                      {errorMsg}
+                    </p>
+                  </div>
+                )}
+
+                <form
+                  ref={formRef}
+                  onSubmit={handleSubmit}
+                  className="space-y-6"
+                >
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-700">
-                      {t.form.name} *
+                    <label
+                      htmlFor="contact-name"
+                      className="block mb-2 text-sm font-bold text-gray-700"
+                    >
+                      {t.form.name} <Required />
                     </label>
 
                     <input
+                      id="contact-name"
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
+                      onInvalid={handleInvalid}
                       required
-                      className="w-full px-4 py-3 transition-all border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className={inputClass}
                     />
                   </div>
 
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-700">
-                      {t.form.email} *
+                    <label
+                      htmlFor="contact-email"
+                      className="block mb-2 text-sm font-bold text-gray-700"
+                    >
+                      {t.form.email} <Required />
                     </label>
 
                     <input
+                      id="contact-email"
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
+                      onInvalid={handleInvalid}
                       required
-                      className="w-full px-4 py-3 transition-all border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className={inputClass}
                     />
                   </div>
 
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-700">
-                      {t.form.phone}
+                    <label
+                      htmlFor="contact-phone"
+                      className="block mb-2 text-sm font-bold text-gray-700"
+                    >
+                      {t.form.phone} <Required />
                     </label>
 
                     <input
+                      id="contact-phone"
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 transition-all border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      onInvalid={handleInvalid}
+                      required
+                      className={inputClass}
                     />
                   </div>
 
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-700">
-                      {t.form.subject} *
+                    <label
+                      htmlFor="contact-subject"
+                      className="block mb-2 text-sm font-bold text-gray-700"
+                    >
+                      {t.form.subject} <Required />
                     </label>
 
                     <input
+                      id="contact-subject"
                       type="text"
                       name="subject"
                       value={formData.subject}
                       onChange={handleChange}
+                      onInvalid={handleInvalid}
                       required
-                      className="w-full px-4 py-3 transition-all border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className={inputClass}
                     />
                   </div>
 
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-700">
-                      {t.form.message} *
+                    <label
+                      htmlFor="contact-message"
+                      className="block mb-2 text-sm font-bold text-gray-700"
+                    >
+                      {t.form.message} <Required />
                     </label>
 
                     <textarea
+                      id="contact-message"
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
+                      onInvalid={handleInvalid}
                       required
                       rows="6"
-                      className="w-full px-4 py-3 transition-all border-2 border-gray-300 resize-none rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className={`${inputClass} resize-none`}
                     />
+                  </div>
+
+                  {/* Persetujuan pemrosesan data pribadi (UU PDP) */}
+                  <div className="flex items-start gap-3">
+                    <input
+                      id="persetujuan-pdp"
+                      type="checkbox"
+                      name="consent"
+                      checked={consent}
+                      onChange={handleConsentChange}
+                      onInvalid={handleInvalid}
+                      required
+                      className="w-5 h-5 mt-1 border-2 border-gray-300 rounded text-primary-600 focus:ring-primary-500"
+                    />
+                    <label
+                      htmlFor="persetujuan-pdp"
+                      className="text-sm text-gray-600"
+                    >
+                      {t.form.consentText}{" "}
+                      <a
+                        href={PRIVACY_LINK}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold underline text-primary-700 hover:text-primary-900"
+                      >
+                        {t.form.privacyLink}
+                      </a>
+                      . <Required />
+                    </label>
                   </div>
 
                   <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || !consent}
                     className="flex items-center justify-center w-full gap-3 px-8 py-4 text-lg font-bold text-white transition-all shadow-lg bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl hover:scale-105 hover:shadow-primary-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FaPaperPlane />
