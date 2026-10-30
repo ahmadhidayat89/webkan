@@ -8,10 +8,14 @@ use App\Models\SurveyAnswer;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyResponse;
 use App\Services\Survey\SurveyFlow;
-use Illuminate\Support\Str;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class SurveyController extends Controller
 {
@@ -38,11 +42,11 @@ class SurveyController extends Controller
         $survey = Survey::with(['questions' => function ($q) {
             $q->orderBy('order', 'asc');
         }])
-        ->where('code', $code)
-        ->where('is_published', true)
-        ->first();
+            ->where('code', $code)
+            ->where('is_published', true)
+            ->first();
 
-        if (!$survey) {
+        if (! $survey) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kuesioner tidak ditemukan atau belum diterbitkan.',
@@ -51,11 +55,16 @@ class SurveyController extends Controller
 
         $editResponse = null;
         if ($request->filled('edit')) {
-            if (empty($survey->settings['allow_edit'])) return response()->json(['message' => 'Perubahan jawaban tidak diizinkan.'], 403);
+            if (empty($survey->settings['allow_edit'])) {
+                return response()->json(['message' => 'Perubahan jawaban tidak diizinkan.'], 403);
+            }
             $request->validate(['edit' => 'required|string|size:64']);
             $editResponse = $survey->responses()->with('answers')->where('edit_token', $request->query('edit'))->first();
-            if (!$editResponse) return response()->json(['message' => 'Tautan edit tidak valid.'], 403);
+            if (! $editResponse) {
+                return response()->json(['message' => 'Tautan edit tidak valid.'], 403);
+            }
         }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -64,7 +73,7 @@ class SurveyController extends Controller
                 'title' => $survey->title,
                 'description' => $survey->description,
                 'is_active' => app(SurveyFlow::class)->isOpen($survey),
-                'settings' => \Illuminate\Support\Arr::except($survey->settings ?? [], ['collect_email', 'limit_one', 'send_receipt', 'notify_owner']),
+                'settings' => Arr::except($survey->settings ?? [], ['collect_email', 'limit_one', 'send_receipt', 'notify_owner']),
                 'questions' => $survey->questions->map(function ($q) {
                     $validation = $q->validation ?? [];
                     $type = $q->type;
@@ -72,6 +81,7 @@ class SurveyController extends Controller
                         $validation['answer_type'] = $type;
                         $type = 'short';
                     }
+
                     return [
                         'id' => $q->id,
                         'order' => $q->order,
@@ -107,6 +117,7 @@ class SurveyController extends Controller
         }
 
         $request->validate(['edit_token' => 'nullable|string|size:64']);
+
         return $this->storeAnswers($survey, $answers, $request);
     }
 
@@ -122,7 +133,7 @@ class SurveyController extends Controller
         }
 
         // "answers" harus array, kalau tidak, type hint array di bawah melempar error 500
-        if (!is_array($answers)) {
+        if (! is_array($answers)) {
             return response()->json(['success' => false, 'message' => 'Format jawaban tidak valid.'], 422);
         }
 
@@ -134,10 +145,10 @@ class SurveyController extends Controller
      */
     private function unavailableResponse(?Survey $survey)
     {
-        if (!$survey) {
+        if (! $survey) {
             return response()->json(['success' => false, 'message' => 'Kuesioner tidak ditemukan atau belum diterbitkan.'], 404);
         }
-        if (!app(SurveyFlow::class)->isOpen($survey)) {
+        if (! app(SurveyFlow::class)->isOpen($survey)) {
             return response()->json(['success' => false, 'message' => 'Kuesioner ini sedang ditutup dan tidak menerima jawaban baru.'], 422);
         }
 
@@ -147,7 +158,9 @@ class SurveyController extends Controller
     private function validateAnswers(Survey $survey, array $answers)
     {
         foreach (app(SurveyFlow::class)->visibleQuestions($survey->questions, $answers) as $question) {
-            if (in_array($question->type, SurveyFlow::CONTENT_TYPES, true)) continue;
+            if (in_array($question->type, SurveyFlow::CONTENT_TYPES, true)) {
+                continue;
+            }
             $answer = $answers[$question->id] ?? null;
             $error = $this->validateAnswer($question, $answer, $survey);
             if ($error !== null) {
@@ -161,7 +174,10 @@ class SurveyController extends Controller
     private function validateAnswer(SurveyQuestion $question, $answer, Survey $survey): ?string
     {
         if ($this->isEmptyAnswer($answer)) {
-            if (in_array($question->type, ['grid', 'check_grid'], true) && !empty($question->config['require_rows'])) return 'Isi setiap baris tabel.';
+            if (in_array($question->type, ['grid', 'check_grid'], true) && ! empty($question->config['require_rows'])) {
+                return 'Isi setiap baris tabel.';
+            }
+
             return $question->is_required ? 'Pertanyaan ini wajib diisi.' : null;
         }
 
@@ -177,15 +193,7 @@ class SurveyController extends Controller
         $rules = $question->validation ?? [];
 
         if ($question->type === 'file') {
-            $files = array_is_list($answer) ? $answer : [$answer];
-            if (count($files) > ($question->config['file_max_files'] ?? 1)) return 'Jumlah file melebihi batas.';
-            foreach ($files as $file) {
-                if (!$this->isSurveyUpload($file, $survey)) return 'Unggah berkas yang valid.';
-                $prefix = asset('storage/') . '/';
-                $path = substr($file['url'], strlen($prefix));
-                if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) return 'Berkas tidak ditemukan.';
-                if (\Illuminate\Support\Facades\Storage::disk('public')->size($path) > ($question->config['file_max_mb'] ?? 10) * 1024 * 1024) return 'Ukuran berkas melebihi batas.';
-            }
+            return $this->validateFileAnswer($question, $answer, $survey);
         }
         if (in_array($question->type, ['short', 'para'], true)) {
             return $this->validateTextAnswer($question, $answer, $rules);
@@ -194,7 +202,40 @@ class SurveyController extends Controller
             return $this->validateCheckAnswer($question, $answer, $rules);
         }
 
-        return $this->validateOtherAnswer($question, $answer, $survey);
+        return $this->validateOtherAnswer($question, $answer);
+    }
+
+    private function validateFileAnswer(SurveyQuestion $question, array $answer, Survey $survey): ?string
+    {
+        $files = array_is_list($answer) ? $answer : [$answer];
+        if (count($files) > ($question->config['file_max_files'] ?? 1)) {
+            return 'Jumlah file melebihi batas.';
+        }
+        foreach ($files as $file) {
+            $error = $this->validateStoredFile($question, $file, $survey);
+            if ($error !== null) {
+                return $error;
+            }
+        }
+
+        return null;
+    }
+
+    private function validateStoredFile(SurveyQuestion $question, $file, Survey $survey): ?string
+    {
+        if (! $this->isSurveyUpload($file, $survey)) {
+            return 'Unggah berkas yang valid.';
+        }
+        $path = substr($file['url'], strlen(asset('storage/').'/'));
+        $storage = Storage::disk('public');
+        if (! $storage->exists($path)) {
+            return 'Berkas tidak ditemukan.';
+        }
+        if ($storage->size($path) > ($question->config['file_max_mb'] ?? 10) * 1024 * 1024) {
+            return 'Ukuran berkas melebihi batas.';
+        }
+
+        return null;
     }
 
     /**
@@ -208,7 +249,7 @@ class SurveyController extends Controller
             return 'Format jawaban tidak valid.';
         }
 
-        if ($question->type === 'check' && array_filter($answer, fn ($item) => !is_string($item))) {
+        if ($question->type === 'check' && array_filter($answer, fn ($item) => ! is_string($item))) {
             return 'Pilihan jawaban tidak valid.';
         }
 
@@ -227,7 +268,7 @@ class SurveyController extends Controller
             default => null,
         };
 
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             return null;
         }
 
@@ -255,13 +296,14 @@ class SurveyController extends Controller
     {
         $length = mb_strlen(trim($answer));
         if (isset($rules['min_length']) && $length < $rules['min_length']) {
-            return 'Jawaban terlalu pendek (minimal ' . $rules['min_length'] . ' karakter).';
+            return 'Jawaban terlalu pendek (minimal '.$rules['min_length'].' karakter).';
         }
         if (isset($rules['max_length']) && $length > $rules['max_length']) {
-            return 'Jawaban terlalu panjang (maksimal ' . $rules['max_length'] . ' karakter).';
+            return 'Jawaban terlalu panjang (maksimal '.$rules['max_length'].' karakter).';
         }
 
         $type = $question->type === 'short' ? ($rules['answer_type'] ?? 'text') : $question->type;
+
         return match ($type) {
             'email' => filter_var($answer, FILTER_VALIDATE_EMAIL) ? null : 'Masukkan alamat email yang valid.',
             'phone' => $this->isValidPhone($answer) ? null : 'Masukkan nomor telepon yang valid (7–15 digit).',
@@ -274,23 +316,27 @@ class SurveyController extends Controller
     private function validateCheckAnswer(SurveyQuestion $question, array $answer, array $rules): ?string
     {
         if (isset($rules['min_selections']) && count($answer) < $rules['min_selections']) {
-            return 'Pilih minimal ' . $rules['min_selections'] . ' opsi.';
+            return 'Pilih minimal '.$rules['min_selections'].' opsi.';
         }
         if (isset($rules['max_selections']) && count($answer) > $rules['max_selections']) {
-            return 'Pilih maksimal ' . $rules['max_selections'] . ' opsi.';
+            return 'Pilih maksimal '.$rules['max_selections'].' opsi.';
         }
 
-        if (count($answer) !== count(array_unique($answer))) return 'Pilihan tidak boleh berulang.';
-        return array_filter($answer, fn ($value) => !$this->allowedChoice($question, $value)) ? 'Pilihan jawaban tidak valid.' : null;
+        if (count($answer) !== count(array_unique($answer))) {
+
+            return 'Pilihan tidak boleh berulang.';
+
+        }
+
+        return array_filter($answer, fn ($value) => ! $this->allowedChoice($question, $value)) ? 'Pilihan jawaban tidak valid.' : null;
     }
 
-    private function validateOtherAnswer(SurveyQuestion $question, $answer, Survey $survey): ?string
+    private function validateOtherAnswer(SurveyQuestion $question, $answer): ?string
     {
         return match (true) {
-            in_array($question->type, ['choice', 'drop'], true) && !$this->allowedChoice($question, $answer) => 'Silakan pilih opsi yang tersedia.',
-            $question->type === 'email' && (!is_string($answer) || !filter_var($answer, FILTER_VALIDATE_EMAIL)) => 'Masukkan alamat email yang valid.',
-            $question->type === 'phone' && (!is_string($answer) || !$this->isValidPhone($answer)) => 'Masukkan nomor telepon yang valid (7–15 digit).',
-            $question->type === 'file' && !$this->isSurveyUpload($answer, $survey) => 'Unggah berkas yang valid.',
+            in_array($question->type, ['choice', 'drop'], true) && ! $this->allowedChoice($question, $answer) => 'Silakan pilih opsi yang tersedia.',
+            $question->type === 'email' && (! is_string($answer) || ! filter_var($answer, FILTER_VALIDATE_EMAIL)) => 'Masukkan alamat email yang valid.',
+            $question->type === 'phone' && (! is_string($answer) || ! $this->isValidPhone($answer)) => 'Masukkan nomor telepon yang valid (7–15 digit).',
             $question->type === 'scale' && (filter_var($answer, FILTER_VALIDATE_INT) === false || (int) $answer < 1 || (int) $answer > 5) => 'Pilih nilai skala antara 1 dan 5.',
             default => null,
         };
@@ -298,12 +344,13 @@ class SurveyController extends Controller
 
     private function allowedChoice(SurveyQuestion $q, mixed $answer): bool
     {
-        return is_string($answer) && (in_array($answer, $q->options ?? [], true) || (!empty($q->config['allow_other']) && str_starts_with($answer, 'Lainnya: ') && mb_strlen(trim(substr($answer, 9))) > 0 && mb_strlen($answer) <= 2000));
+        return is_string($answer) && (in_array($answer, $q->options ?? [], true) || (! empty($q->config['allow_other']) && str_starts_with($answer, 'Lainnya: ') && mb_strlen(trim(substr($answer, 9))) > 0 && mb_strlen($answer) <= 2000));
     }
 
     private function isValidPhone(string $answer): bool
     {
         $digits = preg_replace('/\D/', '', $answer);
+
         return preg_match('/^\+?[0-9() .-]{7,20}$/', $answer) === 1 && strlen($digits) >= 7 && strlen($digits) <= 15;
     }
 
@@ -312,74 +359,138 @@ class SurveyController extends Controller
         if (is_array($answer) && array_is_list($answer)) {
             return count($answer) > 0 && count($answer) <= 10 && count(array_filter($answer, fn ($file) => $this->isSurveyUpload($file, $survey))) === count($answer);
         }
+
         // url dan name harus string (sebelumnya bisa array dan memicu error)
         return is_array($answer)
-            && !empty($answer['url']) && is_string($answer['url'])
-            && !empty($answer['name']) && is_string($answer['name'])
-            && !str_contains($answer['url'], '..') && !str_contains($answer['url'], '%')
-            && str_starts_with($answer['url'], asset('storage/surveys/' . $survey->code . '/responses/'));
+            && ! empty($answer['url']) && is_string($answer['url'])
+            && ! empty($answer['name']) && is_string($answer['name'])
+            && ! str_contains($answer['url'], '..') && ! str_contains($answer['url'], '%')
+            && str_starts_with($answer['url'], asset('storage/surveys/'.$survey->code.'/responses/'));
     }
 
     private function storeAnswers(Survey $survey, array $answers, Request $request)
     {
         return DB::transaction(function () use ($survey, $answers, $request) {
-            // Serialize submissions per survey to enforce the capacity even under concurrent requests.
+            // Serialize submissions per survey to enforce capacity under concurrent requests.
             $survey = Survey::whereKey($survey->id)->lockForUpdate()->firstOrFail();
-            if (!app(SurveyFlow::class)->isOpen($survey)) return response()->json(['message' => 'Kuesioner sudah ditutup.'], 422);
-            $response = null;
-            if ($request->filled('edit_token')) {
-                if (empty($survey->settings['allow_edit'])) return response()->json(['message' => 'Perubahan jawaban tidak diizinkan.'], 403);
-                $response = $survey->responses()->where('edit_token', $request->input('edit_token'))->first();
-                if (!$response) return response()->json(['message' => 'Tautan edit tidak valid.'], 403);
+            if (! app(SurveyFlow::class)->isOpen($survey)) {
+                return response()->json(['message' => 'Kuesioner sudah ditutup.'], 422);
             }
-            if ($response) $response->answers()->delete();
-            [$score, $maxScore] = app(SurveyFlow::class)->grade(app(SurveyFlow::class)->visibleQuestions($survey->questions, $answers), $answers);
-            $response ??= new SurveyResponse(['survey_id' => $survey->id, 'edit_token' => Str::random(64)]);
-            $response->fill([
-                'ip_address' => $request->ip(), 'user_agent' => $request->userAgent(),
-                'dedup_key' => null,
-                'score' => !empty($survey->settings['quiz']) ? $score : null,
-                'max_score' => !empty($survey->settings['quiz']) ? $maxScore : null,
-            ])->save();
+            $response = $this->editableResponse($survey, $request);
+            if ($response instanceof JsonResponse) {
+                return $response;
+            }
+            $questions = app(SurveyFlow::class)->visibleQuestions($survey->questions, $answers);
+            $response = $this->persistResponse($survey, $response, $questions, $answers, $request);
+            $this->persistQuestionAnswers($response, $questions, $answers);
 
-            foreach (app(SurveyFlow::class)->visibleQuestions($survey->questions, $answers) as $question) {
-            if (in_array($question->type, SurveyFlow::CONTENT_TYPES, true)) continue;
-                if (!isset($answers[$question->id])) {
-                    continue;
-                }
-                $value = $answers[$question->id];
-                SurveyAnswer::create([
-                    'response_id' => $response->id,
-                    'question_id' => $question->id,
-                    'answer_value' => is_array($value) ? json_encode($value) : (string) $value,
-                ]);
-            }
-
-            $feedback = [];
-            if (!empty($survey->settings['quiz']) && !empty($survey->settings['show_feedback'])) {
-                foreach (app(SurveyFlow::class)->visibleQuestions($survey->questions, $answers) as $q) {
-                    if (!empty($q->config['correct_answers'])) $feedback[] = ['question' => strip_tags($q->text), 'correct_answers' => $q->config['correct_answers'], 'feedback' => $q->config['feedback'] ?? ''];
-                }
-            }
-            $summary = [];
-            if (!empty($survey->settings['show_summary'])) {
-                // Read only this saved response; public receipts never contain other respondents' results.
-                $stored = $response->answers()->get()->keyBy('question_id');
-                $summary = app(SurveyFlow::class)->visibleQuestions($survey->questions, $answers)
-                    ->reject(fn ($q) => in_array($q->type, SurveyFlow::CONTENT_TYPES, true))
-                    ->map(function ($q) use ($stored) {
-                        $value = $stored->get($q->id)?->answer_value;
-                        if ($value !== null && in_array($q->type, ['check', 'grid', 'check_grid', 'file'], true)) $value = json_decode($value, true);
-                        return ['question_id' => $q->id, 'text' => $q->text, 'type' => $q->type, 'answer' => $value, 'options' => $q->type === 'scale' ? $q->options : []];
-                    })->values();
-            }
-            return response()->json(['success' => true, 'message' => $survey->settings['confirmation_message'] ?? 'Terima kasih! Jawaban Anda sudah kami terima.', 'data' => [
-                'feedback' => $feedback, 'summary' => $summary,
-                'edit_token' => !empty($survey->settings['allow_edit']) ? $response->edit_token : null,
-                'score' => !empty($survey->settings['show_score']) && !empty($survey->settings['quiz']) ? $response->score : null,
-                'max_score' => !empty($survey->settings['show_score']) && !empty($survey->settings['quiz']) ? $response->max_score : null,
-            ]]);
+            return $this->submissionReceipt($survey, $response, $questions);
         });
+    }
+
+    private function editableResponse(Survey $survey, Request $request): SurveyResponse|JsonResponse|null
+    {
+        if (! $request->filled('edit_token')) {
+            return null;
+        }
+        if (empty($survey->settings['allow_edit'])) {
+            return response()->json(['message' => 'Perubahan jawaban tidak diizinkan.'], 403);
+        }
+        $response = $survey->responses()->where('edit_token', $request->input('edit_token'))->first();
+        if (! $response) {
+            return response()->json(['message' => 'Tautan edit tidak valid.'], 403);
+        }
+
+        return $response;
+    }
+
+    private function persistResponse(Survey $survey, ?SurveyResponse $response, Collection $questions, array $answers, Request $request): SurveyResponse
+    {
+        if ($response) {
+            $response->answers()->delete();
+        }
+        [$score, $maxScore] = app(SurveyFlow::class)->grade($questions, $answers);
+        $response ??= new SurveyResponse(['survey_id' => $survey->id, 'edit_token' => Str::random(64)]);
+        $response->fill([
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'dedup_key' => null,
+            'score' => ! empty($survey->settings['quiz']) ? $score : null,
+            'max_score' => ! empty($survey->settings['quiz']) ? $maxScore : null,
+        ])->save();
+
+        return $response;
+    }
+
+    private function persistQuestionAnswers(SurveyResponse $response, Collection $questions, array $answers): void
+    {
+        foreach ($questions as $question) {
+            if (in_array($question->type, SurveyFlow::CONTENT_TYPES, true) || ! isset($answers[$question->id])) {
+                continue;
+            }
+            $value = $answers[$question->id];
+            SurveyAnswer::create([
+                'response_id' => $response->id,
+                'question_id' => $question->id,
+                'answer_value' => is_array($value) ? json_encode($value) : (string) $value,
+            ]);
+        }
+    }
+
+    private function submissionFeedback(Survey $survey, Collection $questions): array
+    {
+        if (empty($survey->settings['quiz']) || empty($survey->settings['show_feedback'])) {
+            return [];
+        }
+        $feedback = [];
+        foreach ($questions as $question) {
+            if (! empty($question->config['correct_answers'])) {
+                $feedback[] = [
+                    'question' => strip_tags($question->text),
+                    'correct_answers' => $question->config['correct_answers'],
+                    'feedback' => $question->config['feedback'] ?? '',
+                ];
+            }
+        }
+
+        return $feedback;
+    }
+
+    private function submissionSummary(Survey $survey, SurveyResponse $response, Collection $questions): Collection|array
+    {
+        if (empty($survey->settings['show_summary'])) {
+            return [];
+        }
+        // Only this response is read; public receipts never contain other respondents' results.
+        $stored = $response->answers()->get()->keyBy('question_id');
+
+        return $questions
+            ->reject(fn ($q) => in_array($q->type, SurveyFlow::CONTENT_TYPES, true))
+            ->map(function ($q) use ($stored) {
+                $value = $stored->get($q->id)?->answer_value;
+                if ($value !== null && in_array($q->type, ['check', 'grid', 'check_grid', 'file'], true)) {
+                    $value = json_decode($value, true);
+                }
+
+                return ['question_id' => $q->id, 'text' => $q->text, 'type' => $q->type, 'answer' => $value, 'options' => $q->type === 'scale' ? $q->options : []];
+            })->values();
+    }
+
+    private function submissionReceipt(Survey $survey, SurveyResponse $response, Collection $questions): JsonResponse
+    {
+        $showScore = ! empty($survey->settings['show_score']) && ! empty($survey->settings['quiz']);
+
+        return response()->json([
+            'success' => true,
+            'message' => $survey->settings['confirmation_message'] ?? 'Terima kasih! Jawaban Anda sudah kami terima.',
+            'data' => [
+                'feedback' => $this->submissionFeedback($survey, $questions),
+                'summary' => $this->submissionSummary($survey, $response, $questions),
+                'edit_token' => ! empty($survey->settings['allow_edit']) ? $response->edit_token : null,
+                'score' => $showScore ? $response->score : null,
+                'max_score' => $showScore ? $response->max_score : null,
+            ],
+        ]);
     }
 
     public function upload(Request $request, $code)
@@ -392,17 +503,20 @@ class SurveyController extends Controller
 
         // Pastikan pertanyaan milik survei ini dan bertipe file (404 kalau tidak cocok)
         $question = $survey->questions()->where('id', $validated['question_id'])->where('type', 'file')->firstOrFail();
-        if (!app(SurveyFlow::class)->isOpen($survey)) return response()->json(['message' => 'Kuesioner sudah ditutup.'], 422);
+        if (! app(SurveyFlow::class)->isOpen($survey)) {
+            return response()->json(['message' => 'Kuesioner sudah ditutup.'], 422);
+        }
         $maxKb = ($question->config['file_max_mb'] ?? 10) * 1024;
         $types = $question->config['file_types'] ?? 'pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,webp,txt,csv';
         $types = str_replace(['.', ' '], '', $types);
-        $request->validate(['file' => 'required|file|max:' . $maxKb . '|mimes:' . $types]);
+        $request->validate(['file' => 'required|file|max:'.$maxKb.'|mimes:'.$types]);
 
         $file = $request->file('file');
-        $path = $file->store('surveys/' . $code . '/responses', 'public');
+        $path = $file->store('surveys/'.$code.'/responses', 'public');
+
         return response()->json(['success' => true, 'data' => [
             'name' => $file->getClientOriginalName(),
-            'url' => asset('storage/' . $path),
+            'url' => asset('storage/'.$path),
             'size' => $file->getSize(),
         ]]);
     }
