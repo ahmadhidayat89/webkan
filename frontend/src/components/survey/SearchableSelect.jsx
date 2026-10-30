@@ -41,16 +41,16 @@ export default function SearchableSelect({ value, options, onChange, label, plac
   };
 
   return <div ref={root} className={`relative min-w-0 ${className}`} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
-    <button type="button" role="combobox" aria-label={label} aria-controls={`${id}-list`} aria-expanded={open} aria-haspopup="listbox" disabled={disabled} onClick={() => open ? setOpen(false) : show()} onKeyDown={e => { if (['ArrowDown', 'ArrowUp'].includes(e.key)) { e.preventDefault(); show(); } }} className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-50">
+    <button type="button" role="combobox" aria-label={label} aria-controls={`${id}-list`} aria-expanded={open} aria-haspopup="listbox" disabled={disabled} onClick={() => open ? setOpen(false) : show()} onKeyDown={e => { if (['ArrowDown', 'ArrowUp'].includes(e.key)) { e.preventDefault(); show(); } }} className="flex items-center justify-between w-full gap-3 px-3 py-2 text-sm text-left bg-white border rounded-lg outline-none border-slate-200 text-slate-700 focus:ring-2 focus:ring-blue-200 disabled:opacity-50">
       <span className="min-w-0 truncate">{selected?.label || placeholder}</span><span aria-hidden="true" className="text-xs text-slate-400">⌄</span>
     </button>
     {open && <div className="absolute left-0 top-full z-40 mt-1 w-full min-w-[200px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-      <input ref={search} aria-label={searchPlaceholder} placeholder={searchPlaceholder} value={query} onChange={e => { setQuery(e.target.value); setActive(0); }} onKeyDown={onKeyDown} aria-controls={`${id}-list`} aria-activedescendant={filtered.length ? `${id}-option-${active}` : undefined} className="mb-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500" />
-      <div id={`${id}-list`} role="listbox" aria-label={label} className="max-h-60 overflow-y-auto">
-        {!filtered.length && <p role="status" className="px-3 py-3 text-xs text-slate-500">Tidak ada hasil.</p>}
+      <input ref={search} aria-label={searchPlaceholder} placeholder={searchPlaceholder} value={query} onChange={e => { setQuery(e.target.value); setActive(0); }} onKeyDown={onKeyDown} aria-controls={`${id}-list`} aria-activedescendant={filtered.length ? `${id}-option-${active}` : undefined} className="w-full px-3 py-2 mb-2 text-sm border rounded-lg outline-none border-slate-200 focus:border-blue-500" />
+      <div id={`${id}-list`} role="listbox" aria-label={label} className="overflow-y-auto max-h-60">
+        {!filtered.length && <output className="block px-3 py-3 text-xs text-slate-500">Tidak ada hasil.</output>}
         {filtered.map((option, index) => <button key={String(option.value)} id={`${id}-option-${index}`} type="button" role="option" tabIndex={-1} aria-selected={option.value === value} data-active={active === index} onFocus={() => setActive(index)} onMouseEnter={() => setActive(index)} onClick={() => choose(option)} onKeyDown={onKeyDown} className={`block w-full rounded-lg px-3 py-2 text-left text-sm ${active === index ? 'bg-blue-50 text-blue-900' : 'text-slate-600 hover:bg-slate-50'} ${option.value === value ? 'font-bold' : ''}`}>{option.label}</button>)}
       </div>
-      {clearable && value !== '' && value != null && <button type="button" onClick={() => choose({ value: '', label: placeholder })} className="mt-2 w-full border-t border-slate-100 px-3 py-2 text-left text-xs font-semibold text-slate-500">Kosongkan pilihan</button>}
+      {clearable && value !== '' && value != null && <button type="button" onClick={() => choose({ value: '', label: placeholder })} className="w-full px-3 py-2 mt-2 text-xs font-semibold text-left border-t border-slate-100 text-slate-500">Kosongkan pilihan</button>}
     </div>}
   </div>;
 }

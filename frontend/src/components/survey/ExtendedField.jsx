@@ -20,7 +20,7 @@ export function videoEmbed(url) {
 export default function ExtendedField({ q, value, onChange }) {
   const c = q.config || {};
   const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-blue-600 outline-none';
-  if (['section', 'heading', 'image'].includes(q.type)) return c.description ? <p className="survey-description text-slate-500 whitespace-pre-wrap">{c.description}</p> : null;
+  if (['section', 'heading', 'image'].includes(q.type)) return c.description ? <p className="whitespace-pre-wrap survey-description text-slate-500">{c.description}</p> : null;
   if (q.type === 'video') {
     const url = videoEmbed(c.video_url);
     return url ? <iframe title="Video kuesioner" src={url} className="w-full aspect-video rounded-xl" allowFullScreen /> : <p className="text-sm text-slate-500">Tambahkan tautan video YouTube.</p>;
@@ -36,7 +36,7 @@ function ScaleField({ q, value, onChange }) {
   const min = q.type === 'rating' ? 1 : (c.min ?? 1);
   const max = c.max ?? 5;
   const symbol = { star: '★', heart: '♥', thumb: '👍' }[c.icon || 'star'];
-  return <div className="space-y-4 pt-2"><div className="flex flex-wrap justify-center gap-3 sm:gap-5" role="radiogroup" aria-label="Nilai">
+  return <div className="pt-2 space-y-4"><div className="flex flex-wrap justify-center gap-3 sm:gap-5" role="radiogroup" aria-label="Nilai">
     {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(n => <button type="button" role="radio" aria-checked={Number(value) === n && value !== '' && value != null} aria-label={`${n} dari ${max}`} key={n} onClick={() => onChange(n)} className={`min-w-10 rounded-xl border px-3 py-2 transition ${Number(value) === n && value !== '' && value != null ? 'bg-blue-700 border-blue-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-blue-400'}`}>
       {q.type === 'rating' ? <><span className={Number(value) >= n ? 'text-amber-400' : ''}>{symbol}</span><span className="block text-xs">{n}</span></> : n}
     </button>)}
@@ -46,8 +46,8 @@ function ScaleField({ q, value, onChange }) {
 function GridField({ q, value, onChange }) {
   const c = q.config || {};
   const columns = q.options || q.opts || [];
-  return <div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full text-sm"><thead className="bg-blue-50 text-blue-900"><tr><th scope="col" className="p-3 text-left">Aspek</th>{columns.map(col => <th scope="col" key={col} className="p-3 font-semibold">{col}</th>)}</tr></thead><tbody>
-    {(c.rows || []).map((row, r) => <tr key={row} className="border-t border-slate-100"><th scope="row" className="p-3 text-left font-medium">{row}</th>{columns.map(col => {
+  return <div className="overflow-x-auto border rounded-xl border-slate-200"><table className="w-full text-sm"><thead className="text-blue-900 bg-blue-50"><tr><th scope="col" className="p-3 text-left">Aspek</th>{columns.map(col => <th scope="col" key={col} className="p-3 font-semibold">{col}</th>)}</tr></thead><tbody>
+    {(c.rows || []).map((row, r) => <tr key={row} className="border-t border-slate-100"><th scope="row" className="p-3 font-medium text-left">{row}</th>{columns.map(col => {
       return <GridCell key={col} q={q} value={value} row={row} rowIndex={r} column={col} onChange={onChange} />;
     })}</tr>)}
   </tbody></table></div>;
@@ -60,7 +60,7 @@ function GridCell({ q, value, row, rowIndex, column, onChange }) {
   const change = event => {
     let next = column;
     if (!single) next = event.target.checked ? [...(current || []), column] : current.filter(v => v !== column);
-    onChange({ ...(value || {}), [row]: next });
+    onChange({ ...value, [row]: next });
   };
-  return <td className="p-3 text-center"><input aria-label={`${row}: ${column}`} type={single ? 'radio' : 'checkbox'} name={`${q.id || q._key}_${rowIndex}`} checked={checked} onChange={change} className="h-4 w-4 accent-blue-700" /></td>;
+  return <td className="p-3 text-center"><input aria-label={`${row}: ${column}`} type={single ? 'radio' : 'checkbox'} name={`${q.id || q._key}_${rowIndex}`} checked={checked} onChange={change} className="w-4 h-4 accent-blue-700" /></td>;
 }

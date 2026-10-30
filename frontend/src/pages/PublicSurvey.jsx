@@ -141,10 +141,10 @@ export default function PublicSurvey() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="text-center space-y-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-sm text-gray-500 font-medium">Memuat kuesioner...</p>
+      <div className="flex items-center justify-center min-h-screen p-4 bg-slate-50">
+        <div className="space-y-3 text-center">
+          <div className="w-10 h-10 mx-auto border-b-2 border-blue-600 rounded-full animate-spin"></div>
+          <p className="text-sm font-medium text-gray-500">Memuat kuesioner...</p>
         </div>
       </div>
     );
@@ -152,9 +152,9 @@ export default function PublicSurvey() {
 
   if (errorMsg) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md w-full text-center space-y-4 shadow-sm">
-          <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-500 mx-auto flex items-center justify-center text-2xl">
+      <div className="flex items-center justify-center min-h-screen p-4 bg-slate-50">
+        <div className="w-full max-w-md p-8 space-y-4 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
+          <div className="flex items-center justify-center mx-auto text-2xl rounded-full w-14 h-14 bg-rose-50 text-rose-500">
             <FaExclamationTriangle />
           </div>
           <h2 className="text-xl font-bold text-gray-900">Kuesioner Tidak Tersedia</h2>
@@ -180,48 +180,48 @@ export default function PublicSurvey() {
     <SurveyFrame settings={survey?.settings}>
       <Toaster position="top-right" />
       {confirmSubmit && <SubmitConfirmation busy={submitting} onCancel={() => setConfirmSubmit(false)} onConfirm={sendAnswers} />}
-        {isClosed && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-4 shadow-sm">
-            <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-500 mx-auto flex items-center justify-center text-3xl font-extrabold">
-              <FaExclamationTriangle />
-            </div>
-            <h2 className="text-2xl font-extrabold text-gray-900">{survey?.title}</h2>
-            <div className="inline-block px-3 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-full border border-rose-200">
-              Kuesioner Ditutup
-            </div>
-            <p className="text-sm text-gray-600 max-w-md mx-auto">
-              {survey?.settings?.closed_message || 'Kuesioner ini sudah selesai atau saat ini sedang tidak menerima tanggapan baru. Terima kasih atas perhatian Anda.'}
-            </p>
+      {isClosed && (
+        <div className="p-10 space-y-4 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
+          <div className="flex items-center justify-center w-16 h-16 mx-auto text-3xl font-extrabold rounded-full bg-amber-50 text-amber-500">
+            <FaExclamationTriangle />
           </div>
-        )}
-
-        {showThanks && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-4 shadow-sm">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-3xl font-extrabold">
-              <FaCheckCircle />
-            </div>
-            <h2 className="text-2xl font-extrabold text-gray-900">Terima Kasih!</h2>
-            <p className="text-sm text-gray-600 max-w-md mx-auto whitespace-pre-wrap">
-              {survey?.settings?.confirmation_message || 'Jawaban Anda telah berhasil kami terima. Terima kasih atas masukan Anda untuk meningkatkan mutu layanan KAN.'}
-            </p>
-            {receipt?.feedback?.length > 0 && <div className="space-y-3 text-left">{receipt.feedback.map((f, i) => <div key={i} className="rounded-xl bg-blue-50 p-4 text-sm"><p className="font-bold text-blue-950">{f.question}</p><p>Jawaban benar: {f.correct_answers.join(', ')}</p>{f.feedback && <p className="text-slate-600 mt-2">{f.feedback}</p>}</div>)}</div>}
-            <ResponseSummary items={receipt?.summary} />
-            {survey?.settings?.submit_another && <button type="button" className="block mx-auto text-sm font-semibold text-blue-700 underline" onClick={() => { setSubmitted(false); setAnswers({}); setErrors({}); setReceipt(null); setEditToken(null); setSectionIndex(0); window.history.replaceState(null, '', window.location.pathname); }}>Kirim jawaban lain</button>}
-            {receipt?.score != null && <p className="text-xl font-bold text-blue-800">Nilai: {receipt.score} / {receipt.max_score}</p>}
-            {receipt?.edit_token && <p className="text-xs text-slate-500">Simpan alamat halaman ini untuk mengubah jawaban Anda nanti.</p>}
-            {receipt?.edit_token && <button type="button" className="rounded-xl border border-blue-200 px-4 py-2 text-sm font-bold text-blue-700" onClick={() => { setEditToken(receipt.edit_token); setSubmitted(false); setSectionIndex(0); }}>Ubah jawaban saya</button>}
-            <div className="pt-4">
-              <Link
-                to="/"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow"
-              >
-                Kembali ke Beranda
-              </Link>
-            </div>
+          <h2 className="text-2xl font-extrabold text-gray-900">{survey?.title}</h2>
+          <div className="inline-block px-3 py-1 text-xs font-bold border rounded-full bg-rose-50 text-rose-700 border-rose-200">
+            Kuesioner Ditutup
           </div>
-        )}
+          <p className="max-w-md mx-auto text-sm text-gray-600">
+            {survey?.settings?.closed_message || 'Kuesioner ini sudah selesai atau saat ini sedang tidak menerima tanggapan baru. Terima kasih atas perhatian Anda.'}
+          </p>
+        </div>
+      )}
 
-        {showForm && <SurveyForm survey={survey} pages={pages} pageIndex={pageIndex} answers={answers} errors={errors} onAnswer={(id, value) => { setAnswers(prev => ({ ...prev, [id]: value })); setErrors(prev => ({ ...prev, [id]: undefined })); }} onPrevious={() => { setSectionIndex(pageIndex - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onContinue={e => { if (lastPage) void handleSubmit(e); else goNext(); }} onClear={() => { if (window.confirm('Kosongkan semua jawaban?')) { setAnswers({}); setSectionIndex(0); setErrors({}); } }} submitting={submitting} uploadFile={async (q, file) => (await uploadPublicSurveyFile(code, q.id, file)).data.data} />}
+      {showThanks && (
+        <div className="p-10 space-y-4 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
+          <div className="flex items-center justify-center w-16 h-16 mx-auto text-3xl font-extrabold rounded-full bg-emerald-100 text-emerald-600">
+            <FaCheckCircle />
+          </div>
+          <h2 className="text-2xl font-extrabold text-gray-900">Terima Kasih!</h2>
+          <p className="max-w-md mx-auto text-sm text-gray-600 whitespace-pre-wrap">
+            {survey?.settings?.confirmation_message || 'Jawaban Anda telah berhasil kami terima. Terima kasih atas masukan Anda untuk meningkatkan mutu layanan KAN.'}
+          </p>
+          {receipt?.feedback?.length > 0 && <div className="space-y-3 text-left">{receipt.feedback.map(f => <div key={`${f.question}-${f.correct_answers.join(',')}`} className="p-4 text-sm rounded-xl bg-blue-50"><p className="font-bold text-blue-950">{f.question}</p><p>Jawaban benar: {f.correct_answers.join(', ')}</p>{f.feedback && <p className="mt-2 text-slate-600">{f.feedback}</p>}</div>)}</div>}
+          <ResponseSummary items={receipt?.summary} />
+          {survey?.settings?.submit_another && <button type="button" className="block mx-auto text-sm font-semibold text-blue-700 underline" onClick={() => { setSubmitted(false); setAnswers({}); setErrors({}); setReceipt(null); setEditToken(null); setSectionIndex(0); window.history.replaceState(null, '', window.location.pathname); }}>Kirim jawaban lain</button>}
+          {receipt?.score != null && <p className="text-xl font-bold text-blue-800">Nilai: {receipt.score} / {receipt.max_score}</p>}
+          {receipt?.edit_token && <p className="text-xs text-slate-500">Simpan alamat halaman ini untuk mengubah jawaban Anda nanti.</p>}
+          {receipt?.edit_token && <button type="button" className="px-4 py-2 text-sm font-bold text-blue-700 border border-blue-200 rounded-xl" onClick={() => { setEditToken(receipt.edit_token); setSubmitted(false); setSectionIndex(0); }}>Ubah jawaban saya</button>}
+          <div className="pt-4">
+            <Link
+              to="/"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow"
+            >
+              Kembali ke Beranda
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {showForm && <SurveyForm survey={survey} pages={pages} pageIndex={pageIndex} answers={answers} errors={errors} onAnswer={(id, value) => { setAnswers(prev => ({ ...prev, [id]: value })); setErrors(prev => ({ ...prev, [id]: undefined })); }} onPrevious={() => { setSectionIndex(pageIndex - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onContinue={e => { if (lastPage) void handleSubmit(e); else goNext(); }} onClear={() => { if (window.confirm('Kosongkan semua jawaban?')) { setAnswers({}); setSectionIndex(0); setErrors({}); } }} submitting={submitting} uploadFile={async (q, file) => (await uploadPublicSurveyFile(code, q.id, file)).data.data} />}
     </SurveyFrame>
   );
 }

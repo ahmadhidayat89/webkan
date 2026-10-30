@@ -74,7 +74,7 @@ class SurveyAnswerValidator
         if (! $this->isSurveyUpload($file, $survey)) {
             return 'Unggah berkas yang valid.';
         }
-        $path = substr($file['url'], strlen(asset('storage/').'/'));
+        $path = substr($file['url'], strlen(asset('storage/') . '/'));
         $storage = Storage::disk('public');
         if (! $storage->exists($path)) {
             return 'Berkas tidak ditemukan.';
@@ -96,7 +96,7 @@ class SurveyAnswerValidator
             return 'Format jawaban tidak valid.';
         }
 
-        if ($question->type === 'check' && array_filter($answer, fn ($item) => ! is_string($item))) {
+        if ($question->type === 'check' && array_filter($answer, fn($item) => ! is_string($item))) {
             return 'Pilihan jawaban tidak valid.';
         }
 
@@ -143,10 +143,10 @@ class SurveyAnswerValidator
     {
         $length = mb_strlen(trim($answer));
         if (isset($rules['min_length']) && $length < $rules['min_length']) {
-            return 'Jawaban terlalu pendek (minimal '.$rules['min_length'].' karakter).';
+            return 'Jawaban terlalu pendek (minimal ' . $rules['min_length'] . ' karakter).';
         }
         if (isset($rules['max_length']) && $length > $rules['max_length']) {
-            return 'Jawaban terlalu panjang (maksimal '.$rules['max_length'].' karakter).';
+            return 'Jawaban terlalu panjang (maksimal ' . $rules['max_length'] . ' karakter).';
         }
 
         $type = $question->type === 'short' ? ($rules['answer_type'] ?? 'text') : $question->type;
@@ -163,13 +163,13 @@ class SurveyAnswerValidator
     private function validateCheckAnswer(SurveyQuestion $question, array $answer, array $rules): ?string
     {
         if (isset($rules['min_selections']) && count($answer) < $rules['min_selections']) {
-            return 'Pilih minimal '.$rules['min_selections'].' opsi.';
+            return 'Pilih minimal ' . $rules['min_selections'] . ' opsi.';
         }
         if (isset($rules['max_selections']) && count($answer) > $rules['max_selections']) {
-            return 'Pilih maksimal '.$rules['max_selections'].' opsi.';
+            return 'Pilih maksimal ' . $rules['max_selections'] . ' opsi.';
         }
 
-        $invalidChoice = array_filter($answer, fn ($value) => ! $this->allowedChoice($question, $value));
+        $invalidChoice = array_filter($answer, fn($value) => ! $this->allowedChoice($question, $value));
         $choiceError = $invalidChoice ? 'Pilihan jawaban tidak valid.' : null;
 
         return count($answer) !== count(array_unique($answer)) ? 'Pilihan tidak boleh berulang.' : $choiceError;
@@ -201,7 +201,7 @@ class SurveyAnswerValidator
     private function isSurveyUpload($answer, Survey $survey): bool
     {
         if (is_array($answer) && array_is_list($answer)) {
-            return count($answer) > 0 && count($answer) <= 10 && count(array_filter($answer, fn ($file) => $this->isSurveyUpload($file, $survey))) === count($answer);
+            return ! empty($answer) && count($answer) <= 10 && count(array_filter($answer, fn($file) => $this->isSurveyUpload($file, $survey))) === count($answer);
         }
 
         // url dan name harus string (sebelumnya bisa array dan memicu error)
@@ -209,6 +209,6 @@ class SurveyAnswerValidator
             && ! empty($answer['url']) && is_string($answer['url'])
             && ! empty($answer['name']) && is_string($answer['name'])
             && ! str_contains($answer['url'], '..') && ! str_contains($answer['url'], '%')
-            && str_starts_with($answer['url'], asset('storage/surveys/'.$survey->code.'/responses/'));
+            && str_starts_with($answer['url'], asset('storage/surveys/' . $survey->code . '/responses/'));
     }
 }
