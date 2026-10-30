@@ -39,20 +39,16 @@ const getOtherText = (type, answer) => {
   return found.slice(OTHER_PREFIX.length);
 };
 
-const toggleOther = (type, current, checked) => {
-  if (type === 'choice') {
-    return OTHER_PREFIX;
-  }
+// Kotak centang: selalu mengembalikan array
+const toggleOtherCheck = (current, checked) => {
   const rest = (current || []).filter(v => !v.startsWith(OTHER_PREFIX));
   return checked ? [...rest, OTHER_PREFIX] : rest;
 };
 
-const setOtherText = (type, current, text) => {
-  if (type === 'choice') {
-    return `${OTHER_PREFIX}${text}`;
-  }
-  return [...(current || []).filter(v => !v.startsWith(OTHER_PREFIX)), `${OTHER_PREFIX}${text}`];
-};
+const setOtherCheckText = (current, text) => [
+  ...(current || []).filter(v => !v.startsWith(OTHER_PREFIX)),
+  `${OTHER_PREFIX}${text}`,
+];
 
 export function SurveyFrame({ settings = {}, children }) {
   return <div className="min-h-screen px-4 py-8 kan-survey-theme sm:px-6" style={{ backgroundColor: settings.background_color || '#f4f7fc', '--survey-question-size': `${settings.question_size || 16}px`, '--survey-body-size': `${settings.body_size || 14}px`, fontFamily: settings.font === 'serif' ? 'Georgia, serif' : undefined }}>
@@ -212,8 +208,8 @@ export function SurveyQuestion({ q, number, pageNumber, pageCount, settings, val
       )}
 
       {['choice', 'check'].includes(q.type) && q.config?.allow_other && <label className="flex items-center gap-3 text-sm text-slate-700">
-        <input type={q.type === 'choice' ? 'radio' : 'checkbox'} name={`q_${q.id}`} checked={isOtherChecked(q.type, answers[q.id])} onChange={e => setAnswers(prev => ({ ...prev, [q.id]: toggleOther(q.type, prev[q.id], e.target.checked) }))} />
-        <span>Lainnya:</span><input aria-label="Jawaban lainnya" className="flex-1 min-w-0 px-3 py-2 border rounded-lg border-slate-200" value={getOtherText(q.type, answers[q.id])} onChange={e => setAnswers(prev => ({ ...prev, [q.id]: setOtherText(q.type, prev[q.id], e.target.value) }))} />
+        <input type={q.type === 'choice' ? 'radio' : 'checkbox'} name={`q_${q.id}`} checked={isOtherChecked(q.type, answers[q.id])} onChange={e => setAnswers(prev => ({ ...prev, [q.id]: q.type === 'choice' ? OTHER_PREFIX : toggleOtherCheck(prev[q.id], e.target.checked) }))} />
+        <span>Lainnya:</span><input aria-label="Jawaban lainnya" className="flex-1 min-w-0 px-3 py-2 border rounded-lg border-slate-200" value={getOtherText(q.type, answers[q.id])} onChange={e => setAnswers(prev => ({ ...prev, [q.id]: q.type === 'choice' ? `${OTHER_PREFIX}${e.target.value}` : setOtherCheckText(prev[q.id], e.target.value) }))} />
       </label>}
       {q.type === 'drop' && <SearchableSelect clearable label={`Jawaban: ${stripHtml(q.text)}`} value={answers[q.id] || ''} options={(q.options || []).map(option => ({ value: option, label: option }))} onChange={value => setAnswers({ ...answers, [q.id]: value })} placeholder="Silakan pilih" searchPlaceholder="Cari opsi jawaban…" />}
 
