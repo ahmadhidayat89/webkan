@@ -2,10 +2,17 @@ import React from 'react';
 
 export const EXTENDED_TYPES = ['linear', 'rating', 'grid', 'check_grid', 'date', 'time', 'duration', 'section', 'heading', 'video', 'image'];
 export { CONTENT_TYPES, visibleQuestions, validateExtended } from './surveyFlow';
+
+function youtubeId(u) {
+  if (u.hostname === 'youtu.be') return u.pathname.slice(1);
+  if (['youtube.com', 'www.youtube.com'].includes(u.hostname)) return u.searchParams.get('v');
+  return '';
+}
+
 export function videoEmbed(url) {
   try {
     const u = new URL(url);
-    const id = u.hostname === 'youtu.be' ? u.pathname.slice(1) : ['youtube.com', 'www.youtube.com'].includes(u.hostname) ? u.searchParams.get('v') : '';
+    const id = youtubeId(u);
     return /^[\w-]{11}$/.test(id || '') ? `https://www.youtube-nocookie.com/embed/${id}` : null;
   } catch { return null; }
 }
@@ -39,9 +46,9 @@ function ScaleField({ q, value, onChange }) {
 function GridField({ q, value, onChange }) {
   const c = q.config || {};
   const columns = q.options || q.opts || [];
-  return <div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full text-sm"><thead className="bg-blue-50 text-blue-900"><tr><th scope="col" className="p-3 text-left">Aspek</th>{columns.map((col, i) => <th scope="col" key={i} className="p-3 font-semibold">{col}</th>)}</tr></thead><tbody>
-    {(c.rows || []).map((row, r) => <tr key={r} className="border-t border-slate-100"><th scope="row" className="p-3 text-left font-medium">{row}</th>{columns.map((col, i) => {
-      return <GridCell key={i} q={q} value={value} row={row} rowIndex={r} column={col} onChange={onChange} />;
+  return <div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full text-sm"><thead className="bg-blue-50 text-blue-900"><tr><th scope="col" className="p-3 text-left">Aspek</th>{columns.map(col => <th scope="col" key={col} className="p-3 font-semibold">{col}</th>)}</tr></thead><tbody>
+    {(c.rows || []).map((row, r) => <tr key={row} className="border-t border-slate-100"><th scope="row" className="p-3 text-left font-medium">{row}</th>{columns.map(col => {
+      return <GridCell key={col} q={q} value={value} row={row} rowIndex={r} column={col} onChange={onChange} />;
     })}</tr>)}
   </tbody></table></div>;
 }
