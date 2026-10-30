@@ -26,6 +26,9 @@ export default function RichTextInput({
         toolbar: [['bold', 'italic', 'underline', 'link'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']],
       },
     });
+    quill.root.setAttribute('role', 'textbox');
+    quill.root.setAttribute('aria-label', placeholder);
+    quill.root.setAttribute('aria-multiline', 'true');
 
     if (value) {
       const decoder = document.createElement('textarea');

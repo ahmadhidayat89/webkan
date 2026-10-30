@@ -143,8 +143,10 @@ export const exportAdminSurveyCsv = (id) =>
   api.get(`/admin/surveys/${id}/export-csv`, { responseType: 'blob' });
 
 // ─── Surveys (Public) ─────────────────────────────────────────────────────────
-export const getPublicSurvey = (code) =>
-  api.get(`/surveys/${code}`);
+export const getPublicSurvey = (code, editToken) =>
+  api.get(`/surveys/${code}`, { params: editToken ? { edit: editToken } : {} });
+
+export const gradeSurveyResponse = (id, responseId, data) => api.patch(`/admin/surveys/${id}/responses/${responseId}/grade`, data);
 
 export const submitPublicSurvey = (code, data) =>
   api.post(`/surveys/${code}/submit`, data);

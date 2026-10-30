@@ -3,7 +3,7 @@
   flex-direction: column;
 }
 
-/* Toolbar di bawah kolom input, seperti Google Forms */
+/* Keep formatting controls close to the edited content. */
 .rt-input .ql-toolbar.ql-snow {
   order: 2;
   border: 0;
@@ -25,9 +25,19 @@
 }
 
 .rt-input .ql-editor.ql-blank::before {
-  left: 12px;
+  position: static;
+  grid-area: 1 / 1;
   font-style: normal;
   color: #9ca3af;
+}
+
+/* Let wrapped placeholders contribute to height without moving the caret. */
+.rt-input .ql-editor.ql-blank {
+  display: grid;
+}
+
+.rt-input .ql-editor.ql-blank > p {
+  grid-area: 1 / 1;
 }
 
 .rt-input .ql-snow.ql-toolbar button {

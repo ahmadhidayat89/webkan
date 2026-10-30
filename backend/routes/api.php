@@ -97,7 +97,7 @@ Route::prefix('v1')->group(function () {
     // Surveys (public)
     Route::get('/surveys/{code}', [PublicSurveyController::class, 'show']);
     Route::post('/surveys/{code}/upload', [PublicSurveyController::class, 'upload'])
-        ->middleware('throttle:10,1');
+          ->middleware('throttle:60,1,survey-upload');
     Route::post('/surveys/{code}/submit', [PublicSurveyController::class, 'submit'])
         ->middleware('throttle:10,1');
         
@@ -174,6 +174,7 @@ Route::prefix('v1/admin')->middleware('auth:sanctum')->group(function () {
         // Surveys Management
         Route::apiResource('surveys', AdminSurveyController::class);
         Route::post('surveys/upload-image', [AdminSurveyController::class, 'uploadImage']);
+        Route::patch('surveys/{id}/responses/{responseId}/grade', [AdminSurveyController::class, 'grade']);
         Route::post('surveys/{id}/publish', [AdminSurveyController::class, 'publish']);
         Route::post('surveys/{id}/toggle-active', [AdminSurveyController::class, 'toggleActive']);
         Route::get('surveys/{id}/export-csv', [AdminSurveyController::class, 'exportCsv']);

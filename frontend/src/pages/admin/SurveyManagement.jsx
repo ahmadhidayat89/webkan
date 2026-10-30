@@ -1,8 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useReducer, useMemo } from 'react';
+import ExtendedField, { CONTENT_TYPES, visibleQuestions } from '../../components/survey/ExtendedField';
+import { QuestionPrimaryOptions, QuestionMoreOptions, ValidationOptions, QuizAnswerKey, SurveySettings, ThemeSettings, ImportQuestions } from '../../components/survey/BuilderControls';
+import { EditorHeader, InsertToolbar, EditorDialog, InlineImageUpload } from '../../components/survey/EditorChrome';
 import AdminLayout from '../../components/admin/AdminLayout';
 import RichTextInput from '../../components/admin/RichTextInput';
 import RichText, { stripHtml } from '../../components/RichText';
+import '../../components/survey/surveyTheme.css';
+import { SurveyFrame, SurveyForm } from '../../components/survey/SurveyForm';
+import { splitSurveyPages, prepareSurveyQuestions } from '../../components/survey/surveyFlow';
+import { validateQuestion } from '../../components/survey/surveyValidation';
+import SearchableSelect from '../../components/survey/SearchableSelect';
+import { surveyFingerprint } from '../../components/survey/surveyFingerprint';
+import SubmitConfirmation from '../../components/survey/SubmitConfirmation';
+import ResponseSummary from '../../components/survey/ResponseSummary';
 import {
+  gradeSurveyResponse,
   getAdminSurveys,
   getAdminSurvey,
   createAdminSurvey,
@@ -11,11 +23,10 @@ import {
   publishAdminSurvey,
   toggleActiveAdminSurvey,
   exportAdminSurveyCsv,
-  uploadSurveyImage,
 } from '../../services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import QRCode from 'qrcode';
-import { FaCopy, FaDownload, FaPlus, FaTrash, FaClone, FaArrowLeft, FaCheck, FaClipboardList } from 'react-icons/fa';
+import { FaCopy, FaDownload, FaPlus, FaTrash, FaClone, FaArrowLeft, FaCheck } from 'react-icons/fa';
 
 const QUESTION_TYPES = {
   short: 'Jawaban singkat',
@@ -24,10 +35,12 @@ const QUESTION_TYPES = {
   choice: 'Pilihan ganda',
   check: 'Kotak centang',
   drop: 'Dropdown',
-  scale: 'Skala 1–5',
+  scale: 'Skala 1–5 (label)',
+  linear: 'Skala linear', rating: 'Rating', grid: 'Kisi pilihan ganda', check_grid: 'Kisi kotak centang',
+  date: 'Tanggal', time: 'Waktu', duration: 'Durasi', section: 'Bagian / halaman', heading: 'Judul & petunjuk', video: 'Video YouTube', image: 'Gambar',
 };
 
-const hasOptions = (type) => ['choice', 'check', 'drop'].includes(type);
+const hasOptions = (type) => ['choice', 'check', 'drop', 'grid', 'check_grid'].includes(type);
 
 // Preset label untuk tipe skala 1–5
 const SCALE_PRESETS = {
@@ -66,6 +79,7 @@ const blankQuestion = () => ({
   optKeys: [],
   image_url: '',
   validation: {},
+  config: { key: uid() },
 });
 
 const getQuestionOptions = (q) => {
@@ -82,6 +96,7 @@ const mapSurveyQuestion = (q) => {
     type: ['email', 'phone'].includes(q.type) ? 'short' : q.type,
     text: q.text,
     image_url: q.image_url || '',
+    config: { ...q.config, key: q.config?.key || uid() },
     validation: { ...q.validation, ...(['email', 'phone'].includes(q.type) && { answer_type: q.type }) },
     req: Boolean(q.is_required),
     opts,
@@ -92,53 +107,9 @@ const mapSurveyQuestion = (q) => {
 const mapSurveyQuestions = (surveyQuestions = []) =>
   surveyQuestions.length > 0 ? surveyQuestions.map(mapSurveyQuestion) : [blankQuestion()];
 
-const isPreviewAnswerMissing = (answer) => answer === undefined || answer === '' || (Array.isArray(answer) && answer.length === 0);
-
-function validatePreviewFormat(answerType, answer) {
-  const value = String(answer);
-  if (answerType === 'email') {
-    const at = value.indexOf('@');
-    const domain = value.slice(at + 1);
-    const dot = domain.lastIndexOf('.');
-    return at > 0 && at === value.lastIndexOf('@') && !/\s/.test(value) && dot > 0 && dot < domain.length - 1
-      ? null : 'Masukkan alamat email yang valid.';
-  }
-  if (answerType === 'phone') {
-    const digits = value.replace(/\D/g, '');
-    return /^\+?[0-9() .-]{7,20}$/.test(value) && digits.length >= 7 && digits.length <= 15
-      ? null : 'Masukkan nomor telepon yang valid (7–15 digit).';
-  }
-  if (answerType === 'number') return /^-?\d+(?:[.,]\d+)?$/.test(value) ? null : 'Masukkan angka yang valid.';
-  if (answerType === 'text_number') return /^[\p{L}\p{N}\s.,'-]+$/u.test(value) ? null : 'Gunakan huruf dan angka saja.';
-  return null;
-}
-
-function validatePreviewLength(question, answer) {
-  if (!['short', 'para'].includes(question.type)) return null;
-  const length = String(answer).trim().length;
-  if (question.validation?.min_length != null && length < question.validation.min_length) return `Jawaban minimal ${question.validation.min_length} karakter.`;
-  if (question.validation?.max_length != null && length > question.validation.max_length) return `Jawaban maksimal ${question.validation.max_length} karakter.`;
-  return null;
-}
-
-function validatePreviewSelections(question, answer) {
-  if (question.type !== 'check') return null;
-  if (question.validation?.min_selections != null && answer.length < question.validation.min_selections) return `Pilih minimal ${question.validation.min_selections} opsi.`;
-  if (question.validation?.max_selections != null && answer.length > question.validation.max_selections) return `Pilih maksimal ${question.validation.max_selections} opsi.`;
-  return null;
-}
-
-function validatePreviewQuestion(question, answer) {
-  if (isPreviewAnswerMissing(answer)) return question.req ? 'Pertanyaan ini wajib diisi.' : null;
-  const answerType = question.type === 'short' ? (question.validation?.answer_type || 'text') : question.type;
-  return validatePreviewFormat(answerType, answer)
-    || validatePreviewLength(question, answer)
-    || validatePreviewSelections(question, answer);
-}
+const validatePreviewQuestion = (q, answer) => validateQuestion({ ...q, is_required: q.req, options: q.opts || q.options || [] }, answer);
 
 // ── Helper murni umum ──
-
-const toOptionalNumber = (value) => (value === '' ? undefined : Number(value));
 
 const isRangeInvalid = (min, max) => min != null && max != null && min > max;
 
@@ -152,13 +123,16 @@ const hasInvalidValidationRule = (questions) =>
 
 const getSaveProblem = (title, questions) => {
   if (!title.trim()) return 'Judul kuesioner wajib diisi.';
+  if (questions.some(q => ['grid', 'check_grid'].includes(q.type) && !(q.config?.rows || []).some(r => r.trim()))) return 'Tambahkan minimal satu baris pada pertanyaan kisi.';
+  if (questions.some(q => ['choice', 'check', 'drop', 'grid', 'check_grid'].includes(q.type) && (q.opts.some(o => !o.trim()) || new Set(q.opts).size !== q.opts.length))) return 'Opsi jawaban harus terisi dan berbeda dalam satu pertanyaan.';
   if (hasInvalidValidationRule(questions)) {
     return 'Rentang validasi tidak sesuai. Periksa batas minimum dan maksimum.';
   }
   return null;
 };
 
-const buildSurveyPayload = ({ title, desc, survey, questions }) => ({
+const buildSurveyPayload = ({ title, desc, survey, questions, settings }) => ({
+  settings,
   title,
   description: desc,
   is_published: survey?.is_published ?? false,
@@ -172,6 +146,7 @@ const buildSurveyPayload = ({ title, desc, survey, questions }) => ({
     options: hasOptions(q.type) || q.type === 'scale' ? q.opts : [],
     image_url: q.image_url || null,
     validation: q.validation || {},
+    config: { ...q.config, ...(q.config?.rows && { rows: q.config.rows.map(r => r.trim()).filter(Boolean) }), ...(q.config?.correct_answers && { correct_answers: q.config.correct_answers.filter(a => typeof a === 'string' && a.trim()) }) },
   })),
 });
 
@@ -268,6 +243,7 @@ const insertAt = (list, idx, item) => [...list.slice(0, idx), item, ...list.slic
 
 const cloneQuestion = (q) => {
   const copy = { ...structuredClone(q), _key: uid() };
+  copy.config = { ...copy.config, key: uid() };
   delete copy.id; // salinan harus dianggap pertanyaan baru oleh backend
   copy.optKeys = newOptKeys(copy.opts);
   return copy;
@@ -304,20 +280,30 @@ const withoutOption = (q, optIdx) =>
 
 const withQuestionType = (q, newType) => {
   const opts = optsForType(q.type, newType, q.opts);
+  const config = { ...q.config };
+  if (!['grid', 'check_grid'].includes(newType)) {
+    ['rows', 'require_rows', 'unique_columns', 'shuffle_rows'].forEach(key => delete config[key]);
+  }
+  if (!hasOptions(newType)) {
+    ['option_images', 'allow_other', 'shuffle_options'].forEach(key => delete config[key]);
+  }
+  if (!['choice', 'drop'].includes(newType)) {
+    delete config.branches;
+    delete config.show_branches;
+  }
+  if (q.type !== newType) { delete config.correct_answers; delete config.show_validation; }
   return {
     ...q,
     type: newType,
+    req: CONTENT_TYPES.includes(newType) ? false : q.req,
+    validation: q.type === newType ? q.validation : {},
+    config: { ...config, ...(['grid', 'check_grid'].includes(newType) ? { rows: q.config?.rows || ['Aspek 1', 'Aspek 2'] } : {}) },
     opts,
     optKeys: opts === q.opts ? q.optKeys : newOptKeys(opts),
   };
 };
 
-const collectPreviewErrors = (questions, answers) =>
-  questions.reduce((errors, question, index) => {
-    const error = validatePreviewQuestion(question, answers[index]);
-    if (error) errors[index] = error;
-    return errors;
-  }, {});
+
 
 // ══════════════════════════════════════════════════════════════════════
 // CUSTOM HOOKS
@@ -361,25 +347,41 @@ function useSurveyDetail() {
   return { detailData, detailLoading, fetchSurveyDetail, clearDetail };
 }
 
-function useQuestionEditor() {
-  const [questions, setQuestions] = useState([]);
+function useQuestionEditor(settings) {
+  const [history, dispatch] = useReducer((state, action) => {
+    if (action.type === 'undo') return state.past.length ? { past: state.past.slice(0, -1), present: state.past.at(-1), future: [state.present, ...state.future] } : state;
+    if (action.type === 'redo') return state.future.length ? { past: [...state.past, state.present], present: state.future[0], future: state.future.slice(1) } : state;
+    if (action.type === 'reset') return { past: [], present: action.value, future: [] };
+    const next = typeof action.value === 'function' ? action.value(state.present) : action.value;
+    return { past: [...state.past.slice(-29), state.present], present: next, future: [] };
+  }, { past: [], present: [], future: [] });
+  const questions = history.present;
+  const setQuestions = value => dispatch({ type: 'update', value });
   const [selectedQIndex, setSelectedQIndex] = useState(0);
+  const [scrollTarget, setScrollTarget] = useState(null);
 
   const resetQuestions = (surveyQuestions) => {
-    setQuestions(mapSurveyQuestions(surveyQuestions));
+    dispatch({ type: 'reset', value: mapSurveyQuestions(surveyQuestions) });
     setSelectedQIndex(0);
   };
 
   const replaceQuestions = (surveyQuestions) => setQuestions(mapSurveyQuestions(surveyQuestions));
 
-  const addQuestion = () => {
-    setQuestions((prev) => [...prev, blankQuestion()]);
-    setSelectedQIndex(questions.length);
+  const addQuestion = (type = 'short') => {
+    const question = withQuestionType(blankQuestion(), type);
+    question.req = !CONTENT_TYPES.includes(type) && Boolean(settings.required_default);
+    question.text = { section: 'Bagian baru', heading: 'Judul', image: 'Gambar', video: 'Video' }[type] || '';
+    const index = Math.min(selectedQIndex + 1, questions.length);
+    setQuestions(prev => insertAt(prev, index, question));
+    setSelectedQIndex(index);
+    setScrollTarget(question._key);
   };
 
   const duplicateQuestion = (idx) => {
-    setQuestions((prev) => insertAt(prev, idx + 1, cloneQuestion(prev[idx])));
+    const copy = cloneQuestion(questions[idx]);
+    setQuestions(prev => insertAt(prev, idx + 1, copy));
     setSelectedQIndex(idx + 1);
+    setScrollTarget(copy._key);
   };
 
   const removeQuestion = (idx) => {
@@ -414,14 +416,30 @@ function useQuestionEditor() {
   const addOption = (qIdx) => setQuestions((prev) => mapAt(prev, qIdx, withNewOption));
 
   const updateOption = (qIdx, optIdx, val) =>
-    setQuestions((prev) => mapAt(prev, qIdx, (q) => withOption(q, optIdx, val)));
+    setQuestions((prev) => mapAt(prev, qIdx, (q) => {
+      const old = q.opts[optIdx];
+      const next = withOption(q, optIdx, val);
+      const config = { ...q.config };
+      for (const key of ['option_images', 'branches']) {
+        if (config[key] && Object.hasOwn(config[key], old)) {
+          const values = { ...config[key] }; const kept = values[old]; delete values[old]; values[val] = kept; config[key] = values;
+        }
+      }
+      return { ...next, config };
+    }));
 
   const removeOption = (qIdx, optIdx) =>
     setQuestions((prev) => mapAt(prev, qIdx, (q) => withoutOption(q, optIdx)));
 
   return {
     questions,
-    selectedQIndex,
+    quiz: Boolean(settings.quiz),
+    undo: () => dispatch({ type: 'undo' }), redo: () => dispatch({ type: 'redo' }), canUndo: history.past.length > 0, canRedo: history.future.length > 0,
+    moveQuestion: (idx, delta) => { const next = idx + delta; if (next < 0 || next >= questions.length) return; setQuestions(prev => { const copy = [...prev]; const [moved] = copy.splice(idx, 1); copy.splice(next, 0, moved); return copy; }); setSelectedQIndex(next); },
+    importQuestions: (items) => setQuestions(prev => [...prev, ...mapSurveyQuestions(items).map(q => ({ ...q, id: undefined, config: { ...q.config, key: uid(), branches: {} } }))]),
+    scrollTarget,
+    clearScrollTarget: setScrollTarget,
+    selectedQIndex: Math.min(selectedQIndex, Math.max(0, questions.length - 1)),
     setSelectedQIndex,
     resetQuestions,
     replaceQuestions,
@@ -446,7 +464,16 @@ function usePreviewForm(questions) {
   const [errors, setErrors] = useState({});
   const [done, setDone] = useState(false);
 
-  const setAnswer = (idx, value) => setAnswers((prev) => ({ ...prev, [idx]: value }));
+  useEffect(() => {
+    setAnswers({});
+    setErrors({});
+    setDone(false);
+  }, [questions]);
+
+  const setAnswer = (idx, value) => {
+    setAnswers(prev => ({ ...prev, [idx]: value }));
+    setErrors(prev => ({ ...prev, [idx]: undefined }));
+  };
 
   const reset = () => {
     setAnswers({});
@@ -461,7 +488,9 @@ function usePreviewForm(questions) {
 
   const submit = (e) => {
     e.preventDefault();
-    const errs = collectPreviewErrors(questions, answers);
+    const routed = visibleQuestions(questions.map((q, i) => ({ ...q, id: i })), answers);
+    const errs = {};
+    routed.forEach(q => { const error = validatePreviewQuestion(q, answers[q.id]); if (error) errs[q.id] = error; });
 
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
@@ -473,10 +502,16 @@ function usePreviewForm(questions) {
     }
   };
 
-  return { answers, errors, done, setAnswer, reset, clearAnswers, submit };
+  const validatePage = (page) => {
+    const errs = {};
+    page.forEach(q => { const error = validatePreviewQuestion(q, answers[q.id]); if (error) errs[q.id] = error; });
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+  return { answers, errors, done, setAnswer, reset, clearAnswers, submit, validatePage };
 }
 
-function useSurveySave({ title, desc, questions, currentSurvey, onSaved }) {
+function useSurveySave({ title, desc, questions, currentSurvey, settings, onSaved }) {
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
@@ -490,12 +525,13 @@ function useSurveySave({ title, desc, questions, currentSurvey, onSaved }) {
     const isUpdate = Boolean(currentSurvey?.id);
 
     try {
-      const payload = buildSurveyPayload({ title, desc, survey: currentSurvey, questions });
+      const payload = buildSurveyPayload({ title, desc, survey: currentSurvey, questions, settings });
       const res = await persistSurvey(currentSurvey, payload);
 
       if (res.data?.success) {
         toast.success(saveSuccessMessage(isUpdate));
         onSaved(res.data.data);
+        return res.data.data;
       }
     } catch (err) {
       console.error(err);
@@ -579,256 +615,9 @@ function useQrCanvas(canvasRef, link) {
 // KOMPONEN: PENGATURAN PERTANYAAN
 // ══════════════════════════════════════════════════════════════════════
 
-const NumberField = ({ label, value, min, max, onChange }) => (
-  <label className="text-xs font-semibold text-gray-600">
-    {label}
-    <input
-      type="number"
-      min={min}
-      max={max}
-      value={value ?? ''}
-      onChange={(e) => onChange(toOptionalNumber(e.target.value))}
-      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-    />
-  </label>
-);
 
-const QuestionSettings = ({ q, onPatch, onPatchValidation }) => {
-  const handleImageChange = async (e) => {
-    const input = e.target;
-    const file = input.files?.[0];
-    if (!file) return;
-    try {
-      const result = await uploadSurveyImage(file);
-      onPatch({ image_url: result.data?.data?.url });
-      toast.success('Gambar berhasil diunggah.');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Gagal mengunggah gambar.');
-    }
-    input.value = '';
-  };
 
-  const isText = ['short', 'para'].includes(q.type);
 
-  return (
-    <div className="mb-4 space-y-3 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-      <label className="block text-xs font-bold text-gray-600">
-        Unggah gambar pertanyaan (maks. 5 MB){' '}
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp"
-          onChange={handleImageChange}
-          className="mt-2 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal"
-        />
-      </label>
-
-      {q.image_url && (
-        <div className="flex items-start gap-3">
-          <img src={q.image_url} alt="Pratinjau gambar pertanyaan" className="max-h-48 rounded-lg object-contain" />
-          <button
-            type="button"
-            onClick={() => onPatch({ image_url: '' })}
-            className="text-xs font-semibold text-rose-600"
-          >
-            Hapus gambar
-          </button>
-        </div>
-      )}
-
-      {q.type === 'short' && (
-        <label className="block text-xs font-bold text-gray-600">
-          Validasi jawaban{' '}
-          <select
-            value={q.validation?.answer_type || 'text'}
-            onChange={(e) => onPatchValidation({ answer_type: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal"
-          >
-            <option value="text_number">Teks</option>
-            <option value="email">Email</option>
-            <option value="phone">Nomor telepon</option>
-            <option value="number">Angka</option>
-          </select>
-        </label>
-      )}
-
-      {isText && (
-        <div className="grid grid-cols-2 gap-3">
-          <NumberField label="Minimal karakter" min="0" max="10000" value={q.validation?.min_length}
-            onChange={(v) => onPatchValidation({ min_length: v })} />
-          <NumberField label="Maksimal karakter" min="1" max="10000" value={q.validation?.max_length}
-            onChange={(v) => onPatchValidation({ max_length: v })} />
-        </div>
-      )}
-
-      {q.type === 'check' && (
-        <div className="grid grid-cols-2 gap-3">
-          <NumberField label="Minimal pilihan" min="0" max={q.opts.length} value={q.validation?.min_selections}
-            onChange={(v) => onPatchValidation({ min_selections: v })} />
-          <NumberField label="Maksimal pilihan" min="1" max={q.opts.length} value={q.validation?.max_selections}
-            onChange={(v) => onPatchValidation({ max_selections: v })} />
-        </div>
-      )}
-
-      <p className="text-[11px] text-gray-500">Aturan ini diterapkan saat responden mengirim jawaban.</p>
-    </div>
-  );
-};
-
-// ══════════════════════════════════════════════════════════════════════
-// KOMPONEN: FIELD PRATINJAU PER TIPE PERTANYAAN
-// ══════════════════════════════════════════════════════════════════════
-
-const SHORT_INPUT = {
-  email: { type: 'email', placeholder: 'nama@contoh.com' },
-  phone: { type: 'text', inputMode: 'tel', placeholder: '+62 812 3456 7890' },
-  number: { type: 'number', inputMode: 'decimal', placeholder: 'Jawaban Anda' },
-};
-const DEFAULT_SHORT = { type: 'text', placeholder: 'Jawaban Anda' };
-
-const PreviewShort = ({ q, value, onChange }) => {
-  const cfg = SHORT_INPUT[q.validation?.answer_type] || DEFAULT_SHORT;
-  return (
-    <input
-      type={cfg.type}
-      inputMode={cfg.inputMode}
-      placeholder={cfg.placeholder}
-      minLength={q.validation?.min_length}
-      maxLength={q.validation?.max_length}
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full text-sm border-0 border-b-2 border-gray-200 focus:border-blue-600 outline-none pb-1.5 transition"
-    />
-  );
-};
-
-const PreviewPara = ({ q, value, onChange }) => (
-  <textarea
-    placeholder="Jawaban Anda"
-    rows={3}
-    minLength={q.validation?.min_length}
-    maxLength={q.validation?.max_length}
-    value={value || ''}
-    onChange={(e) => onChange(e.target.value)}
-    className="w-full text-sm border-0 border-b-2 border-gray-200 focus:border-blue-600 outline-none pb-1.5 transition resize-y"
-  />
-);
-
-// Tipe lama 'email' dan 'phone' (sebelum jadi validasi pada jawaban singkat)
-const PreviewLegacyInput = ({ q, value, onChange }) => (
-  <input
-    type={q.type === 'email' ? 'email' : 'tel'}
-    placeholder={q.type === 'email' ? 'nama@contoh.com' : '+62 812 3456 7890'}
-    value={value || ''}
-    onChange={(e) => onChange(e.target.value)}
-    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-  />
-);
-
-const PreviewFile = () => (
-  <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
-    Kolom unggah file ditampilkan pada survei yang diterbitkan.
-  </div>
-);
-
-const PreviewChoice = ({ q, idx, value, onChange }) => (
-  <div className="space-y-2 pt-1">
-    {q.opts.map((opt, oIdx) => (
-      <label key={q.optKeys[oIdx]} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
-        <input
-          type="radio"
-          name={`preview_q_${idx}`}
-          value={opt}
-          checked={value === opt}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-        />
-        <span>{opt}</span>
-      </label>
-    ))}
-  </div>
-);
-
-const PreviewCheck = ({ q, value, onChange }) => {
-  const current = value || [];
-  const toggle = (opt, checked) =>
-    onChange(checked ? [...current, opt] : current.filter((x) => x !== opt));
-
-  return (
-    <div className="space-y-2 pt-1">
-      {q.opts.map((opt, oIdx) => (
-        <label key={q.optKeys[oIdx]} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={current.includes(opt)}
-            onChange={(e) => toggle(opt, e.target.checked)}
-            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-          />
-          <span>{opt}</span>
-        </label>
-      ))}
-    </div>
-  );
-};
-
-const PreviewDrop = ({ q, value, onChange }) => (
-  <select
-    value={value || ''}
-    onChange={(e) => onChange(e.target.value)}
-    className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-600"
-  >
-    <option value="">-- Pilih salah satu --</option>
-    {q.opts.map((opt, oIdx) => (
-      <option key={q.optKeys[oIdx]} value={opt}>{opt}</option>
-    ))}
-  </select>
-);
-
-const PreviewScale = ({ q, idx, value, onChange }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
-    {[1, 2, 3, 4, 5].map((n) => (
-      <label
-        key={n}
-        className={`flex sm:flex-col items-center gap-3 sm:gap-2 p-2 rounded-lg cursor-pointer sm:text-center transition ${
-          Number(value) === n ? 'bg-blue-50' : 'hover:bg-white'
-        }`}
-      >
-        <span className="text-sm font-bold text-gray-800 w-5 sm:w-auto">{n}</span>
-        <input
-          type="radio"
-          name={`preview_scale_${idx}`}
-          value={n}
-          checked={Number(value) === n}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="w-5 h-5 text-blue-600 focus:ring-blue-500"
-        />
-        <span className="text-xs text-gray-600 leading-snug sm:min-h-[2rem] break-words">
-          {q.opts?.[n - 1] || ''}
-        </span>
-      </label>
-    ))}
-  </div>
-);
-
-const PREVIEW_FIELDS = {
-  short: PreviewShort,
-  para: PreviewPara,
-  email: PreviewLegacyInput,
-  phone: PreviewLegacyInput,
-  file: PreviewFile,
-  choice: PreviewChoice,
-  check: PreviewCheck,
-  drop: PreviewDrop,
-  scale: PreviewScale,
-};
-
-const PreviewField = ({ q, idx, value, onChange }) => {
-  const Field = PREVIEW_FIELDS[q.type];
-  return Field ? <Field q={q} idx={idx} value={value} onChange={onChange} /> : null;
-};
-
-// ══════════════════════════════════════════════════════════════════════
-// KOMPONEN: HEADER
-// ══════════════════════════════════════════════════════════════════════
 
 const HeaderSubtitle = ({ view, desc }) => {
   if (view === 'list') {
@@ -878,43 +667,10 @@ const ListHeaderActions = ({ stats, onAddNew }) => (
   </div>
 );
 
-const DETAIL_TABS = [
-  { key: 'edit', label: 'Susun' },
-  { key: 'pv', label: 'Pratinjau' },
-  { key: 'share', label: 'Bagikan' },
-  { key: 'res', label: 'Hasil' },
-];
-
-const DetailTabNav = ({ mode, onTabChange }) => (
-  <nav className="flex items-center bg-white/15 p-1 rounded-full backdrop-blur-sm">
-    {DETAIL_TABS.map((tab) => (
-      <button
-        key={tab.key}
-        onClick={() => onTabChange(tab.key)}
-        className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all ${
-          mode === tab.key
-            ? 'bg-white text-blue-800 shadow'
-            : 'text-white hover:text-blue-100 hover:bg-white/10'
-        }`}
-      >
-        {tab.label}
-      </button>
-    ))}
-  </nav>
-);
-
-const SurveyHeader = ({ view, mode, title, desc, stats, onBack, onAddNew, onTabChange }) => (
-  <section className="bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 text-white rounded-2xl p-6 sm:p-8 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-    <div className="flex items-start gap-4">
-      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-        <FaClipboardList className="text-2xl text-white" />
-      </div>
-      <HeaderText view={view} title={title} desc={desc} onBack={onBack} />
-    </div>
-
-    {view === 'list'
-      ? <ListHeaderActions stats={stats} onAddNew={onAddNew} />
-      : <DetailTabNav mode={mode} onTabChange={onTabChange} />}
+const SurveyHeader = ({ stats, onAddNew }) => (
+  <section className="rounded-2xl bg-gradient-to-r from-blue-700 to-indigo-900 p-6 text-white shadow-sm flex flex-wrap items-center justify-between gap-5">
+    <HeaderText view="list" onBack={() => {}} />
+    <ListHeaderActions stats={stats} onAddNew={onAddNew} />
   </section>
 );
 
@@ -1098,38 +854,12 @@ const QuestionTextPreview = ({ html }) => (
 );
 
 const QuestionHeader = ({ q, qIdx, isSelected, editor }) => (
-  <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3">
-    <div className="flex-1 w-full">
-      <button
-        type="button"
-        onClick={() => editor.setSelectedQIndex(qIdx)}
-        className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1"
-      >
-        Pertanyaan {qIdx + 1}
-      </button>
-
-      {isSelected ? (
-        <RichTextInput
-          key={q._key}
-          value={q.text}
-          autoFocus
-          onChange={(html) => editor.setText(qIdx, html)}
-        />
-      ) : (
-        <QuestionTextPreview html={q.text} />
-      )}
+  <div className="space-y-3">
+    <div className="flex items-center justify-between gap-3">
+      <button type="button" draggable onDragStart={e => { e.dataTransfer.setData('application/x-kan-question', String(qIdx)); e.dataTransfer.effectAllowed = 'move'; }} onClick={() => editor.setSelectedQIndex(qIdx)} title="Seret untuk memindahkan" className="cursor-grab text-xs font-semibold text-slate-400 active:cursor-grabbing">⋮⋮ {CONTENT_TYPES.includes(q.type) ? QUESTION_TYPES[q.type] : `Pertanyaan ${qIdx + 1}`}</button>
+      {isSelected && <SearchableSelect className="w-56 max-w-[65%]" label="Jenis pertanyaan" value={q.type} options={Object.entries(QUESTION_TYPES).map(([value, label]) => ({ value, label }))} onChange={value => editor.changeQuestionType(qIdx, value)} searchPlaceholder="Cari jenis pertanyaan…" />}
     </div>
-    <div className="w-full sm:w-48 flex-shrink-0">
-      <select
-        value={q.type}
-        onChange={(e) => editor.changeQuestionType(qIdx, e.target.value)}
-        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 focus:border-blue-600 outline-none"
-      >
-        {Object.entries(QUESTION_TYPES).map(([k, label]) => (
-          <option key={k} value={k}>{label}</option>
-        ))}
-      </select>
-    </div>
+    {isSelected ? <RichTextInput key={q._key} value={q.text} onChange={html => editor.setText(qIdx, html)} placeholder={CONTENT_TYPES.includes(q.type) ? 'Judul konten' : 'Tulis pertanyaan'} /> : <button type="button" onClick={() => editor.setSelectedQIndex(qIdx)} className="w-full text-left"><QuestionTextPreview html={q.text} /></button>}
   </div>
 );
 
@@ -1139,44 +869,24 @@ const OptionMarker = ({ type, index }) => {
   return <span className="text-xs font-bold text-gray-400 w-4">{index + 1}.</span>;
 };
 
-const OptionsEditor = ({ q, qIdx, editor }) => (
-  <div className="space-y-2">
-    {q.opts.map((opt, optIdx) => (
-      <div key={q.optKeys[optIdx]} className="flex items-center gap-2.5">
+const OptionsEditor = ({ q, qIdx, editor }) => {
+  const branches = q.config?.show_branches || Object.values(q.config?.branches || {}).some(Boolean);
+  return <div className="space-y-3">
+    {['grid', 'check_grid'].includes(q.type) && <p className="text-xs font-semibold text-slate-500">Kolom jawaban</p>}
+    {q.opts.map((opt, optIdx) => <div key={q.optKeys[optIdx]} className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
         <OptionMarker type={q.type} index={optIdx} />
-        <input
-          type="text"
-          value={opt}
-          onChange={(e) => editor.updateOption(qIdx, optIdx, e.target.value)}
-          className="flex-1 text-sm border-0 border-b border-gray-200 focus:border-blue-600 outline-none pb-1 transition"
-        />
-        {q.opts.length > 1 && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              editor.removeOption(qIdx, optIdx);
-            }}
-            className="text-gray-400 hover:text-rose-600 text-lg px-2"
-            title="Hapus opsi"
-          >
-            &times;
-          </button>
-        )}
+        <input aria-label={`Opsi ${optIdx + 1}`} value={opt} onChange={e => editor.updateOption(qIdx, optIdx, e.target.value)} className="min-w-0 flex-1 border-b border-slate-200 py-2 text-sm outline-none focus:border-blue-500" />
+        {['choice', 'check'].includes(q.type) && <InlineImageUpload label="Gambar opsi" onChange={url => editor.patchQuestion(qIdx, { config: { ...q.config, option_images: { ...q.config?.option_images, [opt]: url } } })} />}
+        {q.opts.length > 1 && <button type="button" aria-label={`Hapus opsi ${optIdx + 1}`} onClick={() => editor.removeOption(qIdx, optIdx)} className="px-2 text-xl text-slate-400 hover:text-rose-600">×</button>}
       </div>
-    ))}
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        editor.addOption(qIdx);
-      }}
-      className="text-xs font-bold text-blue-600 hover:text-blue-800 pt-1 flex items-center gap-1"
-    >
-      + Tambah opsi
-    </button>
-  </div>
-);
+      {q.config?.option_images?.[opt] && <div className="flex gap-3"><img src={q.config.option_images[opt]} alt={opt} className="ml-6 h-24 rounded-lg object-contain" /><button type="button" className="text-xs text-rose-600" onClick={() => editor.patchQuestion(qIdx, { config: { ...q.config, option_images: { ...q.config.option_images, [opt]: null } } })}>Hapus gambar</button></div>}
+      {branches && ['choice', 'drop'].includes(q.type) && <select aria-label={`Tujuan untuk ${opt}`} value={q.config?.branches?.[opt] || ''} onChange={e => editor.patchQuestion(qIdx, { config: { ...q.config, branches: { ...q.config?.branches, [opt]: e.target.value } } })} className="ml-6 w-[calc(100%_-_1.5rem)] rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-900"><option value="">Lanjut ke pertanyaan berikutnya</option>{editor.questions.slice(qIdx + 1).filter(q => q.type === 'section').map(q => <option key={q.config.key} value={q.config.key}>Buka: {stripHtml(q.text) || 'Bagian tanpa judul'}</option>)}<option value="__submit">Kirim formulir</option></select>}
+    </div>)}
+    {q.config?.allow_other && <div className="flex justify-between rounded-lg bg-slate-50 p-3 text-sm text-slate-400"><span>Lainnya: jawaban responden</span><button type="button" className="text-rose-600" onClick={() => editor.patchQuestion(qIdx, { config: { ...q.config, allow_other: false } })}>×</button></div>}
+    <div className="flex flex-wrap gap-2 text-xs font-semibold"><button type="button" onClick={() => editor.addOption(qIdx)} className="text-blue-700">+ Tambahkan opsi</button>{['choice', 'check'].includes(q.type) && !q.config?.allow_other && <><span className="text-slate-400">atau</span><button type="button" onClick={() => editor.patchQuestion(qIdx, { config: { ...q.config, allow_other: true } })} className="text-blue-700">tambahkan “Lainnya”</button></>}</div>
+  </div>;
+};
 
 const ScaleEditor = ({ q, qIdx, editor }) => (
   <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
@@ -1211,78 +921,34 @@ const ScaleEditor = ({ q, qIdx, editor }) => (
   </div>
 );
 
-const QuestionBody = ({ q, qIdx, isSelected, editor }) => (
-  <div className="pt-2">
-    {isSelected && (
-      <QuestionSettings
-        q={q}
-        onPatch={(patch) => editor.patchQuestion(qIdx, patch)}
-        onPatchValidation={(patch) => editor.patchValidation(qIdx, patch)}
-      />
-    )}
-
+const QuestionBody = ({ q, qIdx, isSelected, editor }) => {
+  const config = patch => editor.patchQuestion(qIdx, { config: { ...q.config, ...patch } });
+  const hasValidation = q.config?.show_validation || Object.values(q.validation || {}).some(v => v != null && v !== '');
+  if (!isSelected) return <div className="text-xs text-slate-400">{QUESTION_TYPES[q.type]}{q.req ? ' · Wajib diisi' : ''}</div>;
+  return <div className="space-y-4">
+    {!CONTENT_TYPES.includes(q.type) && <InlineImageUpload label="Gambar pertanyaan" onChange={image_url => editor.patchQuestion(qIdx, { image_url })} />}
+    {q.image_url && q.type !== 'image' && <div className="flex gap-3"><img src={q.image_url} alt="Gambar pertanyaan" className="max-h-52 max-w-full rounded-lg" /><button type="button" className="text-xs text-rose-600" onClick={() => editor.patchQuestion(qIdx, { image_url: null })}>Hapus gambar</button></div>}
+    <QuestionPrimaryOptions q={q} onConfig={config} onPatch={patch => editor.patchQuestion(qIdx, patch)} />
     {hasOptions(q.type) && <OptionsEditor q={q} qIdx={qIdx} editor={editor} />}
-
     {q.type === 'scale' && <ScaleEditor q={q} qIdx={qIdx} editor={editor} />}
-
-    {q.type === 'short' && (
-      <input
-        type="text"
-        disabled
-        placeholder="Jawaban singkat"
-        className="w-full text-sm text-gray-400 border-0 border-b border-gray-200 bg-transparent pb-1"
-      />
-    )}
-
-    {q.type === 'para' && (
-      <textarea
-        disabled
-        placeholder="Jawaban panjang (paragraf)"
-        rows={2}
-        className="w-full text-sm text-gray-400 border-0 border-b border-gray-200 bg-transparent pb-1 resize-none"
-      />
-    )}
-  </div>
-);
+    {['short', 'para'].includes(q.type) && <div className="border-b border-dotted border-slate-300 pb-3 text-sm text-slate-400">{q.type === 'short' ? 'Teks jawaban singkat' : 'Teks jawaban panjang'}</div>}
+    {['linear', 'rating', 'date', 'time', 'duration', 'video'].includes(q.type) && <div className="pointer-events-none"><ExtendedField q={q} value={undefined} onChange={() => {}} /></div>}
+    {['short', 'para', 'check'].includes(q.type) && hasValidation && <ValidationOptions q={q} onChange={patch => editor.patchValidation(qIdx, patch)} />}
+    {editor.quiz && !CONTENT_TYPES.includes(q.type) && <QuizAnswerKey q={q} onConfig={config} />}
+  </div>;
+};
 
 const QuestionFooter = ({ q, qIdx, editor }) => (
-  <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
-    <div className="flex items-center gap-3">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          editor.duplicateQuestion(qIdx);
-        }}
-        className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 font-semibold"
-      >
-        <FaClone className="text-xs" /> Duplikat
-      </button>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          editor.removeQuestion(qIdx);
-        }}
-        className="flex items-center gap-1.5 text-gray-600 hover:text-rose-600 font-semibold"
-      >
-        <FaTrash className="text-xs" /> Hapus
-      </button>
-    </div>
-    <label className="flex items-center gap-2 cursor-pointer font-semibold text-gray-700">
-      <input
-        type="checkbox"
-        checked={q.req}
-        onChange={(e) => editor.setRequired(qIdx, e.target.checked)}
-        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-      />{' '}
-      Wajib diisi
-    </label>
+  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs">
+    <div className="flex items-center gap-2"><button type="button" aria-label="Naikkan pertanyaan" disabled={qIdx === 0} onClick={() => editor.moveQuestion(qIdx, -1)} className="p-2 text-slate-500 disabled:opacity-30">↑</button><button type="button" aria-label="Turunkan pertanyaan" disabled={qIdx === editor.questions.length - 1} onClick={() => editor.moveQuestion(qIdx, 1)} className="p-2 text-slate-500 disabled:opacity-30">↓</button><button type="button" title="Duplikat" aria-label="Duplikat pertanyaan" onClick={() => editor.duplicateQuestion(qIdx)} className="p-2 text-slate-500 hover:text-blue-700"><FaClone /></button><button type="button" title="Hapus" aria-label="Hapus pertanyaan" onClick={() => editor.removeQuestion(qIdx)} className="p-2 text-slate-500 hover:text-rose-600"><FaTrash /></button></div>
+    <div className="flex items-center gap-4">{!CONTENT_TYPES.includes(q.type) && <label className="flex items-center gap-2 text-slate-600"><input type="checkbox" checked={q.req} onChange={e => editor.setRequired(qIdx, e.target.checked)} className="accent-blue-700" />Wajib diisi</label>}<QuestionMoreOptions q={q} onConfig={patch => editor.patchQuestion(qIdx, { config: { ...q.config, ...patch } })} onPatch={patch => editor.patchQuestion(qIdx, patch)} /></div>
   </div>
 );
 
 const QuestionCard = ({ q, qIdx, isSelected, editor }) => (
-  <div
+  <div id={`survey-item-${q._key}`} tabIndex={-1}
+    onDragOver={e => { if (e.dataTransfer.types.includes('application/x-kan-question')) e.preventDefault(); }}
+    onDrop={e => { const from = Number(e.dataTransfer.getData('application/x-kan-question')); if (Number.isInteger(from)) { e.preventDefault(); editor.moveQuestion(from, qIdx - from); } }}
     className={`bg-white rounded-2xl border transition-all p-5 shadow-sm space-y-4 ${
       isSelected
         ? 'border-l-4 border-l-blue-600 border-gray-300 shadow-md ring-1 ring-blue-100'
@@ -1295,83 +961,50 @@ const QuestionCard = ({ q, qIdx, isSelected, editor }) => (
   </div>
 );
 
-const SurveyEditTab = ({ surveyId, title, setTitle, desc, setDesc, editor, saving, onSave, onBack }) => (
-  <div className="max-w-3xl mx-auto space-y-4">
-    {/* Judul & Deskripsi Kuesioner Card */}
-    <div className="bg-white rounded-2xl border-2 border-blue-600 shadow-sm p-6 space-y-4">
-      <div>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Judul kuesioner"
-          className="w-full text-2xl font-extrabold text-gray-900 border-0 border-b-2 border-gray-200 focus:border-blue-600 outline-none pb-2 transition placeholder-gray-400"
-        />
+const SurveyEditTab = ({ surveyId, title, setTitle, desc, setDesc, editor, onImport }) => {
+  const { scrollTarget, clearScrollTarget } = editor;
+  useEffect(() => {
+    if (!scrollTarget) return;
+    const card = document.getElementById(`survey-item-${scrollTarget}`);
+    if (!card) return;
+    const frame = requestAnimationFrame(() => {
+      const header = document.querySelector('[data-survey-editor-header]');
+      card.style.scrollMarginTop = `${(header?.getBoundingClientRect().height || 160) + 24}px`;
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      card.focus({ preventScroll: true });
+      clearScrollTarget(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [scrollTarget, clearScrollTarget]);
+  return (
+  <div className="mx-auto grid max-w-5xl items-start gap-4 lg:grid-cols-[minmax(0,1fr)_170px]">
+    <div className="order-2 min-w-0 space-y-4 lg:order-1">
+      <div className="rounded-2xl border border-slate-200 border-t-4 border-t-blue-700 bg-white p-6 shadow-sm space-y-4">
+        <input aria-label="Judul kuesioner" value={title} onChange={e => setTitle(e.target.value)} placeholder="Judul kuesioner" className="w-full border-0 border-b border-slate-200 pb-2 text-2xl font-bold text-slate-900 outline-none focus:border-blue-500" />
+        <RichTextInput key={`description-${surveyId || 'new'}`} value={desc} onChange={setDesc} placeholder="Deskripsi formulir (opsional)" />
       </div>
-      <div>
-        <RichTextInput
-          key={`description-${surveyId || 'new'}`}
-          value={desc}
-          onChange={setDesc}
-          placeholder="Deskripsi singkat mengenai tujuan kuesioner..."
-        />
-      </div>
+      {editor.questions.map((q, qIdx) => <QuestionCard key={q._key} q={q} qIdx={qIdx} isSelected={editor.selectedQIndex === qIdx} editor={editor} />)}
+      <button type="button" onClick={() => editor.addQuestion('short')} className="w-full rounded-xl border border-dashed border-blue-200 bg-white py-4 text-sm font-semibold text-blue-700">+ Tambahkan pertanyaan</button>
     </div>
-
-    {/* List Pertanyaan */}
-    {editor.questions.map((q, qIdx) => (
-      <QuestionCard
-        key={q._key}
-        q={q}
-        qIdx={qIdx}
-        isSelected={editor.selectedQIndex === qIdx}
-        editor={editor}
-      />
-    ))}
-
-    {/* Tombol Tambah Pertanyaan */}
-    <button
-      type="button"
-      onClick={editor.addQuestion}
-      className="w-full py-4 border-2 border-dashed border-blue-400 hover:border-blue-600 text-blue-600 hover:text-blue-800 font-bold rounded-2xl text-sm transition-all bg-white hover:bg-blue-50/50 flex items-center justify-center gap-2 shadow-sm"
-    >
-      <FaPlus /> Tambah Pertanyaan
-    </button>
-
-    {/* Tombol Aksi Simpan */}
-    <div className="pt-4 flex items-center justify-end gap-3">
-      <button
-        type="button"
-        onClick={onBack}
-        className="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100 font-bold text-sm transition"
-      >
-        Kembali
-      </button>
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={saving}
-        className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition disabled:opacity-50"
-      >
-        {saving ? 'Menyimpan...' : 'Simpan Kuesioner'}
-      </button>
-    </div>
+    <div className="order-1 lg:order-2 lg:sticky lg:top-40"><InsertToolbar onAdd={editor.addQuestion} onImport={onImport} /></div>
   </div>
 );
+};
 
 // ══════════════════════════════════════════════════════════════════════
 // KOMPONEN: TAB PRATINJAU
 // ══════════════════════════════════════════════════════════════════════
 
-const PreviewDone = ({ onReset }) => (
+const PreviewDone = ({ onReset, message, summary }) => (
   <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-4 shadow-sm">
     <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-3xl font-extrabold">
       <FaCheck />
     </div>
     <h2 className="text-2xl font-extrabold text-gray-900">Terima kasih</h2>
-    <p className="text-gray-500 text-sm max-w-sm mx-auto">
-      Jawaban Anda sudah kami terima secara lengkap dalam mode pratinjau ini.
+    <p className="text-gray-500 text-sm max-w-sm mx-auto whitespace-pre-wrap">
+      {message || 'Jawaban Anda telah berhasil kami terima. Terima kasih atas masukan Anda untuk meningkatkan mutu layanan KAN.'}
     </p>
+    <ResponseSummary items={summary} />
     <button
       type="button"
       onClick={onReset}
@@ -1382,71 +1015,23 @@ const PreviewDone = ({ onReset }) => (
   </div>
 );
 
-const PreviewQuestionCard = ({ q, idx, value, error, onChange }) => (
-  <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-3">
-    <label className="block text-base font-bold text-gray-900">
-      {stripHtml(q.text)
-        ? <RichText html={q.text} />
-        : `Pertanyaan ${idx + 1}`}
-      {q.req && <span className="text-rose-500 ml-1 font-bold">*</span>}
-    </label>
-
-    {q.image_url && (
-      <img src={q.image_url} alt="Ilustrasi pertanyaan" className="max-h-72 w-auto rounded-xl object-contain" />
-    )}
-
-    <PreviewField q={q} idx={idx} value={value} onChange={onChange} />
-
-    {error && <p className="text-xs text-rose-600 font-semibold mt-1">{error}</p>}
-  </div>
-);
-
-const SurveyPreviewTab = ({ title, desc, questions, preview }) => {
-  if (preview.done) {
-    return (
-      <div className="max-w-2xl mx-auto space-y-4">
-        <PreviewDone onReset={preview.reset} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto space-y-4">
-      <form onSubmit={preview.submit} className="space-y-4">
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-xl font-extrabold text-gray-900">{title || 'Kuesioner tanpa judul'}</h2>
-          {desc && <RichText html={desc} block className="text-sm text-gray-600 mt-2" />}
-        </div>
-
-        {questions.map((q, idx) => (
-          <PreviewQuestionCard
-            key={q._key}
-            q={q}
-            idx={idx}
-            value={preview.answers[idx]}
-            error={preview.errors[idx]}
-            onChange={(value) => preview.setAnswer(idx, value)}
-          />
-        ))}
-
-        <div className="flex items-center gap-3 pt-2">
-          <button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow"
-          >
-            Kirim jawaban
-          </button>
-          <button
-            type="button"
-            onClick={preview.clearAnswers}
-            className="bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold px-5 py-2.5 rounded-xl text-sm transition"
-          >
-            Kosongkan
-          </button>
-        </div>
-      </form>
-    </div>
-  );
+const SurveyPreviewTab = ({ title, desc, settings, questions, preview }) => {
+  const [section, setSection] = useState(0);
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const prepared = useMemo(() => prepareSurveyQuestions(questions.map((q, index) => ({ ...q, id: index, is_required: q.req, options: q.opts })), { shuffle_questions: settings.shuffle_questions }), [questions, settings.shuffle_questions]);
+  const pages = splitSurveyPages(visibleQuestions(prepared, preview.answers));
+  const pageIndex = Math.min(section, pages.length - 1);
+  useEffect(() => { setSection(0); }, [questions]);
+  const reset = () => { setSection(0); preview.reset(); };
+  const onContinue = () => {
+    if (!preview.validatePage(pages[pageIndex])) return;
+    if (pageIndex === pages.length - 1) setConfirmSubmit(true);
+    else { setSection(pageIndex + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  };
+  return <SurveyFrame settings={settings}>
+    {confirmSubmit && <SubmitConfirmation onCancel={() => setConfirmSubmit(false)} onConfirm={() => { setConfirmSubmit(false); preview.submit({ preventDefault() {} }); }} />}
+    {preview.done ? <PreviewDone onReset={reset} message={settings.confirmation_message} summary={settings.show_summary ? visibleQuestions(prepared, preview.answers).filter(q => !CONTENT_TYPES.includes(q.type)).map(q => ({ question_id: q.id, text: q.text, type: q.type, options: q.options, answer: preview.answers[q.id] })) : []} /> : <SurveyForm preview survey={{ title, description: desc, settings, questions: prepared }} pages={pages} pageIndex={pageIndex} answers={preview.answers} errors={preview.errors} onAnswer={preview.setAnswer} onPrevious={() => { setSection(pageIndex - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onContinue={onContinue} onClear={reset} />}
+  </SurveyFrame>;
 };
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1470,6 +1055,7 @@ const SharePublishPrompt = ({ onPublish }) => (
 );
 
 const ShareLinkCard = ({ survey, link, onToggleActive }) => {
+  const [prefilled, setPrefilled] = useState({});
   const handleCopyLink = () => {
     if (!link) return;
     navigator.clipboard.writeText(link).then(
@@ -1509,6 +1095,8 @@ const ShareLinkCard = ({ survey, link, onToggleActive }) => {
         </button>
       </div>
 
+      <details className="rounded-xl border border-slate-200 p-4"><summary className="text-sm font-bold text-blue-900 cursor-pointer">Sematkan ke website</summary><textarea readOnly rows={3} className="mt-3 w-full rounded-lg bg-slate-50 p-3 font-mono text-xs" value={`<iframe src="${link}" title="Kuesioner KAN" width="100%" height="800" frameborder="0"></iframe>`} /></details>
+      <details className="rounded-xl border border-slate-200 p-4"><summary className="text-sm font-bold text-blue-900 cursor-pointer">Tautan dengan jawaban awal</summary><div className="mt-3 space-y-3">{survey.questions?.filter(q => ['short', 'para', 'choice', 'drop', 'date', 'time'].includes(q.type)).map(q => <label key={q.id} className="block text-xs text-slate-600">{stripHtml(q.text)}<input className="mt-1 w-full rounded-lg border border-slate-200 p-2" value={prefilled[q.id] || ''} onChange={e => setPrefilled(prev => ({ ...prev, [q.id]: e.target.value }))} /></label>)}<textarea aria-label="Tautan jawaban awal" readOnly className="w-full rounded-lg bg-slate-50 p-3 text-xs" value={`${link}?${new URLSearchParams(Object.fromEntries(Object.entries(prefilled).filter(([, v]) => v).map(([k, v]) => [`q_${k}`, v])))}`} /></div></details>
       <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
         <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer">
           <input
@@ -1708,7 +1296,7 @@ const SampleAnswers = ({ qSum }) => (
   </div>
 );
 
-const isTextType = (type) => type === 'short' || type === 'para';
+const isTextType = (type) => !['choice', 'check', 'drop', 'scale', 'linear', 'rating', 'section', 'heading', 'video', 'image'].includes(type);
 
 const QuestionSummary = ({ qSum }) => (
   <div className="min-w-0 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
@@ -1721,14 +1309,20 @@ const QuestionSummary = ({ qSum }) => (
 
     {hasOptions(qSum.type) && qSum.counts && <OptionCounts qSum={qSum} />}
     {qSum.type === 'scale' && qSum.scale_counts && <ScaleCounts qSum={qSum} />}
+    {['linear', 'rating'].includes(qSum.type) && qSum.counts && <OptionCounts qSum={qSum} />}
+    {qSum.grid_counts && Object.entries(qSum.grid_counts).map(([row, counts]) => <div key={row} className="space-y-2 rounded-xl bg-slate-50 p-3"><p className="text-xs font-bold text-blue-950">{row}</p>{Object.entries(counts).map(([column, count]) => <BarRow key={column} label={column} count={count} total={qSum.total_answers} barClass="bg-blue-600" />)}</div>)}
     {isTextType(qSum.type) && qSum.sample_answers && <SampleAnswers qSum={qSum} />}
   </div>
 );
 
 const ResponsesTable = ({ detailData }) => {
   const [showAll, setShowAll] = useState(false);
-  const questions = detailData.survey?.questions;
-  const responses = detailData.responses;
+  const questions = detailData.survey?.questions.filter(q => !CONTENT_TYPES.includes(q.type));
+  const [gradeOverrides, setGradeOverrides] = useState({});
+  const [maxOverrides, setMaxOverrides] = useState({});
+  const [query, setQuery] = useState('');
+  const isQuiz = Boolean(detailData.survey?.settings?.quiz);
+  const responses = detailData.responses?.filter(r => JSON.stringify(r).toLocaleLowerCase().includes(query.toLocaleLowerCase()));
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
@@ -1739,12 +1333,14 @@ const ResponsesTable = ({ detailData }) => {
         </span>
       </div>
 
+      <input aria-label="Cari jawaban" placeholder="Cari isi jawaban…" value={query} onChange={e => setQuery(e.target.value)} className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm" />
       <div className="overflow-x-auto border border-gray-200 rounded-xl">
         <table className="min-w-full divide-y divide-gray-200 text-xs">
           <thead className="bg-gray-50 text-gray-700 font-bold uppercase tracking-wider">
             <tr>
               <th className="px-4 py-3 text-left">#</th>
               <th className="px-4 py-3 text-left whitespace-nowrap">Waktu</th>
+              {isQuiz && <th className="px-4 py-3 text-left">Nilai</th>}
               {questions?.map((q, qIdx) => (
                 <th
                   key={q.id || qIdx}
@@ -1761,6 +1357,7 @@ const ResponsesTable = ({ detailData }) => {
               <tr key={resp.id || rIdx} className="hover:bg-gray-50/60">
                 <td className="px-4 py-3 font-bold text-gray-600">{rIdx + 1}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{resp.created_at_human}</td>
+                {isQuiz && <td className="px-4 py-3"><div className="flex items-center gap-2"><input aria-label={`Nilai responden ${rIdx + 1}`} type="number" min="0" value={gradeOverrides[resp.id] ?? resp.score ?? 0} onChange={e => setGradeOverrides(prev => ({ ...prev, [resp.id]: e.target.value }))} className="w-16 rounded border border-slate-200 p-1" /><button type="button" className="text-blue-700 font-bold" onClick={async () => { try { await gradeSurveyResponse(detailData.survey.id, resp.id, { score: Number(gradeOverrides[resp.id] ?? resp.score ?? 0), max_score: Number(maxOverrides[resp.id] ?? resp.max_score ?? 0) }); toast.success('Nilai disimpan.'); } catch { toast.error('Gagal menyimpan nilai.'); } }}>Simpan</button><span>/</span><input aria-label={`Nilai maksimum responden ${rIdx + 1}`} type="number" min="0" value={maxOverrides[resp.id] ?? resp.max_score ?? 0} onChange={e => setMaxOverrides(prev => ({ ...prev, [resp.id]: e.target.value }))} className="w-16 rounded border border-slate-200 p-1" /></div></td>}
                 {questions?.map((q) => {
                   const ansVal = resp.answers[q.id];
                   return (
@@ -1813,6 +1410,7 @@ const SurveyResultsTab = ({ survey, detailData, detailLoading }) => {
 // KOMPONEN UTAMA
 // ══════════════════════════════════════════════════════════════════════
 
+
 export default function SurveyManagement() {
   const { surveys, stats, loading, fetchSurveys } = useSurveyList();
   const { detailData, detailLoading, fetchSurveyDetail, clearDetail } = useSurveyDetail();
@@ -1823,17 +1421,24 @@ export default function SurveyManagement() {
   const [currentSurvey, setCurrentSurvey] = useState(null);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
+  const [settings, setSettings] = useState({});
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [dialog, setDialog] = useState(null);
+  const [savedSignature, setSavedSignature] = useState('');
 
-  const editor = useQuestionEditor();
+  const editor = useQuestionEditor(settings);
   const preview = usePreviewForm(editor.questions);
 
   const openSurvey = (survey, targetMode = 'edit') => {
     setCurrentSurvey(survey);
+    setDialog(null);
+    setSavedSignature(surveyFingerprint(survey.title || '', survey.description || '', survey.settings || {}, mapSurveyQuestions(survey.questions)));
     setTitle(survey.title || '');
     setDesc(survey.description || '');
+    setSettings(survey.settings || {});
     editor.resetQuestions(survey.questions);
-    setMode(targetMode);
+    setMode(targetMode === 'share' ? 'edit' : targetMode);
+    setDialog(targetMode === 'share' ? 'share' : null);
     setView('detail');
     preview.reset();
 
@@ -1842,8 +1447,14 @@ export default function SurveyManagement() {
   };
 
   const handleAddNew = () => openSurvey(newSurvey(), 'edit');
+  const duplicateSurvey = () => {
+    const copy = { ...currentSurvey, id: null, code: '', title: `${title} (salinan)`, description: desc, is_published: false, settings: { ...settings }, questions: editor.questions.map(q => ({ ...q, id: undefined, options: q.opts, is_required: q.req })) };
+    openSurvey(copy, 'edit');
+    toast.success('Salinan siap diedit. Simpan sebagai kuesioner baru.');
+  };
 
   const goToList = () => {
+    if (dirty && !window.confirm('Ada perubahan yang belum disimpan. Kembali ke daftar dan abaikan perubahan?')) return;
     setView('list');
     setCurrentSurvey(null);
     clearDetail();
@@ -1861,9 +1472,14 @@ export default function SurveyManagement() {
     title,
     desc,
     questions: editor.questions,
+    settings,
     currentSurvey,
     onSaved: (saved) => {
       setCurrentSurvey(saved);
+      setTitle(saved.title || '');
+      setDesc(saved.description || '');
+      setSettings(saved.settings || {});
+      setSavedSignature(surveyFingerprint(saved.title, saved.description || '', saved.settings || {}, mapSurveyQuestions(saved.questions)));
       editor.replaceQuestions(saved.questions);
       void fetchSurveyDetail(saved.id ?? currentSurvey?.id);
     },
@@ -1878,9 +1494,29 @@ export default function SurveyManagement() {
 
   const handleDelete = useSurveyDelete({ currentSurvey, fetchSurveys, goToList, setDeleteConfirmId });
 
+  const publishCurrent = async () => {
+    const saved = await save();
+    if (!saved?.id) return;
+    const body = await callApi(() => publishAdminSurvey(saved.id), 'Gagal memublikasikan kuesioner.');
+    if (body) { setCurrentSurvey({ ...saved, is_published: true, is_active: true, code: body.data.code }); toast.success('Kuesioner dipublikasikan.'); }
+  };
+  const unpublishCurrent = async () => {
+    if (!currentSurvey?.id) return;
+    const body = await callApi(() => updateAdminSurvey(currentSurvey.id, { title: currentSurvey.title, is_published: false }), 'Gagal membatalkan publikasi.');
+    if (body) { setCurrentSurvey(body.data); setDialog(null); toast.success('Publikasi dibatalkan.'); }
+  };
+  const dirty = surveyFingerprint(title, desc, settings, editor.questions) !== savedSignature;
+  useEffect(() => {
+    if (view !== 'detail' || !dirty) return;
+    const warn = e => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty, view]);
+
   const detailTabs = {
     edit: (
       <SurveyEditTab
+        onImport={() => setDialog('import')}
         surveyId={currentSurvey?.id}
         title={title}
         setTitle={setTitle}
@@ -1892,7 +1528,8 @@ export default function SurveyManagement() {
         onBack={goToList}
       />
     ),
-    pv: <SurveyPreviewTab title={title} desc={desc} questions={editor.questions} preview={preview} />,
+    settings: <SurveySettings settings={settings} onChange={setSettings} />,
+    pv: <SurveyPreviewTab title={title} desc={desc} settings={settings} questions={editor.questions} preview={preview} />,
     share: (
       <SurveyShareTab
         survey={currentSurvey}
@@ -1908,16 +1545,11 @@ export default function SurveyManagement() {
     <AdminLayout>
       <Toaster position="top-right" />
       <div className="space-y-6">
-        <SurveyHeader
-          view={view}
-          mode={mode}
-          title={title}
-          desc={desc}
-          stats={stats}
-          onBack={goToList}
-          onAddNew={handleAddNew}
-          onTabChange={handleTabChange}
-        />
+        {view === 'list' ? <SurveyHeader stats={stats} onAddNew={handleAddNew} /> : <EditorHeader title={title} persisted={Boolean(currentSurvey?.id)} published={currentSurvey?.is_published} mode={mode} onMode={handleTabChange} onBack={goToList} onSave={save} saving={saving} dirty={dirty} onShare={() => setDialog('share')} onTheme={() => setDialog('theme')} onCopy={duplicateSurvey} onUnpublish={() => setDialog('unpublish')} undo={editor.undo} redo={editor.redo} canUndo={editor.canUndo} canRedo={editor.canRedo} />}
+        {dialog === 'theme' && <EditorDialog title="Tema formulir" onClose={() => setDialog(null)}><ThemeSettings settings={settings} onChange={setSettings} /></EditorDialog>}
+        {dialog === 'import' && <EditorDialog title="Impor pertanyaan" onClose={() => setDialog(null)}><ImportQuestions surveys={surveys} currentId={currentSurvey?.id} onImport={items => { editor.importQuestions(items); setDialog(null); }} /></EditorDialog>}
+        {dialog === 'share' && <EditorDialog title="Publikasi & bagikan" wide onClose={() => setDialog(null)}>{dirty && <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Ada perubahan yang belum disimpan. <button type="button" onClick={save} disabled={saving} className="font-bold underline">Simpan sekarang</button></div>}<SurveyShareTab survey={currentSurvey} title={title} onPublish={publishCurrent} onToggleActive={handleToggleActive} /></EditorDialog>}
+        {dialog === 'unpublish' && <EditorDialog title="Batalkan publikasi?" onClose={() => setDialog(null)}><p className="text-sm text-slate-600">Tautan pengisian tidak dapat diakses sampai kuesioner dipublikasikan kembali. Jawaban yang sudah masuk tetap tersedia.</p><button type="button" disabled={saving} onClick={unpublishCurrent} className="mt-5 rounded-lg bg-rose-700 px-4 py-2 text-sm font-bold text-white">Batalkan publikasi</button></EditorDialog>}
 
         {view === 'list' ? (
           <SurveyListView

@@ -16,11 +16,13 @@ class Survey extends Model
         'is_published',
         'is_active',
         'created_by',
+        'settings',
     ];
 
     protected $casts = [
         'is_published' => 'boolean',
         'is_active' => 'boolean',
+        'settings' => 'array',
     ];
 
     public function creator()

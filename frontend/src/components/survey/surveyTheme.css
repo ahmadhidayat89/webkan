@@ -1,0 +1,9 @@
+.kan-survey-theme input,
+.kan-survey-theme textarea,
+.kan-survey-theme select,
+.kan-survey-theme .survey-description {
+  font-size: var(--survey-body-size, 14px);
+}
+.kan-survey-theme .survey-question-label {
+  font-size: var(--survey-question-size, 16px);
+}

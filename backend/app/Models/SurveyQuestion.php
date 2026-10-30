@@ -18,6 +18,7 @@ class SurveyQuestion extends Model
         'options',
         'image_url',
         'validation',
+        'config',
     ];
 
     protected $casts = [
@@ -25,6 +26,7 @@ class SurveyQuestion extends Model
         'is_required' => 'boolean',
         'options' => 'array',
         'validation' => 'array',
+        'config' => 'array',
     ];
 
     public function survey()
