@@ -21,7 +21,9 @@ class SurveyResultsBuilder
         $summaries = [];
 
         foreach ($questions as $question) {
-            if (in_array($question->type, SurveyFlow::CONTENT_TYPES, true)) continue;
+            if (in_array($question->type, SurveyFlow::CONTENT_TYPES, true)) {
+                continue;
+            }
             $summaries[] = $this->questionSummary($question, $responses, $scaleScores);
         }
 
@@ -67,18 +69,7 @@ class SurveyResultsBuilder
         if (in_array($question->type, ['choice', 'check', 'drop'], true)) {
             $summary['counts'] = $this->choiceCounts($question->options ?? [], $answers);
         } elseif (in_array($question->type, ['grid', 'check_grid'], true)) {
-            $summary['grid_counts'] = [];
-            foreach ($question->config['rows'] ?? [] as $row) {
-                $counts = array_fill_keys($question->options ?? [], 0);
-                foreach ($answers as $answer) {
-                    $decoded = json_decode($answer, true);
-                    $values = $decoded[$row] ?? [];
-                    foreach (is_array($values) ? $values : [$values] as $value) {
-                        if (array_key_exists($value, $counts)) $counts[$value]++;
-                    }
-                }
-                $summary['grid_counts'][$row] = $counts;
-            }
+            $summary['grid_counts'] = $this->gridCounts($question, $answers);
         } elseif (in_array($question->type, ['linear', 'rating'], true)) {
             $summary['counts'] = array_count_values($answers);
         } elseif ($question->type === 'scale') {
@@ -90,6 +81,32 @@ class SurveyResultsBuilder
         return $summary;
     }
 
+    private function gridCounts(SurveyQuestion $question, array $answers): array
+    {
+        $decoded = array_map(fn ($answer) => json_decode($answer, true), $answers);
+        $rows = [];
+        foreach ($question->config['rows'] ?? [] as $row) {
+            $rows[$row] = $this->gridRowCounts($question->options ?? [], $decoded, $row);
+        }
+
+        return $rows;
+    }
+
+    private function gridRowCounts(array $options, array $answers, string $row): array
+    {
+        $counts = array_fill_keys($options, 0);
+        foreach ($answers as $answer) {
+            $values = $answer[$row] ?? [];
+            foreach (is_array($values) ? $values : [$values] as $value) {
+                if (array_key_exists($value, $counts)) {
+                    $counts[$value]++;
+                }
+            }
+        }
+
+        return $counts;
+    }
+
     private function answersForQuestion(SurveyQuestion $question, $responses): array
     {
         $answers = [];
@@ -99,6 +116,7 @@ class SurveyResultsBuilder
                 $answers[] = $answer->answer_value;
             }
         }
+
         return $answers;
     }
 
@@ -111,6 +129,7 @@ class SurveyResultsBuilder
                 $counts[$value] = ($counts[$value] ?? 0) + 1;
             }
         }
+
         return $counts;
     }
 
@@ -124,6 +143,7 @@ class SurveyResultsBuilder
                 $scaleScores[] = $score;
             }
         }
+
         return $counts;
     }
 }

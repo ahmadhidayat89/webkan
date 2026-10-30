@@ -51,23 +51,30 @@ function validateCheckResponse(value, rules) {
   return null;
 }
 
-function validateSingleResponse(question, value) {
-  switch (question.type) {
-    case 'choice':
-    case 'drop':
-      return question.options?.includes(value) || (question.config?.allow_other && String(value).startsWith('Lainnya: ') && String(value).slice(9).trim()) ? null : 'Silakan pilih opsi yang tersedia.';
-    case 'email':
-      return isValidEmail(value) ? null : 'Masukkan alamat email yang valid.';
-    case 'phone':
-      return isValidPhone(value) ? null : 'Masukkan nomor telepon yang valid (7–15 digit).';
-    case 'file':
-      return (Array.isArray(value) ? value.length > 0 && value.every(f => f.url && f.name) : value?.url && value?.name) ? null : 'Silakan unggah berkas.';
-    case 'scale':
-      return Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 5
-        ? null
-        : 'Pilih nilai skala antara 1 dan 5.';
-    default:
-      return null;
-  }
+function isAllowedChoice(question, value) {
+  if (question.options?.includes(value)) return true;
+  return question.config?.allow_other && String(value).startsWith('Lainnya: ') && Boolean(String(value).slice(9).trim());
 }
 
+function hasUploadedFiles(value) {
+  if (Array.isArray(value)) return value.length > 0 && value.every(file => file.url && file.name);
+  return Boolean(value?.url && value?.name);
+}
+
+function isValidScale(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 1 && number <= 5;
+}
+
+const singleValidators = {
+  choice: (q, value) => isAllowedChoice(q, value) ? null : 'Silakan pilih opsi yang tersedia.',
+  drop: (q, value) => isAllowedChoice(q, value) ? null : 'Silakan pilih opsi yang tersedia.',
+  email: (_q, value) => isValidEmail(value) ? null : 'Masukkan alamat email yang valid.',
+  phone: (_q, value) => isValidPhone(value) ? null : 'Masukkan nomor telepon yang valid (7–15 digit).',
+  file: (_q, value) => hasUploadedFiles(value) ? null : 'Silakan unggah berkas.',
+  scale: (_q, value) => isValidScale(value) ? null : 'Pilih nilai skala antara 1 dan 5.',
+};
+
+function validateSingleResponse(question, value) {
+  return singleValidators[question.type]?.(question, value) ?? null;
+}

@@ -67,33 +67,65 @@ export function visibleQuestions(questions, answers) {
   return visible;
 }
 
-export function validateExtended(q, value) {
+const isGridType = type => ['grid', 'check_grid'].includes(type);
+const requiresRows = q => q.is_required || q.req || q.config?.require_rows;
+const emptyRow = value => !value || (Array.isArray(value) && !value.length);
+
+function validateGrid(q, value) {
   const c = q.config || {};
-  const isGrid = ['grid', 'check_grid'].includes(q.type);
-  const missing = value == null || value === '' || (Array.isArray(value) && !value.length);
-  if (CONTENT_TYPES.includes(q.type)) return null;
-  if (missing && isGrid && c.require_rows) return 'Isi setiap baris tabel.';
-  if (missing) return q.is_required || q.req ? 'Pertanyaan ini wajib diisi.' : null;
-  if (['linear', 'rating'].includes(q.type)) {
-    const min = q.type === 'rating' ? 1 : (c.min ?? 1);
-    if (!Number.isInteger(Number(value)) || Number(value) < min || Number(value) > (c.max ?? 5)) return 'Pilih nilai pada rentang yang tersedia.';
-  }
-  if (q.type === 'date' && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value)) || new Date(value).toISOString().slice(0, 10) !== value)) return 'Masukkan tanggal yang valid.';
-  if (q.type === 'time' && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) return 'Masukkan waktu yang valid.';
-  if (['grid', 'check_grid'].includes(q.type) && (q.is_required || q.req || c.require_rows)) {
-    if ((c.rows || []).some(row => !value[row] || (Array.isArray(value[row]) && !value[row].length))) return 'Isi setiap baris tabel.';
-  }
-  if (['grid', 'check_grid'].includes(q.type) && c.unique_columns) {
+  if (requiresRows(q) && (c.rows || []).some(row => emptyRow(value[row]))) return 'Isi setiap baris tabel.';
+  if (c.unique_columns) {
     const selected = Object.values(value).flat().filter(Boolean);
     if (new Set(selected).size !== selected.length) return 'Setiap kolom hanya boleh dipilih sekali.';
   }
-  if (q.type === 'duration' && !/^\d{1,5}:[0-5]\d:[0-5]\d$/.test(value)) return 'Gunakan durasi jam:menit:detik.';
-  if (['short', 'para'].includes(q.type)) {
-    const v = q.validation || {};
-    if (v.min_value != null && Number(value) < v.min_value) return 'Angka di bawah batas minimum.';
-    if (v.max_value != null && Number(value) > v.max_value) return 'Angka di atas batas maksimum.';
-    if (v.contains && !String(value).includes(v.contains)) return `Jawaban harus memuat: ${v.contains}`;
-    if (v.pattern) { try { if (!new RegExp(v.pattern, 'u').test(value)) return v.error_message || 'Format jawaban tidak sesuai pola.'; } catch { return 'Pola validasi tidak valid.'; } }
-  }
   return null;
+}
+
+function validateRating(q, value) {
+  const c = q.config || {};
+  const min = q.type === 'rating' ? 1 : (c.min ?? 1);
+  const number = Number(value);
+  return !Number.isInteger(number) || number < min || number > (c.max ?? 5) ? 'Pilih nilai pada rentang yang tersedia.' : null;
+}
+
+function validateDate(value) {
+  const valid = /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+  return valid && new Date(value).toISOString().slice(0, 10) === value ? null : 'Masukkan tanggal yang valid.';
+}
+
+function validatePattern(v, value) {
+  if (!v.pattern) return null;
+  try {
+    return new RegExp(v.pattern, 'u').test(value) ? null : v.error_message || 'Format jawaban tidak sesuai pola.';
+  } catch {
+    return 'Pola validasi tidak valid.';
+  }
+}
+
+function validateTextConstraints(q, value) {
+  const v = q.validation || {};
+  if (v.min_value != null && Number(value) < v.min_value) return 'Angka di bawah batas minimum.';
+  if (v.max_value != null && Number(value) > v.max_value) return 'Angka di atas batas maksimum.';
+  if (v.contains && !String(value).includes(v.contains)) return `Jawaban harus memuat: ${v.contains}`;
+  return validatePattern(v, value);
+}
+
+const extendedValidators = {
+  linear: validateRating,
+  rating: validateRating,
+  grid: validateGrid,
+  check_grid: validateGrid,
+  date: (_q, value) => validateDate(value),
+  time: (_q, value) => /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value) ? null : 'Masukkan waktu yang valid.',
+  duration: (_q, value) => /^\d{1,5}:[0-5]\d:[0-5]\d$/.test(value) ? null : 'Gunakan durasi jam:menit:detik.',
+  short: validateTextConstraints,
+  para: validateTextConstraints,
+};
+
+export function validateExtended(q, value) {
+  if (CONTENT_TYPES.includes(q.type)) return null;
+  const missing = value == null || value === '' || (Array.isArray(value) && !value.length);
+  if (missing && isGridType(q.type) && q.config?.require_rows) return 'Isi setiap baris tabel.';
+  if (missing) return q.is_required || q.req ? 'Pertanyaan ini wajib diisi.' : null;
+  return extendedValidators[q.type]?.(q, value) ?? null;
 }
