@@ -14,6 +14,46 @@ const SHORT_INPUT_TYPES = { email: 'email', number: 'number' };
 const SHORT_INPUT_MODES = { phone: 'tel', number: 'decimal' };
 const SHORT_PLACEHOLDERS = { email: 'nama@contoh.com', phone: '+62 812 3456 7890' };
 
+const OTHER_PREFIX = 'Lainnya: ';
+
+const submitLabelOf = (submitting, isLastPage) => {
+  if (submitting) {
+    return 'Mengirimkan…';
+  }
+  return isLastPage ? 'Kirim Jawaban' : 'Berikutnya';
+};
+
+// Opsi "Lainnya": choice menyimpan string, check menyimpan array
+const isOtherChecked = (type, answer) => {
+  if (type === 'choice') {
+    return String(answer || '').startsWith(OTHER_PREFIX);
+  }
+  return (answer || []).some(v => v.startsWith(OTHER_PREFIX));
+};
+
+const getOtherText = (type, answer) => {
+  if (type === 'choice') {
+    return String(answer || '').startsWith(OTHER_PREFIX) ? answer.slice(OTHER_PREFIX.length) : '';
+  }
+  const found = (answer || []).find(v => v.startsWith(OTHER_PREFIX)) || '';
+  return found.slice(OTHER_PREFIX.length);
+};
+
+const toggleOther = (type, current, checked) => {
+  if (type === 'choice') {
+    return OTHER_PREFIX;
+  }
+  const rest = (current || []).filter(v => !v.startsWith(OTHER_PREFIX));
+  return checked ? [...rest, OTHER_PREFIX] : rest;
+};
+
+const setOtherText = (type, current, text) => {
+  if (type === 'choice') {
+    return `${OTHER_PREFIX}${text}`;
+  }
+  return [...(current || []).filter(v => !v.startsWith(OTHER_PREFIX)), `${OTHER_PREFIX}${text}`];
+};
+
 export function SurveyFrame({ settings = {}, children }) {
   return <div className="min-h-screen px-4 py-8 kan-survey-theme sm:px-6" style={{ backgroundColor: settings.background_color || '#f4f7fc', '--survey-question-size': `${settings.question_size || 16}px`, '--survey-body-size': `${settings.body_size || 14}px`, fontFamily: settings.font === 'serif' ? 'Georgia, serif' : undefined }}>
     <div className="max-w-2xl mx-auto space-y-6">
@@ -44,7 +84,7 @@ export function SurveyForm({ survey, pages, pageIndex, answers, errors, onAnswer
     <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
       {pageIndex > 0 && <button type="button" disabled={busy} className="px-5 py-3 text-sm font-bold bg-white border rounded-xl border-slate-300 disabled:opacity-50" onClick={onPrevious}>Sebelumnya</button>}
       <button type="button" disabled={busy} className="mr-auto text-sm font-bold text-slate-500 disabled:opacity-50" onClick={onClear}>Kosongkan</button>
-      <button type="submit" disabled={busy} className="w-full px-8 py-3 text-sm font-bold text-white transition bg-blue-600 shadow-md rounded-xl hover:bg-blue-700 disabled:opacity-50 sm:w-auto">{submitting ? 'Mengirimkan…' : pageIndex === pages.length - 1 ? 'Kirim Jawaban' : 'Berikutnya'}</button>
+      <button type="submit" disabled={busy} className="w-full px-8 py-3 text-sm font-bold text-white transition bg-blue-600 shadow-md rounded-xl hover:bg-blue-700 disabled:opacity-50 sm:w-auto">{submitLabelOf(submitting, pageIndex === pages.length - 1)}</button>
     </div>
   </form>;
 }
@@ -112,8 +152,9 @@ export function SurveyQuestion({ q, number, pageNumber, pageCount, settings, val
           const file = files.reduce((a, b) => a.size > b.size ? a : b, files[0]); if (file.size > (q.config?.file_max_mb || 10) * 1024 * 1024) { toast.error(`Ukuran file maksimal ${q.config?.file_max_mb || 10} MB.`); e.target.value = ''; return; }
           setUploading((prev) => ({ ...prev, [q.id]: true }));
           try {
-            const results = [];
-            for (const selected of files) results.push(uploadFile ? await uploadFile(q, selected) : { name: selected.name, size: selected.size, url: 'preview' });
+            const results = await Promise.all(files.map(selected => (uploadFile
+              ? uploadFile(q, selected)
+              : { name: selected.name, size: selected.size, url: 'preview' })));
             setAnswers((prev) => ({ ...prev, [q.id]: (q.config?.file_max_files || 1) > 1 ? results : results[0] }));
           } catch (error) {
             toast.error(error.response?.data?.message || 'Gagal mengunggah file.');
@@ -123,7 +164,7 @@ export function SurveyQuestion({ q, number, pageNumber, pageCount, settings, val
           }
         }} className="w-full text-sm" />
         {uploading[q.id] && <p className="text-xs text-blue-600">Mengunggah file...</p>}
-        {Array.isArray(answers[q.id]) && answers[q.id].map((f, i) => <div key={i} className="flex items-center gap-2 text-sm">{preview ? <span className="text-blue-700 underline">{f.name}</span> : <a href={f.url} target="_blank" rel="noreferrer" className="text-blue-700 underline">{f.name}</a>}<button type="button" className="text-xs text-rose-600" onClick={() => setAnswers(prev => ({ ...prev, [q.id]: prev[q.id].filter((_, j) => j !== i) }))}>Hapus</button></div>)}
+        {Array.isArray(answers[q.id]) && answers[q.id].map((f, i) => <div key={`${f.url}-${f.name}-${f.size}`} className="flex items-center gap-2 text-sm">{preview ? <span className="text-blue-700 underline">{f.name}</span> : <a href={f.url} target="_blank" rel="noreferrer" className="text-blue-700 underline">{f.name}</a>}<button type="button" className="text-xs text-rose-600" onClick={() => setAnswers(prev => ({ ...prev, [q.id]: prev[q.id].filter((_, j) => j !== i) }))}>Hapus</button></div>)}
         {answers[q.id]?.url && <div className="flex items-center gap-2 text-sm">{preview ? <span className="text-blue-700 underline">{answers[q.id].name}</span> : <a href={answers[q.id].url} target="_blank" rel="noreferrer" className="text-blue-700 underline">{answers[q.id].name}</a>}<button type="button" onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: undefined }))} className="text-xs text-rose-600">Hapus</button></div>}
       </div>}
 
@@ -171,8 +212,8 @@ export function SurveyQuestion({ q, number, pageNumber, pageCount, settings, val
       )}
 
       {['choice', 'check'].includes(q.type) && q.config?.allow_other && <label className="flex items-center gap-3 text-sm text-slate-700">
-        <input type={q.type === 'choice' ? 'radio' : 'checkbox'} name={`q_${q.id}`} checked={q.type === 'choice' ? String(answers[q.id] || '').startsWith('Lainnya: ') : (answers[q.id] || []).some(v => v.startsWith('Lainnya: '))} onChange={e => setAnswers(prev => ({ ...prev, [q.id]: q.type === 'choice' ? 'Lainnya: ' : e.target.checked ? [...(prev[q.id] || []), 'Lainnya: '] : (prev[q.id] || []).filter(v => !v.startsWith('Lainnya: ')) }))} />
-        <span>Lainnya:</span><input aria-label="Jawaban lainnya" className="flex-1 min-w-0 px-3 py-2 border rounded-lg border-slate-200" value={q.type === 'choice' ? (String(answers[q.id] || '').startsWith('Lainnya: ') ? answers[q.id].slice(9) : '') : ((answers[q.id] || []).find(v => v.startsWith('Lainnya: ')) || '').slice(9)} onChange={e => setAnswers(prev => ({ ...prev, [q.id]: q.type === 'choice' ? `Lainnya: ${e.target.value}` : [...(prev[q.id] || []).filter(v => !v.startsWith('Lainnya: ')), `Lainnya: ${e.target.value}`] }))} />
+        <input type={q.type === 'choice' ? 'radio' : 'checkbox'} name={`q_${q.id}`} checked={isOtherChecked(q.type, answers[q.id])} onChange={e => setAnswers(prev => ({ ...prev, [q.id]: toggleOther(q.type, prev[q.id], e.target.checked) }))} />
+        <span>Lainnya:</span><input aria-label="Jawaban lainnya" className="flex-1 min-w-0 px-3 py-2 border rounded-lg border-slate-200" value={getOtherText(q.type, answers[q.id])} onChange={e => setAnswers(prev => ({ ...prev, [q.id]: setOtherText(q.type, prev[q.id], e.target.value) }))} />
       </label>}
       {q.type === 'drop' && <SearchableSelect clearable label={`Jawaban: ${stripHtml(q.text)}`} value={answers[q.id] || ''} options={(q.options || []).map(option => ({ value: option, label: option }))} onChange={value => setAnswers({ ...answers, [q.id]: value })} placeholder="Silakan pilih" searchPlaceholder="Cari opsi jawaban…" />}
 

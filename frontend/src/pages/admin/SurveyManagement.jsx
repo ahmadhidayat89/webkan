@@ -273,10 +273,10 @@ const withoutOption = (q, optIdx) =>
   q.opts.length <= 1
     ? q
     : {
-        ...q,
-        opts: q.opts.filter((_, i) => i !== optIdx),
-        optKeys: q.optKeys.filter((_, i) => i !== optIdx),
-      };
+      ...q,
+      opts: q.opts.filter((_, i) => i !== optIdx),
+      optKeys: q.optKeys.filter((_, i) => i !== optIdx),
+    };
 
 const withQuestionType = (q, newType) => {
   const opts = optsForType(q.type, newType, q.opts);
@@ -435,7 +435,19 @@ function useQuestionEditor(settings) {
     questions,
     quiz: Boolean(settings.quiz),
     undo: () => dispatch({ type: 'undo' }), redo: () => dispatch({ type: 'redo' }), canUndo: history.past.length > 0, canRedo: history.future.length > 0,
-    moveQuestion: (idx, delta) => { const next = idx + delta; if (next < 0 || next >= questions.length) return; setQuestions(prev => { const copy = [...prev]; const [moved] = copy.splice(idx, 1); copy.splice(next, 0, moved); return copy; }); setSelectedQIndex(next); },
+    moveQuestion: (idx, delta) => {
+      const next = idx + delta;
+      if (next < 0 || next >= questions.length) {
+        return;
+      }
+      setQuestions(prev => {
+        const copy = [...prev];
+        const [moved] = copy.splice(idx, 1);
+        copy.splice(next, 0, moved);
+        return copy;
+      });
+      setSelectedQIndex(next);
+    },
     importQuestions: (items) => setQuestions(prev => [...prev, ...mapSurveyQuestions(items).map(q => ({ ...q, id: undefined, config: { ...q.config, key: uid(), branches: {} } }))]),
     scrollTarget,
     clearScrollTarget: setScrollTarget,
@@ -621,12 +633,12 @@ function useQrCanvas(canvasRef, link) {
 
 const HeaderSubtitle = ({ view, desc }) => {
   if (view === 'list') {
-    return <p className="text-blue-100 text-sm mt-1 max-w-xl">Buat kuesioner, bagikan lewat kode QR, dan lihat hasilnya secara instan.</p>;
+    return <p className="max-w-xl mt-1 text-sm text-blue-100">Buat kuesioner, bagikan lewat kode QR, dan lihat hasilnya secara instan.</p>;
   }
   if (desc) {
-    return <RichText html={desc} block className="text-blue-100 text-sm mt-1 max-w-xl" />;
+    return <RichText html={desc} block className="max-w-xl mt-1 text-sm text-blue-100" />;
   }
-  return <p className="text-blue-100 text-sm mt-1 max-w-xl">Tanpa deskripsi singkat.</p>;
+  return <p className="max-w-xl mt-1 text-sm text-blue-100">Tanpa deskripsi singkat.</p>;
 };
 
 const HeaderText = ({ view, title, desc, onBack }) => (
@@ -639,7 +651,7 @@ const HeaderText = ({ view, title, desc, onBack }) => (
         <FaArrowLeft className="text-xs" /> Daftar kuesioner
       </button>
     )}
-    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+    <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
       {view === 'list' ? 'Kelola Kuesioner' : (title || 'Kuesioner tanpa judul')}
     </h1>
     <HeaderSubtitle view={view} desc={desc} />
@@ -668,8 +680,8 @@ const ListHeaderActions = ({ stats, onAddNew }) => (
 );
 
 const SurveyHeader = ({ stats, onAddNew }) => (
-  <section className="rounded-2xl bg-gradient-to-r from-blue-700 to-indigo-900 p-6 text-white shadow-sm flex flex-wrap items-center justify-between gap-5">
-    <HeaderText view="list" onBack={() => {}} />
+  <section className="flex flex-wrap items-center justify-between gap-5 p-6 text-white shadow-sm rounded-2xl bg-gradient-to-r from-blue-700 to-indigo-900">
+    <HeaderText view="list" onBack={() => { }} />
     <ListHeaderActions stats={stats} onAddNew={onAddNew} />
   </section>
 );
@@ -679,16 +691,16 @@ const SurveyHeader = ({ stats, onAddNew }) => (
 // ══════════════════════════════════════════════════════════════════════
 
 const ListLoading = () => (
-  <div className="bg-white rounded-2xl p-12 text-center text-gray-500 border border-gray-200">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+  <div className="p-12 text-center text-gray-500 bg-white border border-gray-200 rounded-2xl">
+    <div className="w-8 h-8 mx-auto mb-3 border-b-2 border-blue-600 rounded-full animate-spin"></div>
     Memuat daftar kuesioner...
   </div>
 );
 
 const ListEmpty = ({ onAddNew }) => (
-  <div className="bg-white rounded-2xl p-12 text-center border border-gray-200">
-    <h3 className="text-lg font-bold text-gray-800 mb-1">Belum ada kuesioner</h3>
-    <p className="text-sm text-gray-500 mb-4">Tekan tombol Tambah Kuesioner untuk membuat kuesioner pertama Anda.</p>
+  <div className="p-12 text-center bg-white border border-gray-200 rounded-2xl">
+    <h3 className="mb-1 text-lg font-bold text-gray-800">Belum ada kuesioner</h3>
+    <p className="mb-4 text-sm text-gray-500">Tekan tombol Tambah Kuesioner untuk membuat kuesioner pertama Anda.</p>
     <button
       onClick={onAddNew}
       className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition"
@@ -708,7 +720,7 @@ const SurveyCardActions = ({
   onCancelDelete,
   onDelete,
 }) => (
-  <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2">
+  <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100">
     {item.is_published ? (
       <>
         <button
@@ -725,11 +737,10 @@ const SurveyCardActions = ({
         </button>
         <button
           onClick={() => onToggleActive(item.id)}
-          className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
-            item.is_active
-              ? 'text-amber-600 hover:bg-amber-50'
-              : 'text-emerald-600 hover:bg-emerald-50'
-          }`}
+          className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${item.is_active
+            ? 'text-amber-600 hover:bg-amber-50'
+            : 'text-emerald-600 hover:bg-emerald-50'
+            }`}
         >
           {item.is_active ? 'Nonaktifkan' : 'Aktifkan'}
         </button>
@@ -752,7 +763,7 @@ const SurveyCardActions = ({
 
     {confirming ? (
       <div className="flex items-center gap-2 ml-auto">
-        <span className="text-xs text-rose-600 font-semibold">Yakin hapus?</span>
+        <span className="text-xs font-semibold text-rose-600">Yakin hapus?</span>
         <button
           onClick={() => onDelete(item.id)}
           className="text-xs font-bold px-2.5 py-1 rounded bg-rose-600 text-white hover:bg-rose-700 transition"
@@ -781,7 +792,7 @@ const SurveyCard = ({ item, index, actions }) => {
   const status = getSurveyStatus(item);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
+    <div className="p-5 space-y-3 transition-shadow bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="bg-blue-50 text-blue-700 font-bold text-xs px-2.5 py-1 rounded-lg">
@@ -794,7 +805,7 @@ const SurveyCard = ({ item, index, actions }) => {
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 font-medium">
+      <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-500">
         <span>{item.questions_count ?? item.questions?.length ?? 0} pertanyaan</span>
         <span>•</span>
         <span>{item.responses_count ?? 0} responden</span>
@@ -856,7 +867,7 @@ const QuestionTextPreview = ({ html }) => (
 const QuestionHeader = ({ q, qIdx, isSelected, editor }) => (
   <div className="space-y-3">
     <div className="flex items-center justify-between gap-3">
-      <button type="button" draggable onDragStart={e => { e.dataTransfer.setData('application/x-kan-question', String(qIdx)); e.dataTransfer.effectAllowed = 'move'; }} onClick={() => editor.setSelectedQIndex(qIdx)} title="Seret untuk memindahkan" className="cursor-grab text-xs font-semibold text-slate-400 active:cursor-grabbing">⋮⋮ {CONTENT_TYPES.includes(q.type) ? QUESTION_TYPES[q.type] : `Pertanyaan ${qIdx + 1}`}</button>
+      <button type="button" draggable onDragStart={e => { e.dataTransfer.setData('application/x-kan-question', String(qIdx)); e.dataTransfer.effectAllowed = 'move'; }} onClick={() => editor.setSelectedQIndex(qIdx)} title="Seret untuk memindahkan" className="text-xs font-semibold cursor-grab text-slate-400 active:cursor-grabbing">⋮⋮ {CONTENT_TYPES.includes(q.type) ? QUESTION_TYPES[q.type] : `Pertanyaan ${qIdx + 1}`}</button>
       {isSelected && <SearchableSelect className="w-56 max-w-[65%]" label="Jenis pertanyaan" value={q.type} options={Object.entries(QUESTION_TYPES).map(([value, label]) => ({ value, label }))} onChange={value => editor.changeQuestionType(qIdx, value)} searchPlaceholder="Cari jenis pertanyaan…" />}
     </div>
     {isSelected ? <RichTextInput key={q._key} value={q.text} onChange={html => editor.setText(qIdx, html)} placeholder={CONTENT_TYPES.includes(q.type) ? 'Judul konten' : 'Tulis pertanyaan'} /> : <button type="button" onClick={() => editor.setSelectedQIndex(qIdx)} className="w-full text-left"><QuestionTextPreview html={q.text} /></button>}
@@ -864,9 +875,9 @@ const QuestionHeader = ({ q, qIdx, isSelected, editor }) => (
 );
 
 const OptionMarker = ({ type, index }) => {
-  if (type === 'choice') return <div className="w-4 h-4 rounded-full border-2 border-gray-400 flex-shrink-0" />;
-  if (type === 'check') return <div className="w-4 h-4 rounded border-2 border-gray-400 flex-shrink-0" />;
-  return <span className="text-xs font-bold text-gray-400 w-4">{index + 1}.</span>;
+  if (type === 'choice') return <div className="flex-shrink-0 w-4 h-4 border-2 border-gray-400 rounded-full" />;
+  if (type === 'check') return <div className="flex-shrink-0 w-4 h-4 border-2 border-gray-400 rounded" />;
+  return <span className="w-4 text-xs font-bold text-gray-400">{index + 1}.</span>;
 };
 
 const OptionsEditor = ({ q, qIdx, editor }) => {
@@ -876,20 +887,20 @@ const OptionsEditor = ({ q, qIdx, editor }) => {
     {q.opts.map((opt, optIdx) => <div key={q.optKeys[optIdx]} className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <OptionMarker type={q.type} index={optIdx} />
-        <input aria-label={`Opsi ${optIdx + 1}`} value={opt} onChange={e => editor.updateOption(qIdx, optIdx, e.target.value)} className="min-w-0 flex-1 border-b border-slate-200 py-2 text-sm outline-none focus:border-blue-500" />
+        <input aria-label={`Opsi ${optIdx + 1}`} value={opt} onChange={e => editor.updateOption(qIdx, optIdx, e.target.value)} className="flex-1 min-w-0 py-2 text-sm border-b outline-none border-slate-200 focus:border-blue-500" />
         {['choice', 'check'].includes(q.type) && <InlineImageUpload label="Gambar opsi" onChange={url => editor.patchQuestion(qIdx, { config: { ...q.config, option_images: { ...q.config?.option_images, [opt]: url } } })} />}
         {q.opts.length > 1 && <button type="button" aria-label={`Hapus opsi ${optIdx + 1}`} onClick={() => editor.removeOption(qIdx, optIdx)} className="px-2 text-xl text-slate-400 hover:text-rose-600">×</button>}
       </div>
-      {q.config?.option_images?.[opt] && <div className="flex gap-3"><img src={q.config.option_images[opt]} alt={opt} className="ml-6 h-24 rounded-lg object-contain" /><button type="button" className="text-xs text-rose-600" onClick={() => editor.patchQuestion(qIdx, { config: { ...q.config, option_images: { ...q.config.option_images, [opt]: null } } })}>Hapus gambar</button></div>}
+      {q.config?.option_images?.[opt] && <div className="flex gap-3"><img src={q.config.option_images[opt]} alt={opt} className="object-contain h-24 ml-6 rounded-lg" /><button type="button" className="text-xs text-rose-600" onClick={() => editor.patchQuestion(qIdx, { config: { ...q.config, option_images: { ...q.config.option_images, [opt]: null } } })}>Hapus gambar</button></div>}
       {branches && ['choice', 'drop'].includes(q.type) && <select aria-label={`Tujuan untuk ${opt}`} value={q.config?.branches?.[opt] || ''} onChange={e => editor.patchQuestion(qIdx, { config: { ...q.config, branches: { ...q.config?.branches, [opt]: e.target.value } } })} className="ml-6 w-[calc(100%_-_1.5rem)] rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-900"><option value="">Lanjut ke pertanyaan berikutnya</option>{editor.questions.slice(qIdx + 1).filter(q => q.type === 'section').map(q => <option key={q.config.key} value={q.config.key}>Buka: {stripHtml(q.text) || 'Bagian tanpa judul'}</option>)}<option value="__submit">Kirim formulir</option></select>}
     </div>)}
-    {q.config?.allow_other && <div className="flex justify-between rounded-lg bg-slate-50 p-3 text-sm text-slate-400"><span>Lainnya: jawaban responden</span><button type="button" className="text-rose-600" onClick={() => editor.patchQuestion(qIdx, { config: { ...q.config, allow_other: false } })}>×</button></div>}
+    {q.config?.allow_other && <div className="flex justify-between p-3 text-sm rounded-lg bg-slate-50 text-slate-400"><span>Lainnya: jawaban responden</span><button type="button" className="text-rose-600" onClick={() => editor.patchQuestion(qIdx, { config: { ...q.config, allow_other: false } })}>×</button></div>}
     <div className="flex flex-wrap gap-2 text-xs font-semibold"><button type="button" onClick={() => editor.addOption(qIdx)} className="text-blue-700">+ Tambahkan opsi</button>{['choice', 'check'].includes(q.type) && !q.config?.allow_other && <><span className="text-slate-400">atau</span><button type="button" onClick={() => editor.patchQuestion(qIdx, { config: { ...q.config, allow_other: true } })} className="text-blue-700">tambahkan “Lainnya”</button></>}</div>
   </div>;
 };
 
 const ScaleEditor = ({ q, qIdx, editor }) => (
-  <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+  <div className="p-4 space-y-3 border border-gray-200 bg-gray-50 rounded-xl">
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-xs font-bold text-gray-600">Label siap pakai</span>
       <select
@@ -905,7 +916,7 @@ const ScaleEditor = ({ q, qIdx, editor }) => (
     </div>
     {[0, 1, 2, 3, 4].map((i) => (
       <div key={i} className="flex items-center gap-2.5">
-        <span className="w-7 h-7 rounded-full bg-blue-50 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+        <span className="flex items-center justify-center flex-shrink-0 text-xs font-bold text-blue-700 rounded-full w-7 h-7 bg-blue-50">
           {i + 1}
         </span>
         <input
@@ -927,19 +938,19 @@ const QuestionBody = ({ q, qIdx, isSelected, editor }) => {
   if (!isSelected) return <div className="text-xs text-slate-400">{QUESTION_TYPES[q.type]}{q.req ? ' · Wajib diisi' : ''}</div>;
   return <div className="space-y-4">
     {!CONTENT_TYPES.includes(q.type) && <InlineImageUpload label="Gambar pertanyaan" onChange={image_url => editor.patchQuestion(qIdx, { image_url })} />}
-    {q.image_url && q.type !== 'image' && <div className="flex gap-3"><img src={q.image_url} alt="Gambar pertanyaan" className="max-h-52 max-w-full rounded-lg" /><button type="button" className="text-xs text-rose-600" onClick={() => editor.patchQuestion(qIdx, { image_url: null })}>Hapus gambar</button></div>}
+    {q.image_url && q.type !== 'image' && <div className="flex gap-3"><img src={q.image_url} alt="Gambar pertanyaan" className="max-w-full rounded-lg max-h-52" /><button type="button" className="text-xs text-rose-600" onClick={() => editor.patchQuestion(qIdx, { image_url: null })}>Hapus gambar</button></div>}
     <QuestionPrimaryOptions q={q} onConfig={config} onPatch={patch => editor.patchQuestion(qIdx, patch)} />
     {hasOptions(q.type) && <OptionsEditor q={q} qIdx={qIdx} editor={editor} />}
     {q.type === 'scale' && <ScaleEditor q={q} qIdx={qIdx} editor={editor} />}
-    {['short', 'para'].includes(q.type) && <div className="border-b border-dotted border-slate-300 pb-3 text-sm text-slate-400">{q.type === 'short' ? 'Teks jawaban singkat' : 'Teks jawaban panjang'}</div>}
-    {['linear', 'rating', 'date', 'time', 'duration', 'video'].includes(q.type) && <div className="pointer-events-none"><ExtendedField q={q} value={undefined} onChange={() => {}} /></div>}
+    {['short', 'para'].includes(q.type) && <div className="pb-3 text-sm border-b border-dotted border-slate-300 text-slate-400">{q.type === 'short' ? 'Teks jawaban singkat' : 'Teks jawaban panjang'}</div>}
+    {['linear', 'rating', 'date', 'time', 'duration', 'video'].includes(q.type) && <div className="pointer-events-none"><ExtendedField q={q} value={undefined} onChange={() => { }} /></div>}
     {['short', 'para', 'check'].includes(q.type) && hasValidation && <ValidationOptions q={q} onChange={patch => editor.patchValidation(qIdx, patch)} />}
     {editor.quiz && !CONTENT_TYPES.includes(q.type) && <QuizAnswerKey q={q} onConfig={config} />}
   </div>;
 };
 
 const QuestionFooter = ({ q, qIdx, editor }) => (
-  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs">
+  <div className="flex flex-wrap items-center justify-between gap-3 pt-4 text-xs border-t border-slate-100">
     <div className="flex items-center gap-2"><button type="button" aria-label="Naikkan pertanyaan" disabled={qIdx === 0} onClick={() => editor.moveQuestion(qIdx, -1)} className="p-2 text-slate-500 disabled:opacity-30">↑</button><button type="button" aria-label="Turunkan pertanyaan" disabled={qIdx === editor.questions.length - 1} onClick={() => editor.moveQuestion(qIdx, 1)} className="p-2 text-slate-500 disabled:opacity-30">↓</button><button type="button" title="Duplikat" aria-label="Duplikat pertanyaan" onClick={() => editor.duplicateQuestion(qIdx)} className="p-2 text-slate-500 hover:text-blue-700"><FaClone /></button><button type="button" title="Hapus" aria-label="Hapus pertanyaan" onClick={() => editor.removeQuestion(qIdx)} className="p-2 text-slate-500 hover:text-rose-600"><FaTrash /></button></div>
     <div className="flex items-center gap-4">{!CONTENT_TYPES.includes(q.type) && <label className="flex items-center gap-2 text-slate-600"><input type="checkbox" checked={q.req} onChange={e => editor.setRequired(qIdx, e.target.checked)} className="accent-blue-700" />Wajib diisi</label>}<QuestionMoreOptions q={q} onConfig={patch => editor.patchQuestion(qIdx, { config: { ...q.config, ...patch } })} onPatch={patch => editor.patchQuestion(qIdx, patch)} /></div>
   </div>
@@ -949,11 +960,10 @@ const QuestionCard = ({ q, qIdx, isSelected, editor }) => (
   <div id={`survey-item-${q._key}`} tabIndex={-1}
     onDragOver={e => { if (e.dataTransfer.types.includes('application/x-kan-question')) e.preventDefault(); }}
     onDrop={e => { const from = Number(e.dataTransfer.getData('application/x-kan-question')); if (Number.isInteger(from)) { e.preventDefault(); editor.moveQuestion(from, qIdx - from); } }}
-    className={`bg-white rounded-2xl border transition-all p-5 shadow-sm space-y-4 ${
-      isSelected
-        ? 'border-l-4 border-l-blue-600 border-gray-300 shadow-md ring-1 ring-blue-100'
-        : 'border-gray-200 hover:border-gray-300'
-    }`}
+    className={`bg-white rounded-2xl border transition-all p-5 shadow-sm space-y-4 ${isSelected
+      ? 'border-l-4 border-l-blue-600 border-gray-300 shadow-md ring-1 ring-blue-100'
+      : 'border-gray-200 hover:border-gray-300'
+      }`}
   >
     <QuestionHeader q={q} qIdx={qIdx} isSelected={isSelected} editor={editor} />
     <QuestionBody q={q} qIdx={qIdx} isSelected={isSelected} editor={editor} />
@@ -977,18 +987,18 @@ const SurveyEditTab = ({ surveyId, title, setTitle, desc, setDesc, editor, onImp
     return () => cancelAnimationFrame(frame);
   }, [scrollTarget, clearScrollTarget]);
   return (
-  <div className="mx-auto grid max-w-5xl items-start gap-4 lg:grid-cols-[minmax(0,1fr)_170px]">
-    <div className="order-2 min-w-0 space-y-4 lg:order-1">
-      <div className="rounded-2xl border border-slate-200 border-t-4 border-t-blue-700 bg-white p-6 shadow-sm space-y-4">
-        <input aria-label="Judul kuesioner" value={title} onChange={e => setTitle(e.target.value)} placeholder="Judul kuesioner" className="w-full border-0 border-b border-slate-200 pb-2 text-2xl font-bold text-slate-900 outline-none focus:border-blue-500" />
-        <RichTextInput key={`description-${surveyId || 'new'}`} value={desc} onChange={setDesc} placeholder="Deskripsi formulir (opsional)" />
+    <div className="mx-auto grid max-w-5xl items-start gap-4 lg:grid-cols-[minmax(0,1fr)_170px]">
+      <div className="order-2 min-w-0 space-y-4 lg:order-1">
+        <div className="p-6 space-y-4 bg-white border border-t-4 shadow-sm rounded-2xl border-slate-200 border-t-blue-700">
+          <input aria-label="Judul kuesioner" value={title} onChange={e => setTitle(e.target.value)} placeholder="Judul kuesioner" className="w-full pb-2 text-2xl font-bold border-0 border-b outline-none border-slate-200 text-slate-900 focus:border-blue-500" />
+          <RichTextInput key={`description-${surveyId || 'new'}`} value={desc} onChange={setDesc} placeholder="Deskripsi formulir (opsional)" />
+        </div>
+        {editor.questions.map((q, qIdx) => <QuestionCard key={q._key} q={q} qIdx={qIdx} isSelected={editor.selectedQIndex === qIdx} editor={editor} />)}
+        <button type="button" onClick={() => editor.addQuestion('short')} className="w-full py-4 text-sm font-semibold text-blue-700 bg-white border border-blue-200 border-dashed rounded-xl">+ Tambahkan pertanyaan</button>
       </div>
-      {editor.questions.map((q, qIdx) => <QuestionCard key={q._key} q={q} qIdx={qIdx} isSelected={editor.selectedQIndex === qIdx} editor={editor} />)}
-      <button type="button" onClick={() => editor.addQuestion('short')} className="w-full rounded-xl border border-dashed border-blue-200 bg-white py-4 text-sm font-semibold text-blue-700">+ Tambahkan pertanyaan</button>
+      <div className="order-1 lg:order-2 lg:sticky lg:top-40"><InsertToolbar onAdd={editor.addQuestion} onImport={onImport} /></div>
     </div>
-    <div className="order-1 lg:order-2 lg:sticky lg:top-40"><InsertToolbar onAdd={editor.addQuestion} onImport={onImport} /></div>
-  </div>
-);
+  );
 };
 
 // ══════════════════════════════════════════════════════════════════════
@@ -996,12 +1006,12 @@ const SurveyEditTab = ({ surveyId, title, setTitle, desc, setDesc, editor, onImp
 // ══════════════════════════════════════════════════════════════════════
 
 const PreviewDone = ({ onReset, message, summary }) => (
-  <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-4 shadow-sm">
-    <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-3xl font-extrabold">
+  <div className="p-10 space-y-4 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
+    <div className="flex items-center justify-center w-16 h-16 mx-auto text-3xl font-extrabold rounded-full bg-emerald-100 text-emerald-600">
       <FaCheck />
     </div>
     <h2 className="text-2xl font-extrabold text-gray-900">Terima kasih</h2>
-    <p className="text-gray-500 text-sm max-w-sm mx-auto whitespace-pre-wrap">
+    <p className="max-w-sm mx-auto text-sm text-gray-500 whitespace-pre-wrap">
       {message || 'Jawaban Anda telah berhasil kami terima. Terima kasih atas masukan Anda untuk meningkatkan mutu layanan KAN.'}
     </p>
     <ResponseSummary items={summary} />
@@ -1029,7 +1039,7 @@ const SurveyPreviewTab = ({ title, desc, settings, questions, preview }) => {
     else { setSection(pageIndex + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   };
   return <SurveyFrame settings={settings}>
-    {confirmSubmit && <SubmitConfirmation onCancel={() => setConfirmSubmit(false)} onConfirm={() => { setConfirmSubmit(false); preview.submit({ preventDefault() {} }); }} />}
+    {confirmSubmit && <SubmitConfirmation onCancel={() => setConfirmSubmit(false)} onConfirm={() => { setConfirmSubmit(false); preview.submit({ preventDefault() { } }); }} />}
     {preview.done ? <PreviewDone onReset={reset} message={settings.confirmation_message} summary={settings.show_summary ? visibleQuestions(prepared, preview.answers).filter(q => !CONTENT_TYPES.includes(q.type)).map(q => ({ question_id: q.id, text: q.text, type: q.type, options: q.options, answer: preview.answers[q.id] })) : []} /> : <SurveyForm preview survey={{ title, description: desc, settings, questions: prepared }} pages={pages} pageIndex={pageIndex} answers={preview.answers} errors={preview.errors} onAnswer={preview.setAnswer} onPrevious={() => { setSection(pageIndex - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onContinue={onContinue} onClear={reset} />}
   </SurveyFrame>;
 };
@@ -1039,9 +1049,9 @@ const SurveyPreviewTab = ({ title, desc, settings, questions, preview }) => {
 // ══════════════════════════════════════════════════════════════════════
 
 const SharePublishPrompt = ({ onPublish }) => (
-  <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-4 shadow-sm">
+  <div className="p-10 space-y-4 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
     <h3 className="text-xl font-bold text-gray-900">Kuesioner belum diterbitkan</h3>
-    <p className="text-sm text-gray-500 max-w-md mx-auto">
+    <p className="max-w-md mx-auto text-sm text-gray-500">
       Setelah diterbitkan, kuesioner akan mendapatkan tautan publik dan kode QR resmi yang dapat dibagikan kepada peserta.
     </p>
     <button
@@ -1064,22 +1074,31 @@ const ShareLinkCard = ({ survey, link, onToggleActive }) => {
     );
   };
 
+  // FIX: template literal bersarang dipindah ke variabel terpisah
+  const prefillQuery = new URLSearchParams(
+    Object.fromEntries(
+      Object.entries(prefilled)
+        .filter(([, v]) => v)
+        .map(([k, v]) => [`q_${k}`, v])
+    )
+  ).toString();
+  const prefilledLink = `${link}?${prefillQuery}`;
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+    <div className="p-6 space-y-4 bg-white border border-gray-200 shadow-sm rounded-2xl">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-gray-900">Tautan kuesioner</h3>
         <span
-          className={`text-xs font-bold px-3 py-1 rounded-full ${
-            survey.is_active
-              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-              : 'bg-rose-50 text-rose-700 border border-rose-200'
-          }`}
+          className={`text-xs font-bold px-3 py-1 rounded-full ${survey.is_active
+            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            : 'bg-rose-50 text-rose-700 border border-rose-200'
+            }`}
         >
           {survey.is_active ? 'Terbuka' : 'Ditutup'}
         </span>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
           type="text"
           readOnly
@@ -1095,15 +1114,15 @@ const ShareLinkCard = ({ survey, link, onToggleActive }) => {
         </button>
       </div>
 
-      <details className="rounded-xl border border-slate-200 p-4"><summary className="text-sm font-bold text-blue-900 cursor-pointer">Sematkan ke website</summary><textarea readOnly rows={3} className="mt-3 w-full rounded-lg bg-slate-50 p-3 font-mono text-xs" value={`<iframe src="${link}" title="Kuesioner KAN" width="100%" height="800" frameborder="0"></iframe>`} /></details>
-      <details className="rounded-xl border border-slate-200 p-4"><summary className="text-sm font-bold text-blue-900 cursor-pointer">Tautan dengan jawaban awal</summary><div className="mt-3 space-y-3">{survey.questions?.filter(q => ['short', 'para', 'choice', 'drop', 'date', 'time'].includes(q.type)).map(q => <label key={q.id} className="block text-xs text-slate-600">{stripHtml(q.text)}<input className="mt-1 w-full rounded-lg border border-slate-200 p-2" value={prefilled[q.id] || ''} onChange={e => setPrefilled(prev => ({ ...prev, [q.id]: e.target.value }))} /></label>)}<textarea aria-label="Tautan jawaban awal" readOnly className="w-full rounded-lg bg-slate-50 p-3 text-xs" value={`${link}?${new URLSearchParams(Object.fromEntries(Object.entries(prefilled).filter(([, v]) => v).map(([k, v]) => [`q_${k}`, v])))}`} /></div></details>
-      <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+      <details className="p-4 border rounded-xl border-slate-200"><summary className="text-sm font-bold text-blue-900 cursor-pointer">Sematkan ke website</summary><textarea readOnly rows={3} className="w-full p-3 mt-3 font-mono text-xs rounded-lg bg-slate-50" value={`<iframe src="${link}" title="Kuesioner KAN" width="100%" height="800" frameborder="0"></iframe>`} /></details>
+      <details className="p-4 border rounded-xl border-slate-200"><summary className="text-sm font-bold text-blue-900 cursor-pointer">Tautan dengan jawaban awal</summary><div className="mt-3 space-y-3">{survey.questions?.filter(q => ['short', 'para', 'choice', 'drop', 'date', 'time'].includes(q.type)).map(q => <label key={q.id} className="block text-xs text-slate-600">{stripHtml(q.text)}<input className="w-full p-2 mt-1 border rounded-lg border-slate-200" value={prefilled[q.id] || ''} onChange={e => setPrefilled(prev => ({ ...prev, [q.id]: e.target.value }))} /></label>)}<textarea aria-label="Tautan jawaban awal" readOnly className="w-full p-3 text-xs rounded-lg bg-slate-50" value={prefilledLink} /></div></details>
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer">
           <input
             type="checkbox"
             checked={survey.is_active}
             onChange={onToggleActive}
-            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
           />{' '}
           Terima jawaban baru
         </label>
@@ -1131,10 +1150,10 @@ const ShareQrCard = ({ survey, title, link }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm text-center space-y-4">
+    <div className="p-8 space-y-4 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
       <h3 className="text-lg font-bold text-gray-900">Kode QR</h3>
-      <div className="inline-block p-4 bg-white rounded-2xl border-2 border-gray-200 shadow-inner">
-        <canvas ref={canvasRef} className="max-w-full h-auto w-64 mx-auto rounded-lg" />
+      <div className="inline-block p-4 bg-white border-2 border-gray-200 shadow-inner rounded-2xl">
+        <canvas ref={canvasRef} className="w-64 h-auto max-w-full mx-auto rounded-lg" />
       </div>
       <p className="text-xs text-gray-600">
         Pindai untuk mengisi: <span className="font-bold text-gray-800">{title}</span>
@@ -1172,14 +1191,14 @@ const SurveyShareTab = ({ survey, title, onPublish, onToggleActive }) => {
 // ══════════════════════════════════════════════════════════════════════
 
 const ResultsLoading = () => (
-  <div className="bg-white rounded-2xl p-12 text-center text-gray-500 border border-gray-200">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+  <div className="p-12 text-center text-gray-500 bg-white border border-gray-200 rounded-2xl">
+    <div className="w-8 h-8 mx-auto mb-3 border-b-2 border-blue-600 rounded-full animate-spin"></div>
     Memuat data hasil kuesioner...
   </div>
 );
 
 const ResultsEmpty = () => (
-  <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center space-y-2">
+  <div className="p-12 space-y-2 text-center bg-white border border-gray-200 rounded-2xl">
     <h3 className="text-lg font-bold text-gray-800">Belum ada jawaban</h3>
     <p className="text-sm text-gray-500">
       Data statistik dan rincian jawaban akan muncul di sini setelah peserta mengisi kuesioner.
@@ -1188,7 +1207,7 @@ const ResultsEmpty = () => (
 );
 
 const StatBox = ({ value, label, large = true }) => (
-  <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-4">
+  <div className="p-4 border border-blue-100 bg-blue-50/70 rounded-2xl">
     <span className={`block font-extrabold text-blue-700 ${large ? 'text-3xl' : 'text-xl pt-1'}`}>
       {value}
     </span>
@@ -1216,7 +1235,7 @@ const ResultsSummary = ({ survey, stats }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
+    <div className="p-6 space-y-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h3 className="text-xl font-extrabold text-gray-900">Ringkasan hasil</h3>
         <button
@@ -1228,7 +1247,7 @@ const ResultsSummary = ({ survey, stats }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatBox value={stats.total_responses} label="Total Responden" />
         <StatBox value={stats.average_scale || '-'} label="Rata-rata skala" />
         <StatBox value={stats.last_response_at || '-'} label="Terakhir mengisi" large={false} />
@@ -1245,7 +1264,7 @@ const BarRow = ({ label, count, total, barClass, labelClass = 'truncate pr-2', c
         <span className={labelClass}>{label}</span>
         <span className={countClass}>{count} ({pct}%)</span>
       </div>
-      <div className="w-full bg-blue-50 h-3 rounded-full overflow-hidden">
+      <div className="w-full h-3 overflow-hidden rounded-full bg-blue-50">
         <div className={`${barClass} h-full rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -1253,7 +1272,7 @@ const BarRow = ({ label, count, total, barClass, labelClass = 'truncate pr-2', c
 };
 
 const OptionCounts = ({ qSum }) => (
-  <div className="space-y-3 pt-1">
+  <div className="pt-1 space-y-3">
     {Object.entries(qSum.counts).map(([optName, count]) => (
       <BarRow key={optName} label={optName} count={count} total={qSum.total_answers} barClass="bg-blue-600" />
     ))}
@@ -1261,7 +1280,7 @@ const OptionCounts = ({ qSum }) => (
 );
 
 const ScaleCounts = ({ qSum }) => (
-  <div className="space-y-3 pt-1">
+  <div className="pt-1 space-y-3">
     {[5, 4, 3, 2, 1].map((score) => (
       <BarRow
         key={score}
@@ -1275,14 +1294,14 @@ const ScaleCounts = ({ qSum }) => (
 );
 
 const SampleAnswers = ({ qSum }) => (
-  <div className="space-y-2 pt-1">
+  <div className="pt-1 space-y-2">
     {qSum.sample_answers.length === 0 ? (
-      <p className="text-xs text-gray-400 italic">Belum ada tanggapan teks.</p>
+      <p className="text-xs italic text-gray-400">Belum ada tanggapan teks.</p>
     ) : (
       withOccurrenceKeys(qSum.sample_answers.slice(0, 4)).map(({ text, key }) => (
         <div
           key={key}
-          className="p-3 bg-gray-50 rounded-xl border-l-4 border-l-blue-600 text-xs text-gray-700 italic"
+          className="p-3 text-xs italic text-gray-700 border-l-4 bg-gray-50 rounded-xl border-l-blue-600"
         >
           &ldquo;{text}&rdquo;
         </div>
@@ -1299,18 +1318,18 @@ const SampleAnswers = ({ qSum }) => (
 const isTextType = (type) => !['choice', 'check', 'drop', 'scale', 'linear', 'rating', 'section', 'heading', 'video', 'image'].includes(type);
 
 const QuestionSummary = ({ qSum }) => (
-  <div className="min-w-0 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+  <div className="min-w-0 p-6 space-y-4 bg-white border border-gray-200 shadow-sm rounded-2xl">
     <div>
       <h4 className="text-base font-bold text-gray-900">
         <RichText html={qSum.text} />
       </h4>
-      <span className="text-xs text-gray-500 font-medium">{qSum.total_answers} jawaban</span>
+      <span className="text-xs font-medium text-gray-500">{qSum.total_answers} jawaban</span>
     </div>
 
     {hasOptions(qSum.type) && qSum.counts && <OptionCounts qSum={qSum} />}
     {qSum.type === 'scale' && qSum.scale_counts && <ScaleCounts qSum={qSum} />}
     {['linear', 'rating'].includes(qSum.type) && qSum.counts && <OptionCounts qSum={qSum} />}
-    {qSum.grid_counts && Object.entries(qSum.grid_counts).map(([row, counts]) => <div key={row} className="space-y-2 rounded-xl bg-slate-50 p-3"><p className="text-xs font-bold text-blue-950">{row}</p>{Object.entries(counts).map(([column, count]) => <BarRow key={column} label={column} count={count} total={qSum.total_answers} barClass="bg-blue-600" />)}</div>)}
+    {qSum.grid_counts && Object.entries(qSum.grid_counts).map(([row, counts]) => <div key={row} className="p-3 space-y-2 rounded-xl bg-slate-50"><p className="text-xs font-bold text-blue-950">{row}</p>{Object.entries(counts).map(([column, count]) => <BarRow key={column} label={column} count={count} total={qSum.total_answers} barClass="bg-blue-600" />)}</div>)}
     {isTextType(qSum.type) && qSum.sample_answers && <SampleAnswers qSum={qSum} />}
   </div>
 );
@@ -1325,18 +1344,18 @@ const ResponsesTable = ({ detailData }) => {
   const responses = detailData.responses?.filter(r => JSON.stringify(r).toLocaleLowerCase().includes(query.toLocaleLowerCase()));
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+    <div className="p-6 space-y-4 bg-white border border-gray-200 shadow-sm rounded-2xl">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-gray-900">Jawaban per responden</h3>
-        <span className="text-xs text-gray-500 font-semibold">
+        <span className="text-xs font-semibold text-gray-500">
           Total: {responses?.length || 0} responden
         </span>
       </div>
 
-      <input aria-label="Cari jawaban" placeholder="Cari isi jawaban…" value={query} onChange={e => setQuery(e.target.value)} className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm" />
+      <input aria-label="Cari jawaban" placeholder="Cari isi jawaban…" value={query} onChange={e => setQuery(e.target.value)} className="w-full px-4 py-2 text-sm border rounded-xl border-slate-200" />
       <div className="overflow-x-auto border border-gray-200 rounded-xl">
-        <table className="min-w-full divide-y divide-gray-200 text-xs">
-          <thead className="bg-gray-50 text-gray-700 font-bold uppercase tracking-wider">
+        <table className="min-w-full text-xs divide-y divide-gray-200">
+          <thead className="font-bold tracking-wider text-gray-700 uppercase bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left">#</th>
               <th className="px-4 py-3 text-left whitespace-nowrap">Waktu</th>
@@ -1344,7 +1363,7 @@ const ResponsesTable = ({ detailData }) => {
               {questions?.map((q, qIdx) => (
                 <th
                   key={q.id || qIdx}
-                  className="px-4 py-3 text-left max-w-xs truncate"
+                  className="max-w-xs px-4 py-3 text-left truncate"
                   title={stripHtml(q.text)}
                 >
                   {stripHtml(q.text)}
@@ -1352,16 +1371,16 @@ const ResponsesTable = ({ detailData }) => {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
+          <tbody className="bg-white divide-y divide-gray-100">
             {getVisibleResponses(responses, showAll)?.map((resp, rIdx) => (
               <tr key={resp.id || rIdx} className="hover:bg-gray-50/60">
                 <td className="px-4 py-3 font-bold text-gray-600">{rIdx + 1}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{resp.created_at_human}</td>
-                {isQuiz && <td className="px-4 py-3"><div className="flex items-center gap-2"><input aria-label={`Nilai responden ${rIdx + 1}`} type="number" min="0" value={gradeOverrides[resp.id] ?? resp.score ?? 0} onChange={e => setGradeOverrides(prev => ({ ...prev, [resp.id]: e.target.value }))} className="w-16 rounded border border-slate-200 p-1" /><button type="button" className="text-blue-700 font-bold" onClick={async () => { try { await gradeSurveyResponse(detailData.survey.id, resp.id, { score: Number(gradeOverrides[resp.id] ?? resp.score ?? 0), max_score: Number(maxOverrides[resp.id] ?? resp.max_score ?? 0) }); toast.success('Nilai disimpan.'); } catch { toast.error('Gagal menyimpan nilai.'); } }}>Simpan</button><span>/</span><input aria-label={`Nilai maksimum responden ${rIdx + 1}`} type="number" min="0" value={maxOverrides[resp.id] ?? resp.max_score ?? 0} onChange={e => setMaxOverrides(prev => ({ ...prev, [resp.id]: e.target.value }))} className="w-16 rounded border border-slate-200 p-1" /></div></td>}
+                {isQuiz && <td className="px-4 py-3"><div className="flex items-center gap-2"><input aria-label={`Nilai responden ${rIdx + 1}`} type="number" min="0" value={gradeOverrides[resp.id] ?? resp.score ?? 0} onChange={e => setGradeOverrides(prev => ({ ...prev, [resp.id]: e.target.value }))} className="w-16 p-1 border rounded border-slate-200" /><button type="button" className="font-bold text-blue-700" onClick={async () => { try { await gradeSurveyResponse(detailData.survey.id, resp.id, { score: Number(gradeOverrides[resp.id] ?? resp.score ?? 0), max_score: Number(maxOverrides[resp.id] ?? resp.max_score ?? 0) }); toast.success('Nilai disimpan.'); } catch { toast.error('Gagal menyimpan nilai.'); } }}>Simpan</button><span>/</span><input aria-label={`Nilai maksimum responden ${rIdx + 1}`} type="number" min="0" value={maxOverrides[resp.id] ?? resp.max_score ?? 0} onChange={e => setMaxOverrides(prev => ({ ...prev, [resp.id]: e.target.value }))} className="w-16 p-1 border rounded border-slate-200" /></div></td>}
                 {questions?.map((q) => {
                   const ansVal = resp.answers[q.id];
                   return (
-                    <td key={q.id} className="px-4 py-3 text-gray-800 max-w-xs truncate" title={ansVal}>
+                    <td key={q.id} className="max-w-xs px-4 py-3 text-gray-800 truncate" title={ansVal}>
                       {ansVal || <span className="text-gray-300">-</span>}
                     </td>
                   );
@@ -1373,11 +1392,11 @@ const ResponsesTable = ({ detailData }) => {
       </div>
 
       {responses?.length > 8 && (
-        <div className="text-center pt-2">
+        <div className="pt-2 text-center">
           <button
             type="button"
             onClick={() => setShowAll((prev) => !prev)}
-            className="text-xs font-bold text-blue-600 hover:text-blue-800 transition"
+            className="text-xs font-bold text-blue-600 transition hover:text-blue-800"
           >
             {showAll ? 'Tampilkan lebih sedikit' : `Tampilkan semua ${responses.length} responden`}
           </button>
@@ -1395,7 +1414,7 @@ const SurveyResultsTab = ({ survey, detailData, detailLoading }) => {
     <div className="space-y-6">
       <ResultsSummary survey={survey} stats={detailData.stats} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {detailData.summary?.map((qSum, idx) => (
           <QuestionSummary key={qSum.id || idx} qSum={qSum} />
         ))}
@@ -1548,8 +1567,8 @@ export default function SurveyManagement() {
         {view === 'list' ? <SurveyHeader stats={stats} onAddNew={handleAddNew} /> : <EditorHeader title={title} persisted={Boolean(currentSurvey?.id)} published={currentSurvey?.is_published} mode={mode} onMode={handleTabChange} onBack={goToList} onSave={save} saving={saving} dirty={dirty} onShare={() => setDialog('share')} onTheme={() => setDialog('theme')} onCopy={duplicateSurvey} onUnpublish={() => setDialog('unpublish')} undo={editor.undo} redo={editor.redo} canUndo={editor.canUndo} canRedo={editor.canRedo} />}
         {dialog === 'theme' && <EditorDialog title="Tema formulir" onClose={() => setDialog(null)}><ThemeSettings settings={settings} onChange={setSettings} /></EditorDialog>}
         {dialog === 'import' && <EditorDialog title="Impor pertanyaan" onClose={() => setDialog(null)}><ImportQuestions surveys={surveys} currentId={currentSurvey?.id} onImport={items => { editor.importQuestions(items); setDialog(null); }} /></EditorDialog>}
-        {dialog === 'share' && <EditorDialog title="Publikasi & bagikan" wide onClose={() => setDialog(null)}>{dirty && <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Ada perubahan yang belum disimpan. <button type="button" onClick={save} disabled={saving} className="font-bold underline">Simpan sekarang</button></div>}<SurveyShareTab survey={currentSurvey} title={title} onPublish={publishCurrent} onToggleActive={handleToggleActive} /></EditorDialog>}
-        {dialog === 'unpublish' && <EditorDialog title="Batalkan publikasi?" onClose={() => setDialog(null)}><p className="text-sm text-slate-600">Tautan pengisian tidak dapat diakses sampai kuesioner dipublikasikan kembali. Jawaban yang sudah masuk tetap tersedia.</p><button type="button" disabled={saving} onClick={unpublishCurrent} className="mt-5 rounded-lg bg-rose-700 px-4 py-2 text-sm font-bold text-white">Batalkan publikasi</button></EditorDialog>}
+        {dialog === 'share' && <EditorDialog title="Publikasi & bagikan" wide onClose={() => setDialog(null)}>{dirty && <div className="p-3 mb-4 text-sm border rounded-xl border-amber-200 bg-amber-50 text-amber-800">Ada perubahan yang belum disimpan. <button type="button" onClick={save} disabled={saving} className="font-bold underline">Simpan sekarang</button></div>}<SurveyShareTab survey={currentSurvey} title={title} onPublish={publishCurrent} onToggleActive={handleToggleActive} /></EditorDialog>}
+        {dialog === 'unpublish' && <EditorDialog title="Batalkan publikasi?" onClose={() => setDialog(null)}><p className="text-sm text-slate-600">Tautan pengisian tidak dapat diakses sampai kuesioner dipublikasikan kembali. Jawaban yang sudah masuk tetap tersedia.</p><button type="button" disabled={saving} onClick={unpublishCurrent} className="px-4 py-2 mt-5 text-sm font-bold text-white rounded-lg bg-rose-700">Batalkan publikasi</button></EditorDialog>}
 
         {view === 'list' ? (
           <SurveyListView
