@@ -1,12 +1,20 @@
 import RichText from '../RichText';
 
+function fileKey(file) {
+  return file?.url || file?.name || 'file';
+}
+
+function itemKey(item) {
+  return typeof item === 'string' ? item : JSON.stringify(item);
+}
+
 function AnswerValue({ value, type, options = [] }) {
   if (value == null || value === '' || (typeof value === 'object' && !Object.keys(value).length)) return <span className="italic text-slate-400">Tidak diisi</span>;
   if (type === 'file') {
     const files = Array.isArray(value) ? value : [value];
-    return <ul className="space-y-1">{files.map((file, i) => <li key={i}>{/^https?:\/\//i.test(file.url || '') ? <a href={file.url} target="_blank" rel="noreferrer" className="text-blue-700 underline break-all">{file.name || 'File terunggah'}</a> : <span>{file.name || 'File terunggah'}</span>}</li>)}</ul>;
+    return <ul className="space-y-1">{files.map(file => <li key={fileKey(file)}>{/^https?:\/\//i.test(file.url || '') ? <a href={file.url} target="_blank" rel="noreferrer" className="text-blue-700 underline break-all">{file.name || 'File terunggah'}</a> : <span>{file.name || 'File terunggah'}</span>}</li>)}</ul>;
   }
-  if (Array.isArray(value)) return <ul className="list-disc space-y-1 pl-5">{value.map((item, i) => <li key={i}><AnswerValue value={item} /></li>)}</ul>;
+  if (Array.isArray(value)) return <ul className="list-disc space-y-1 pl-5">{value.map(item => <li key={itemKey(item)}><AnswerValue value={item} /></li>)}</ul>;
   if (typeof value === 'object') return <dl className="space-y-2">{Object.entries(value).map(([row, answer]) => <div key={row}><dt className="font-medium text-slate-700">{row}</dt><dd className="mt-1"><AnswerValue value={answer} /></dd></div>)}</dl>;
   if (type === 'scale' && options?.[Number(value) - 1]) return <span>{value} — {options[Number(value) - 1]}</span>;
   if (type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) return <span>{String(value).split('-').reverse().join('/')}</span>;
