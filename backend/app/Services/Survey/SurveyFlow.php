@@ -24,26 +24,41 @@ class SurveyFlow
         $visible = collect();
         $target = null;
         foreach ($questions as $question) {
-            $config = $question->config ?? [];
-            if ($target !== null) {
-                if ($question->type !== 'section' || ($config['key'] ?? null) !== $target) {
-                    continue;
-                }
-                $target = null;
+            if ($target !== null && !$this->isJumpTarget($question, $target)) {
+                continue;
             }
+            $target = null;
             $visible->push($question);
-            if (in_array($question->type, ['choice', 'drop'], true)) {
-                $answer = $answers[$question->id] ?? null;
-                $next = is_string($answer) ? ($config['branches'][$answer] ?? null) : null;
-                if ($next === '__submit') {
-                    break;
-                }
-                if ($next && $questions->contains(fn ($q) => $q->order > $question->order && $q->type === 'section' && ($q->config['key'] ?? null) === $next)) {
-                    $target = $next;
-                }
+            $next = $this->branchDestination($question, $answers);
+            if ($next === '__submit') {
+                break;
+            }
+            if ($next && $this->hasSectionAfter($questions, $question, $next)) {
+                $target = $next;
             }
         }
         return $visible;
+    }
+
+    private function isJumpTarget(object $question, mixed $target): bool
+    {
+        $config = $question->config ?? [];
+        return $question->type === 'section' && ($config['key'] ?? null) === $target;
+    }
+
+    private function branchDestination(object $question, array $answers): mixed
+    {
+        if (!in_array($question->type, ['choice', 'drop'], true)) {
+            return null;
+        }
+        $config = $question->config ?? [];
+        $answer = $answers[$question->id] ?? null;
+        return is_string($answer) ? ($config['branches'][$answer] ?? null) : null;
+    }
+
+    private function hasSectionAfter(Collection $questions, object $question, mixed $key): bool
+    {
+        return $questions->contains(fn ($q) => $q->order > $question->order && $q->type === 'section' && ($q->config['key'] ?? null) === $key);
     }
 
     public function validateExtended(SurveyQuestion $question, mixed $answer): ?string
