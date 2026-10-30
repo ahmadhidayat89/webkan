@@ -3,14 +3,26 @@ import { FaArrowLeft, FaPlus, FaFileImport, FaHeading, FaImage, FaVideo, FaLayer
 
 const actionClass = 'inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-blue-600 disabled:opacity-40';
 
+function saveStatusText(saving, dirty, persisted) {
+  if (saving) return 'Menyimpan…';
+  if (dirty) return 'Ada perubahan yang belum disimpan';
+  return persisted ? 'Semua perubahan tersimpan' : 'Belum disimpan';
+}
+
+function uploadLabel(busy, url, label) {
+  if (busy) return 'Mengunggah…';
+  return url ? 'Ganti gambar' : label;
+}
+
 export function EditorHeader({ title, persisted, published, mode, onMode, onBack, onSave, saving, dirty, onShare, onTheme, onCopy, onUnpublish, undo, redo, canUndo, canRedo }) {
   const tabs = [['edit', 'Pertanyaan'], ['res', 'Jawaban'], ['settings', 'Setelan']];
+  const statusText = saveStatusText(saving, dirty, persisted);
   return <header data-survey-editor-header className="sticky top-0 z-20 rounded-2xl border border-slate-200 bg-white/95 shadow-sm backdrop-blur print:hidden">
     <div className="flex flex-wrap items-center gap-3 p-4">
       <button type="button" onClick={onBack} aria-label="Kembali ke daftar kuesioner" className={actionClass}><FaArrowLeft /></button>
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-base font-bold text-slate-900">{title || 'Kuesioner tanpa judul'}</h1>
-        <p role="status" className="mt-0.5 text-[11px] text-slate-500">{saving ? 'Menyimpan…' : dirty ? 'Ada perubahan yang belum disimpan' : persisted ? 'Semua perubahan tersimpan' : 'Belum disimpan'} <span className="mx-1">·</span> {published ? 'Dipublikasikan' : 'Draf'}</p>
+        <output className="mt-0.5 block text-[11px] text-slate-500">{statusText} <span className="mx-1">·</span> {published ? 'Dipublikasikan' : 'Draf'}</output>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" title="Urungkan perubahan pertanyaan" aria-label="Urungkan" disabled={!canUndo} onClick={undo} className={actionClass}><FaUndo /></button>
@@ -77,7 +89,7 @@ export function InlineImageUpload({ label = 'Tambahkan gambar', url, onChange })
       catch { const { default: toast } = await import('react-hot-toast'); toast.error('Gambar gagal diunggah. Maksimal 5 MB.'); }
       finally { setBusy(false); el.value = ''; }
     }} />
-    <button type="button" onClick={() => input.current.click()} disabled={busy} aria-label={label} title={label} className={actionClass}><FaImage /><span>{busy ? 'Mengunggah…' : url ? 'Ganti gambar' : label}</span></button>
+    <button type="button" onClick={() => input.current.click()} disabled={busy} aria-label={label} title={label} className={actionClass}><FaImage /><span>{uploadLabel(busy, url, label)}</span></button>
     {url && <div className="flex items-start gap-3"><img src={url} alt="Gambar konten" className="max-h-48 max-w-full rounded-lg object-contain" /><button type="button" onClick={() => onChange(null)} className="text-xs font-semibold text-rose-600">Hapus gambar</button></div>}
   </div>;
 }
