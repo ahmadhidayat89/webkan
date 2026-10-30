@@ -16,11 +16,21 @@ export function splitSurveyPages(questions) {
   return pages;
 }
 
+// Angka acak bulat 0..max-1 memakai CSPRNG (tanpa modulo bias)
+const randomInt = max => {
+  const limit = Math.floor(0x100000000 / max) * max;
+  const buf = new Uint32Array(1);
+  do {
+    crypto.getRandomValues(buf);
+  } while (buf[0] >= limit);
+  return buf[0] % max;
+};
+
 export function prepareSurveyQuestions(questions, settings = {}) {
   const shuffled = items => {
     const copy = [...items];
     for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = randomInt(i + 1);
       [copy[i], copy[j]] = [copy[j], copy[i]];
     }
     return copy;
