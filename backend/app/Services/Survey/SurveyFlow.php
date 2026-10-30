@@ -113,20 +113,31 @@ class SurveyFlow
             return 'Baris tabel tidak valid.';
         }
 
+        [$error, $selected] = $this->validateGridRows($question, $answer, $rows);
+        return $error ?? $this->validateUniqueColumns($c, $selected);
+    }
+
+    /** @return array{0: ?string, 1: array} [pesan error, semua nilai terpilih] */
+    private function validateGridRows(SurveyQuestion $question, array $answer, array $rows): array
+    {
         $selected = [];
         foreach ($rows as $row) {
             $values = $this->gridRowValues($question, $answer[$row] ?? null);
             $error = $this->validateGridRow($question, $values);
             if ($error !== null) {
-                return $error;
+                return [$error, []];
             }
             $selected = array_merge($selected, $values);
         }
+        return [null, $selected];
+    }
 
-        if (!empty($c['unique_columns']) && count($selected) !== count(array_unique($selected))) {
-            return 'Setiap kolom hanya boleh dipilih sekali.';
-        }
-        return null;
+    private function validateUniqueColumns(array $config, array $selected): ?string
+    {
+        $mustBeUnique = !empty($config['unique_columns']);
+        return $mustBeUnique && count($selected) !== count(array_unique($selected))
+            ? 'Setiap kolom hanya boleh dipilih sekali.'
+            : null;
     }
 
     /** Nilai satu baris tabel dalam bentuk array (check_grid sudah array, grid satu nilai). */
@@ -145,31 +156,44 @@ class SurveyFlow
             return 'Pilihan tabel tidak valid.';
         }
         $c = $question->config ?? [];
-        if (($question->is_required || !empty($c['require_rows'])) && !$values) {
+        $required = $question->is_required || !empty($c['require_rows']);
+        if ($required && !$values) {
             return 'Isi setiap baris tabel.';
         }
-        if (count($values) !== count(array_unique($values))) {
-            return 'Pilihan tabel tidak boleh berulang.';
-        }
-        return null;
+        return count($values) !== count(array_unique($values)) ? 'Pilihan tabel tidak boleh berulang.' : null;
     }
 
     private function validateTextRules(SurveyQuestion $question, string $answer): ?string
     {
         $rules = $question->validation ?? [];
+        $error = $this->validateNumericRange($rules, $answer);
+        if ($error !== null) {
+            return $error;
+        }
+        if (!empty($rules['contains']) && !str_contains($answer, $rules['contains'])) {
+            return 'Jawaban harus memuat: ' . $rules['contains'];
+        }
+        return $this->validatePattern($rules, $answer);
+    }
+
+    private function validateNumericRange(array $rules, string $answer): ?string
+    {
         if (isset($rules['min_value']) && (!is_numeric($answer) || $answer < $rules['min_value'])) {
             return 'Angka di bawah batas minimum.';
         }
         if (isset($rules['max_value']) && (!is_numeric($answer) || $answer > $rules['max_value'])) {
             return 'Angka di atas batas maksimum.';
         }
-        if (!empty($rules['contains']) && !str_contains($answer, $rules['contains'])) {
-            return 'Jawaban harus memuat: ' . $rules['contains'];
-        }
-        if (!empty($rules['pattern']) && @preg_match('~' . str_replace('~', '\\~', $rules['pattern']) . '~u', $answer) !== 1) {
-            return 'Format jawaban tidak sesuai pola.';
-        }
         return null;
+    }
+
+    private function validatePattern(array $rules, string $answer): ?string
+    {
+        if (empty($rules['pattern'])) {
+            return null;
+        }
+        $regex = '~' . str_replace('~', '\\~', $rules['pattern']) . '~u';
+        return @preg_match($regex, $answer) === 1 ? null : 'Format jawaban tidak sesuai pola.';
     }
 
     public function grade(Collection $questions, array $answers): array
