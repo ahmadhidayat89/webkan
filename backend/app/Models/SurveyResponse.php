@@ -13,6 +13,7 @@ class SurveyResponse extends Model
         'survey_id',
         'ip_address',
         'user_agent',
+        'respondent_email', 'edit_token', 'dedup_key', 'score', 'max_score',
     ];
 
     public function survey()
