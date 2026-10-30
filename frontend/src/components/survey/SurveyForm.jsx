@@ -123,7 +123,6 @@ export function SurveyQuestion({ q, number, pageNumber, pageCount, settings, val
           }
         }} className="w-full text-sm" />
         {uploading[q.id] && <p className="text-xs text-blue-600">Mengunggah file...</p>}
-        {Array.isArray(answers[q.id]) && answers[q.id].map((f, i) => <div key={i} className="flex items-center gap-2 text-sm"><a href={preview ? undefined : f.url} target="_blank" rel="noreferrer" className="text-blue-700 underline">{f.name}</a><button type="button" className="text-xs text-rose-600" onClick={() => setAnswers(prev => ({ ...prev, [q.id]: prev[q.id].filter((_, j) => j !== i) }))}>Hapus</button></div>)}
         {Array.isArray(answers[q.id]) && answers[q.id].map((f, i) => <div key={i} className="flex items-center gap-2 text-sm">{preview ? <span className="text-blue-700 underline">{f.name}</span> : <a href={f.url} target="_blank" rel="noreferrer" className="text-blue-700 underline">{f.name}</a>}<button type="button" className="text-xs text-rose-600" onClick={() => setAnswers(prev => ({ ...prev, [q.id]: prev[q.id].filter((_, j) => j !== i) }))}>Hapus</button></div>)}
         {answers[q.id]?.url && <div className="flex items-center gap-2 text-sm">{preview ? <span className="text-blue-700 underline">{answers[q.id].name}</span> : <a href={answers[q.id].url} target="_blank" rel="noreferrer" className="text-blue-700 underline">{answers[q.id].name}</a>}<button type="button" onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: undefined }))} className="text-xs text-rose-600">Hapus</button></div>}
       </div>}

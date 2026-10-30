@@ -61,47 +61,113 @@ class SurveyFlow
         return $questions->contains(fn ($q) => $q->order > $question->order && $q->type === 'section' && ($q->config['key'] ?? null) === $key);
     }
 
+    // FIX: dipecah per tipe pertanyaan supaya Cognitive Complexity turun
     public function validateExtended(SurveyQuestion $question, mixed $answer): ?string
     {
+        return match (true) {
+            in_array($question->type, ['rating', 'linear'], true) => $this->validateRatingRange($question, $answer),
+            $question->type === 'date' => $this->validateDate($answer),
+            $question->type === 'time' => $this->validateTime($answer),
+            $question->type === 'duration' => $this->validateDuration($answer),
+            in_array($question->type, ['grid', 'check_grid'], true) => $this->validateGrid($question, $answer),
+            in_array($question->type, ['short', 'para'], true) && is_string($answer) => $this->validateTextRules($question, $answer),
+            default => null,
+        };
+    }
+
+    private function validateRatingRange(SurveyQuestion $question, mixed $answer): ?string
+    {
         $c = $question->config ?? [];
-        $rules = $question->validation ?? [];
-        if (in_array($question->type, ['rating', 'linear'], true)) {
-            $min = $question->type === 'rating' ? 1 : ($c['min'] ?? 1);
-            $max = $c['max'] ?? 5;
-            return filter_var($answer, FILTER_VALIDATE_INT) !== false && $answer >= $min && $answer <= $max ? null : "Pilih nilai antara $min dan $max.";
+        $min = $question->type === 'rating' ? 1 : ($c['min'] ?? 1);
+        $max = $c['max'] ?? 5;
+        return filter_var($answer, FILTER_VALIDATE_INT) !== false && $answer >= $min && $answer <= $max ? null : "Pilih nilai antara $min dan $max.";
+    }
+
+    private function validateDate(mixed $answer): ?string
+    {
+        if (!is_string($answer) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $answer)) {
+            return 'Masukkan tanggal yang valid.';
         }
-        if ($question->type === 'date') {
-            if (!is_string($answer) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $answer)) return 'Masukkan tanggal yang valid.';
-            $date = is_string($answer) ? \DateTimeImmutable::createFromFormat('!Y-m-d', $answer) : false;
-            return $date && $date->format('Y-m-d') === $answer ? null : 'Masukkan tanggal yang valid.';
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $answer);
+        return $date && $date->format('Y-m-d') === $answer ? null : 'Masukkan tanggal yang valid.';
+    }
+
+    private function validateTime(mixed $answer): ?string
+    {
+        return is_string($answer) && preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $answer) ? null : 'Masukkan waktu yang valid.';
+    }
+
+    private function validateDuration(mixed $answer): ?string
+    {
+        return is_string($answer) && preg_match('/^\d{1,5}:[0-5]\d:[0-5]\d$/', $answer) ? null : 'Gunakan durasi jam:menit:detik.';
+    }
+
+    private function validateGrid(SurveyQuestion $question, mixed $answer): ?string
+    {
+        if (!is_array($answer)) {
+            return 'Format jawaban tabel tidak valid.';
         }
-        if ($question->type === 'time') {
-            return is_string($answer) && preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $answer) ? null : 'Masukkan waktu yang valid.';
+        $c = $question->config ?? [];
+        $rows = $c['rows'] ?? [];
+        if (array_diff(array_keys($answer), $rows)) {
+            return 'Baris tabel tidak valid.';
         }
-        if ($question->type === 'duration') {
-            return is_string($answer) && preg_match('/^\d{1,5}:[0-5]\d:[0-5]\d$/', $answer) ? null : 'Gunakan durasi jam:menit:detik.';
-        }
-        if (in_array($question->type, ['grid', 'check_grid'], true)) {
-            if (!is_array($answer)) return 'Format jawaban tabel tidak valid.';
-            $rows = $c['rows'] ?? [];
-            $columns = $question->options ?? [];
-            if (array_diff(array_keys($answer), $rows)) return 'Baris tabel tidak valid.';
-            $selected = [];
-            foreach ($rows as $row) {
-                $value = $answer[$row] ?? null;
-                $values = $question->type === 'check_grid' ? ($value ?? []) : ($value === null || $value === '' ? [] : [$value]);
-                if (!is_array($values) || array_filter($values, fn ($v) => !is_string($v)) || array_diff($values, $columns)) return 'Pilihan tabel tidak valid.';
-                if (($question->is_required || !empty($c['require_rows'])) && !$values) return 'Isi setiap baris tabel.';
-                if (count($values) !== count(array_unique($values))) return 'Pilihan tabel tidak boleh berulang.';
-                $selected = array_merge($selected, $values);
+
+        $selected = [];
+        foreach ($rows as $row) {
+            $values = $this->gridRowValues($question, $answer[$row] ?? null);
+            $error = $this->validateGridRow($question, $values);
+            if ($error !== null) {
+                return $error;
             }
-            if (!empty($c['unique_columns']) && count($selected) !== count(array_unique($selected))) return 'Setiap kolom hanya boleh dipilih sekali.';
+            $selected = array_merge($selected, $values);
         }
-        if (in_array($question->type, ['short', 'para'], true) && is_string($answer)) {
-            if (isset($rules['min_value']) && (!is_numeric($answer) || $answer < $rules['min_value'])) return 'Angka di bawah batas minimum.';
-            if (isset($rules['max_value']) && (!is_numeric($answer) || $answer > $rules['max_value'])) return 'Angka di atas batas maksimum.';
-            if (!empty($rules['contains']) && !str_contains($answer, $rules['contains'])) return 'Jawaban harus memuat: ' . $rules['contains'];
-            if (!empty($rules['pattern']) && @preg_match('~' . str_replace('~', '\\~', $rules['pattern']) . '~u', $answer) !== 1) return 'Format jawaban tidak sesuai pola.';
+
+        if (!empty($c['unique_columns']) && count($selected) !== count(array_unique($selected))) {
+            return 'Setiap kolom hanya boleh dipilih sekali.';
+        }
+        return null;
+    }
+
+    /** Nilai satu baris tabel dalam bentuk array (check_grid sudah array, grid satu nilai). */
+    private function gridRowValues(SurveyQuestion $question, mixed $value): mixed
+    {
+        if ($question->type === 'check_grid') {
+            return $value ?? [];
+        }
+        return $value === null || $value === '' ? [] : [$value];
+    }
+
+    private function validateGridRow(SurveyQuestion $question, mixed $values): ?string
+    {
+        $columns = $question->options ?? [];
+        if (!is_array($values) || array_filter($values, fn ($v) => !is_string($v)) || array_diff($values, $columns)) {
+            return 'Pilihan tabel tidak valid.';
+        }
+        $c = $question->config ?? [];
+        if (($question->is_required || !empty($c['require_rows'])) && !$values) {
+            return 'Isi setiap baris tabel.';
+        }
+        if (count($values) !== count(array_unique($values))) {
+            return 'Pilihan tabel tidak boleh berulang.';
+        }
+        return null;
+    }
+
+    private function validateTextRules(SurveyQuestion $question, string $answer): ?string
+    {
+        $rules = $question->validation ?? [];
+        if (isset($rules['min_value']) && (!is_numeric($answer) || $answer < $rules['min_value'])) {
+            return 'Angka di bawah batas minimum.';
+        }
+        if (isset($rules['max_value']) && (!is_numeric($answer) || $answer > $rules['max_value'])) {
+            return 'Angka di atas batas maksimum.';
+        }
+        if (!empty($rules['contains']) && !str_contains($answer, $rules['contains'])) {
+            return 'Jawaban harus memuat: ' . $rules['contains'];
+        }
+        if (!empty($rules['pattern']) && @preg_match('~' . str_replace('~', '\\~', $rules['pattern']) . '~u', $answer) !== 1) {
+            return 'Format jawaban tidak sesuai pola.';
         }
         return null;
     }
@@ -113,15 +179,21 @@ class SurveyFlow
         foreach ($questions as $q) {
             $config = $q->config ?? [];
             $keys = $config['correct_answers'] ?? [];
-            if (in_array($q->type, self::CONTENT_TYPES, true)) continue;
+            if (in_array($q->type, self::CONTENT_TYPES, true)) {
+                continue;
+            }
             $points = $config['points'] ?? ($keys ? 1 : 0);
             $max += $points;
-            if (!$keys) continue;
+            if (!$keys) {
+                continue;
+            }
             $answer = $answers[$q->id] ?? null;
             $given = is_array($answer) ? $answer : [(string) $answer];
             sort($given);
             sort($keys);
-            if ($given === $keys) $score += $points;
+            if ($given === $keys) {
+                $score += $points;
+            }
         }
         return [$score, $max];
     }
