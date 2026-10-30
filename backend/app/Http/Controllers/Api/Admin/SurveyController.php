@@ -16,6 +16,9 @@ use Illuminate\Validation\Rule;
 
 class SurveyController extends Controller
 {
+    // FIX: literal regex warna sebelumnya diulang 4 kali
+    private const HEX_COLOR_RULE = 'regex:/^#[0-9a-fA-F]{6}$/';
+
     public function __construct(
         private SurveyContentSanitizer $sanitizer,
         private SurveyResultsBuilder $results,
@@ -51,90 +54,7 @@ class SurveyController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'settings' => 'nullable|array',
-            'settings.confirmation_message' => 'nullable|string|max:2000',
-            'settings.closed_message' => 'nullable|string|max:2000',
-            'settings.allow_edit' => 'boolean',
-            'settings.save_draft' => 'boolean',
-            'settings.show_progress' => 'boolean',
-            'settings.shuffle_questions' => 'boolean',
-            'settings.quiz' => 'boolean',
-            'settings.show_score' => 'boolean',
-            'settings.show_feedback' => 'boolean',
-            'settings.show_summary' => 'boolean',
-            'settings.closes_at' => 'nullable|date',
-            'settings.response_limit' => 'nullable|integer|min:1|max:500000',
-            'settings.theme_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'settings.header_image' => 'nullable|url:http,https|max:2048',
-            'settings.font' => 'nullable|in:system,serif',
-            'settings.required_default' => 'boolean',
-            'settings.submit_another' => 'boolean',
-            'settings.background_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'settings.title_size' => 'nullable|integer|min:20|max:40',
-            'settings.question_size' => 'nullable|integer|min:14|max:24',
-            'settings.body_size' => 'nullable|integer|min:12|max:20',
-            'is_published' => 'boolean',
-            'is_active' => 'boolean',
-            'questions' => 'nullable|array',
-            'questions.*.text' => 'required|string',
-            'questions.*.type' => 'required|in:short,para,email,phone,file,choice,check,drop,scale,linear,rating,grid,check_grid,date,time,duration,section,heading,video,image',
-            'questions.*.is_required' => 'boolean',
-            'questions.*.options' => 'nullable|array',
-            'questions.*.options.*' => 'nullable|string|max:255',
-            'questions.*.image_url' => ['nullable', 'string', 'max:2048', function ($attribute, $value, $fail) {
-                if ($value !== null && $value !== '' && !preg_match('#^(https?://|/storage/)#i', $value)) {
-                    $fail('Gambar pertanyaan harus berupa unggahan lokal atau alamat HTTP/HTTPS.');
-                }
-            }],
-            'questions.*.config' => 'nullable|array',
-            'questions.*.config.key' => 'nullable|string|max:100',
-            'questions.*.config.description' => 'nullable|string|max:2000',
-            'questions.*.config.rows' => ['nullable', 'array', 'max:50', function ($attribute, $value, $fail) {
-                if (count(array_filter($value, 'is_string')) === count($value) && count($value) !== count(array_unique($value))) $fail('Nama baris tabel tidak boleh sama dalam satu pertanyaan.');
-            }],
-            'questions.*.config.rows.*' => 'required|string|max:255',
-            'questions.*.config.min' => 'nullable|integer|min:0|max:1',
-            'questions.*.config.max' => 'nullable|integer|min:2|max:10',
-            'questions.*.config.min_label' => 'nullable|string|max:255',
-            'questions.*.config.max_label' => 'nullable|string|max:255',
-            'questions.*.config.icon' => 'nullable|in:star,heart,thumb',
-            'questions.*.config.require_rows' => 'boolean',
-            'questions.*.config.unique_columns' => 'boolean',
-            'questions.*.config.shuffle_options' => 'boolean',
-            'questions.*.config.shuffle_rows' => 'boolean',
-            'questions.*.config.show_description' => 'boolean',
-            'questions.*.config.show_validation' => 'boolean',
-            'questions.*.config.show_branches' => 'boolean',
-            'questions.*.config.branches' => 'nullable|array',
-            'questions.*.config.branches.*' => 'nullable|string|max:100',
-            'questions.*.config.video_url' => ['nullable', 'string', 'regex:~^https://(?:www\.)?(?:youtube\.com/watch\?|youtu\.be/)[a-zA-Z0-9_?=&-]+$~'],
-            'questions.*.config.file_max_files' => 'nullable|integer|min:1|max:10',
-            'questions.*.config.allow_other' => 'boolean',
-            'questions.*.config.option_images' => 'nullable|array',
-            'questions.*.config.option_images.*' => 'nullable|url:http,https|max:2048',
-            'questions.*.config.file_max_mb' => 'nullable|integer|min:1|max:50',
-            'questions.*.config.file_types' => 'nullable|string|max:255|regex:/^[a-z0-9,. ]+$/',
-            'questions.*.config.points' => 'nullable|integer|min:0|max:1000',
-            'questions.*.config.correct_answers' => 'nullable|array|max:100',
-            'questions.*.config.correct_answers.*' => 'string|max:2000',
-            'questions.*.config.feedback' => 'nullable|string|max:2000',
-            'questions.*.validation' => 'nullable|array',
-            'questions.*.validation.min_value' => 'nullable|numeric',
-            'questions.*.validation.max_value' => 'nullable|numeric',
-            'questions.*.validation.contains' => 'nullable|string|max:255',
-            'questions.*.validation.pattern' => ['nullable', 'string', 'max:255', function ($attribute, $value, $fail) {
-                if ($value && @preg_match('~' . str_replace('~', '\\~', $value) . '~u', '') === false) $fail('Pola validasi tidak valid.');
-            }],
-            'questions.*.validation.error_message' => 'nullable|string|max:500',
-            'questions.*.validation.answer_type' => 'nullable|in:text,email,phone,number,text_number',
-            'questions.*.validation.min_length' => 'nullable|integer|min:0|max:10000',
-            'questions.*.validation.max_length' => 'nullable|integer|min:1|max:10000',
-            'questions.*.validation.min_selections' => 'nullable|integer|min:0|max:100',
-            'questions.*.validation.max_selections' => 'nullable|integer|min:1|max:100',
-        ]);
+        $validated = $request->validate($this->surveyRules());
 
         return DB::transaction(function () use ($validated, $request) {
             $code = $this->generateUniqueCode();
@@ -151,17 +71,9 @@ class SurveyController extends Controller
 
             if (!empty($validated['questions'])) {
                 foreach ($validated['questions'] as $index => $qData) {
-                    SurveyQuestion::create([
-                        'survey_id' => $survey->id,
-                        'order' => $index + 1,
-                        'text' => $this->sanitizer->cleanQuestionText($qData['text'], $index),
-                        'type' => $qData['type'],
-                        'is_required' => $qData['is_required'] ?? false,
-                        'options' => $this->sanitizer->cleanOptions($qData['type'], $qData['options'] ?? []),
-                        'image_url' => $qData['image_url'] ?? null,
-                        'validation' => $qData['validation'] ?? null,
-                        'config' => $qData['config'] ?? [],
-                    ]);
+                    SurveyQuestion::create(
+                        ['survey_id' => $survey->id] + $this->questionAttributes($qData, $index)
+                    );
                 }
             }
 
@@ -221,97 +133,17 @@ class SurveyController extends Controller
     {
         $survey = Survey::findOrFail($id);
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'settings' => 'nullable|array',
-            'settings.confirmation_message' => 'nullable|string|max:2000',
-            'settings.closed_message' => 'nullable|string|max:2000',
-            'settings.allow_edit' => 'boolean',
-            'settings.save_draft' => 'boolean',
-            'settings.show_progress' => 'boolean',
-            'settings.shuffle_questions' => 'boolean',
-            'settings.quiz' => 'boolean',
-            'settings.show_score' => 'boolean',
-            'settings.show_feedback' => 'boolean',
-            'settings.show_summary' => 'boolean',
-            'settings.closes_at' => 'nullable|date',
-            'settings.response_limit' => 'nullable|integer|min:1|max:500000',
-            'settings.theme_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'settings.header_image' => 'nullable|url:http,https|max:2048',
-            'settings.font' => 'nullable|in:system,serif',
-            'settings.required_default' => 'boolean',
-            'settings.submit_another' => 'boolean',
-            'settings.background_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'settings.title_size' => 'nullable|integer|min:20|max:40',
-            'settings.question_size' => 'nullable|integer|min:14|max:24',
-            'settings.body_size' => 'nullable|integer|min:12|max:20',
-            'is_published' => 'boolean',
-            'is_active' => 'boolean',
-            'questions' => 'nullable|array',
-            'questions.*.id' => [
-                'nullable',
-                'integer',
-                'distinct',
-                Rule::exists('survey_questions', 'id')
-                    ->where(fn ($query) => $query->where('survey_id', $survey->id)),
-            ],
-            'questions.*.text' => 'required|string',
-            'questions.*.type' => 'required|in:short,para,email,phone,file,choice,check,drop,scale,linear,rating,grid,check_grid,date,time,duration,section,heading,video,image',
-            'questions.*.is_required' => 'boolean',
-            'questions.*.options' => 'nullable|array',
-            'questions.*.options.*' => 'nullable|string|max:255',
-            'questions.*.image_url' => ['nullable', 'string', 'max:2048', function ($attribute, $value, $fail) {
-                if ($value !== null && $value !== '' && !preg_match('#^(https?://|/storage/)#i', $value)) {
-                    $fail('Gambar pertanyaan harus berupa unggahan lokal atau alamat HTTP/HTTPS.');
-                }
-            }],
-            'questions.*.config' => 'nullable|array',
-            'questions.*.config.key' => 'nullable|string|max:100',
-            'questions.*.config.description' => 'nullable|string|max:2000',
-            'questions.*.config.rows' => ['nullable', 'array', 'max:50', function ($attribute, $value, $fail) {
-                if (count(array_filter($value, 'is_string')) === count($value) && count($value) !== count(array_unique($value))) $fail('Nama baris tabel tidak boleh sama dalam satu pertanyaan.');
-            }],
-            'questions.*.config.rows.*' => 'required|string|max:255',
-            'questions.*.config.min' => 'nullable|integer|min:0|max:1',
-            'questions.*.config.max' => 'nullable|integer|min:2|max:10',
-            'questions.*.config.min_label' => 'nullable|string|max:255',
-            'questions.*.config.max_label' => 'nullable|string|max:255',
-            'questions.*.config.icon' => 'nullable|in:star,heart,thumb',
-            'questions.*.config.require_rows' => 'boolean',
-            'questions.*.config.unique_columns' => 'boolean',
-            'questions.*.config.shuffle_options' => 'boolean',
-            'questions.*.config.shuffle_rows' => 'boolean',
-            'questions.*.config.show_description' => 'boolean',
-            'questions.*.config.show_validation' => 'boolean',
-            'questions.*.config.show_branches' => 'boolean',
-            'questions.*.config.branches' => 'nullable|array',
-            'questions.*.config.branches.*' => 'nullable|string|max:100',
-            'questions.*.config.video_url' => ['nullable', 'string', 'regex:~^https://(?:www\.)?(?:youtube\.com/watch\?|youtu\.be/)[a-zA-Z0-9_?=&-]+$~'],
-            'questions.*.config.file_max_files' => 'nullable|integer|min:1|max:10',
-            'questions.*.config.allow_other' => 'boolean',
-            'questions.*.config.option_images' => 'nullable|array',
-            'questions.*.config.option_images.*' => 'nullable|url:http,https|max:2048',
-            'questions.*.config.file_max_mb' => 'nullable|integer|min:1|max:50',
-            'questions.*.config.file_types' => 'nullable|string|max:255|regex:/^[a-z0-9,. ]+$/',
-            'questions.*.config.points' => 'nullable|integer|min:0|max:1000',
-            'questions.*.config.correct_answers' => 'nullable|array|max:100',
-            'questions.*.config.correct_answers.*' => 'string|max:2000',
-            'questions.*.config.feedback' => 'nullable|string|max:2000',
-            'questions.*.validation' => 'nullable|array',
-            'questions.*.validation.min_value' => 'nullable|numeric',
-            'questions.*.validation.max_value' => 'nullable|numeric',
-            'questions.*.validation.contains' => 'nullable|string|max:255',
-            'questions.*.validation.pattern' => ['nullable', 'string', 'max:255', function ($attribute, $value, $fail) {
-                if ($value && @preg_match('~' . str_replace('~', '\\~', $value) . '~u', '') === false) $fail('Pola validasi tidak valid.');
-            }],
-            'questions.*.validation.error_message' => 'nullable|string|max:500',
-            'questions.*.validation.answer_type' => 'nullable|in:text,email,phone,number,text_number',
-            'questions.*.validation.min_length' => 'nullable|integer|min:0|max:10000',
-            'questions.*.validation.max_length' => 'nullable|integer|min:1|max:10000',
-            'questions.*.validation.min_selections' => 'nullable|integer|min:0|max:100',
-            'questions.*.validation.max_selections' => 'nullable|integer|min:1|max:100',
-        ]);
+        // Aturan sama dengan store(), ditambah validasi id pertanyaan milik survei ini
+        $rules = $this->surveyRules();
+        $rules['questions.*.id'] = [
+            'nullable',
+            'integer',
+            'distinct',
+            Rule::exists('survey_questions', 'id')
+                ->where(fn ($query) => $query->where('survey_id', $survey->id)),
+        ];
+
+        $validated = $request->validate($rules);
 
         return DB::transaction(function () use ($validated, $survey) {
             $survey->update([
@@ -323,32 +155,7 @@ class SurveyController extends Controller
             ]);
 
             if (isset($validated['questions'])) {
-                $retainedQuestionIds = [];
-
-                foreach ($validated['questions'] as $index => $qData) {
-                    $question = isset($qData['id'])
-                        ? $survey->questions()->findOrFail($qData['id'])
-                        : new SurveyQuestion(['survey_id' => $survey->id]);
-
-                    $question->fill([
-                        'order' => $index + 1,
-                        'text' => $this->sanitizer->cleanQuestionText($qData['text'], $index),
-                        'type' => $qData['type'],
-                        'is_required' => $qData['is_required'] ?? false,
-                        'options' => $this->sanitizer->cleanOptions($qData['type'], $qData['options'] ?? []),
-                        'image_url' => $qData['image_url'] ?? null,
-                        'validation' => $qData['validation'] ?? null,
-                        'config' => $qData['config'] ?? [],
-                    ]);
-                    $question->save();
-                    $retainedQuestionIds[] = $question->id;
-                }
-
-                $questionsToDelete = $survey->questions();
-                if ($retainedQuestionIds) {
-                    $questionsToDelete->whereNotIn('id', $retainedQuestionIds);
-                }
-                $questionsToDelete->delete();
+                $this->syncQuestions($survey, $validated['questions']);
             }
 
             return response()->json([
@@ -448,6 +255,142 @@ class SurveyController extends Controller
         $callback = fn () => $this->csvExporter->write($survey, $responses);
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Aturan validasi kuesioner, dipakai bersama oleh store() dan update().
+     */
+    private function surveyRules(): array
+    {
+        return [
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'settings' => 'nullable|array',
+            'settings.confirmation_message' => 'nullable|string|max:2000',
+            'settings.closed_message' => 'nullable|string|max:2000',
+            'settings.allow_edit' => 'boolean',
+            'settings.save_draft' => 'boolean',
+            'settings.show_progress' => 'boolean',
+            'settings.shuffle_questions' => 'boolean',
+            'settings.quiz' => 'boolean',
+            'settings.show_score' => 'boolean',
+            'settings.show_feedback' => 'boolean',
+            'settings.show_summary' => 'boolean',
+            'settings.closes_at' => 'nullable|date',
+            'settings.response_limit' => 'nullable|integer|min:1|max:500000',
+            'settings.theme_color' => ['nullable', self::HEX_COLOR_RULE],
+            'settings.header_image' => 'nullable|url:http,https|max:2048',
+            'settings.font' => 'nullable|in:system,serif',
+            'settings.required_default' => 'boolean',
+            'settings.submit_another' => 'boolean',
+            'settings.background_color' => ['nullable', self::HEX_COLOR_RULE],
+            'settings.title_size' => 'nullable|integer|min:20|max:40',
+            'settings.question_size' => 'nullable|integer|min:14|max:24',
+            'settings.body_size' => 'nullable|integer|min:12|max:20',
+            'is_published' => 'boolean',
+            'is_active' => 'boolean',
+            'questions' => 'nullable|array',
+            'questions.*.text' => 'required|string',
+            'questions.*.type' => 'required|in:short,para,email,phone,file,choice,check,drop,scale,linear,rating,grid,check_grid,date,time,duration,section,heading,video,image',
+            'questions.*.is_required' => 'boolean',
+            'questions.*.options' => 'nullable|array',
+            'questions.*.options.*' => 'nullable|string|max:255',
+            'questions.*.image_url' => ['nullable', 'string', 'max:2048', function ($attribute, $value, $fail) {
+                if ($value !== null && $value !== '' && !preg_match('#^(https?://|/storage/)#i', $value)) {
+                    $fail('Gambar pertanyaan harus berupa unggahan lokal atau alamat HTTP/HTTPS.');
+                }
+            }],
+            'questions.*.config' => 'nullable|array',
+            'questions.*.config.key' => 'nullable|string|max:100',
+            'questions.*.config.description' => 'nullable|string|max:2000',
+            'questions.*.config.rows' => ['nullable', 'array', 'max:50', function ($attribute, $value, $fail) {
+                if (count(array_filter($value, 'is_string')) === count($value) && count($value) !== count(array_unique($value))) {
+                    $fail('Nama baris tabel tidak boleh sama dalam satu pertanyaan.');
+                }
+            }],
+            'questions.*.config.rows.*' => 'required|string|max:255',
+            'questions.*.config.min' => 'nullable|integer|min:0|max:1',
+            'questions.*.config.max' => 'nullable|integer|min:2|max:10',
+            'questions.*.config.min_label' => 'nullable|string|max:255',
+            'questions.*.config.max_label' => 'nullable|string|max:255',
+            'questions.*.config.icon' => 'nullable|in:star,heart,thumb',
+            'questions.*.config.require_rows' => 'boolean',
+            'questions.*.config.unique_columns' => 'boolean',
+            'questions.*.config.shuffle_options' => 'boolean',
+            'questions.*.config.shuffle_rows' => 'boolean',
+            'questions.*.config.show_description' => 'boolean',
+            'questions.*.config.show_validation' => 'boolean',
+            'questions.*.config.show_branches' => 'boolean',
+            'questions.*.config.branches' => 'nullable|array',
+            'questions.*.config.branches.*' => 'nullable|string|max:100',
+            'questions.*.config.video_url' => ['nullable', 'string', 'regex:~^https://(?:www\.)?(?:youtube\.com/watch\?|youtu\.be/)[a-zA-Z0-9_?=&-]+$~'],
+            'questions.*.config.file_max_files' => 'nullable|integer|min:1|max:10',
+            'questions.*.config.allow_other' => 'boolean',
+            'questions.*.config.option_images' => 'nullable|array',
+            'questions.*.config.option_images.*' => 'nullable|url:http,https|max:2048',
+            'questions.*.config.file_max_mb' => 'nullable|integer|min:1|max:50',
+            'questions.*.config.file_types' => 'nullable|string|max:255|regex:/^[a-z0-9,. ]+$/',
+            'questions.*.config.points' => 'nullable|integer|min:0|max:1000',
+            'questions.*.config.correct_answers' => 'nullable|array|max:100',
+            'questions.*.config.correct_answers.*' => 'string|max:2000',
+            'questions.*.config.feedback' => 'nullable|string|max:2000',
+            'questions.*.validation' => 'nullable|array',
+            'questions.*.validation.min_value' => 'nullable|numeric',
+            'questions.*.validation.max_value' => 'nullable|numeric',
+            'questions.*.validation.contains' => 'nullable|string|max:255',
+            'questions.*.validation.pattern' => ['nullable', 'string', 'max:255', function ($attribute, $value, $fail) {
+                if ($value && @preg_match('~' . str_replace('~', '\\~', $value) . '~u', '') === false) {
+                    $fail('Pola validasi tidak valid.');
+                }
+            }],
+            'questions.*.validation.error_message' => 'nullable|string|max:500',
+            'questions.*.validation.answer_type' => 'nullable|in:text,email,phone,number,text_number',
+            'questions.*.validation.min_length' => 'nullable|integer|min:0|max:10000',
+            'questions.*.validation.max_length' => 'nullable|integer|min:1|max:10000',
+            'questions.*.validation.min_selections' => 'nullable|integer|min:0|max:100',
+            'questions.*.validation.max_selections' => 'nullable|integer|min:1|max:100',
+        ];
+    }
+
+    /**
+     * Atribut satu pertanyaan yang sudah dibersihkan, siap disimpan.
+     */
+    private function questionAttributes(array $qData, int $index): array
+    {
+        return [
+            'order' => $index + 1,
+            'text' => $this->sanitizer->cleanQuestionText($qData['text'], $index),
+            'type' => $qData['type'],
+            'is_required' => $qData['is_required'] ?? false,
+            'options' => $this->sanitizer->cleanOptions($qData['type'], $qData['options'] ?? []),
+            'image_url' => $qData['image_url'] ?? null,
+            'validation' => $qData['validation'] ?? null,
+            'config' => $qData['config'] ?? [],
+        ];
+    }
+
+    /**
+     * Simpan pertanyaan (buat baru / perbarui), lalu hapus yang tidak lagi dikirim.
+     */
+    private function syncQuestions(Survey $survey, array $questions): void
+    {
+        $retainedQuestionIds = [];
+
+        foreach ($questions as $index => $qData) {
+            $question = isset($qData['id'])
+                ? $survey->questions()->findOrFail($qData['id'])
+                : new SurveyQuestion(['survey_id' => $survey->id]);
+
+            $question->fill($this->questionAttributes($qData, $index));
+            $question->save();
+            $retainedQuestionIds[] = $question->id;
+        }
+
+        $questionsToDelete = $survey->questions();
+        if ($retainedQuestionIds) {
+            $questionsToDelete->whereNotIn('id', $retainedQuestionIds);
+        }
+        $questionsToDelete->delete();
     }
 
     /**

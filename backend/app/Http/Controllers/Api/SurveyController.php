@@ -387,7 +387,7 @@ class SurveyController extends Controller
         $survey = Survey::where('code', $code)->where('is_published', true)->where('is_active', true)->firstOrFail();
         $validated = $request->validate([
             'question_id' => 'required|integer|exists:survey_questions,id',
-            'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,webp,txt,csv|max:51200',
+            'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,webp,txt,csv|max:8000',
         ]);
 
         // Pastikan pertanyaan milik survei ini dan bertipe file (404 kalau tidak cocok)
