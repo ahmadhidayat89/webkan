@@ -10,8 +10,8 @@ const TYPE_BADGE = {
     short_answer: ['bg-amber-100 text-amber-700', 'Jawaban Singkat'],
 };
 
-export default function QuizBuilder({ quiz }) {
-    const [settings, setSettings] = useState({
+function getInitialQuizSettings(quiz) {
+    return {
         duration_minutes: quiz.duration_minutes || '',
         passing_score: quiz.passing_score || 70,
         max_attempts: quiz.max_attempts || 3,
@@ -19,7 +19,30 @@ export default function QuizBuilder({ quiz }) {
         start_at: quiz.start_at || '',
         deadline_at: quiz.deadline_at ? new Date(quiz.deadline_at).toISOString().slice(0, 16) : '',
         shuffle_questions: quiz.shuffle_questions || false,
-    });
+    };
+}
+
+function getQuestionBadge(question) {
+    if (!question) return null;
+    return TYPE_BADGE[question.type] ?? ['bg-gray-100 text-gray-700', question.type];
+}
+
+function createDefaultOptions(type) {
+    const optionsByType = {
+        multiple_choice: [
+            { option_text: 'Opsi A', is_correct: true },
+            { option_text: 'Opsi B', is_correct: false },
+        ],
+        true_false: [
+            { option_text: 'Benar', is_correct: true },
+            { option_text: 'Salah', is_correct: false },
+        ],
+    };
+    return optionsByType[type] ?? [];
+}
+
+export default function QuizBuilder({ quiz }) {
+    const [settings, setSettings] = useState(() => getInitialQuizSettings(quiz));
 
     const [questions, setQuestions] = useState(quiz.questions || []);
     const [activeQIndex, setActiveQIndex] = useState(0);
@@ -41,13 +64,7 @@ export default function QuizBuilder({ quiz }) {
             question: '<p>Pertanyaan baru</p>',
             type: type,
             points: 1,
-            options: type === 'multiple_choice' ? [
-                { option_text: 'Opsi A', is_correct: true },
-                { option_text: 'Opsi B', is_correct: false },
-            ] : type === 'true_false' ? [
-                { option_text: 'Benar', is_correct: true },
-                { option_text: 'Salah', is_correct: false },
-            ] : []
+            options: createDefaultOptions(type)
         }, {
             preserveScroll: true,
             onSuccess: () => {
@@ -130,7 +147,7 @@ export default function QuizBuilder({ quiz }) {
         setQuestions(quiz.questions || []);
     }, [quiz.questions]);
 
-    const badge = activeQ ? (TYPE_BADGE[activeQ.type] || ['bg-gray-100 text-gray-700', activeQ.type]) : null;
+    const badge = getQuestionBadge(activeQ);
 
     return (
         <div className="flex flex-col gap-4">

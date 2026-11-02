@@ -10,6 +10,7 @@ use App\Http\Controllers\QuizAdminController;
 use App\Http\Controllers\GradingController;
 use App\Http\Controllers\CertificateAdminController;
 use App\Http\Controllers\CourseEnrollmentController;
+use App\Support\RoutePaths;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -18,8 +19,6 @@ Route::redirect('/', '/login');
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CourseCatalogController;
 
-// Route paths are literals so the route file can be loaded repeatedly in tests.
-
 // Publik — Verifikasi sertifikat via QR Code (tanpa auth)
 Route::get('/verify/{code}', [\App\Http\Controllers\CertificateVerifyController::class, 'show'])
     ->name('certificate.verify');
@@ -27,7 +26,7 @@ Route::get('/verify/{code}', [\App\Http\Controllers\CertificateVerifyController:
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/courses', [CourseCatalogController::class, 'index'])
+Route::get(RoutePaths::COURSES, [CourseCatalogController::class, 'index'])
     ->middleware(['auth'])->name('courses.list');
 
 use App\Http\Controllers\CoursePlayerController;
@@ -50,7 +49,7 @@ Route::middleware(['auth'])->prefix('lessons/{lesson}/discussions')->name('discu
 });
 
 // Peserta: self-enroll via referral code
-Route::post('/courses' . '/join', [CourseEnrollmentController::class, 'joinByReferral'])
+Route::post(RoutePaths::COURSES . '/join', [CourseEnrollmentController::class, 'joinByReferral'])
     ->middleware(['auth'])->name('courses.join');
 
 // Peserta: Sertifikat
@@ -65,9 +64,9 @@ Route::get('/api/calendar-events', [CourseEventController::class, 'getCalendarEv
 
 // Profil user
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get(RoutePaths::PROFILE, [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch(RoutePaths::PROFILE, [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete(RoutePaths::PROFILE, [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 use App\Http\Controllers\ActivityLogController;
@@ -85,7 +84,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Log Aktivitas
     Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log');
 
-    Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
+    Route::post(RoutePaths::COURSES, [CourseController::class, 'store'])->name('courses.store');
     Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
     Route::patch('/courses/{course}/teachers', [\App\Http\Controllers\CourseTeacherController::class, 'update'])->name('courses.teachers');
     Route::patch('/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
@@ -111,7 +110,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
 Route::middleware(['auth', 'role:admin,pengajar', 'course.access'])->prefix('admin')->name('admin.')->group(function () {
     // Pengelolaan seluruh isi kursus yang ditugaskan.
-    Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
+    Route::get(RoutePaths::COURSES, [CourseController::class, 'index'])->name('courses.index');
     Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
 
     // Modul
