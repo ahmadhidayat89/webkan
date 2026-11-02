@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\Lesson;
+use App\Models\Module;
+use Illuminate\Support\Collection;
+use App\Services\ModuleProgression;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -40,9 +44,10 @@ class CoursePlayerController extends Controller
         ])->findOrFail($id);
 
         $user = auth()->user();
-        if ($user->role === 'pengajar') {
-            abort_unless($user->canManageCourse($course), 403);
-        }
+        $progression = app(ModuleProgression::class);
+        $progression->authorizeCourse($course, $user);
+        $moduleLocks = $progression->lockedModules($course, $user);
+        $lessonLocks = $progression->lockedLessons($course, $user);
         $lessonProgresses = \App\Models\LessonProgress::where('user_id', $user->id)
             ->whereIn('lesson_id', $course->modules->flatMap->lessons->pluck('id'))
             ->get()
@@ -61,85 +66,103 @@ class CoursePlayerController extends Controller
             'isExpired' => $course->isExpired(),
             'server_now' => now()->toIso8601String(),
             'deadline_at' => $course->deadline_at?->format(self::DATETIME_LABEL_FORMAT),
-            'modules' => $course->modules->map(function ($module) use ($lessonProgresses) {
-                return [
-                    'id' => $module->id,
-                    'title' => $module->title,
-                    'description' => $module->description,
-                    'start_at' => $module->start_at?->toIso8601String(),
-                    'start_at_label' => $module->start_at?->format(self::DATETIME_LABEL_FORMAT),
-                    'end_at' => $module->end_at?->toIso8601String(),
-                    'end_at_label' => $module->end_at?->format(self::DATETIME_LABEL_FORMAT),
-                    'lessons' => $module->lessons->map(function ($lesson) use ($lessonProgresses, $module) {
-                        $isCompleted = isset($lessonProgresses[$lesson->id]) ? $lessonProgresses[$lesson->id]->is_completed : false;
-                        // Jadwal kuis tidak boleh keluar dari jadwal modulnya
-                        $quizStart = collect([$lesson->quiz?->start_at, $module->start_at])->filter()->max();
-                        $quizEnd = collect([$lesson->quiz?->deadline_at, $module->end_at])->filter()->min();
-                        return [
-                            'id' => $lesson->id,
-                            'title' => $lesson->title,
-                            'type' => $lesson->type, // video, document, quiz, zoom
-                            'description' => $lesson->description,
-                            'video_url' => $lesson->video_url,
-                            'duration_minutes' => $lesson->duration_minutes,
-                            'isCompleted' => $isCompleted,
-                            'files' => $lesson->files->map(function ($file) {
-                                return [
-                                    'id' => $file->id,
-                                    'original_name' => $file->original_name,
-                                    'file_path' => Storage::url($file->file_path),
-                                    'mime_type' => $file->mime_type,
-                                    'file_size_kb' => $file->file_size_kb,
-                                ];
-                            })->values(),
-                            'quiz' => $lesson->quiz ? [
-                                'id' => $lesson->quiz->id,
-                                'quiz_mode' => $lesson->quiz->quiz_mode,
-                                'duration_minutes' => $lesson->quiz->duration_minutes,
-                                'passing_score' => $lesson->quiz->passing_score,
-                                'max_attempts' => $lesson->quiz->max_attempts,
-                                'start_at' => $quizStart?->toIso8601String(),
-                                'start_at_label' => $quizStart?->format(self::DATETIME_LABEL_FORMAT),
-                                'deadline_at' => $quizEnd?->toIso8601String(),
-                                'deadline_at_label' => $quizEnd?->format(self::DATETIME_LABEL_FORMAT),
-                                'shuffle_questions' => $lesson->quiz->shuffle_questions,
-                                'questions' => $lesson->quiz->questions->map(function ($q) {
-                                    return [
-                                        'id' => $q->id,
-                                        'question' => $q->question,
-                                        'type' => $q->type,
-                                        'points' => $q->points,
-                                        'explanation' => $q->explanation,
-                                        'image_path' => $q->image_path ? Storage::url($q->image_path) : null,
-                                        // 'is_correct' sengaja TIDAK dikirim ke browser agar kunci jawaban
-                                        // tidak bisa dilihat peserta. Penilaian dilakukan di server.
-                                        'options' => $q->options->map(function ($opt) {
-                                            return [
-                                                'id' => $opt->id,
-                                                'option_text' => $opt->option_text,
-                                            ];
-                                        })->values(),
-                                    ];
-                                })->values(),
-                                'attempts' => $lesson->quiz->attempts->map(function ($attempt) {
-                                    return [
-                                        'id' => $attempt->id,
-                                        'score' => $attempt->score,
-                                        'is_passed' => $attempt->is_passed,
-                                        'created_at' => $attempt->created_at->format(self::DATETIME_LABEL_FORMAT),
-                                    ];
-                                })->values(),
-                            ] : null,
-                        ];
-                    })->values(),
-                ];
-            })->values(),
+            'modules' => $course->modules->map(fn ($module) => $this->formatPlayerModule($module, $lessonProgresses, $moduleLocks, $lessonLocks))->values(),
         ];
 
         return Inertia::render('CoursePlayer', [
             'courseData' => $formattedCourse,
             'initialLessonId' => request()->query('lesson')
         ]);
+    }
+
+    private function formatPlayerModule(Module $module, Collection $lessonProgresses, array $moduleLocks, array $lessonLocks): array
+    {
+        $lockedReason = $moduleLocks[$module->id] ?? null;
+        return [
+            'id' => $module->id,
+            'title' => $module->title,
+            'description' => $lockedReason === null ? $module->description : null,
+            'requires_completion' => $module->requires_completion,
+            'locked_reason' => $lockedReason,
+            'start_at' => $module->start_at?->toIso8601String(),
+            'start_at_label' => $module->start_at?->format(self::DATETIME_LABEL_FORMAT),
+            'end_at' => $module->end_at?->toIso8601String(),
+            'end_at_label' => $module->end_at?->format(self::DATETIME_LABEL_FORMAT),
+            'lessons' => $module->lessons
+                ->filter(fn ($lesson) => auth()->user()->role !== 'peserta' || $lesson->is_published)
+                ->map(fn ($lesson) => $this->formatPlayerLesson($lesson, $module, $lessonProgresses, $lockedReason ?? $lessonLocks[$lesson->id] ?? null))->values(),
+        ];
+    }
+
+    private function formatPlayerLesson(Lesson $lesson, Module $module, Collection $lessonProgresses, ?string $lockedReason): array
+    {
+        $isCompleted = $lessonProgresses->get($lesson->id)?->is_completed ?? false;
+        if ($lockedReason !== null) {
+            return [
+                'id' => $lesson->id, 'title' => $lesson->title, 'type' => $lesson->type,
+                'isCompleted' => $isCompleted, 'files' => [], 'quiz' => null, 'locked_reason' => $lockedReason,
+            ];
+        }
+        // Jadwal kuis tidak boleh keluar dari jadwal modulnya
+        $quizStart = collect([$lesson->quiz?->start_at, $module->start_at])->filter()->max();
+        $quizEnd = collect([$lesson->quiz?->deadline_at, $module->end_at])->filter()->min();
+        return [
+            'id' => $lesson->id,
+            'title' => $lesson->title,
+            'type' => $lesson->type, // video, document, quiz, zoom
+            'description' => $lesson->description,
+            'video_url' => $lesson->video_url,
+            'duration_minutes' => $lesson->duration_minutes,
+            'isCompleted' => $isCompleted,
+            'locked_reason' => null,
+            'files' => $lesson->files->map(function ($file) {
+                return [
+                    'id' => $file->id,
+                    'original_name' => $file->original_name,
+                    'file_path' => route('learning.files.lesson', $file),
+                    'mime_type' => $file->mime_type,
+                    'file_size_kb' => $file->file_size_kb,
+                ];
+            })->values(),
+            'quiz' => $lesson->quiz ? [
+                'id' => $lesson->quiz->id,
+                'quiz_mode' => $lesson->quiz->quiz_mode,
+                'duration_minutes' => $lesson->quiz->duration_minutes,
+                'passing_score' => $lesson->quiz->passing_score,
+                'max_attempts' => $lesson->quiz->max_attempts,
+                'start_at' => $quizStart?->toIso8601String(),
+                'start_at_label' => $quizStart?->format(self::DATETIME_LABEL_FORMAT),
+                'deadline_at' => $quizEnd?->toIso8601String(),
+                'deadline_at_label' => $quizEnd?->format(self::DATETIME_LABEL_FORMAT),
+                'shuffle_questions' => $lesson->quiz->shuffle_questions,
+                'questions' => $lesson->quiz->questions->map(function ($q) {
+                    return [
+                        'id' => $q->id,
+                        'question' => $q->question,
+                        'type' => $q->type,
+                        'points' => $q->points,
+                        'explanation' => $q->explanation,
+                        'image_path' => $q->image_path ? Storage::url($q->image_path) : null,
+                        // 'is_correct' sengaja TIDAK dikirim ke browser agar kunci jawaban
+                        // tidak bisa dilihat peserta. Penilaian dilakukan di server.
+                        'options' => $q->options->map(function ($opt) {
+                            return [
+                                'id' => $opt->id,
+                                'option_text' => $opt->option_text,
+                            ];
+                        })->values(),
+                    ];
+                })->values(),
+                'attempts' => $lesson->quiz->attempts->map(function ($attempt) {
+                    return [
+                        'id' => $attempt->id,
+                        'score' => $attempt->score,
+                        'is_passed' => $attempt->is_passed,
+                        'created_at' => $attempt->created_at->format(self::DATETIME_LABEL_FORMAT),
+                    ];
+                })->values(),
+            ] : null,
+        ];
     }
 
     /**
@@ -167,6 +190,7 @@ class CoursePlayerController extends Controller
 
         $quiz = \App\Models\Quiz::findOrFail($quizId);
         abort_unless($quiz->lesson->module->course_id == $courseId, 404);
+        app(ModuleProgression::class)->authorizeLesson($quiz->lesson, $user);
 
         $limitError = $this->storeQuizAttempt($validated['answers'], $user, $quizId, $courseId);
 
@@ -309,8 +333,10 @@ class CoursePlayerController extends Controller
 
         $lesson = \App\Models\Lesson::findOrFail($lessonId);
         abort_unless($lesson->module->course_id == $courseId, 404);
+        app(ModuleProgression::class)->authorizeLesson($lesson, $user);
+        abort_if($lesson->type === 'quiz', 403, 'Selesaikan kuis dengan mengirim jawaban.');
 
-                // Modul harus sedang dibuka (belum dibuka / sudah ditutup: tidak bisa ditandai selesai)
+        // Modul harus sedang dibuka (belum dibuka / sudah ditutup: tidak bisa ditandai selesai)
         $module = \App\Models\Module::whereHas('lessons', fn ($q) => $q->where('id', $lessonId))->first();
         if ($module && ! $module->isOpen()) {
             return back()->withErrors([

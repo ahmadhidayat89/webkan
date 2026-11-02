@@ -62,6 +62,7 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson, s
                 const totalCount = module.lessons.length;
                 const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
                 const windowState = getModuleWindow(module, now);
+                const locked = Boolean(module.locked_reason) || windowState === 'upcoming';
 
                 return (
                     <Accordion.Item
@@ -79,7 +80,7 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson, s
                                         <span className="text-[10px] text-gray-400">
                                             {completedCount}/{totalCount} selesai
                                         </span>
-                                        {windowState === 'upcoming' && <Lock className="w-3 h-3 text-amber-500" />}
+                                        {locked && <Lock className="w-3 h-3 text-amber-500" />}
                                         {windowState === 'closed' && <Clock className="w-3 h-3 text-gray-400" />}
                                     </div>
                                     <h3 className="text-sm font-semibold text-gray-800 truncate">
@@ -109,11 +110,11 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson, s
 
                         <Accordion.Content className="overflow-hidden accordion-content">
                             <div className="px-2 pb-2 space-y-0.5">
-                                {windowState === 'upcoming' && (
+                                {locked && (
                                     <div className="flex items-start gap-2 p-3 mb-1 border rounded-lg border-amber-200 bg-amber-50">
                                         <Lock className="w-4 h-4 mt-0.5 text-amber-600 flex-shrink-0" />
                                         <p className="text-xs text-amber-700">
-                                            Modul ini belum dibuka. Materi dapat diakses mulai <span className="font-bold">{module.start_at_label}</span>.
+                                            {module.locked_reason || `Modul ini dibuka pada ${module.start_at_label}.`}
                                         </p>
                                     </div>
                                 )}
@@ -125,7 +126,7 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson, s
                                         </p>
                                     </div>
                                 )}
-                                {(windowState === 'upcoming' ? [] : module.lessons).map((lesson) => {
+                                {(locked ? [] : module.lessons).map((lesson) => {
                                     const Icon = typeIcons[lesson.type] || FileText;
                                     const isActive = activeLesson?.id === lesson.id;
                                     const colorClass = typeColors[lesson.type] || 'text-gray-500 bg-gray-50';
@@ -133,8 +134,10 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson, s
                                     return (
                                         <button
                                             key={lesson.id}
+                                            disabled={Boolean(lesson.locked_reason)}
+                                            title={lesson.locked_reason || lesson.title}
                                             onClick={() => onSelectLesson(lesson)}
-                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group/item ${isActive
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group/item disabled:opacity-50 disabled:cursor-not-allowed ${isActive
                                                 ? 'bg-navy-50 border-l-3 border-navy-600'
                                                 : 'hover:bg-gray-50'
                                                 }`}
@@ -158,7 +161,7 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson, s
 
                                             {/* Status Icon */}
                                             <div className="flex-shrink-0">
-                                                <StatusIcon isCompleted={lesson.isCompleted} isActive={isActive} />
+                                                {lesson.locked_reason ? <Lock className="w-4 h-4 text-amber-500" /> : <StatusIcon isCompleted={lesson.isCompleted} isActive={isActive} />}
                                             </div>
                                         </button>
                                     );

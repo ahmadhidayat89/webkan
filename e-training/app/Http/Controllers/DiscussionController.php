@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Discussion;
 use App\Models\Lesson;
+use App\Services\ModuleProgression;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -26,7 +27,7 @@ class DiscussionController extends Controller
      */
     public function index(Lesson $lesson)
     {
-        $this->authorizeTeacherAccess($lesson);
+        $this->authorizeLessonAccess($lesson);
         $messages = $lesson->discussions()
             ->with('user')
             ->orderBy('created_at')
@@ -41,7 +42,7 @@ class DiscussionController extends Controller
      */
     public function store(Request $request, Lesson $lesson)
     {
-        $this->authorizeTeacherAccess($lesson);
+        $this->authorizeLessonAccess($lesson);
         $request->validate([
             'message' => 'nullable|string|max:2000',
             'file'    => 'nullable|file|max:1024|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,png,jpg,jpeg',
@@ -69,7 +70,7 @@ class DiscussionController extends Controller
             $fileName = $file->getClientOriginalName();
             $fileType = $file->getMimeType();
             $fileSize = $file->getSize();
-            $filePath = $file->store("discussions/lesson_{$lesson->id}", 'public');
+            $filePath = $file->store("discussions/lesson_{$lesson->id}", 'local');
         }
 
         $discussion = Discussion::create([
@@ -95,12 +96,13 @@ class DiscussionController extends Controller
         $user = auth()->user();
 
         abort_unless($discussion->lesson_id === $lesson->id, 404);
-        $this->authorizeTeacherAccess($lesson);
+        $this->authorizeLessonAccess($lesson);
         if ($discussion->user_id !== $user->id && !$user->canManageCourse($lesson->module->course)) {
             return response()->json(['error' => 'Tidak diizinkan.'], 403);
         }
 
         if ($discussion->file_path) {
+            Storage::disk('local')->delete($discussion->file_path);
             Storage::disk('public')->delete($discussion->file_path);
         }
 
@@ -109,12 +111,9 @@ class DiscussionController extends Controller
         return response()->json(['success' => true]);
     }
 
-    private function authorizeTeacherAccess(Lesson $lesson): void
+    private function authorizeLessonAccess(Lesson $lesson): void
     {
-        $user = auth()->user();
-        if ($user->role === 'pengajar') {
-            abort_unless($user->canManageCourse($lesson->module->course), 403);
-        }
+        app(ModuleProgression::class)->authorizeLesson($lesson, auth()->user());
     }
 
     private function looksLikeSqli(string $value): bool
@@ -132,7 +131,7 @@ class DiscussionController extends Controller
         return [
             'id'         => $d->id,
             'message'    => $d->message,
-            'file_path'  => $d->file_path ? Storage::disk('public')->url($d->file_path) : null,
+            'file_path'  => $d->file_path ? route('learning.files.discussion', $d) : null,
             'file_name'  => $d->file_name,
             'file_type'  => $d->file_type,
             'file_size'  => $d->file_size,

@@ -6,6 +6,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\LessonController;
+use App\Http\Controllers\LearningFileController;
 use App\Http\Controllers\QuizAdminController;
 use App\Http\Controllers\GradingController;
 use App\Http\Controllers\CertificateAdminController;
@@ -39,6 +40,11 @@ Route::post('/course/{course}/quizzes/{quiz}/submit', [CoursePlayerController::c
 
 Route::post('/course/{course}/lessons/{lesson}/complete', [CoursePlayerController::class, 'markLessonComplete'])
     ->middleware(['auth'])->name('course.lesson.complete');
+
+Route::middleware('auth')->prefix('learning-files')->name('learning.files.')->group(function () {
+    Route::get('/lessons/{file}', [LearningFileController::class, 'lesson'])->name('lesson');
+    Route::get('/discussions/{discussion}', [LearningFileController::class, 'discussion'])->name('discussion');
+});
 
 // Diskusi per lesson/sesi (bisa diakses semua user yang login)
 use App\Http\Controllers\DiscussionController;

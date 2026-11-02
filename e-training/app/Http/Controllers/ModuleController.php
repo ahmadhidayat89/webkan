@@ -31,9 +31,10 @@ class ModuleController extends Controller
     public function update(Request $request, Module $module): RedirectResponse
     {
         $request->validate([
-            'title'        => 'required|string|max:255',
+            'title'        => 'sometimes|required|string|max:255',
             'description'  => 'nullable|string',
             'is_published' => 'boolean',
+            'requires_completion' => 'sometimes|boolean',
             'start_at'     => 'nullable|date',
             'end_at'       => [
                 'nullable',
@@ -48,6 +49,7 @@ class ModuleController extends Controller
             'title',
             'description',
             'is_published',
+            'requires_completion',
             'start_at',
             'end_at',
         ]));

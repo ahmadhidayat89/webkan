@@ -1013,16 +1013,32 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, onQuizActiveCha
     );
 }
 
-function ModuleLockedNotice({ module }) {
+function useRefreshOpenedModules(modules, serverNow, now) {
+    const refreshed = useRef(new Set());
+
+    useEffect(() => {
+        const serverTime = Date.parse(serverNow);
+        const newlyOpened = modules.filter((module) => {
+            const start = Date.parse(module.start_at);
+            return module.locked_reason && start > serverTime && start <= now && !refreshed.current.has(module.id);
+        });
+        if (newlyOpened.length === 0) return;
+
+        newlyOpened.forEach((module) => refreshed.current.add(module.id));
+        router.reload({ only: ['courseData'] });
+    }, [modules, serverNow, now]);
+}
+
+function ModuleLockedNotice({ module, lesson }) {
     return (
         <div className="max-w-2xl mx-auto animate-fade-in">
             <div className="p-8 text-center border shadow-sm border-amber-200 card bg-amber-50/50">
                 <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100">
                     <Clock className="w-8 h-8 text-amber-600" />
                 </div>
-                <h2 className="mb-2 text-xl font-bold text-gray-900">Modul Belum Dibuka</h2>
+                <h2 className="mb-2 text-xl font-bold text-gray-900">Materi Belum Bisa Diakses</h2>
                 <p className="text-sm text-gray-600">
-                    {module.title} akan dibuka pada <span className="font-bold">{module.start_at_label}</span>.
+                    {lesson.locked_reason || module.locked_reason || `${module.title} akan dibuka pada ${module.start_at_label}.`}
                 </p>
             </div>
         </div>
@@ -1050,6 +1066,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
     const [clockOffset] = useState(() => (course.server_now ? Date.parse(course.server_now) - Date.now() : 0));
     const hasModuleSchedule = allModulesHaveSchedule(course.modules);
     const now = useServerNow(clockOffset, hasModuleSchedule);
+    useRefreshOpenedModules(course.modules || [], course.server_now, now);
     const activeLesson = allLessons.find((l) => l.id === activeLessonId) || null;
 
     if (!activeLesson) {
@@ -1074,6 +1091,8 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
     const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id);
     const activeModule = course.modules?.find((m) => m.lessons.some((l) => l.id === activeLesson.id));
     const moduleWindow = activeModule ? getModuleWindow(activeModule, now) : 'open';
+    const moduleLocked = Boolean(activeModule?.locked_reason || activeLesson.locked_reason) || moduleWindow === 'upcoming';
+    const cannotComplete = activeLesson.isCompleted || isExpired || moduleLocked || moduleWindow !== 'open';
 
     const handlePrev = () => {
         if (currentIndex > 0) setActiveLessonId(allLessons[currentIndex - 1].id);
@@ -1083,7 +1102,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
     };
 
     const handleComplete = () => {
-        if (activeLesson.isCompleted || isExpired || moduleWindow !== 'open') return;
+        if (cannotComplete) return;
 
         router.post(
             route('course.lesson.complete', { course: course.id, lesson: activeLesson.id }),
@@ -1150,7 +1169,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                         </div>
                     )}
 
-                    {moduleWindow === 'upcoming' ? <ModuleLockedNotice module={activeModule} /> : renderContent()}
+                    {moduleLocked ? <ModuleLockedNotice module={activeModule} lesson={activeLesson} /> : renderContent()}
 
                     {/* Navigation between lessons */}
                     {activeLesson.type !== 'quiz' && (
@@ -1165,8 +1184,8 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                             </button>
                             <button
                                 onClick={handleComplete}
-                                disabled={activeLesson.isCompleted || isExpired || moduleWindow !== 'open'}
-                                className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors border w-full sm:w-auto ${(activeLesson.isCompleted || isExpired || moduleWindow !== 'open')
+                                disabled={cannotComplete}
+                                className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors border w-full sm:w-auto ${cannotComplete
                                     ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
                                     : 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200'
                                     }`}
@@ -1187,11 +1206,11 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                     )}
 
                     {/* Diskusi per Sesi */}
-                    <DiscussionPanel
+                    {!moduleLocked && <DiscussionPanel
                         key={activeLesson.id}
                         lessonId={activeLesson.id}
                         lessonTitle={activeLesson.title}
-                    />
+                    />}
                 </div>
             </CoursePlayerLayout>
         </>

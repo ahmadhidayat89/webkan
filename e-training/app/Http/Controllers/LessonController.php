@@ -70,6 +70,7 @@ class LessonController extends Controller
     {
         // Hapus file-file terkait dari storage
         foreach ($lesson->files as $file) {
+            Storage::disk('local')->delete($file->file_path);
             Storage::disk('public')->delete($file->file_path);
         }
         $lesson->delete();
@@ -86,7 +87,7 @@ class LessonController extends Controller
         ]);
 
         $file = $request->file('file');
-        $path = $file->store("lesson-files/{$lesson->id}", 'public');
+        $path = $file->store("lesson-files/{$lesson->id}", 'local');
 
         LessonFile::create([
             'lesson_id'     => $lesson->id,
@@ -104,6 +105,7 @@ class LessonController extends Controller
      */
     public function deleteFile(LessonFile $file): RedirectResponse
     {
+        Storage::disk('local')->delete($file->file_path);
         Storage::disk('public')->delete($file->file_path);
         $file->delete();
         return back()->with('success', 'File berhasil dihapus.');

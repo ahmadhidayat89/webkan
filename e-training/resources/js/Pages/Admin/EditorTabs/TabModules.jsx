@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { router } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { PlusCircle, GripVertical, Trash2, Video, FileText, HelpCircle, ChevronDown, ChevronUp, Upload, X, Save, AlertTriangle } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
@@ -243,6 +243,7 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
 
             {isOpen && (
                 <div className="p-3 space-y-3">
+                    <ModuleCompletionSetting module={module} />
                     <div className="flex flex-wrap items-end gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
                         <div className="flex-1 min-w-[180px]">
                             <label htmlFor={`module-${module.id}-start`} className="block mb-1 text-xs font-bold text-gray-500 uppercase">Akses Dibuka</label>
@@ -326,6 +327,44 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
                 </div>
             )}
         </div>
+    );
+}
+
+function ModuleCompletionSetting({ module }) {
+    const { data, setData, patch, processing, errors, recentlySuccessful } = useForm({
+        requires_completion: Boolean(module.requires_completion),
+    });
+    const isDirty = data.requires_completion !== Boolean(module.requires_completion);
+
+    const save = (event) => {
+        event.preventDefault();
+        patch(route('admin.modules.update', module.id), { preserveScroll: true });
+    };
+
+    return (
+        <form onSubmit={save} className="p-4 border border-navy-100 rounded-lg bg-navy-50/50">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        role="switch"
+                        checked={data.requires_completion}
+                        onChange={(event) => setData('requires_completion', event.target.checked)}
+                        disabled={processing}
+                        className="mt-1 rounded border-gray-300 text-navy-600 focus:ring-navy-500"
+                    />
+                    <span>
+                        <span className="block text-sm font-semibold text-gray-800">Kerjakan materi secara berurutan</span>
+                        <span className="block mt-1 text-xs text-gray-500">Jika aktif, peserta harus menyelesaikan materi sebelumnya untuk membuka materi berikutnya di modul ini. Contoh: pretes → materi → postes. Urutan mengikuti susunan materi di bawah.</span>
+                    </span>
+                </label>
+                <button type="submit" disabled={!isDirty || processing} className="px-4 py-2 text-xs font-bold text-white rounded-lg bg-navy-600 hover:bg-navy-700 disabled:bg-gray-100 disabled:text-gray-400">
+                    {processing ? 'Menyimpan...' : 'Simpan Pengaturan'}
+                </button>
+            </div>
+            {errors.requires_completion && <p role="alert" className="mt-2 text-xs text-red-600">{errors.requires_completion}</p>}
+            {recentlySuccessful && !isDirty && <p role="status" className="mt-2 text-xs text-green-600">Pengaturan tersimpan.</p>}
+        </form>
     );
 }
 

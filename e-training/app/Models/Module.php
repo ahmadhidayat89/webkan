@@ -14,6 +14,7 @@ class Module extends Model
         'description',
         'sort_order',
         'is_published',
+        'requires_completion',
         'start_at',
         'end_at',
     ];
@@ -22,6 +23,7 @@ class Module extends Model
     {
         return [
             'is_published' => 'boolean',
+            'requires_completion' => 'boolean',
             'start_at'     => 'datetime',
             'end_at'       => 'datetime',
         ];
@@ -79,7 +81,7 @@ class Module extends Model
      */
     public function lessons(): HasMany
     {
-        return $this->hasMany(Lesson::class)->orderBy('sort_order');
+        return $this->hasMany(Lesson::class)->orderBy('sort_order')->orderBy('id');
     }
 
     /**

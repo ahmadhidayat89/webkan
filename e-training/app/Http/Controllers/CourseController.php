@@ -175,6 +175,7 @@ class CourseController extends Controller
             'description' => $module->description,
             'sort_order' => $module->sort_order,
             'is_published' => $module->is_published,
+            'requires_completion' => $module->requires_completion,
             'start_at' => $module->start_at?->format(self::DATETIME_LOCAL_FORMAT),
             'end_at' => $module->end_at?->format(self::DATETIME_LOCAL_FORMAT),
             'lessons' => $module->lessons->map(fn($lesson) => $this->formatLesson($lesson))->values(),
@@ -205,7 +206,7 @@ class CourseController extends Controller
         return [
             'id' => $file->id,
             'original_name' => $file->original_name,
-            'file_path' => Storage::url($file->file_path),
+            'file_path' => route('learning.files.lesson', $file),
             'mime_type' => $file->mime_type,
             'file_size_kb' => $file->file_size_kb,
         ];
