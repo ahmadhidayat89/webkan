@@ -626,6 +626,7 @@ function QuizTakingView({
     processing,
     timeLeft,
     onAnswer,
+    onClear,
     onNavigate,
     onSubmit,
 }) {
@@ -724,6 +725,17 @@ function QuizTakingView({
                         >
                             <ChevronLeft className="w-4 h-4" /> Sebelumnya
                         </button>
+
+                        {Boolean(answers[question.id]) && (
+                            <button
+                                type="button"
+                                onClick={onClear}
+                                disabled={processing}
+                                className="px-3 py-2 text-xs font-medium text-gray-500 transition-colors hover:text-red-500 disabled:opacity-40"
+                            >
+                                Hapus Jawaban
+                            </button>
+                        )}
 
                         {currentQuestion === totalQuestions - 1 ? (
                             <button
@@ -871,6 +883,15 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, onQuizActiveCha
         setAnswers({ ...answers, [question.id]: value });
     };
 
+    const handleClearAnswer = () => {
+        if (submitted || processing) return;
+        setAnswers((prev) => {
+            const next = { ...prev };
+            delete next[question.id];
+            return next;
+        });
+    };
+
     const handleStart = () => {
         // Jaga-jaga: jendela waktu bisa berubah sejak halaman dimuat
         if (getQuizWindow(quiz, Date.now() + clockOffset) !== 'open') return;
@@ -939,6 +960,7 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, onQuizActiveCha
             processing={processing}
             timeLeft={timeLeft}
             onAnswer={handleAnswer}
+            onClear={handleClearAnswer}
             onNavigate={setCurrentQuestion}
             onSubmit={handleSubmit}
         />
