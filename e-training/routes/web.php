@@ -18,8 +18,7 @@ Route::redirect('/', '/login');
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CourseCatalogController;
 
-const COURSES_ROUTE = '/courses';
-const PROFILE_ROUTE = '/profile';
+// Route paths are literals so the route file can be loaded repeatedly in tests.
 
 // Publik — Verifikasi sertifikat via QR Code (tanpa auth)
 Route::get('/verify/{code}', [\App\Http\Controllers\CertificateVerifyController::class, 'show'])
@@ -28,7 +27,7 @@ Route::get('/verify/{code}', [\App\Http\Controllers\CertificateVerifyController:
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get(COURSES_ROUTE, [CourseCatalogController::class, 'index'])
+Route::get('/courses', [CourseCatalogController::class, 'index'])
     ->middleware(['auth'])->name('courses.list');
 
 use App\Http\Controllers\CoursePlayerController;
@@ -51,7 +50,7 @@ Route::middleware(['auth'])->prefix('lessons/{lesson}/discussions')->name('discu
 });
 
 // Peserta: self-enroll via referral code
-Route::post(COURSES_ROUTE . '/join', [CourseEnrollmentController::class, 'joinByReferral'])
+Route::post('/courses' . '/join', [CourseEnrollmentController::class, 'joinByReferral'])
     ->middleware(['auth'])->name('courses.join');
 
 // Peserta: Sertifikat
@@ -66,9 +65,9 @@ Route::get('/api/calendar-events', [CourseEventController::class, 'getCalendarEv
 
 // Profil user
 Route::middleware('auth')->group(function () {
-    Route::get(PROFILE_ROUTE, [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch(PROFILE_ROUTE, [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete(PROFILE_ROUTE, [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 use App\Http\Controllers\ActivityLogController;
@@ -86,24 +85,42 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Log Aktivitas
     Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log');
 
-    // Studio Konten — CRUD Kursus
-    Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
-    Route::post(COURSES_ROUTE, [CourseController::class, 'store'])->name('courses.store');
-    Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
-    Route::patch('/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
+    Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
     Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
+    Route::patch('/courses/{course}/teachers', [\App\Http\Controllers\CourseTeacherController::class, 'update'])->name('courses.teachers');
+    Route::patch('/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
+    Route::post('/courses/{course}/thumbnail', [CourseController::class, 'uploadThumbnail'])->name('courses.thumbnail');
+    Route::post('/courses/{course}/certificates/generate', [CertificateAdminController::class, 'generate'])
+        ->name('certificates.generate');
+    Route::post('/courses/{course}/certificate-template', [CertificateAdminController::class, 'uploadTemplate'])
+        ->name('certificates.template');
+    Route::post('/courses/{course}/certificate-signature', [CertificateAdminController::class, 'uploadSignature'])
+        ->name('certificates.signature');
+
+
     Route::post('/courses/{course}/referral', [CourseController::class, 'regenerateReferral'])
         ->name('courses.referral.regenerate');
+    Route::post('/courses/{course}/enroll', [CourseEnrollmentController::class, 'enroll'])
+        ->name('courses.enroll');
+    Route::delete('/courses/{course}/unenroll/{user}', [CourseEnrollmentController::class, 'unenroll'])
+        ->name('courses.unenroll');
+    Route::patch('/courses/{course}/referral-code', [CourseEnrollmentController::class, 'updateReferralCode'])
+        ->name('courses.referral.update');
 
-    // Thumbnail upload (separate endpoint to handle multipart)
-    Route::post('/courses/{course}/thumbnail', [CourseController::class, 'uploadThumbnail'])
-        ->name('courses.thumbnail');
+});
+
+Route::middleware(['auth', 'role:admin,pengajar', 'course.access'])->prefix('admin')->name('admin.')->group(function () {
+    // Pengelolaan seluruh isi kursus yang ditugaskan.
+    Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
+    Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
 
     // Modul
     Route::post('/courses/{course}/modules', [ModuleController::class, 'store'])->name('modules.store');
     Route::patch('/modules/{module}', [ModuleController::class, 'update'])->name('modules.update');
     Route::delete('/modules/{module}', [ModuleController::class, 'destroy'])->name('modules.destroy');
     Route::post('/modules/reorder', [ModuleController::class, 'reorder'])->name('modules.reorder');
+
+    Route::post('/lessons/reorder', [LessonController::class, 'reorder'])->name('lessons.reorder');
 
     // Lesson / Materi
     Route::post('/modules/{module}/lessons', [LessonController::class, 'store'])->name('lessons.store');
@@ -126,26 +143,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/answers/{answer}/grade', [GradingController::class, 'gradeEssay'])->name('grading.essay');
 
     // Sertifikat (admin)
-    Route::post('/courses/{course}/certificates/generate', [CertificateAdminController::class, 'generate'])
-        ->name('certificates.generate');
     Route::get('/certificates/{certificate}/download', [CertificateAdminController::class, 'download'])
         ->name('certificates.download');
     Route::get('/certificates/{certificate}/preview', [CertificateAdminController::class, 'preview'])
         ->name('certificates.preview');
     Route::get('/courses/{course}/certificate-preview', [CertificateAdminController::class, 'previewTemplate'])
         ->name('certificates.preview.template');
-    Route::post('/courses/{course}/certificate-template', [CertificateAdminController::class, 'uploadTemplate'])
-        ->name('certificates.template');
-    Route::post('/courses/{course}/certificate-signature', [CertificateAdminController::class, 'uploadSignature'])
-        ->name('certificates.signature');
 
-    // Enrollment
-    Route::post('/courses/{course}/enroll', [CourseEnrollmentController::class, 'enroll'])
-        ->name('courses.enroll');
-    Route::delete('/courses/{course}/unenroll/{user}', [CourseEnrollmentController::class, 'unenroll'])
-        ->name('courses.unenroll');
-    Route::patch('/courses/{course}/referral-code', [CourseEnrollmentController::class, 'updateReferralCode'])
-        ->name('courses.referral.update');
 });
 
 require __DIR__.'/auth.php';

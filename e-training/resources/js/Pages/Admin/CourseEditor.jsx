@@ -7,8 +7,9 @@ import TabModules from './EditorTabs/TabModules';
 import TabGrading from './EditorTabs/TabGrading';
 import TabCertificates from './EditorTabs/TabCertificates';
 import TabStudents from './EditorTabs/TabStudents';
+import CourseTeacherAssignment from '@/Components/CourseTeacherAssignment';
 
-export default function CourseEditor({ course, categories, allStudents }) {
+export default function CourseEditor({ course, categories, allStudents, teachers = [], canAssignTeachers = false, canEditCourseDetails = false, canManageParticipants = false, canIssueCertificates = false }) {
     const [activeTab, setActiveTab] = useState('detail');
 
     const tabs = [
@@ -34,9 +35,9 @@ export default function CourseEditor({ course, categories, allStudents }) {
                             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
                                 {course.title}
                             </h1>
-                            <button form="course-detail-form" type="submit" className="btn-gold flex items-center gap-2 py-1.5 px-3 text-xs">
+                            {canEditCourseDetails && <button form="course-detail-form" type="submit" className="btn-gold flex items-center gap-2 py-1.5 px-3 text-xs">
                                 <Save className="w-4 h-4" /> Simpan Perubahan
-                            </button>
+                            </button>}
                         </div>
                         <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${course.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'}`}>
@@ -52,6 +53,8 @@ export default function CourseEditor({ course, categories, allStudents }) {
                         </Link>
                     </div>
                 </div>
+
+                {canAssignTeachers && <CourseTeacherAssignment course={course} teachers={teachers} />}
 
                 {/* Tab Navigation */}
                 <div className="flex overflow-x-auto scrollbar-hide gap-1 mb-6 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
@@ -74,7 +77,7 @@ export default function CourseEditor({ course, categories, allStudents }) {
                 {/* Tab Content */}
                 <div className="min-h-[500px]">
                     <div className={activeTab === 'detail' ? 'block' : 'hidden'}>
-                        <TabDetail course={course} categories={categories} />
+                        <TabDetail course={course} categories={categories} canEdit={canEditCourseDetails} />
                     </div>
                     
                     <div className={activeTab === 'modules' ? 'block' : 'hidden'}>
@@ -86,11 +89,11 @@ export default function CourseEditor({ course, categories, allStudents }) {
                     </div>
 
                     <div className={activeTab === 'certificates' ? 'block' : 'hidden'}>
-                        <TabCertificates courseId={course.id} enrolledStudents={course.enrolled_students} certificates={course.certificates} course={course} />
+                        <TabCertificates courseId={course.id} enrolledStudents={course.enrolled_students} certificates={course.certificates} course={course} canIssueCertificates={canIssueCertificates} />
                     </div>
 
                     <div className={activeTab === 'students' ? 'block' : 'hidden'}>
-                        <TabStudents course={course} allStudents={allStudents} />
+                        <TabStudents course={course} allStudents={allStudents} canManageParticipants={canManageParticipants} />
                     </div>
                 </div>
             </div>

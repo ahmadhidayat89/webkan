@@ -31,6 +31,9 @@ class CourseEventController extends Controller
             });
         }
 
+        if ($user?->role === 'pengajar') {
+            $quizzesQuery->whereHas('lesson.module.course.teachers', fn ($q) => $q->where('users.id', $user->id));
+        }
         $quizzes = $quizzesQuery->get()->map(function($quiz) {
             $course = $quiz->lesson->module->course;
             return [
@@ -59,6 +62,9 @@ class CourseEventController extends Controller
             });
         }
 
+        if ($user?->role === 'pengajar') {
+            $zoomQuery->whereHas('module.course.teachers', fn ($q) => $q->where('users.id', $user->id));
+        }
         $zooms = $zoomQuery->get()->map(function($lesson) {
             $course = $lesson->module->course;
             return [
@@ -121,6 +127,9 @@ class CourseEventController extends Controller
             });
         }
 
+        if ($user?->role === 'pengajar') {
+            $quizzesQuery->whereHas('lesson.module.course.teachers', fn ($q) => $q->where('users.id', $user->id));
+        }
         $quizzes = $quizzesQuery->get()->map(function($quiz) {
             $course = $quiz->lesson->module->course;
             return [
@@ -138,6 +147,9 @@ class CourseEventController extends Controller
             ];
         });
 
+        if ($user?->role === 'pengajar') {
+            $zoomQuery->whereHas('module.course.teachers', fn ($q) => $q->where('users.id', $user->id));
+        }
         $zooms = $zoomQuery->get()->map(function($lesson) {
             $course = $lesson->module->course;
             return [
@@ -185,6 +197,9 @@ class CourseEventController extends Controller
             $query->where('status', 'published')->whereIn('id', $enrolledCourseIds);
         }
 
+        if ($user?->role === 'pengajar') {
+            $query->whereHas('teachers', fn ($q) => $q->where('users.id', $user->id));
+        }
         return $query->get()->map(function ($course) {
             $deadline = Carbon::parse($course->deadline_at);
             return [

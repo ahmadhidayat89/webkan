@@ -13,6 +13,10 @@ class CourseCatalogController extends Controller
     {
         $user = auth()->user();
 
+        if ($user->role === 'pengajar') {
+            return redirect()->route('admin.courses.index');
+        }
+
         // Get courses
         $query = Course::with(['instructor', 'category'])
             ->withCount('enrollments')

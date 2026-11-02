@@ -17,9 +17,26 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public const ROLE_LABELS = [
+        'admin' => 'Admin',
+        'pengajar' => 'Pengajar',
+        'peserta' => 'Peserta',
+    ];
+
+    public function teachingCourses(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Course::class, 'course_teachers');
+    }
+
+    public function canManageCourse(Course $course): bool
+    {
+        return $this->isAdmin() || ($this->role === 'pengajar' && $this->teachingCourses()->whereKey($course->id)->exists());
+    }
+
     /**
-     * Role yang tersedia: 'peserta', 'admin'
+     * Role yang tersedia: 'peserta', 'pengajar', 'admin'
      * - peserta : peserta pelatihan
+     * - pengajar: pengelola kursus yang ditugaskan admin
      * - admin   : pengelola platform (membuat kursus, mengelola user)
      */
 

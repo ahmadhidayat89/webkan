@@ -15,6 +15,9 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
+        if ($user->role === 'pengajar') {
+            return redirect()->route('admin.courses.index');
+        }
         $eventController = app(CourseEventController::class);
         $upcomingEvents = $eventController->getUpcoming();
         $calendarEvents = $eventController->getCalendarEvents($request);

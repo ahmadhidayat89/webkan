@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 
 const ROLE_CONFIG = {
+    pengajar: { label: 'Pengajar', icon: GraduationCap, bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
     admin:   { label: 'Admin',   icon: Shield,        bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
     peserta: { label: 'Peserta', icon: GraduationCap, bg: 'bg-blue-100',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
 };
@@ -109,7 +110,7 @@ function UserFormModal({ isOpen, onClose, editUser = null }) {
                     {/* Role Selector */}
                     <div>
                         <p id="user-role-label" className="block text-sm font-semibold text-gray-700 mb-2">Role <span className="text-red-500">*</span></p>
-                        <div role="radiogroup" aria-labelledby="user-role-label" className="grid grid-cols-2 gap-3">
+                        <div role="radiogroup" aria-labelledby="user-role-label" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {Object.entries(ROLE_CONFIG).map(([value, cfg]) => (
                                 <label key={value} className={`flex items-center gap-2.5 p-3 border-2 rounded-xl cursor-pointer transition-all
                                     ${data.role === value ? 'border-navy-500 bg-navy-50' : 'border-gray-200 hover:border-gray-300'}`}>
@@ -283,9 +284,10 @@ export default function UserManagement({ users = [], flash = {} }) {
                 </div>
 
                 {/* Filter Stat Cards */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                     {[
                         { role: 'all',    label: 'Semua',   count: users.length,         icon: Users,        color: 'text-gray-600',   bg: 'bg-gray-50'   },
+                        { role: 'pengajar', label: 'Pengajar', count: countByRole('pengajar'), icon: GraduationCap, color: 'text-green-600', bg: 'bg-green-50' },
                         { role: 'admin',  label: 'Admin',   count: countByRole('admin'),  icon: Shield,       color: 'text-purple-600', bg: 'bg-purple-50' },
                         { role: 'peserta',label: 'Peserta', count: countByRole('peserta'),icon: GraduationCap,color: 'text-blue-600',   bg: 'bg-blue-50'   },
                     ].map(({ role, label, count, icon: Icon, color, bg }) => (

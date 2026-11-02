@@ -30,6 +30,11 @@ class Course extends Model
         'deadline_at',
     ];
 
+    public function teachers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'course_teachers');
+    }
+
     protected function casts(): array
     {
         return [

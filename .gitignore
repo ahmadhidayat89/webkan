@@ -1,2 +1,11 @@
 
 .scannerwork/
+
+# Local analysis tools and data
+/.tools-sonar/
+
+# Workspace-level dependency/cache files
+/node_modules/
+
+# Generated verification screenshots
+/output/

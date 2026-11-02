@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Image, CheckCircle2, Plus, X } from 'lucide-react';
 
 // Tampilan area thumbnail: file baru yang dipilih, thumbnail tersimpan, atau kosong
-function ThumbnailPreview({ pending, saved }) {
+function ThumbnailPreview({ pending, saved, canEdit }) {
     if (pending instanceof File) {
         return (
             <div className="p-8 text-center bg-navy-50">
@@ -20,6 +20,10 @@ function ThumbnailPreview({ pending, saved }) {
         );
     }
 
+    if (!canEdit) {
+        return <p className="p-8 text-center text-sm text-gray-500">Belum ada thumbnail.</p>;
+    }
+
     return (
         <div className="p-8 text-center bg-gray-50">
             <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-gray-200 rounded-xl">
@@ -31,7 +35,7 @@ function ThumbnailPreview({ pending, saved }) {
     );
 }
 
-export default function TabDetail({ course, categories }) {
+export default function TabDetail({ course, categories, canEdit = false }) {
     const { data, setData, patch, post, recentlySuccessful, errors } = useForm({
         title: course.title,
         description: course.description || '',
@@ -75,6 +79,8 @@ export default function TabDetail({ course, categories }) {
     };
 
     const submitWithFile = (e) => {
+        e.preventDefault();
+        if (!canEdit) return;
         const fileInput = document.getElementById('thumbnail-upload');
         if (fileInput.files.length > 0) {
             setData('thumbnail', fileInput.files[0]);
@@ -89,6 +95,8 @@ export default function TabDetail({ course, categories }) {
 
     return (
         <form id="course-detail-form" onSubmit={submitWithFile} className="p-6 space-y-5 card animate-fade-in">
+            {!canEdit && <p className="text-sm text-gray-500">Detail kursus hanya dapat diubah oleh admin.</p>}
+            <fieldset disabled={!canEdit} className="min-w-0 space-y-5">
             <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-gray-900">Detail Pelatihan</h2>
                 {recentlySuccessful && (
@@ -254,10 +262,11 @@ export default function TabDetail({ course, categories }) {
                             }
                         }}
                     />
-                    <ThumbnailPreview pending={data.thumbnail} saved={course.thumbnail} />
+                    <ThumbnailPreview pending={data.thumbnail} saved={course.thumbnail} canEdit={canEdit} />
                 </div>
                 {errors.thumbnail && <p className="mt-1 text-xs text-red-500">{errors.thumbnail}</p>}
             </div>
+            </fieldset>
         </form>
     );
 }

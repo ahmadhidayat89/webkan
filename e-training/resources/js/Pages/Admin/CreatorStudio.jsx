@@ -42,7 +42,7 @@ function DeleteModal({ course, onConfirm, onCancel }) {
     );
 }
 
-export default function CreatorStudio({ courses }) {
+export default function CreatorStudio({ courses, canCreateCourse = false }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [courseToDelete, setCourseToDelete] = useState(null);
     const { post, processing } = useForm({
@@ -88,14 +88,14 @@ export default function CreatorStudio({ courses }) {
                         <p className="text-sm text-gray-500 mt-1">Kelola pelatihan, modul, dan materi pembelajaran</p>
                     </div>
 
-                    <button
+                    {canCreateCourse && <button
                         onClick={createCourse}
                         disabled={processing}
                         className="btn-gold flex items-center gap-2 px-4 py-2"
                     >
                         <Plus className="w-4 h-4" />
                         Buat Pelatihan Baru
-                    </button>
+                    </button>}
                 </div>
 
                 {/* Filters & Search */}
@@ -191,13 +191,13 @@ export default function CreatorStudio({ courses }) {
                                     >
                                         <Eye className="w-3.5 h-3.5" /> Preview
                                     </Link>
-                                    <button
+                                    {canCreateCourse && <button
                                         onClick={() => setCourseToDelete(course)}
                                         className="px-3 py-2 text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-1.5"
                                         title="Hapus Pelatihan"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    </button>}
                                 </div>
                             </div>
                         </div>
@@ -210,10 +210,10 @@ export default function CreatorStudio({ courses }) {
                             <Video className="w-8 h-8 text-gray-300" />
                         </div>
                         <h3 className="text-gray-900 font-bold text-lg">Belum ada pelatihan</h3>
-                        <p className="text-sm text-gray-500 mt-1 mb-4">Buat pelatihan pertama Anda untuk mulai mengajar.</p>
-                        <button onClick={createCourse} disabled={processing} className="btn-gold text-sm">
+                        <p className="text-sm text-gray-500 mt-1 mb-4">{canCreateCourse ? 'Buat pelatihan pertama Anda untuk mulai mengajar.' : 'Belum ada kursus yang ditugaskan kepada Anda oleh admin.'}</p>
+                        {canCreateCourse && <button onClick={createCourse} disabled={processing} className="btn-gold text-sm">
                             <Plus className="w-4 h-4" /> Buat Pelatihan Baru
-                        </button>
+                        </button>}
                     </div>
                 )}
             </div>

@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\RequireRole::class,
+            'course.access' => \App\Http\Middleware\EnsureCourseAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

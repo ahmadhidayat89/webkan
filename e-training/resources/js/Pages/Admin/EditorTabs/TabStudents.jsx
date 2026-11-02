@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import { Users, Copy, RefreshCw, UserPlus, Search, Trash2 } from 'lucide-react';
 
-export default function TabStudents({ course, allStudents }) {
+export default function TabStudents({ course, allStudents, canManageParticipants = false }) {
     const [referralCode, setReferralCode] = useState(course.referral_code || '');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUserId, setSelectedUserId] = useState('');
@@ -53,7 +53,7 @@ export default function TabStudents({ course, allStudents }) {
     return (
         <div className="flex flex-col lg:flex-row gap-6 animate-fade-in">
             {/* Left Side: Referral & Add Student */}
-            <div className="w-full lg:w-1/3 space-y-6">
+            {canManageParticipants && <div className="w-full lg:w-1/3 space-y-6">
                 {/* Referral Card */}
                 <div className="bg-gradient-to-br from-navy-800 to-navy-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -105,10 +105,10 @@ export default function TabStudents({ course, allStudents }) {
                         </button>
                     </form>
                 </div>
-            </div>
+            </div>}
 
             {/* Right Side: Enrolled Students Table */}
-            <div className="w-full lg:w-2/3">
+            <div className={canManageParticipants ? "w-full lg:w-2/3" : "w-full"}>
                 <div className="card h-full flex flex-col">
                     <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                         <h3 className="font-bold text-gray-900">Peserta Terdaftar <span className="text-gray-400 font-normal">({course.enrolled_students.length})</span></h3>
@@ -132,7 +132,7 @@ export default function TabStudents({ course, allStudents }) {
                                 <tr>
                                     <th className="px-4 py-3 font-medium">Peserta</th>
                                     <th className="px-4 py-3 font-medium">Progress</th>
-                                    <th className="px-4 py-3 font-medium text-right">Aksi</th>
+                                    {canManageParticipants && <th className="px-4 py-3 font-medium text-right">Aksi</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -154,7 +154,7 @@ export default function TabStudents({ course, allStudents }) {
                                                 <span className="text-xs font-bold text-gray-700">{student.progress_percent}%</span>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 text-right">
+                                        {canManageParticipants && <td className="px-4 py-3 text-right">
                                             <button
                                                 onClick={() => unenrollStudent(student.user_id, student.name)}
                                                 className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
@@ -163,13 +163,13 @@ export default function TabStudents({ course, allStudents }) {
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
-                                        </td>
+                                        </td>}
                                     </tr>
                                 ))}
 
                                 {filteredEnrolled.length === 0 && (
                                     <tr>
-                                        <td colSpan="3" className="px-4 py-8 text-center text-gray-500 text-sm">
+                                        <td colSpan={canManageParticipants ? 3 : 2} className="px-4 py-8 text-center text-gray-500 text-sm">
                                             Belum ada peserta yang terdaftar atau cocok dengan pencarian.
                                         </td>
                                     </tr>

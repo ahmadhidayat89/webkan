@@ -69,9 +69,16 @@ export default function Navbar({ role }) {
         );
     }
 
-    const roleBadge = isAdmin
-        ? { label: 'Admin', color: 'bg-gold-100 text-gold-700 border-gold-200' }
-        : { label: 'Peserta', color: 'bg-navy-50 text-navy-700 border-navy-200' };
+    if (role === 'pengajar') {
+        navLinks.splice(1, 1, { name: 'Kursus Mengajar', href: route('admin.courses.index'), icon: PenTool, active: route().current('admin.courses.*') });
+    }
+
+    const roleBadges = {
+        admin: { label: 'Admin', color: 'bg-gold-100 text-gold-700 border-gold-200' },
+        pengajar: { label: 'Pengajar', color: 'bg-green-50 text-green-700 border-green-200' },
+        peserta: { label: 'Peserta', color: 'bg-navy-50 text-navy-700 border-navy-200' },
+    };
+    const roleBadge = roleBadges[role] ?? roleBadges.peserta;
 
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${

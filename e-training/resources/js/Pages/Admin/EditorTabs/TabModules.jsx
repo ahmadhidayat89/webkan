@@ -444,31 +444,29 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
 
                     {/* QUIZ BUILDER */}
                     {lesson.type === 'quiz' && lesson.quiz && (
-                        <div className="bg-gray-50 -mx-4 -mb-4 p-4 border-t border-gray-200">
+                        <div className="bg-gray-50 -mx-4 p-4 border-t border-gray-200">
                             <QuizBuilder quiz={lesson.quiz} />
                         </div>
                     )}
 
-                    {/* Tombol Simpan — hanya muncul jika ada perubahan */}
-                    {lesson.type !== 'quiz' && (
-                        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                            <p className="text-xs text-gray-400">
-                                {getSaveStatusText(isDirty, saved)}
-                            </p>
-                            <button
-                                type="button"
-                                onClick={saveLesson}
-                                disabled={!isDirty || isSaving}
-                                className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${isDirty
-                                    ? 'bg-navy-600 hover:bg-navy-700 text-white shadow-sm'
-                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    }`}
-                            >
-                                <Save className="w-3.5 h-3.5" />
-                                {isSaving ? 'Menyimpan...' : 'Simpan Materi'}
-                            </button>
-                        </div>
-                    )}
+                    {/* Simpan judul dan deskripsi untuk semua jenis materi, termasuk kuis. */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <p className="text-xs text-gray-400">
+                            {getSaveStatusText(isDirty, saved)}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={saveLesson}
+                            disabled={!isDirty || isSaving}
+                            className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${isDirty
+                                ? 'bg-navy-600 hover:bg-navy-700 text-white shadow-sm'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
+                        >
+                            <Save className="w-3.5 h-3.5" />
+                            {isSaving ? 'Menyimpan...' : 'Simpan Materi'}
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

@@ -40,6 +40,9 @@ class CoursePlayerController extends Controller
         ])->findOrFail($id);
 
         $user = auth()->user();
+        if ($user->role === 'pengajar') {
+            abort_unless($user->canManageCourse($course), 403);
+        }
         $lessonProgresses = \App\Models\LessonProgress::where('user_id', $user->id)
             ->whereIn('lesson_id', $course->modules->flatMap->lessons->pluck('id'))
             ->get()
@@ -146,11 +149,17 @@ class CoursePlayerController extends Controller
 
         // Kursus sudah lewat deadline: peserta hanya boleh melihat
         $course = Course::findOrFail($courseId);
+        if ($user->role === 'pengajar') {
+            abort_unless($user->canManageCourse($course), 403);
+        }
         if ($course->isExpired()) {
             return back()->withErrors([
                 'message' => 'Masa kursus telah berakhir. Kamu hanya dapat melihat materi.',
             ]);
         }
+
+        $quiz = \App\Models\Quiz::findOrFail($quizId);
+        abort_unless($quiz->lesson->module->course_id == $courseId, 404);
 
         $limitError = $this->storeQuizAttempt($validated['answers'], $user, $quizId, $courseId);
 
@@ -256,11 +265,17 @@ class CoursePlayerController extends Controller
 
         // Kursus sudah lewat deadline: tidak bisa menandai selesai
         $course = Course::findOrFail($courseId);
+        if ($user->role === 'pengajar') {
+            abort_unless($user->canManageCourse($course), 403);
+        }
         if ($course->isExpired()) {
             return back()->withErrors([
                 'message' => 'Masa kursus telah berakhir. Kamu hanya dapat melihat materi.',
             ]);
         }
+
+        $lesson = \App\Models\Lesson::findOrFail($lessonId);
+        abort_unless($lesson->module->course_id == $courseId, 404);
 
         // 1. Mark lesson as completed
         \App\Models\LessonProgress::updateOrCreate(

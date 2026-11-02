@@ -47,7 +47,7 @@ const gantiKalimatTanggal = (current, awal) => {
     return awal;
 };
 
-export default function TabCertificates({ courseId, enrolledStudents, certificates, course }) {
+export default function TabCertificates({ courseId, enrolledStudents, certificates, course, canIssueCertificates = false }) {
     // Durasi kursus (jam) dari detail kursus
     const durasiJam = course.duration_hours;
 
@@ -66,6 +66,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
 
     // Terbitkan / Regenerate cepat (otomatis, tanpa modal)
     const generateCertificate = (userId) => {
+        if (!canIssueCertificates) return;
         setGeneratingId(userId);
         router.post(route('admin.certificates.generate', courseId), {
             user_id: userId,
@@ -104,6 +105,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
     };
 
     const openModal = (student) => {
+        if (!canIssueCertificates) return;
         const cert = hasCertificate(student.user_id);
 
         // Tanggal default: tanggal selesai peserta, atau hari ini kalau belum tercatat
@@ -133,6 +135,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
 
     const submitCertificate = (e) => {
         e.preventDefault();
+        if (!canIssueCertificates) return;
         certForm.post(route('admin.certificates.generate', courseId), {
             preserveScroll: true,
             onSuccess: () => closeModal(),
@@ -140,6 +143,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
     };
 
     const handleTemplateUpload = (e) => {
+        if (!canIssueCertificates) return;
         const file = e.target.files[0];
         if (!file) return;
         setTemplatePreview(URL.createObjectURL(file));
@@ -152,6 +156,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
     };
 
     const handleSignatureUpload = (e) => {
+        if (!canIssueCertificates) return;
         const file = e.target.files[0];
         if (!file) return;
         setSignaturePreview(URL.createObjectURL(file));
@@ -171,9 +176,9 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                     <Award className="w-8 h-8 text-gold-400" />
                 </div>
                 <div className="flex-1 text-center sm:text-left">
-                    <h3 className="text-xl font-bold mb-1">Penerbitan Sertifikat</h3>
+                    <h3 className="text-xl font-bold mb-1">{canIssueCertificates ? 'Penerbitan Sertifikat' : 'Sertifikat Peserta'}</h3>
                     <p className="text-navy-200 text-sm">
-                        Generate sertifikat PDF dengan QR Code verifikasi otomatis. Upload template gambar kustom dan tanda tangan di bawah ini.
+                        {canIssueCertificates ? 'Generate sertifikat PDF dengan QR Code verifikasi otomatis. Upload template gambar kustom dan tanda tangan di bawah ini.' : 'Lihat dan unduh sertifikat peserta. Penerbitan, penerbitan ulang, serta perubahan background dan tanda tangan sertifikat hanya dapat dilakukan admin.'}
                     </p>
                 </div>
                 <a
@@ -207,6 +212,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                             </div>
                         </div>
                     )}
+                    {canIssueCertificates && <>
                     <input
                         ref={templateRef}
                         type="file"
@@ -222,6 +228,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                         {templatePreview ? 'Ganti Template' : 'Upload Template (JPG/PNG)'}
                     </button>
                     <p className="text-[10px] text-gray-400 mt-2 text-center">Ukuran A4 Landscape disarankan. Max 5MB.</p>
+                    </>}
                 </div>
 
                 {/* Tanda Tangan */}
@@ -242,6 +249,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                             </div>
                         </div>
                     )}
+                    {canIssueCertificates && <>
                     <input
                         ref={signatureRef}
                         type="file"
@@ -257,6 +265,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                         {signaturePreview ? 'Ganti Tanda Tangan' : 'Upload Tanda Tangan (PNG Transparan)'}
                     </button>
                     <p className="text-[10px] text-gray-400 mt-2 text-center">PNG transparan latar putih. Max 2MB.</p>
+                    </>}
                 </div>
             </div>
 
@@ -322,39 +331,39 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
                                                     >
                                                         <Download className="w-3.5 h-3.5" /> Unduh PDF
                                                     </a>
-                                                    <button
+                                                    {canIssueCertificates && <button
                                                         onClick={() => openModal(student)}
                                                         className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5"
                                                         title="Edit data sertifikat"
                                                     >
                                                         <Pencil className="w-3.5 h-3.5" /> Edit
-                                                    </button>
-                                                    <button
+                                                    </button>}
+                                                    {canIssueCertificates && <button
                                                         onClick={() => generateCertificate(student.user_id)}
                                                         disabled={generatingId === student.user_id}
                                                         className="btn-gold text-xs px-3 py-1.5"
                                                         title="Generate ulang dengan data tersimpan"
                                                     >
                                                         {generatingId === student.user_id ? 'Menerbitkan...' : 'Regenerate'}
-                                                    </button>
+                                                    </button>}
                                                 </div>
                                             ) : (
                                                 <div className="flex justify-end gap-2">
-                                                    <button
+                                                    {canIssueCertificates && <button
                                                         onClick={() => openModal(student)}
                                                         className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5"
                                                         title="Isi data sertifikat dulu"
                                                     >
                                                         <Pencil className="w-3.5 h-3.5" /> Edit
-                                                    </button>
-                                                    <button
+                                                    </button>}
+                                                    {canIssueCertificates && <button
                                                         onClick={() => generateCertificate(student.user_id)}
                                                         disabled={generatingId === student.user_id}
                                                         className="btn-gold text-xs px-4 py-1.5 flex items-center gap-1.5"
                                                     >
                                                         <FileCheck className="w-3.5 h-3.5" />
                                                         {generatingId === student.user_id ? 'Menerbitkan...' : 'Terbitkan Sertifikat'}
-                                                    </button>
+                                                    </button>}
                                                 </div>
                                             )}
                                         </td>
@@ -375,7 +384,7 @@ export default function TabCertificates({ courseId, enrolledStudents, certificat
             </div>
 
             {/* Modal Edit Data Sertifikat */}
-            {modalStudent && (
+            {canIssueCertificates && modalStudent && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <form
                         onSubmit={submitCertificate}

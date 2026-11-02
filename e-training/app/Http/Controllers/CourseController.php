@@ -22,7 +22,8 @@ class CourseController extends Controller
      */
     public function index(): Response
     {
-        $courses = Course::withTrashed(false)
+        $courses = Course::query()
+            ->when(auth()->user()->role === 'pengajar', fn ($query) => $query->whereHas('teachers', fn ($teachers) => $teachers->where('users.id', auth()->id())))
             ->with(['category', 'modules'])
             ->withCount(['enrollments', 'modules'])
             ->orderBy('created_at', 'desc')
@@ -38,11 +39,12 @@ class CourseController extends Controller
                 'modules_count'    => $c->modules_count,
                 'enrollments_count' => $c->enrollments_count,
                 'created_at'       => $c->created_at->format(self::DISPLAY_DATE_FORMAT),
-                'referral_code'    => $c->referral_code,
+                'referral_code'    => auth()->user()->isAdmin() ? $c->referral_code : null,
             ]);
 
         return Inertia::render('Admin/CreatorStudio', [
             'courses' => $courses,
+            'canCreateCourse' => auth()->user()->isAdmin(),
         ]);
     }
 
@@ -87,6 +89,7 @@ class CourseController extends Controller
         // Load semua data yang dibutuhkan 5 tab
         $course->load([
             'category',
+            'teachers',
             'modules.lessons.quiz.questions.options',
             'modules.lessons.files',
             'enrollments.user',
@@ -124,15 +127,16 @@ class CourseController extends Controller
         ])->values();
 
         // All pelajar (for enroll dropdown)
-        $allStudents = \App\Models\User::where('role', 'peserta')
+        $allStudents = auth()->user()->isAdmin() ? \App\Models\User::where('role', 'peserta')
             ->whereNotIn('id', $course->enrollments->pluck('user_id'))
-            ->get(['id', 'name', 'email', 'organization']);
+            ->get(['id', 'name', 'email', 'organization']) : [];
 
         $categories = Category::all(['id', 'name']);
 
         return Inertia::render('Admin/CourseEditor', [
             'course' => [
                 'id'                => $course->id,
+                'teacher_ids' => auth()->user()->isAdmin() ? $course->teachers->pluck('id')->values() : [],
                 'title'             => $course->title,
                 'slug'              => $course->slug,
                 'description'       => $course->description,
@@ -143,7 +147,7 @@ class CourseController extends Controller
                 'deadline_at'                  => $course->deadline_at?->format(self::DATETIME_LOCAL_FORMAT),
                 'status'                       => $course->status,
                 'category_id'                  => $course->category_id,
-                'referral_code'                => $course->referral_code,
+                'referral_code'                => auth()->user()->isAdmin() ? $course->referral_code : null,
                 'certificate_template_url'     => $course->certificate_template ? Storage::url($course->certificate_template) : null,
                 'certificate_signature_url'    => $course->certificate_signature ? Storage::url($course->certificate_signature) : null,
                 'modules'                      => $modules,
@@ -152,6 +156,11 @@ class CourseController extends Controller
             ],
             'categories'   => $categories,
             'allStudents'  => $allStudents,
+            'canAssignTeachers' => auth()->user()->isAdmin(),
+            'canEditCourseDetails' => auth()->user()->isAdmin(),
+            'canManageParticipants' => auth()->user()->isAdmin(),
+            'canIssueCertificates' => auth()->user()->isAdmin(),
+            'teachers' => auth()->user()->isAdmin() ? \App\Models\User::where('role', 'pengajar')->orderBy('name')->get(['id', 'name', 'email', 'username']) : [],
         ]);
     }
 
@@ -276,6 +285,18 @@ class CourseController extends Controller
     /**
      * Generate ulang referral code.
      */
+    public function uploadThumbnail(Request $request, Course $course): RedirectResponse
+    {
+        $request->validate(['thumbnail' => ['required', 'image', 'max:2048']]);
+        $path = $request->file('thumbnail')->store('thumbnails', 'public');
+        if ($course->thumbnail) {
+            Storage::disk('public')->delete($course->thumbnail);
+        }
+        $course->update(['thumbnail' => $path]);
+
+        return back()->with('success', 'Thumbnail kursus berhasil disimpan.');
+    }
+
     public function regenerateReferral(Course $course): RedirectResponse
     {
         $course->update(['referral_code' => strtoupper(Str::random(8))]);

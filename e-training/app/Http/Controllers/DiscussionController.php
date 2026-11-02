@@ -26,6 +26,7 @@ class DiscussionController extends Controller
      */
     public function index(Lesson $lesson)
     {
+        $this->authorizeTeacherAccess($lesson);
         $messages = $lesson->discussions()
             ->with('user')
             ->orderBy('created_at')
@@ -40,6 +41,7 @@ class DiscussionController extends Controller
      */
     public function store(Request $request, Lesson $lesson)
     {
+        $this->authorizeTeacherAccess($lesson);
         $request->validate([
             'message' => 'nullable|string|max:2000',
             'file'    => 'nullable|file|max:1024|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,png,jpg,jpeg',
@@ -88,11 +90,13 @@ class DiscussionController extends Controller
     /**
      * Hapus pesan (hanya milik sendiri atau admin).
      */
-    public function destroy(Discussion $discussion)
+    public function destroy(Lesson $lesson, Discussion $discussion)
     {
         $user = auth()->user();
 
-        if ($discussion->user_id !== $user->id && !$user->isAdmin()) {
+        abort_unless($discussion->lesson_id === $lesson->id, 404);
+        $this->authorizeTeacherAccess($lesson);
+        if ($discussion->user_id !== $user->id && !$user->canManageCourse($lesson->module->course)) {
             return response()->json(['error' => 'Tidak diizinkan.'], 403);
         }
 
@@ -103,6 +107,14 @@ class DiscussionController extends Controller
         $discussion->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    private function authorizeTeacherAccess(Lesson $lesson): void
+    {
+        $user = auth()->user();
+        if ($user->role === 'pengajar') {
+            abort_unless($user->canManageCourse($lesson->module->course), 403);
+        }
     }
 
     private function looksLikeSqli(string $value): bool
