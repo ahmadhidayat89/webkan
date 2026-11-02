@@ -615,6 +615,66 @@ function QuizScoreResult({ quiz, shownAttempt, autoSubmitted, onReset }) {
     );
 }
 
+function QuestionInput({ question, value, processing, onAnswer }) {
+    if (question.type === 'multiple_choice' || question.type === 'true_false') {
+        return (
+            <div className="space-y-3">
+                {question.options.map((option, oIdx) => (
+                    <button
+                        key={option.id}
+                        disabled={processing}
+                        onClick={() => onAnswer(option.id)}
+                        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${value === option.id
+                            ? 'border-navy-500 bg-navy-50'
+                            : 'border-gray-100 hover:border-navy-200 hover:bg-gray-50'
+                            } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 text-xs font-bold transition-all ${value === option.id
+                            ? 'border-navy-500 bg-navy-500 text-white'
+                            : 'border-gray-300 text-gray-500'
+                            }`}>
+                            {String.fromCodePoint(65 + oIdx)}
+                        </div>
+                        <span className={`text-sm ${value === option.id ? 'text-navy-800 font-medium' : 'text-gray-700'}`}>
+                            {option.option_text}
+                        </span>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    if (question.type === 'short_answer') {
+        return (
+            <div>
+                <input
+                    type="text"
+                    className="w-full p-3 text-sm border-gray-300 rounded-lg focus:ring-navy-500 focus:border-navy-500"
+                    placeholder="Ketik jawaban singkat Anda..."
+                    value={value || ''}
+                    onChange={(e) => onAnswer(e.target.value)}
+                    disabled={processing}
+                    maxLength={255}
+                />
+                <p className="mt-1 text-xs text-right text-gray-400">
+                    {(value || '').length}/255
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <textarea
+            className="w-full p-3 text-sm border-gray-300 rounded-lg focus:ring-navy-500 focus:border-navy-500"
+            rows="6"
+            placeholder="Ketik jawaban Anda di sini..."
+            value={value || ''}
+            onChange={(e) => onAnswer(e.target.value)}
+            disabled={processing}
+        />
+    );
+}
+
 function QuizTakingView({
     lesson,
     quiz,
@@ -680,57 +740,12 @@ function QuizTakingView({
                         <img src={question.image_path} alt="Ilustrasi soal" className="object-contain mb-5 border rounded-lg max-h-64" />
                     )}
 
-                    {/* PERUBAHAN 1: Benar/Salah memakai tampilan pilihan yang sama dengan Pilihan Ganda */}
-                    {(question.type === 'multiple_choice' || question.type === 'true_false') ? (
-                        <div className="space-y-3">
-                            {question.options.map((option, oIdx) => (
-                                <button
-                                    key={option.id}
-                                    disabled={processing}
-                                    onClick={() => onAnswer(option.id)}
-                                    className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${answers[question.id] === option.id
-                                        ? 'border-navy-500 bg-navy-50'
-                                        : 'border-gray-100 hover:border-navy-200 hover:bg-gray-50'
-                                        } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 text-xs font-bold transition-all ${answers[question.id] === option.id
-                                        ? 'border-navy-500 bg-navy-500 text-white'
-                                        : 'border-gray-300 text-gray-500'
-                                        }`}>
-                                        {String.fromCodePoint(65 + oIdx)}
-                                    </div>
-                                    <span className={`text-sm ${answers[question.id] === option.id ? 'text-navy-800 font-medium' : 'text-gray-700'
-                                        }`}>
-                                        {option.option_text}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    ) : question.type === 'short_answer' ? (
-                        <div>
-                            <input
-                                type="text"
-                                className="w-full p-3 text-sm border-gray-300 rounded-lg focus:ring-navy-500 focus:border-navy-500"
-                                placeholder="Ketik jawaban singkat Anda..."
-                                value={answers[question.id] || ''}
-                                onChange={(e) => onAnswer(e.target.value)}
-                                disabled={processing}
-                                maxLength={255}
-                            />
-                            <p className="mt-1 text-xs text-right text-gray-400">
-                                {(answers[question.id] || '').length}/255
-                            </p>
-                        </div>
-                    ) : (
-                        <textarea
-                            className="w-full p-3 text-sm border-gray-300 rounded-lg focus:ring-navy-500 focus:border-navy-500"
-                            rows="6"
-                            placeholder="Ketik jawaban Anda di sini..."
-                            value={answers[question.id] || ''}
-                            onChange={(e) => onAnswer(e.target.value)}
-                            disabled={processing}
-                        />
-                    )}
+                    <QuestionInput
+                        question={question}
+                        value={answers[question.id]}
+                        processing={processing}
+                        onAnswer={onAnswer}
+                    />
 
                     {/* Navigation arrows */}
                     <div className="flex items-center justify-between pt-6 mt-8 border-t border-gray-100">

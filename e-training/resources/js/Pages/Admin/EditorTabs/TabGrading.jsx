@@ -15,6 +15,11 @@ function getScoreBadgeClass(isPassed) {
     return isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
 }
 
+function getScoreStatusLabel(isPassed) {
+    if (isPassed === null) return 'MENUNGGU KOREKSI';
+    return isPassed ? 'LULUS' : 'TIDAK LULUS';
+}
+
 // FIX: ternary bersarang (loading / kosong / daftar) diganti early return
 function AttemptList({ loading, attempts, selectedAttempt, onSelect }) {
     if (loading) {
@@ -22,7 +27,7 @@ function AttemptList({ loading, attempts, selectedAttempt, onSelect }) {
     }
 
     if (attempts.length === 0) {
-        return <div className="p-8 text-center text-gray-400 text-sm">Belum ada yang mengerjakan kuis ini.</div>;
+        return <div className="p-8 text-sm text-center text-gray-400">Belum ada yang mengerjakan kuis ini.</div>;
     }
 
     return (
@@ -35,9 +40,9 @@ function AttemptList({ loading, attempts, selectedAttempt, onSelect }) {
                         aria-pressed={selectedAttempt?.id === attempt.id}
                         className={`w-full text-left p-3 cursor-pointer hover:bg-navy-50 transition-colors ${selectedAttempt?.id === attempt.id ? 'bg-navy-50 border-l-4 border-navy-500' : ''}`}
                     >
-                        <div className="flex justify-between items-start">
+                        <div className="flex items-start justify-between">
                             <div>
-                                <p className="font-bold text-sm text-gray-900">{attempt.user_name}</p>
+                                <p className="text-sm font-bold text-gray-900">{attempt.user_name}</p>
                                 <p className="text-[10px] text-gray-500">{attempt.started_at}</p>
                             </div>
                             <div className="text-right">
@@ -137,11 +142,11 @@ export default function TabGrading({ courseId, modules, initialQuizId = null, in
     };
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 animate-fade-in">
+        <div className="flex flex-col gap-6 lg:flex-row animate-fade-in">
             {/* Left Sidebar: Quiz Selection & List of Attempts */}
-            <div className="w-full lg:w-1/3 flex flex-col gap-4">
-                <div className="card p-4">
-                    <label htmlFor="quiz-select" className="block text-sm font-bold text-gray-700 mb-2">Pilih Kuis</label>
+            <div className="flex flex-col w-full gap-4 lg:w-1/3">
+                <div className="p-4 card">
+                    <label htmlFor="quiz-select" className="block mb-2 text-sm font-bold text-gray-700">Pilih Kuis</label>
                     <select
                         id="quiz-select"
                         value={selectedQuizId}
@@ -159,13 +164,13 @@ export default function TabGrading({ courseId, modules, initialQuizId = null, in
                     <div className="card border border-gray-200 flex-1 min-h-[400px] flex flex-col">
                         <div className="p-3 border-b border-gray-100 bg-gray-50">
                             <div className="relative">
-                                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input type="text" aria-label="Cari nama peserta" placeholder="Cari nama peserta..." className="w-full text-xs pl-9 py-2 border-gray-200 rounded-lg" />
+                                <Search className="absolute w-4 h-4 text-gray-400 -translate-y-1/2 left-3 top-1/2" />
+                                <input type="text" aria-label="Cari nama peserta" placeholder="Cari nama peserta..." className="w-full py-2 text-xs border-gray-200 rounded-lg pl-9" />
                             </div>
                         </div>
                         <div className="flex-1 overflow-y-auto">
                             {loadError && (
-                                <div role="alert" className="m-3 p-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg">
+                                <div role="alert" className="p-3 m-3 text-xs text-red-700 border border-red-200 rounded-lg bg-red-50">
                                     {loadError}
                                 </div>
                             )}
@@ -183,44 +188,42 @@ export default function TabGrading({ courseId, modules, initialQuizId = null, in
             {/* Right Panel: Grading details */}
             <div className="w-full lg:w-2/3">
                 {selectedAttempt ? (
-                    <div className="card overflow-hidden">
-                        <div className="bg-navy-900 text-white p-5">
-                            <div className="flex justify-between items-center">
+                    <div className="overflow-hidden card">
+                        <div className="p-5 text-white bg-navy-900">
+                            <div className="flex items-center justify-between">
                                 <div>
                                     <h3 className="text-lg font-bold">{selectedAttempt.user_name}</h3>
-                                    <p className="text-navy-200 text-sm">{selectedAttempt.user_email}</p>
+                                    <p className="text-sm text-navy-200">{selectedAttempt.user_email}</p>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-3xl font-bold">{selectedAttempt.score}<span className="text-lg text-navy-300">%</span></div>
                                     {/* PERUBAHAN 2: label status menunggu koreksi */}
-                                    <p className="text-xs text-navy-200 uppercase tracking-wider">
-                                        {selectedAttempt.is_passed === null
-                                            ? 'MENUNGGU KOREKSI'
-                                            : (selectedAttempt.is_passed ? 'LULUS' : 'TIDAK LULUS')}
+                                    <p className="text-xs tracking-wider uppercase text-navy-200">
+                                        {getScoreStatusLabel(selectedAttempt.is_passed)}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="p-6 space-y-6 bg-gray-50/50">
-                            <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2">Detail Jawaban</h4>
+                            <h4 className="pb-2 font-bold text-gray-900 border-b border-gray-200">Detail Jawaban</h4>
 
                             {selectedAttempt.answers.map((ans, idx) => (
-                                <div key={ans.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                                <div key={ans.id} className="p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
                                     <div className="flex gap-3">
-                                        <div className="w-8 h-8 flex-shrink-0 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-600 text-sm">
+                                        <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 text-sm font-bold text-gray-600 bg-gray-100 rounded-full">
                                             {idx + 1}
                                         </div>
                                         <div className="flex-1">
-                                            <div className="text-sm font-medium text-gray-900 mb-3" dangerouslySetInnerHTML={{ __html: ans.question_text }}></div>
+                                            <div className="mb-3 text-sm font-medium text-gray-900" dangerouslySetInnerHTML={{ __html: ans.question_text }}></div>
 
                                             {ans.question_image && (
-                                                <img src={ans.question_image} className="max-w-md rounded-lg mb-3 border" alt="Soal" />
+                                                <img src={ans.question_image} className="max-w-md mb-3 border rounded-lg" alt="Soal" />
                                             )}
 
                                             {/* PERUBAHAN 3: semua tipe selain essay (Pilihan Ganda & Benar/Salah) tampil sebagai benar/salah */}
                                             {(ans.question_type !== 'essay' && ans.question_type !== 'short_answer') ? (
-                                                <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                                <div className="flex items-center gap-2 p-3 border border-gray-100 rounded-lg bg-gray-50">
                                                     {ans.is_correct ? (
                                                         <CheckCircle2 className="w-5 h-5 text-green-500" />
                                                     ) : (
@@ -233,28 +236,28 @@ export default function TabGrading({ courseId, modules, initialQuizId = null, in
                                             ) : (
                                                 /* ESSAY GRADING */
                                                 <div className="space-y-3">
-                                                    <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
-                                                        <p className="text-xs font-bold text-blue-800 uppercase mb-1">Jawaban Peserta:</p>
+                                                    <div className="p-3 border border-blue-100 rounded-lg bg-blue-50/50">
+                                                        <p className="mb-1 text-xs font-bold text-blue-800 uppercase">Jawaban Peserta:</p>
                                                         <div className="text-sm text-gray-800 whitespace-pre-wrap">{ans.essay_answer || '(Kosong)'}</div>
                                                     </div>
 
-                                                    <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                                                        <p className="text-xs font-bold text-amber-800 uppercase mb-3">Koreksi Manual Admin</p>
-                                                        <div className="flex flex-col sm:flex-row gap-4">
+                                                    <div className="p-4 border rounded-lg bg-amber-50 border-amber-200">
+                                                        <p className="mb-3 text-xs font-bold uppercase text-amber-800">Koreksi Manual Admin</p>
+                                                        <div className="flex flex-col gap-4 sm:flex-row">
                                                             <div>
-                                                                <label htmlFor={`score-${ans.id}`} className="block text-xs font-medium text-amber-900 mb-1">Nilai (0-100)</label>
+                                                                <label htmlFor={`score-${ans.id}`} className="block mb-1 text-xs font-medium text-amber-900">Nilai (0-100)</label>
                                                                 <input
                                                                     type="number"
-                                                                    className="w-24 text-sm border-amber-300 rounded focus:ring-amber-500 focus:border-amber-500"
+                                                                    className="w-24 text-sm rounded border-amber-300 focus:ring-amber-500 focus:border-amber-500"
                                                                     defaultValue={ans.manual_score ?? ''}
                                                                     id={`score-${ans.id}`}
                                                                     min="0" max="100"
                                                                 />
                                                             </div>
                                                             <div className="flex-1">
-                                                                <label htmlFor={`feedback-${ans.id}`} className="block text-xs font-medium text-amber-900 mb-1">Feedback / Komentar (Opsional)</label>
+                                                                <label htmlFor={`feedback-${ans.id}`} className="block mb-1 text-xs font-medium text-amber-900">Feedback / Komentar (Opsional)</label>
                                                                 <textarea
-                                                                    className="w-full text-sm border-amber-300 rounded focus:ring-amber-500 focus:border-amber-500"
+                                                                    className="w-full text-sm rounded border-amber-300 focus:ring-amber-500 focus:border-amber-500"
                                                                     rows="2"
                                                                     defaultValue={ans.admin_feedback || ''}
                                                                     id={`feedback-${ans.id}`}
@@ -284,8 +287,8 @@ export default function TabGrading({ courseId, modules, initialQuizId = null, in
                     </div>
                 ) : (
                     <div className="card h-full min-h-[400px] flex flex-col items-center justify-center text-gray-400 p-8">
-                        <CheckCircle2 className="w-16 h-16 text-gray-200 mb-4" />
-                        <h3 className="text-lg font-bold text-gray-600 mb-2">Pilih Peserta</h3>
+                        <CheckCircle2 className="w-16 h-16 mb-4 text-gray-200" />
+                        <h3 className="mb-2 text-lg font-bold text-gray-600">Pilih Peserta</h3>
                         <p className="text-sm text-center">Pilih salah satu peserta di sidebar kiri untuk melihat detail jawaban dan memberikan penilaian essay.</p>
                     </div>
                 )}
