@@ -368,6 +368,15 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
         });
     };
 
+    // PERUBAHAN 1: khusus kuis, judul disimpan otomatis saat kolom judul ditinggalkan
+    const saveQuizTitle = () => {
+        const newTitle = title.trim();
+        if (lesson.type !== 'quiz' || !newTitle || newTitle === lesson.title) return;
+        router.patch(route('admin.lessons.update', lesson.id), { title: newTitle }, {
+            preserveScroll: true
+        });
+    };
+
     const uploadFile = (e) => {
         if (e.target.files.length > 0) {
             const form = new FormData();
@@ -393,6 +402,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                     type="text"
                     value={title}
                     onChange={e => setTitle(e.target.value)}
+                    onBlur={saveQuizTitle} // PERUBAHAN 2: simpan otomatis (hanya berlaku untuk kuis)
                     aria-label="Judul materi"
                     className="flex-1 p-0 px-1 text-sm font-medium text-gray-800 bg-transparent border-none rounded focus:ring-1 focus:ring-navy-300"
                     placeholder="Judul materi..."

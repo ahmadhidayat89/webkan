@@ -107,18 +107,26 @@ class GradingController extends Controller
         $answers       = $attempt->answers()->with('question')->get();
         $totalPoints   = $answers->sum(fn($a) => $a->question?->points ?? 1);
         $earnedPoints  = $answers->sum(function ($a) {
-            if ($a->question?->type === 'essay') {
+            if (in_array($a->question?->type, ['essay', 'short_answer'], true)) {
                 return $a->manual_score ? ($a->manual_score / 100) * ($a->question->points ?? 1) : 0;
             }
+            // Pilihan Ganda dan Benar/Salah: dinilai otomatis saat submit
             return $a->is_correct ? ($a->question?->points ?? 1) : 0;
         });
 
         $score = $totalPoints > 0 ? round(($earnedPoints / $totalPoints) * 100) : 0;
 
+        // Masih ada essay yang dijawab tapi belum dinilai: status tetap "menunggu"
+        $hasPendingEssay = $answers->contains(
+            fn($a) => in_array($a->question?->type, ['essay', 'short_answer'], true)
+                && $a->manual_score === null
+                && filled($a->essay_answer)
+        );
+
         $attempt->update([
             'score'            => $score,
             'correct_answers'  => $answers->where('is_correct', true)->count(),
-            'is_passed'        => $score >= ($attempt->quiz?->passing_score ?? 70),
+            'is_passed'        => $hasPendingEssay ? null : $score >= ($attempt->quiz?->passing_score ?? 70),
             'finished_at'      => $attempt->finished_at ?? now(),
         ]);
     }

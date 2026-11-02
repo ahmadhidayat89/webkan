@@ -25,7 +25,7 @@ class QuizAdminController extends Controller
             'show_correct_answers' => 'boolean',
             'start_at'             => 'nullable|date',
             'deadline_at'          => ['nullable', 'date', \Illuminate\Validation\Rule::when($request->filled('start_at'), ['after:start_at'])],
-            'quiz_mode'            => 'required|in:multiple_choice,essay,custom',
+            'quiz_mode'            => 'required|in:multiple_choice,essay,true_false,short_answer,custom',
         ], [
             'deadline_at.after' => 'Deadline harus setelah waktu mulai.',
         ]);
@@ -49,20 +49,7 @@ class QuizAdminController extends Controller
      */
     public function addQuestion(Request $request, Quiz $quiz): RedirectResponse
     {
-        $rules = [
-            'question'    => 'required|string',
-            'type'        => 'required|in:multiple_choice,essay',
-            'points'      => 'required|integer|min:1',
-            'explanation' => 'nullable|string',
-        ];
-
-        if ($request->type === 'multiple_choice') {
-            $rules['options'] = 'required|array|min:2';
-            $rules['options.*.option_text'] = 'required|string';
-            $rules['options.*.is_correct']  = 'required|boolean';
-        }
-
-        $request->validate($rules);
+        $request->validate($this->questionRules($request));
 
         $maxOrder = $quiz->questions()->max('sort_order') ?? 0;
 
@@ -75,40 +62,18 @@ class QuizAdminController extends Controller
                 'explanation' => $request->explanation,
             ]);
 
-            if ($request->type === 'multiple_choice' && $request->options) {
-                foreach ($request->options as $i => $opt) {
-                    QuizOption::create([
-                        'question_id' => $question->id,
-                        'option_text' => $opt['option_text'],
-                        'is_correct'  => $opt['is_correct'],
-                        'sort_order'  => $i,
-                    ]);
-                }
-            }
+            $this->syncOptions($question, $request);
         });
 
         return back()->with('success', 'Soal berhasil ditambahkan.');
     }
 
     /**
-     * Update soal (termasuk opsi pilihan ganda).
+     * Update soal (termasuk opsi).
      */
     public function updateQuestion(Request $request, QuizQuestion $question): RedirectResponse
     {
-        $rules = [
-            'question'    => 'required|string',
-            'type'        => 'required|in:multiple_choice,essay',
-            'points'      => 'required|integer|min:1',
-            'explanation' => 'nullable|string',
-        ];
-
-        if ($request->type === 'multiple_choice') {
-            $rules['options'] = 'required|array|min:2';
-            $rules['options.*.option_text'] = 'required|string';
-            $rules['options.*.is_correct']  = 'required|boolean';
-        }
-
-        $request->validate($rules);
+        $request->validate($this->questionRules($request));
 
         DB::transaction(function () use ($request, $question) {
             $question->update([
@@ -118,24 +83,73 @@ class QuizAdminController extends Controller
                 'explanation' => $request->explanation,
             ]);
 
-            if ($request->type === 'multiple_choice') {
-                // Hapus opsi lama, buat yang baru
-                $question->options()->delete();
-                foreach ($request->options as $i => $opt) {
-                    QuizOption::create([
-                        'question_id' => $question->id,
-                        'option_text' => $opt['option_text'],
-                        'is_correct'  => $opt['is_correct'],
-                        'sort_order'  => $i,
-                    ]);
-                }
-            } else {
-                // Essay: hapus opsi pilihan ganda jika ada
-                $question->options()->delete();
-            }
+            $this->syncOptions($question, $request);
         });
 
         return back()->with('success', 'Soal berhasil diperbarui.');
+    }
+
+    /**
+     * Aturan validasi per tipe soal.
+     */
+    private function questionRules(Request $request): array
+    {
+        $rules = [
+            'question'    => 'required|string',
+            'type'        => 'required|in:multiple_choice,essay,true_false,short_answer',
+            'points'      => 'required|integer|min:1',
+            'explanation' => 'nullable|string',
+        ];
+
+        if ($request->type === 'multiple_choice') {
+            $rules['options']               = 'required|array|min:2|max:8';
+            $rules['options.*.option_text'] = 'required|string';
+            $rules['options.*.is_correct']  = 'required|boolean';
+        }
+
+        if ($request->type === 'true_false') {
+            // Urutan tetap: index 0 = Benar, index 1 = Salah
+            $rules['options']              = 'required|array|size:2';
+            $rules['options.*.is_correct'] = 'required|boolean';
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Simpan ulang opsi sesuai tipe soal.
+     */
+    private function syncOptions(QuizQuestion $question, Request $request): void
+    {
+        $question->options()->delete();
+
+        if ($request->type === 'multiple_choice') {
+            foreach ($request->options as $i => $opt) {
+                QuizOption::create([
+                    'question_id' => $question->id,
+                    'option_text' => $opt['option_text'],
+                    'is_correct'  => $opt['is_correct'],
+                    'sort_order'  => $i,
+                ]);
+            }
+        } elseif ($request->type === 'true_false') {
+            // Teks dipaksa dari server; yang dibaca hanya kunci jawabannya
+            $benarIsCorrect = $request->boolean('options.0.is_correct');
+
+            QuizOption::create([
+                'question_id' => $question->id,
+                'option_text' => 'Benar',
+                'is_correct'  => $benarIsCorrect,
+                'sort_order'  => 0,
+            ]);
+            QuizOption::create([
+                'question_id' => $question->id,
+                'option_text' => 'Salah',
+                'is_correct'  => ! $benarIsCorrect,
+                'sort_order'  => 1,
+            ]);
+        }
+        // essay: tidak punya opsi
     }
 
     /**
@@ -178,8 +192,8 @@ class QuizAdminController extends Controller
     public function reorderQuestions(Request $request): RedirectResponse
     {
         $request->validate([
-            'questions'             => 'required|array',
-            'questions.*.id'        => 'required|exists:quiz_questions,id',
+            'questions'              => 'required|array',
+            'questions.*.id'         => 'required|exists:quiz_questions,id',
             'questions.*.sort_order' => 'required|integer',
         ]);
 

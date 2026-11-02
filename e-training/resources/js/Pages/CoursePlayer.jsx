@@ -680,7 +680,8 @@ function QuizTakingView({
                         <img src={question.image_path} alt="Ilustrasi soal" className="object-contain mb-5 border rounded-lg max-h-64" />
                     )}
 
-                    {question.type === 'multiple_choice' ? (
+                    {/* PERUBAHAN 1: Benar/Salah memakai tampilan pilihan yang sama dengan Pilihan Ganda */}
+                    {(question.type === 'multiple_choice' || question.type === 'true_false') ? (
                         <div className="space-y-3">
                             {question.options.map((option, oIdx) => (
                                 <button
@@ -704,6 +705,21 @@ function QuizTakingView({
                                     </span>
                                 </button>
                             ))}
+                        </div>
+                    ) : question.type === 'short_answer' ? (
+                        <div>
+                            <input
+                                type="text"
+                                className="w-full p-3 text-sm border-gray-300 rounded-lg focus:ring-navy-500 focus:border-navy-500"
+                                placeholder="Ketik jawaban singkat Anda..."
+                                value={answers[question.id] || ''}
+                                onChange={(e) => onAnswer(e.target.value)}
+                                disabled={processing}
+                                maxLength={255}
+                            />
+                            <p className="mt-1 text-xs text-right text-gray-400">
+                                {(answers[question.id] || '').length}/255
+                            </p>
                         </div>
                     ) : (
                         <textarea
@@ -931,12 +947,13 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, onQuizActiveCha
     }
 
     if (submitted) {
-        if (quiz.quiz_mode === 'essay' || quiz.quiz_mode === 'custom') {
+        // PERUBAHAN 2: layar hasil ditentukan dari status attempt (dari server),
+        // bukan dari quiz_mode. is_passed null = masih menunggu koreksi essay.
+        const shownAttempt = result ?? latestAttempt;
+
+        if (shownAttempt?.is_passed === null) {
             return <QuizEssayPendingResult onReset={handleReset} />;
         }
-
-        // Hasil attempt yang baru saja dikirim (dari respons server). latestAttempt hanya cadangan.
-        const shownAttempt = result ?? latestAttempt;
 
         return (
             <QuizScoreResult
