@@ -4,7 +4,7 @@ import AccordionMenu from '@/Components/AccordionMenu';
 import { ArrowLeft, PanelLeftClose, PanelLeft, X, Award } from 'lucide-react';
 import { useState } from 'react';
 
-export default function CoursePlayerLayout({ course, modules, activeLesson, onSelectLesson, serverNow, children }) {
+export default function CoursePlayerLayout({ course, modules, activeLesson, onSelectLesson, serverNow, bypassSchedule, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -84,6 +84,7 @@ export default function CoursePlayerLayout({ course, modules, activeLesson, onSe
                             activeLesson={activeLesson}
                             onSelectLesson={onSelectLesson}
                             serverNow={serverNow}
+                            bypassSchedule={bypassSchedule}
                         />
                     </div>
                 </aside>
@@ -110,6 +111,7 @@ export default function CoursePlayerLayout({ course, modules, activeLesson, onSe
                                     modules={modules}
                                     activeLesson={activeLesson}
                                     serverNow={serverNow}
+                                    bypassSchedule={bypassSchedule}
                                     onSelectLesson={(lesson) => {
                                         onSelectLesson(lesson);
                                         setMobileSidebarOpen(false);

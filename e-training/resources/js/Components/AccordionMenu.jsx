@@ -45,7 +45,7 @@ function getModuleWindow(module, now) {
     return 'open';
 }
 
-export default function AccordionMenu({ modules, activeLesson, onSelectLesson, serverNow }) {
+export default function AccordionMenu({ modules, activeLesson, onSelectLesson, serverNow, bypassSchedule = false }) {
     const now = serverNow ?? Date.now();
     const defaultOpenModules = modules
         .filter((m) => m.lessons.some((l) => l.id === activeLesson?.id))
@@ -61,7 +61,8 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson, s
                 const completedCount = module.lessons.filter((l) => l.isCompleted).length;
                 const totalCount = module.lessons.length;
                 const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-                const windowState = getModuleWindow(module, now);
+                const rawWindowState = getModuleWindow(module, now);
+                const windowState = bypassSchedule ? 'open' : rawWindowState;
                 const locked = Boolean(module.locked_reason) || windowState === 'upcoming';
 
                 return (
