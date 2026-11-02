@@ -335,6 +335,8 @@ function ModuleCompletionSetting({ module }) {
         requires_completion: Boolean(module.requires_completion),
     });
     const isDirty = data.requires_completion !== Boolean(module.requires_completion);
+    const switchId = `module-${module.id}-requires-completion`;
+    const hintId = `${switchId}-hint`;
 
     const save = (event) => {
         event.preventDefault();
@@ -344,26 +346,28 @@ function ModuleCompletionSetting({ module }) {
     return (
         <form onSubmit={save} className="p-4 border border-navy-100 rounded-lg bg-navy-50/50">
             <div className="flex flex-wrap items-center justify-between gap-4">
-                <label className="flex items-start gap-3 cursor-pointer">
+                <div className="flex items-start gap-3">
                     <input
+                        id={switchId}
                         type="checkbox"
                         role="switch"
+                        aria-describedby={hintId}
                         checked={data.requires_completion}
                         onChange={(event) => setData('requires_completion', event.target.checked)}
                         disabled={processing}
                         className="mt-1 rounded border-gray-300 text-navy-600 focus:ring-navy-500"
                     />
-                    <span>
-                        <span className="block text-sm font-semibold text-gray-800">Kerjakan materi secara berurutan</span>
-                        <span className="block mt-1 text-xs text-gray-500">Jika aktif, peserta harus menyelesaikan materi sebelumnya untuk membuka materi berikutnya di modul ini. Contoh: pretes → materi → postes. Urutan mengikuti susunan materi di bawah.</span>
-                    </span>
-                </label>
+                    <div>
+                        <label htmlFor={switchId} className="block text-sm font-semibold text-gray-800 cursor-pointer">Kerjakan materi secara berurutan</label>
+                        <span id={hintId} className="block mt-1 text-xs text-gray-500">Jika aktif, peserta harus menyelesaikan materi sebelumnya untuk membuka materi berikutnya di modul ini. Contoh: pretes → materi → postes. Urutan mengikuti susunan materi di bawah.</span>
+                    </div>
+                </div>
                 <button type="submit" disabled={!isDirty || processing} className="px-4 py-2 text-xs font-bold text-white rounded-lg bg-navy-600 hover:bg-navy-700 disabled:bg-gray-100 disabled:text-gray-400">
                     {processing ? 'Menyimpan...' : 'Simpan Pengaturan'}
                 </button>
             </div>
             {errors.requires_completion && <p role="alert" className="mt-2 text-xs text-red-600">{errors.requires_completion}</p>}
-            {recentlySuccessful && !isDirty && <p role="status" className="mt-2 text-xs text-green-600">Pengaturan tersimpan.</p>}
+            {recentlySuccessful && !isDirty && <output className="block mt-2 text-xs text-green-600">Pengaturan tersimpan.</output>}
         </form>
     );
 }

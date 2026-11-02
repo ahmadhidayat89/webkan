@@ -32,33 +32,43 @@ class ProtectLearningFiles extends Command
 
     private function moveFile(string $path): ?int
     {
-        $public = Storage::disk('public');
-        $private = Storage::disk('local');
         if (! preg_match('#^(lesson-files|discussions)/[a-zA-Z0-9_./-]+$#', $path) || str_contains($path, '..')) {
             $this->error('Jalur lampiran tidak valid.');
 
             return null;
         }
-        if (! $public->exists($path)) {
+        if (! Storage::disk('public')->exists($path)) {
             return 0;
         }
-        $content = $public->get($path);
-        if ($private->exists($path) && $private->get($path) !== $content) {
-            $this->error('Salinan privat berbeda. File publik dipertahankan.');
 
-            return null;
+        return $this->transferFile($path) ? 1 : null;
+    }
+
+    private function transferFile(string $path): bool
+    {
+        $content = Storage::disk('public')->get($path);
+        $error = $this->transferError($path, $content);
+        if ($error !== null) {
+            $this->error($error);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /** Salin ke disk privat, verifikasi, lalu hapus salinan publik. Return pesan error, atau null jika berhasil. */
+    private function transferError(string $path, mixed $content): ?string
+    {
+        $public = Storage::disk('public');
+        $private = Storage::disk('local');
+        if ($private->exists($path) && $private->get($path) !== $content) {
+            return 'Salinan privat berbeda. File publik dipertahankan.';
         }
         if (! $private->put($path, $content) || $private->get($path) !== $content) {
-            $this->error('Verifikasi salinan gagal. File publik dipertahankan.');
-
-            return null;
-        }
-        if (! $public->delete($path)) {
-            $this->error('Salinan publik gagal dipindahkan.');
-
-            return null;
+            return 'Verifikasi salinan gagal. File publik dipertahankan.';
         }
 
-        return 1;
+        return $public->delete($path) ? null : 'Salinan publik gagal dipindahkan.';
     }
 }
