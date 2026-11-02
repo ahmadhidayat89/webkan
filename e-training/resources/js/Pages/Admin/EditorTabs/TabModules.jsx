@@ -315,6 +315,15 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
         });
     };
 
+    // PERUBAHAN 1: khusus kuis, judul disimpan otomatis saat kolom judul ditinggalkan
+    const saveQuizTitle = () => {
+        const newTitle = title.trim();
+        if (lesson.type !== 'quiz' || !newTitle || newTitle === lesson.title) return;
+        router.patch(route('admin.lessons.update', lesson.id), { title: newTitle }, {
+            preserveScroll: true
+        });
+    };
+
     const uploadFile = (e) => {
         if (e.target.files.length > 0) {
             const form = new FormData();
@@ -340,6 +349,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                     type="text"
                     value={title}
                     onChange={e => setTitle(e.target.value)}
+                    onBlur={saveQuizTitle} // PERUBAHAN 2: simpan otomatis (hanya berlaku untuk kuis)
                     aria-label="Judul materi"
                     className="flex-1 text-sm bg-transparent border-none focus:ring-1 focus:ring-navy-300 rounded px-1 p-0 font-medium text-gray-800"
                     placeholder="Judul materi..."
@@ -449,7 +459,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                         </div>
                     )}
 
-                    {/* Tombol Simpan — hanya muncul jika ada perubahan */}
+                    {/* PERUBAHAN 3: tombol Simpan dikembalikan seperti semula (tidak muncul untuk kuis) */}
                     {lesson.type !== 'quiz' && (
                         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                             <p className="text-xs text-gray-400">

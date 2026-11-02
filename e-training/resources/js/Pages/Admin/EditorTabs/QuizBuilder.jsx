@@ -3,6 +3,13 @@ import { router } from '@inertiajs/react';
 import { CheckCircle2, Image as ImageIcon, Plus, Trash2, Save, GripVertical } from 'lucide-react';
 import RichTextEditor from '@/Components/RichTextEditor';
 
+const TYPE_BADGE = {
+    multiple_choice: ['bg-blue-100 text-blue-700', 'Pilihan Ganda'],
+    true_false: ['bg-green-100 text-green-700', 'Benar/Salah'],
+    essay: ['bg-purple-100 text-purple-700', 'Essay'],
+    short_answer: ['bg-amber-100 text-amber-700', 'Jawaban Singkat'],
+};
+
 export default function QuizBuilder({ quiz }) {
     const [settings, setSettings] = useState({
         duration_minutes: quiz.duration_minutes || '',
@@ -35,6 +42,9 @@ export default function QuizBuilder({ quiz }) {
             options: type === 'multiple_choice' ? [
                 { option_text: 'Opsi A', is_correct: true },
                 { option_text: 'Opsi B', is_correct: false },
+            ] : type === 'true_false' ? [
+                { option_text: 'Benar', is_correct: true },
+                { option_text: 'Salah', is_correct: false },
             ] : []
         }, {
             preserveScroll: true,
@@ -118,6 +128,8 @@ export default function QuizBuilder({ quiz }) {
         setQuestions(quiz.questions || []);
     }, [quiz.questions]);
 
+    const badge = activeQ ? (TYPE_BADGE[activeQ.type] || ['bg-gray-100 text-gray-700', activeQ.type]) : null;
+
     return (
         <div className="flex flex-col gap-4">
             {/* Setting bar */}
@@ -131,9 +143,11 @@ export default function QuizBuilder({ quiz }) {
                             onChange={e => setSettings({ ...settings, quiz_mode: e.target.value })}
                             className="w-full py-2 text-sm border-gray-300 rounded-lg"
                         >
-                            <option value="custom">Campuran (PG & Essay)</option>
+                            <option value="custom">Campuran (Semua Tipe)</option>
                             <option value="multiple_choice">Pilihan Ganda Saja</option>
+                            <option value="true_false">Benar/Salah Saja</option>
                             <option value="essay">Essay Saja</option>
+                            <option value="short_answer">Jawaban Singkat Saja</option>
                         </select>
                     </div>
                     <div>
@@ -212,8 +226,8 @@ export default function QuizBuilder({ quiz }) {
                             <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                                 <h3 className="flex items-center gap-3 text-xl font-black text-gray-800">
                                     Soal Nomor {activeQIndex + 1}
-                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${activeQ.type === 'multiple_choice' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                                        {activeQ.type === 'multiple_choice' ? 'Pilihan Ganda' : 'Essay'}
+                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${badge[0]}`}>
+                                        {badge[1]}
                                     </span>
                                 </h3>
                                 <div className="flex items-center gap-3">
@@ -232,7 +246,9 @@ export default function QuizBuilder({ quiz }) {
 
                             {/* Pertanyaan RTE (bukan kontrol native, jadi memakai <p>) */}
                             <div>
-                                <p className="block mb-2 text-sm font-bold text-gray-700">Teks Pertanyaan</p>
+                                <p className="block mb-2 text-sm font-bold text-gray-700">
+                                    {activeQ.type === 'true_false' ? 'Teks Pernyataan' : 'Teks Pertanyaan'}
+                                </p>
                                 <RichTextEditor
                                     key={`q-${activeQ.id || 'new'}-${activeQIndex}`}
                                     content={activeQ.question}
@@ -321,6 +337,43 @@ export default function QuizBuilder({ quiz }) {
                                         )}
                                     </div>
                                 </div>
+                            ) : activeQ.type === 'true_false' ? (
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="block mb-3 text-sm font-bold text-gray-700">Kunci Jawaban</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {activeQ.options.map((opt, oIdx) => (
+                                                <button
+                                                    key={opt.id || oIdx}
+                                                    type="button"
+                                                    onClick={() => updateQuestion({
+                                                        options: activeQ.options.map((o, i) => ({ ...o, is_correct: i === oIdx })),
+                                                    })}
+                                                    className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-bold transition-all ${opt.is_correct
+                                                        ? 'border-green-500 bg-green-50 text-green-700'
+                                                        : 'border-gray-200 bg-white text-gray-500 hover:border-green-300'}`}
+                                                >
+                                                    {opt.is_correct && <CheckCircle2 className="w-5 h-5" />}
+                                                    {opt.option_text}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="mt-2 text-xs text-gray-500">
+                                            Klik jawaban yang benar untuk pernyataan ini. Tulis soal sebagai pernyataan, bukan pertanyaan.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="question_explanation" className="block mb-2 text-sm font-bold text-gray-700">Penjelasan (Opsional)</label>
+                                        <textarea
+                                            id="question_explanation"
+                                            className="w-full p-4 text-sm border-gray-300 rounded-xl bg-gray-50 focus:ring-navy-500 focus:border-navy-500"
+                                            rows="3"
+                                            placeholder="Mengapa pernyataan ini benar/salah..."
+                                            value={activeQ.explanation || ''}
+                                            onChange={e => updateQuestion({ explanation: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
                             ) : (
                                 <div>
                                     <label htmlFor="question_explanation" className="block mb-2 text-sm font-bold text-gray-700">Panduan Jawaban Benar (Info Admin)</label>
@@ -370,8 +423,8 @@ export default function QuizBuilder({ quiz }) {
                                     key={q.id || idx}
                                     onClick={() => setActiveQIndex(idx)}
                                     className={`aspect-square flex items-center justify-center rounded font-bold text-sm transition-all border-2 ${activeQIndex === idx
-                                            ? 'bg-navy-600 text-white border-navy-600 shadow-md transform scale-105 z-10'
-                                            : 'bg-white text-gray-700 border-gray-200 hover:border-navy-400 hover:bg-navy-50'
+                                        ? 'bg-navy-600 text-white border-navy-600 shadow-md transform scale-105 z-10'
+                                        : 'bg-white text-gray-700 border-gray-200 hover:border-navy-400 hover:bg-navy-50'
                                         }`}
                                 >
                                     {idx + 1}
@@ -387,6 +440,16 @@ export default function QuizBuilder({ quiz }) {
                                     <Plus className="w-4 h-4" /> Pilihan Ganda
                                 </button>
                             )}
+                            {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'true_false') && (
+                                <button onClick={() => addQuestion('true_false')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-green-600 transition-colors border-2 border-green-300 border-dashed rounded-lg hover:bg-green-50">
+                                    <Plus className="w-4 h-4" /> Benar / Salah
+                                </button>
+                            )}
+                            {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'short_answer') && (
+                                <button onClick={() => addQuestion('short_answer')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold transition-colors border-2 border-dashed rounded-lg text-amber-600 border-amber-300 hover:bg-amber-50">
+                                    <Plus className="w-4 h-4" /> Jawaban Singkat
+                                </button>
+                            )}
                             {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'essay') && (
                                 <button onClick={() => addQuestion('essay')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-purple-600 transition-colors border-2 border-purple-300 border-dashed rounded-lg hover:bg-purple-50">
                                     <Plus className="w-4 h-4" /> Soal Essay
@@ -400,6 +463,7 @@ export default function QuizBuilder({ quiz }) {
                         <p className="mb-1 font-bold text-gray-800">Informasi:</p>
                         <p>• Pastikan menekan tombol <strong>Simpan Soal Ini</strong> sebelum berpindah ke soal lain.</p>
                         <p>• Maksimal opsi jawaban Pilihan Ganda adalah 8 opsi.</p>
+                        <p>• Benar/Salah punya 2 opsi tetap; Anda hanya menentukan kunci jawabannya.</p>
                     </div>
                 </div>
             </div>

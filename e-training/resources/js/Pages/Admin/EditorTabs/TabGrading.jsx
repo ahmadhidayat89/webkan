@@ -9,6 +9,12 @@ const fetchAttempts = async (quizId) => {
     return res.json();
 };
 
+// PERUBAHAN 1: warna badge nilai; null = menunggu koreksi essay
+function getScoreBadgeClass(isPassed) {
+    if (isPassed === null) return 'bg-amber-100 text-amber-700';
+    return isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+}
+
 // FIX: ternary bersarang (loading / kosong / daftar) diganti early return
 function AttemptList({ loading, attempts, selectedAttempt, onSelect }) {
     if (loading) {
@@ -35,7 +41,7 @@ function AttemptList({ loading, attempts, selectedAttempt, onSelect }) {
                                 <p className="text-[10px] text-gray-500">{attempt.started_at}</p>
                             </div>
                             <div className="text-right">
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${attempt.is_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getScoreBadgeClass(attempt.is_passed)}`}>
                                     {attempt.score}%
                                 </span>
                             </div>
@@ -182,7 +188,12 @@ export default function TabGrading({ courseId, modules }) {
                                 </div>
                                 <div className="text-right">
                                     <div className="text-3xl font-bold">{selectedAttempt.score}<span className="text-lg text-navy-300">%</span></div>
-                                    <p className="text-xs text-navy-200 uppercase tracking-wider">{selectedAttempt.is_passed ? 'LULUS' : 'TIDAK LULUS'}</p>
+                                    {/* PERUBAHAN 2: label status menunggu koreksi */}
+                                    <p className="text-xs text-navy-200 uppercase tracking-wider">
+                                        {selectedAttempt.is_passed === null
+                                            ? 'MENUNGGU KOREKSI'
+                                            : (selectedAttempt.is_passed ? 'LULUS' : 'TIDAK LULUS')}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -203,7 +214,8 @@ export default function TabGrading({ courseId, modules }) {
                                                 <img src={ans.question_image} className="max-w-md rounded-lg mb-3 border" alt="Soal" />
                                             )}
 
-                                            {ans.question_type === 'multiple_choice' ? (
+                                            {/* PERUBAHAN 3: semua tipe selain essay (Pilihan Ganda & Benar/Salah) tampil sebagai benar/salah */}
+                                            {(ans.question_type !== 'essay' && ans.question_type !== 'short_answer') ? (
                                                 <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
                                                     {ans.is_correct ? (
                                                         <CheckCircle2 className="w-5 h-5 text-green-500" />

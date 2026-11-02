@@ -132,7 +132,7 @@ class CoursePlayerController extends Controller
     {
         $validated = $request->validate([
             'answers' => 'array|required',
-            'answers.*' => 'nullable', // answer can be string (essay) or int (option ID)
+            'answers.*' => 'nullable', // string (essay) atau int (ID opsi)
         ]);
 
         $user = auth()->user();
@@ -163,13 +163,18 @@ class CoursePlayerController extends Controller
             }
 
             $attempt = \App\Models\QuizAttempt::create([
-                'user_id' => $user->id, 'quiz_id' => $quiz->id,
-                'score' => 0, 'correct_answers' => 0,
+                'user_id' => $user->id,
+                'quiz_id' => $quiz->id,
+                'score' => 0,
+                'correct_answers' => 0,
                 'total_questions' => $quiz->questions->count(),
-                'is_passed' => null, 'started_at' => now(), 'finished_at' => now(),
+                'is_passed' => null,
+                'started_at' => now(),
+                'finished_at' => now(),
             ]);
-            $correctCount = $this->storeAttemptAnswers($attempt, $quiz, $answers);
-            $this->updateAttemptScore($attempt, $quiz, $correctCount);
+
+            [$correctCount, $earnedPoints] = $this->storeAttemptAnswers($attempt, $quiz, $answers);
+            $this->updateAttemptScore($attempt, $quiz, $correctCount, $earnedPoints);
             $this->completeQuizLesson($quiz, $user, $courseId);
             return null;
         });
@@ -184,39 +189,64 @@ class CoursePlayerController extends Controller
             ->where('quiz_id', $quiz->id)->count() >= $quiz->max_attempts;
     }
 
-    private function storeAttemptAnswers($attempt, $quiz, array $answers): int
+    /**
+     * Simpan semua jawaban. Return [jumlah benar, poin yang didapat].
+     */
+    private function storeAttemptAnswers($attempt, $quiz, array $answers): array
     {
         $correctCount = 0;
+        $earnedPoints = 0;
+
         foreach ($quiz->questions as $question) {
-            $correctCount += $this->storeAttemptAnswer($attempt, $question, $answers[$question->id] ?? null) ? 1 : 0;
+            $isCorrect = $this->storeAttemptAnswer($attempt, $question, $answers[$question->id] ?? null);
+
+            if ($isCorrect) {
+                $correctCount++;
+                $earnedPoints += $question->points ?? 1;
+            }
         }
-        return $correctCount;
+
+        return [$correctCount, $earnedPoints];
     }
 
     private function storeAttemptAnswer($attempt, $question, $answer): bool
     {
-        $isMultipleChoice = $question->type === 'multiple_choice';
-        $correctOption = $isMultipleChoice ? $question->options->firstWhere('is_correct', true) : null;
-        $isCorrect = $isMultipleChoice && $correctOption && $correctOption->id == $answer;
+        // Pilihan Ganda dan Benar/Salah: dinilai otomatis lewat opsi yang dipilih
+        $usesOptions = in_array($question->type, ['multiple_choice', 'true_false'], true);
+
+        $selected = $usesOptions ? $question->options->firstWhere('id', (int) $answer) : null;
+        $isCorrect = $usesOptions && $selected && $selected->is_correct;
+
+        // Essay dan Jawaban Singkat: disimpan sebagai teks, dinilai manual
+        $text = $usesOptions ? null : $answer;
+        if ($question->type === 'short_answer' && $text !== null) {
+            $text = mb_substr((string) $text, 0, 255);
+        }
+
         \App\Models\QuizAttemptAnswer::create([
             'attempt_id' => $attempt->id,
             'question_id' => $question->id,
-            'selected_option_id' => $isMultipleChoice ? $answer : null,
+            'selected_option_id' => $selected?->id,
             'is_correct' => $isCorrect,
-            'essay_answer' => $isMultipleChoice ? null : $answer,
+            'essay_answer' => $text,
         ]);
+
         return $isCorrect;
     }
 
-    private function updateAttemptScore($attempt, $quiz, int $correctCount): void
+    private function updateAttemptScore($attempt, $quiz, int $correctCount, int $earnedPoints): void
     {
-        $totalQuestions = $quiz->questions->count();
-        $score = $totalQuestions > 0 ? round(($correctCount / $totalQuestions) * 100) : 0;
+        $totalPoints = $quiz->questions->sum(fn($q) => $q->points ?? 1);
+        $score = $totalPoints > 0 ? round(($earnedPoints / $totalPoints) * 100) : 0;
+
+        // Menunggu penilaian hanya jika kuis ini benar-benar punya soal essay
+        $hasEssay = $quiz->questions->contains(
+            fn($q) => in_array($q->type, ['essay', 'short_answer'], true)
+        );
+
         $attempt->score = $score;
         $attempt->correct_answers = $correctCount;
-        $attempt->is_passed = in_array($quiz->quiz_mode, ['essay', 'custom'], true)
-            ? null
-            : $score >= $quiz->passing_score;
+        $attempt->is_passed = $hasEssay ? null : $score >= $quiz->passing_score;
         $attempt->save();
     }
 
@@ -238,7 +268,7 @@ class CoursePlayerController extends Controller
     public function markLessonComplete(Request $request, $courseId, $lessonId)
     {
         $user = auth()->user();
-        
+
         // Kursus sudah lewat deadline: tidak bisa menandai selesai
         $course = Course::findOrFail($courseId);
         if ($course->isExpired()) {
@@ -271,19 +301,19 @@ class CoursePlayerController extends Controller
 
         $allLessonIds = $course->modules->flatMap->lessons->pluck('id');
         $totalLessons = $allLessonIds->count();
-        
+
         if ($totalLessons > 0) {
             $completedLessonsCount = \App\Models\LessonProgress::where('user_id', $user->id)
                 ->whereIn('lesson_id', $allLessonIds)
                 ->where('is_completed', true)
                 ->count();
-            
+
             $progressPercent = round(($completedLessonsCount / $totalLessons) * 100);
-            
+
             $enrollment = \App\Models\Enrollment::where('user_id', $user->id)
                 ->where('course_id', $course->id)
                 ->first();
-                
+
             if ($enrollment) {
                 $enrollment->progress_percent = $progressPercent;
                 if ($progressPercent >= 100 && !$enrollment->completed_at) {
