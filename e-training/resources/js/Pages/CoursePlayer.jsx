@@ -348,6 +348,29 @@ function getNavButtonClass(isCurrent, isAnswered) {
     return 'bg-white text-gray-700 border-gray-200 hover:border-navy-300 hover:bg-navy-50';
 }
 
+// Status jendela waktu kuis berdasarkan jam server: 'upcoming' | 'open' | 'closed'
+function getQuizWindow(quiz, serverNow) {
+    const start = quiz.start_at ? Date.parse(quiz.start_at) : null;
+    const end = quiz.deadline_at ? Date.parse(quiz.deadline_at) : null;
+
+    if (start !== null && serverNow < start) return 'upcoming';
+    if (end !== null && serverNow > end) return 'closed';
+    return 'open';
+}
+
+// Batas waktu pengerjaan (dalam jam perangkat): yang lebih awal antara
+// durasi kuis dan tenggat kuis. Contoh: durasi 90 menit, mulai 11.00, tenggat 12.00 -> 12.00.
+function computeAttemptDeadline(quiz, clockOffset) {
+    const serverNow = Date.now() + clockOffset;
+    const minutes = Number(quiz.duration_minutes);
+    const limits = [];
+
+    if (minutes > 0) limits.push(serverNow + minutes * 60 * 1000);
+    if (quiz.deadline_at) limits.push(Date.parse(quiz.deadline_at));
+
+    return limits.length > 0 ? Math.min(...limits) - clockOffset : null;
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Custom hooks, memisahkan efek samping (timer & anti-nyontek) dari
 // render logic supaya tidak menumpuk kompleksitas di satu komponen.
@@ -399,17 +422,61 @@ function useTabSwitchWarning(active) {
     }, [active]);
 }
 
+// Jam server saat ini (ms). Diperbarui tiap detik selama `active`, supaya status
+// "belum dibuka / sudah ditutup" di halaman awal kuis ikut berubah tanpa refresh.
+function useServerNow(clockOffset, active) {
+    const [now, setNow] = useState(() => Date.now() + clockOffset);
+
+    useEffect(() => {
+        if (!active) return undefined;
+
+        const tick = () => setNow(Date.now() + clockOffset);
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [active, clockOffset]);
+
+    return now;
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Sub-komponen kuis: masing-masing menangani satu "layar", supaya QuizContent
 // tidak lagi memuat semua kondisi render sekaligus.
 // ───────────────────────────────────────────────────────────────────────────
 
-// Aksi di bagian bawah intro: pesan kursus berakhir, batas percobaan, atau tombol mulai
-function QuizIntroAction({ isExpired, limitReached, attempts, quiz, onStart }) {
+// Satu baris info kuis (gaya LMS): label di kiri, nilai di kanan
+function QuizInfoRow({ label, value }) {
+    return (
+        <div className="flex flex-col gap-0.5 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <dt className="text-gray-500">{label}</dt>
+            <dd className="font-semibold text-gray-800">{value}</dd>
+        </div>
+    );
+}
+
+// Aksi di bagian bawah intro: pesan (kursus berakhir, kuis belum dibuka / sudah ditutup,
+// batas percobaan) atau tombol mulai
+function QuizIntroAction({ isExpired, windowState, limitReached, attempts, quiz, onStart }) {
     if (isExpired) {
         return (
             <p className="text-sm font-medium text-amber-600">
                 Masa kursus telah berakhir. Kuis tidak dapat dikerjakan, tapi riwayat nilai tetap bisa dilihat.
+            </p>
+        );
+    }
+
+    if (windowState === 'closed') {
+        return (
+            <p className="text-sm font-medium text-red-500">
+                Kuis ini sudah ditutup pada {quiz.deadline_at_label}.
+            </p>
+        );
+    }
+
+    if (windowState === 'upcoming') {
+        return (
+            <p className="text-sm font-medium text-amber-600">
+                Kuis ini akan dibuka pada {quiz.start_at_label}.
             </p>
         );
     }
@@ -436,19 +503,29 @@ function QuizIntroAction({ isExpired, limitReached, attempts, quiz, onStart }) {
     );
 }
 
-function QuizIntro({ lesson, quiz, attempts, isExpired, limitReached, onStart }) {
+function QuizIntro({ lesson, quiz, attempts, isExpired, windowState, limitReached, onStart }) {
     return (
         <div className="max-w-2xl mx-auto animate-fade-in">
             <div className="p-8 text-center border border-gray-200 shadow-sm card">
                 <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full">
                     <HelpCircle className="w-8 h-8 text-purple-600" />
                 </div>
-                <h2 className="mb-2 text-xl font-bold text-gray-900">{lesson.title}</h2>
-                <div className="flex justify-center gap-6 mb-6 text-sm text-gray-600">
-                    <span className="flex items-center gap-1.5"><FileText className="w-4 h-4" /> {quiz.questions.length} Soal</span>
-                    <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {quiz.duration_minutes ? `${quiz.duration_minutes} Menit` : 'Tanpa Batas'}</span>
-                    <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> Min. {quiz.passing_score}</span>
-                </div>
+                <h2 className="mb-5 text-xl font-bold text-gray-900">{lesson.title}</h2>
+
+                <dl className="px-4 mb-4 text-left border border-gray-200 divide-y divide-gray-100 rounded-xl">
+                    <QuizInfoRow label="Jumlah soal" value={`${quiz.questions.length} soal`} />
+                    <QuizInfoRow label="Percobaan diizinkan" value={quiz.max_attempts || 'Tanpa batas'} />
+                    {quiz.start_at_label && <QuizInfoRow label="Kuis dibuka pada" value={quiz.start_at_label} />}
+                    {quiz.deadline_at_label && <QuizInfoRow label="Kuis ditutup pada" value={quiz.deadline_at_label} />}
+                    <QuizInfoRow label="Batas waktu" value={quiz.duration_minutes ? `${quiz.duration_minutes} menit` : 'Tanpa batas'} />
+                    <QuizInfoRow label="Nilai minimum lulus" value={quiz.passing_score} />
+                </dl>
+
+                {Boolean(quiz.duration_minutes) && Boolean(quiz.deadline_at) && (
+                    <p className="mb-6 text-xs text-gray-400">
+                        Pengerjaan otomatis berakhir saat kuis ditutup, walaupun batas waktu belum habis.
+                    </p>
+                )}
 
                 {attempts.length > 0 && (
                     <div className="p-4 mb-6 text-left border border-gray-200 bg-gray-50 rounded-xl">
@@ -478,6 +555,7 @@ function QuizIntro({ lesson, quiz, attempts, isExpired, limitReached, onStart })
 
                 <QuizIntroAction
                     isExpired={isExpired}
+                    windowState={windowState}
                     limitReached={limitReached}
                     attempts={attempts}
                     quiz={quiz}
@@ -548,6 +626,7 @@ function QuizTakingView({
     processing,
     timeLeft,
     onAnswer,
+    onClear,
     onNavigate,
     onSubmit,
 }) {
@@ -663,6 +742,17 @@ function QuizTakingView({
                             <ChevronLeft className="w-4 h-4" /> Sebelumnya
                         </button>
 
+                        {Boolean(answers[question.id]) && (
+                            <button
+                                type="button"
+                                onClick={onClear}
+                                disabled={processing}
+                                className="px-3 py-2 text-xs font-medium text-gray-500 transition-colors hover:text-red-500 disabled:opacity-40"
+                            >
+                                Hapus Jawaban
+                            </button>
+                        )}
+
                         {currentQuestion === totalQuestions - 1 ? (
                             <button
                                 onClick={() => onSubmit()}
@@ -733,7 +823,7 @@ function QuizTakingView({
 // komponen di atas, dan efek samping (timer, anti-tab-switch) dipindah ke hook.
 // ───────────────────────────────────────────────────────────────────────────
 
-function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
+function QuizContent({ lesson, courseId, isExpired, clockOffset, onQuizActiveChange }) {
     const quiz = lesson.quiz;
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState({});
@@ -786,6 +876,7 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
 
     const timeLeft = useQuizCountdown(deadline, started && !submitted, submitRef);
     useTabSwitchWarning(started && !submitted);
+    const now = useServerNow(clockOffset, !started && !submitted);
 
     if (!quiz?.questions?.length) {
         return (
@@ -801,18 +892,28 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
     const totalQuestions = quiz.questions.length;
     const allAnswered = quiz.questions.every(q => answers[q.id] !== undefined && answers[q.id] !== '');
     const attempts = quiz.attempts || [];
+    const windowState = getQuizWindow(quiz, now);
 
     const handleAnswer = (value) => {
         if (submitted || processing) return;
         setAnswers({ ...answers, [question.id]: value });
     };
 
+    const handleClearAnswer = () => {
+        if (submitted || processing) return;
+        setAnswers((prev) => {
+            const next = { ...prev };
+            delete next[question.id];
+            return next;
+        });
+    };
+
     const handleStart = () => {
-        const minutes = Number(quiz.duration_minutes);
-        const hasLimit = minutes > 0;
+        // Jaga-jaga: jendela waktu bisa berubah sejak halaman dimuat
+        if (getQuizWindow(quiz, Date.now() + clockOffset) !== 'open') return;
 
         setAutoSubmitted(false);
-        setDeadline(hasLimit ? Date.now() + minutes * 60 * 1000 : null);
+        setDeadline(computeAttemptDeadline(quiz, clockOffset));
         setStarted(true);
         onQuizActiveChange(true);
     };
@@ -838,6 +939,7 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
                 quiz={quiz}
                 attempts={attempts}
                 isExpired={isExpired}
+                windowState={windowState}
                 limitReached={limitReached}
                 onStart={handleStart}
             />
@@ -875,6 +977,7 @@ function QuizContent({ lesson, courseId, isExpired, onQuizActiveChange }) {
             processing={processing}
             timeLeft={timeLeft}
             onAnswer={handleAnswer}
+            onClear={handleClearAnswer}
             onNavigate={setCurrentQuestion}
             onSubmit={handleSubmit}
         />
@@ -898,6 +1001,8 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
         initialLesson?.id ?? allLessons[0]?.id ?? null
     );
     const [quizActive, setQuizActive] = useState(false);
+    // Selisih jam server dan jam perangkat, supaya batas waktu kuis tidak bergantung jam perangkat
+    const [clockOffset] = useState(() => (course.server_now ? Date.parse(course.server_now) - Date.now() : 0));
     const activeLesson = allLessons.find((l) => l.id === activeLessonId) || null;
 
     if (!activeLesson) {
@@ -951,6 +1056,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                         lesson={activeLesson}
                         courseId={course.id}
                         isExpired={isExpired}
+                        clockOffset={clockOffset}
                         onQuizActiveChange={setQuizActive}
                     />
                 );

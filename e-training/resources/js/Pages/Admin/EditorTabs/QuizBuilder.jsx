@@ -16,6 +16,7 @@ export default function QuizBuilder({ quiz }) {
         passing_score: quiz.passing_score || 70,
         max_attempts: quiz.max_attempts || 3,
         quiz_mode: quiz.quiz_mode || 'custom',
+        start_at: quiz.start_at || '',
         deadline_at: quiz.deadline_at ? new Date(quiz.deadline_at).toISOString().slice(0, 16) : '',
         shuffle_questions: quiz.shuffle_questions || false,
     });
@@ -29,7 +30,8 @@ export default function QuizBuilder({ quiz }) {
     const saveSettings = () => {
         router.patch(route('admin.quizzes.settings', quiz.id), settings, {
             preserveScroll: true,
-            onSuccess: () => alert('Setting kuis berhasil disimpan!')
+            onSuccess: () => alert('Setting kuis berhasil disimpan!'),
+            onError: (errors) => alert(Object.values(errors).join('\n')),
         });
     };
 
@@ -179,6 +181,16 @@ export default function QuizBuilder({ quiz }) {
                             min="1"
                             value={settings.max_attempts}
                             onChange={e => setSettings({ ...settings, max_attempts: e.target.value })}
+                            className="w-full py-2 text-sm border-gray-300 rounded-lg"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="start_at" className="block mb-1 text-xs font-bold text-gray-600 uppercase">Waktu Mulai</label>
+                        <input
+                            id="start_at"
+                            type="datetime-local"
+                            value={settings.start_at}
+                            onChange={e => setSettings({ ...settings, start_at: e.target.value })}
                             className="w-full py-2 text-sm border-gray-300 rounded-lg"
                         />
                     </div>

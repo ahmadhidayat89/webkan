@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 
 class CoursePlayerController extends Controller
 {
+    private const DATETIME_LABEL_FORMAT = 'd M Y, H:i';
+
     /**
      * Show the course player with its modules, lessons, and quizzes.
      */
@@ -54,7 +56,8 @@ class CoursePlayerController extends Controller
             'description' => $course->description,
             'certificate_id' => $certificate ? $certificate->id : null,
             'isExpired' => $course->isExpired(),
-            'deadline_at' => $course->deadline_at?->format('d M Y, H:i'),
+            'server_now' => now()->toIso8601String(),
+            'deadline_at' => $course->deadline_at?->format(self::DATETIME_LABEL_FORMAT),
             'modules' => $course->modules->map(function ($module) use ($lessonProgresses) {
                 return [
                     'id' => $module->id,
@@ -85,6 +88,10 @@ class CoursePlayerController extends Controller
                                 'duration_minutes' => $lesson->quiz->duration_minutes,
                                 'passing_score' => $lesson->quiz->passing_score,
                                 'max_attempts' => $lesson->quiz->max_attempts,
+                                'start_at' => $lesson->quiz->start_at?->toIso8601String(),
+                                'start_at_label' => $lesson->quiz->start_at?->format(self::DATETIME_LABEL_FORMAT),
+                                'deadline_at' => $lesson->quiz->deadline_at?->toIso8601String(),
+                                'deadline_at_label' => $lesson->quiz->deadline_at?->format(self::DATETIME_LABEL_FORMAT),
                                 'shuffle_questions' => $lesson->quiz->shuffle_questions,
                                 'questions' => $lesson->quiz->questions->map(function ($q) {
                                     return [
@@ -109,7 +116,7 @@ class CoursePlayerController extends Controller
                                         'id' => $attempt->id,
                                         'score' => $attempt->score,
                                         'is_passed' => $attempt->is_passed,
-                                        'created_at' => $attempt->created_at->format('d M Y, H:i'),
+                                        'created_at' => $attempt->created_at->format(self::DATETIME_LABEL_FORMAT),
                                     ];
                                 })->values(),
                             ] : null,
@@ -158,6 +165,10 @@ class CoursePlayerController extends Controller
     {
         return DB::transaction(function () use ($answers, $user, $quizId, $courseId) {
             $quiz = \App\Models\Quiz::with('questions.options')->lockForUpdate()->findOrFail($quizId);
+            $blockedReason = $quiz->submissionBlockedReason();
+            if ($blockedReason !== null) {
+                return $blockedReason;
+            }
             if ($this->hasReachedAttemptLimit($quiz, $user->id)) {
                 return 'Anda telah mencapai batas maksimum percobaan untuk kuis ini.';
             }
