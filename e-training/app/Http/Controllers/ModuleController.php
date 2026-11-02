@@ -6,6 +6,7 @@ use App\Models\Module;
 use App\Models\Course;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ModuleController extends Controller
 {
@@ -33,9 +34,23 @@ class ModuleController extends Controller
             'title'        => 'required|string|max:255',
             'description'  => 'nullable|string',
             'is_published' => 'boolean',
+            'start_at'     => 'nullable|date',
+            'end_at'       => [
+                'nullable',
+                'date',
+                Rule::when($request->filled('start_at'), ['after:start_at']),
+            ],
+        ], [
+            'end_at.after' => 'Waktu selesai harus setelah waktu mulai.',
         ]);
 
-        $module->update($request->only(['title', 'description', 'is_published']));
+        $module->update($request->only([
+            'title',
+            'description',
+            'is_published',
+            'start_at',
+            'end_at',
+        ]));
 
         return back()->with('success', 'Modul berhasil diperbarui.');
     }
@@ -54,7 +69,7 @@ class ModuleController extends Controller
         $request->validate([
             'modules'             => 'required|array',
             'modules.*.id'        => 'required|exists:modules,id',
-            'modules.*.sort_order'=> 'required|integer',
+            'modules.*.sort_order' => 'required|integer',
         ]);
 
         foreach ($request->modules as $item) {
