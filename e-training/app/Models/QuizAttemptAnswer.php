@@ -2,11 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class QuizAttemptAnswer extends Model
 {
+    public function scopePendingManualGrading(Builder $query): Builder
+    {
+        return $query->whereNull('manual_score')
+            ->whereNotNull('essay_answer')
+            ->whereRaw('TRIM(essay_answer) <> ?', [''])
+            ->whereHas('question', fn ($questions) => $questions->whereIn('type', ['essay', 'short_answer']));
+    }
+
     protected $fillable = [
         'attempt_id',
         'question_id',

@@ -58,13 +58,7 @@ function AttemptList({ loading, attempts, selectedAttempt, onSelect }) {
     );
 }
 
-export default function TabGrading({ courseId, modules }) {
-    const [selectedQuizId, setSelectedQuizId] = useState('');
-    const [attempts, setAttempts] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [loadError, setLoadError] = useState(null);
-    const [selectedAttempt, setSelectedAttempt] = useState(null);
-
+export default function TabGrading({ courseId, modules, initialQuizId = null, initialAttemptId = null }) {
     // Get all quizzes from modules
     const quizzes = modules.flatMap(m =>
         m.lessons.filter(l => l.type === 'quiz' && l.quiz).map(l => ({
@@ -73,6 +67,12 @@ export default function TabGrading({ courseId, modules }) {
             quiz: l.quiz
         }))
     );
+
+    const [selectedQuizId, setSelectedQuizId] = useState(() => quizzes.some(quiz => quiz.id === initialQuizId) ? String(initialQuizId) : '');
+    const [attempts, setAttempts] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState(null);
+    const [selectedAttempt, setSelectedAttempt] = useState(null);
 
     useEffect(() => {
         if (!selectedQuizId) {
@@ -88,9 +88,13 @@ export default function TabGrading({ courseId, modules }) {
         const load = async () => {
             setLoading(true);
             setLoadError(null);
+            setSelectedAttempt(null);
             try {
                 const data = await fetchAttempts(selectedQuizId);
-                if (!cancelled) setAttempts(data);
+                if (!cancelled) {
+                    setAttempts(data);
+                    setSelectedAttempt(data.find(attempt => attempt.id === initialAttemptId) ?? null);
+                }
             } catch (error) {
                 console.error('Error fetching attempts:', error);
                 if (!cancelled) {
@@ -107,7 +111,7 @@ export default function TabGrading({ courseId, modules }) {
         return () => {
             cancelled = true;
         };
-    }, [selectedQuizId]);
+    }, [selectedQuizId, initialAttemptId]);
 
     const handleSaveManualScore = (answerId, score, feedback) => {
         router.patch(route('admin.grading.essay', answerId), {

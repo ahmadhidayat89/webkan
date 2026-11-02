@@ -9,8 +9,8 @@ import TabCertificates from './EditorTabs/TabCertificates';
 import TabStudents from './EditorTabs/TabStudents';
 import CourseTeacherAssignment from '@/Components/CourseTeacherAssignment';
 
-export default function CourseEditor({ course, categories, allStudents, teachers = [], canAssignTeachers = false, canEditCourseDetails = false, canManageParticipants = false, canIssueCertificates = false }) {
-    const [activeTab, setActiveTab] = useState('detail');
+export default function CourseEditor({ course, categories, allStudents, teachers = [], canAssignTeachers = false, canEditCourseDetails = false, canManageParticipants = false, canIssueCertificates = false, initialTab = 'detail', initialQuizId = null, initialAttemptId = null }) {
+    const [activeTab, setActiveTab] = useState(initialTab === 'grading' ? 'grading' : 'detail');
 
     const tabs = [
         { id: 'detail', label: 'Detail Kursus', icon: FileText },
@@ -85,7 +85,7 @@ export default function CourseEditor({ course, categories, allStudents, teachers
                     </div>
 
                     <div className={activeTab === 'grading' ? 'block' : 'hidden'}>
-                        <TabGrading courseId={course.id} modules={course.modules} />
+                        <TabGrading courseId={course.id} modules={course.modules} initialQuizId={initialQuizId} initialAttemptId={initialAttemptId} />
                     </div>
 
                     <div className={activeTab === 'certificates' ? 'block' : 'hidden'}>

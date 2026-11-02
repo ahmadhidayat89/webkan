@@ -16,7 +16,7 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         if ($user->role === 'pengajar') {
-            return redirect()->route('admin.courses.index');
+            return app(TeacherDashboardController::class)->index($request);
         }
         $eventController = app(CourseEventController::class);
         $upcomingEvents = $eventController->getUpcoming();
