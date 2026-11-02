@@ -120,7 +120,7 @@ export default function CourseTeacherAssignment({ course, teachers }) {
                 {!expanded && <ChevronDown className="h-3.5 w-3.5" />}
             </button>
         </div>
-        {recentlySuccessful && !expanded && <p role="status" className="flex items-center gap-2 border-t border-green-100 bg-green-50 px-5 py-3 text-sm text-green-700"><CheckCircle2 className="h-4 w-4" />Akses pengajar berhasil disimpan.</p>}
+        {recentlySuccessful && !expanded && <output className="flex items-center gap-2 border-t border-green-100 bg-green-50 px-5 py-3 text-sm text-green-700"><CheckCircle2 className="h-4 w-4" />Akses pengajar berhasil disimpan.</output>}
         {expanded && <form id="course-teacher-picker" onSubmit={submit} className="border-t border-gray-100">
             <TeacherPicker teachers={teachers} selectedIds={selectedIds} onToggle={toggleTeacher} disabled={processing} />
             <div className="space-y-3 px-5 py-4">

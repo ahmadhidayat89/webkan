@@ -10,8 +10,24 @@ const TYPE_BADGE = {
     short_answer: ['bg-amber-100 text-amber-700', 'Jawaban Singkat'],
 };
 
-function getInitialQuizSettings(quiz) {
-    return {
+function defaultOptions(type) {
+    if (type === 'multiple_choice') {
+        return [
+            { option_text: 'Opsi A', is_correct: true },
+            { option_text: 'Opsi B', is_correct: false },
+        ];
+    }
+    if (type === 'true_false') {
+        return [
+            { option_text: 'Benar', is_correct: true },
+            { option_text: 'Salah', is_correct: false },
+        ];
+    }
+    return [];
+}
+
+export default function QuizBuilder({ quiz }) {
+    const [settings, setSettings] = useState({
         duration_minutes: quiz.duration_minutes || '',
         passing_score: quiz.passing_score || 70,
         max_attempts: quiz.max_attempts || 3,
@@ -19,30 +35,7 @@ function getInitialQuizSettings(quiz) {
         start_at: quiz.start_at || '',
         deadline_at: quiz.deadline_at ? new Date(quiz.deadline_at).toISOString().slice(0, 16) : '',
         shuffle_questions: quiz.shuffle_questions || false,
-    };
-}
-
-function getQuestionBadge(question) {
-    if (!question) return null;
-    return TYPE_BADGE[question.type] ?? ['bg-gray-100 text-gray-700', question.type];
-}
-
-function createDefaultOptions(type) {
-    const optionsByType = {
-        multiple_choice: [
-            { option_text: 'Opsi A', is_correct: true },
-            { option_text: 'Opsi B', is_correct: false },
-        ],
-        true_false: [
-            { option_text: 'Benar', is_correct: true },
-            { option_text: 'Salah', is_correct: false },
-        ],
-    };
-    return optionsByType[type] ?? [];
-}
-
-export default function QuizBuilder({ quiz }) {
-    const [settings, setSettings] = useState(() => getInitialQuizSettings(quiz));
+    });
 
     const [questions, setQuestions] = useState(quiz.questions || []);
     const [activeQIndex, setActiveQIndex] = useState(0);
@@ -64,7 +57,7 @@ export default function QuizBuilder({ quiz }) {
             question: '<p>Pertanyaan baru</p>',
             type: type,
             points: 1,
-            options: createDefaultOptions(type)
+            options: defaultOptions(type)
         }, {
             preserveScroll: true,
             onSuccess: () => {
@@ -147,7 +140,129 @@ export default function QuizBuilder({ quiz }) {
         setQuestions(quiz.questions || []);
     }, [quiz.questions]);
 
-    const badge = getQuestionBadge(activeQ);
+    const badge = activeQ ? (TYPE_BADGE[activeQ.type] || ['bg-gray-100 text-gray-700', activeQ.type]) : null;
+
+    // Opsi / Kunci Jawaban (hanya dipanggil saat activeQ tersedia)
+    const renderAnswerSection = () => {
+        if (activeQ.type === 'multiple_choice') {
+            return (
+                <div>
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="block text-sm font-bold text-gray-700">Pilihan Jawaban</p>
+                        <span className="text-xs font-medium text-gray-500">{activeQ.options.length}/8 Opsi</span>
+                    </div>
+                    <div className="space-y-3">
+                        {activeQ.options.map((opt, oIdx) => (
+                            <div key={opt.id || oIdx} className="flex items-center gap-3">
+                                <button
+                                    onClick={() => {
+                                        const newOpts = activeQ.options.map((o, i) => ({ ...o, is_correct: i === oIdx }));
+                                        updateQuestion({ options: newOpts });
+                                    }}
+                                    className={`w-8 h-8 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${opt.is_correct ? 'border-green-500 bg-green-500 text-white shadow-sm' : 'border-gray-300 hover:border-green-400 bg-gray-50'}`}
+                                    title={opt.is_correct ? "Jawaban Benar" : "Tandai sebagai Benar"}
+                                    aria-label={opt.is_correct ? `Opsi ${String.fromCodePoint(65 + oIdx)} adalah jawaban benar` : `Tandai opsi ${String.fromCodePoint(65 + oIdx)} sebagai benar`}
+                                >
+                                    {opt.is_correct ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-xs font-bold text-gray-400">{String.fromCodePoint(65 + oIdx)}</span>}
+                                </button>
+                                <input
+                                    type="text"
+                                    aria-label={`Teks opsi ${String.fromCodePoint(65 + oIdx)}`}
+                                    className={`flex-1 border-gray-300 rounded-lg py-2.5 px-4 text-sm focus:ring-navy-500 focus:border-navy-500 transition-colors ${opt.is_correct ? 'bg-green-50 border-green-200' : 'bg-white'}`}
+                                    value={opt.option_text}
+                                    placeholder={`Opsi ${String.fromCodePoint(65 + oIdx)}`}
+                                    onChange={e => {
+                                        const newOpts = activeQ.options.map((o, i) =>
+                                            i === oIdx ? { ...o, option_text: e.target.value } : o
+                                        );
+                                        updateQuestion({ options: newOpts });
+                                    }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        const newOpts = activeQ.options.filter((_, i) => i !== oIdx);
+                                        updateQuestion({ options: newOpts });
+                                    }}
+                                    className="flex items-center justify-center w-10 h-10 text-red-400 transition-colors border border-transparent rounded-lg hover:text-red-600 hover:bg-red-50 hover:border-red-100"
+                                    title="Hapus Opsi"
+                                    aria-label={`Hapus opsi ${String.fromCodePoint(65 + oIdx)}`}
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            </div>
+                        ))}
+
+                        {activeQ.options.length < 8 && (
+                            <button
+                                onClick={() => {
+                                    const newOpts = [...activeQ.options, { option_text: '', is_correct: false }];
+                                    updateQuestion({ options: newOpts });
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 mt-4 text-sm font-bold transition-colors border border-dashed rounded-lg text-navy-600 hover:text-navy-800 hover:bg-navy-50 border-navy-300"
+                            >
+                                <Plus className="w-4 h-4" /> Tambah Opsi Jawaban
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        if (activeQ.type === 'true_false') {
+            return (
+                <div className="space-y-4">
+                    <div>
+                        <p className="block mb-3 text-sm font-bold text-gray-700">Kunci Jawaban</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            {activeQ.options.map((opt, oIdx) => (
+                                <button
+                                    key={opt.id || oIdx}
+                                    type="button"
+                                    onClick={() => updateQuestion({
+                                        options: activeQ.options.map((o, i) => ({ ...o, is_correct: i === oIdx })),
+                                    })}
+                                    className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-bold transition-all ${opt.is_correct
+                                        ? 'border-green-500 bg-green-50 text-green-700'
+                                        : 'border-gray-200 bg-white text-gray-500 hover:border-green-300'}`}
+                                >
+                                    {opt.is_correct && <CheckCircle2 className="w-5 h-5" />}
+                                    {opt.option_text}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">
+                            Klik jawaban yang benar untuk pernyataan ini. Tulis soal sebagai pernyataan, bukan pertanyaan.
+                        </p>
+                    </div>
+                    <div>
+                        <label htmlFor="question_explanation" className="block mb-2 text-sm font-bold text-gray-700">Penjelasan (Opsional)</label>
+                        <textarea
+                            id="question_explanation"
+                            className="w-full p-4 text-sm border-gray-300 rounded-xl bg-gray-50 focus:ring-navy-500 focus:border-navy-500"
+                            rows="3"
+                            placeholder="Mengapa pernyataan ini benar/salah..."
+                            value={activeQ.explanation || ''}
+                            onChange={e => updateQuestion({ explanation: e.target.value })}
+                        />
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div>
+                <label htmlFor="question_explanation" className="block mb-2 text-sm font-bold text-gray-700">Panduan Jawaban Benar (Info Admin)</label>
+                <textarea
+                    id="question_explanation"
+                    className="w-full p-4 text-sm border-gray-300 rounded-xl bg-gray-50 focus:ring-navy-500 focus:border-navy-500"
+                    rows="4"
+                    placeholder="Ketik referensi/panduan jawaban benar untuk mempermudah admin saat mengoreksi..."
+                    value={activeQ.explanation || ''}
+                    onChange={e => updateQuestion({ explanation: e.target.value })}
+                />
+            </div>
+        );
+    };
 
     return (
         <div className="flex flex-col gap-4">
@@ -306,116 +421,7 @@ export default function QuizBuilder({ quiz }) {
                             </div>
 
                             {/* Opsi / Kunci Jawaban */}
-                            {activeQ.type === 'multiple_choice' ? (
-                                <div>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <p className="block text-sm font-bold text-gray-700">Pilihan Jawaban</p>
-                                        <span className="text-xs font-medium text-gray-500">{activeQ.options.length}/8 Opsi</span>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {activeQ.options.map((opt, oIdx) => (
-                                            <div key={opt.id || oIdx} className="flex items-center gap-3">
-                                                <button
-                                                    onClick={() => {
-                                                        const newOpts = activeQ.options.map((o, i) => ({ ...o, is_correct: i === oIdx }));
-                                                        updateQuestion({ options: newOpts });
-                                                    }}
-                                                    className={`w-8 h-8 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${opt.is_correct ? 'border-green-500 bg-green-500 text-white shadow-sm' : 'border-gray-300 hover:border-green-400 bg-gray-50'}`}
-                                                    title={opt.is_correct ? "Jawaban Benar" : "Tandai sebagai Benar"}
-                                                    aria-label={opt.is_correct ? `Opsi ${String.fromCodePoint(65 + oIdx)} adalah jawaban benar` : `Tandai opsi ${String.fromCodePoint(65 + oIdx)} sebagai benar`}
-                                                >
-                                                    {opt.is_correct ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-xs font-bold text-gray-400">{String.fromCodePoint(65 + oIdx)}</span>}
-                                                </button>
-                                                <input
-                                                    type="text"
-                                                    aria-label={`Teks opsi ${String.fromCodePoint(65 + oIdx)}`}
-                                                    className={`flex-1 border-gray-300 rounded-lg py-2.5 px-4 text-sm focus:ring-navy-500 focus:border-navy-500 transition-colors ${opt.is_correct ? 'bg-green-50 border-green-200' : 'bg-white'}`}
-                                                    value={opt.option_text}
-                                                    placeholder={`Opsi ${String.fromCodePoint(65 + oIdx)}`}
-                                                    onChange={e => {
-                                                        const newOpts = activeQ.options.map((o, i) =>
-                                                            i === oIdx ? { ...o, option_text: e.target.value } : o
-                                                        );
-                                                        updateQuestion({ options: newOpts });
-                                                    }}
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        const newOpts = activeQ.options.filter((_, i) => i !== oIdx);
-                                                        updateQuestion({ options: newOpts });
-                                                    }}
-                                                    className="flex items-center justify-center w-10 h-10 text-red-400 transition-colors border border-transparent rounded-lg hover:text-red-600 hover:bg-red-50 hover:border-red-100"
-                                                    title="Hapus Opsi"
-                                                    aria-label={`Hapus opsi ${String.fromCodePoint(65 + oIdx)}`}
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        ))}
-
-                                        {activeQ.options.length < 8 && (
-                                            <button
-                                                onClick={() => {
-                                                    const newOpts = [...activeQ.options, { option_text: '', is_correct: false }];
-                                                    updateQuestion({ options: newOpts });
-                                                }}
-                                                className="flex items-center gap-2 px-4 py-2 mt-4 text-sm font-bold transition-colors border border-dashed rounded-lg text-navy-600 hover:text-navy-800 hover:bg-navy-50 border-navy-300"
-                                            >
-                                                <Plus className="w-4 h-4" /> Tambah Opsi Jawaban
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : activeQ.type === 'true_false' ? (
-                                <div className="space-y-4">
-                                    <div>
-                                        <p className="block mb-3 text-sm font-bold text-gray-700">Kunci Jawaban</p>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {activeQ.options.map((opt, oIdx) => (
-                                                <button
-                                                    key={opt.id || oIdx}
-                                                    type="button"
-                                                    onClick={() => updateQuestion({
-                                                        options: activeQ.options.map((o, i) => ({ ...o, is_correct: i === oIdx })),
-                                                    })}
-                                                    className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-bold transition-all ${opt.is_correct
-                                                        ? 'border-green-500 bg-green-50 text-green-700'
-                                                        : 'border-gray-200 bg-white text-gray-500 hover:border-green-300'}`}
-                                                >
-                                                    {opt.is_correct && <CheckCircle2 className="w-5 h-5" />}
-                                                    {opt.option_text}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <p className="mt-2 text-xs text-gray-500">
-                                            Klik jawaban yang benar untuk pernyataan ini. Tulis soal sebagai pernyataan, bukan pertanyaan.
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <label htmlFor="question_explanation" className="block mb-2 text-sm font-bold text-gray-700">Penjelasan (Opsional)</label>
-                                        <textarea
-                                            id="question_explanation"
-                                            className="w-full p-4 text-sm border-gray-300 rounded-xl bg-gray-50 focus:ring-navy-500 focus:border-navy-500"
-                                            rows="3"
-                                            placeholder="Mengapa pernyataan ini benar/salah..."
-                                            value={activeQ.explanation || ''}
-                                            onChange={e => updateQuestion({ explanation: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div>
-                                    <label htmlFor="question_explanation" className="block mb-2 text-sm font-bold text-gray-700">Panduan Jawaban Benar (Info Admin)</label>
-                                    <textarea
-                                        id="question_explanation"
-                                        className="w-full p-4 text-sm border-gray-300 rounded-xl bg-gray-50 focus:ring-navy-500 focus:border-navy-500"
-                                        rows="4"
-                                        placeholder="Ketik referensi/panduan jawaban benar untuk mempermudah admin saat mengoreksi..."
-                                        value={activeQ.explanation || ''}
-                                        onChange={e => updateQuestion({ explanation: e.target.value })}
-                                    />
-                                </div>
-                            )}
+                            {renderAnswerSection()}
 
                             {/* Tombol Aksi Bawah */}
                             <div className="flex flex-col items-center justify-between gap-4 pt-6 mt-6 border-t border-gray-200 sm:flex-row">

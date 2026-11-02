@@ -285,7 +285,7 @@ class CoursePlayerController extends Controller
     /**
      * Mark a lesson as completed for the current user.
      */
-    public function markLessonComplete(Request $request, $courseId, $lessonId)
+    public function markLessonComplete($courseId, $lessonId)
     {
         $user = auth()->user();
 
