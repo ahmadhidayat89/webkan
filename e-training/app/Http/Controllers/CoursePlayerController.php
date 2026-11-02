@@ -66,8 +66,15 @@ class CoursePlayerController extends Controller
                     'id' => $module->id,
                     'title' => $module->title,
                     'description' => $module->description,
-                    'lessons' => $module->lessons->map(function ($lesson) use ($lessonProgresses) {
+                    'start_at' => $module->start_at?->toIso8601String(),
+                    'start_at_label' => $module->start_at?->format(self::DATETIME_LABEL_FORMAT),
+                    'end_at' => $module->end_at?->toIso8601String(),
+                    'end_at_label' => $module->end_at?->format(self::DATETIME_LABEL_FORMAT),
+                    'lessons' => $module->lessons->map(function ($lesson) use ($lessonProgresses, $module) {
                         $isCompleted = isset($lessonProgresses[$lesson->id]) ? $lessonProgresses[$lesson->id]->is_completed : false;
+                        // Jadwal kuis tidak boleh keluar dari jadwal modulnya
+                        $quizStart = collect([$lesson->quiz?->start_at, $module->start_at])->filter()->max();
+                        $quizEnd = collect([$lesson->quiz?->deadline_at, $module->end_at])->filter()->min();
                         return [
                             'id' => $lesson->id,
                             'title' => $lesson->title,
@@ -91,10 +98,10 @@ class CoursePlayerController extends Controller
                                 'duration_minutes' => $lesson->quiz->duration_minutes,
                                 'passing_score' => $lesson->quiz->passing_score,
                                 'max_attempts' => $lesson->quiz->max_attempts,
-                                'start_at' => $lesson->quiz->start_at?->toIso8601String(),
-                                'start_at_label' => $lesson->quiz->start_at?->format(self::DATETIME_LABEL_FORMAT),
-                                'deadline_at' => $lesson->quiz->deadline_at?->toIso8601String(),
-                                'deadline_at_label' => $lesson->quiz->deadline_at?->format(self::DATETIME_LABEL_FORMAT),
+                                'start_at' => $quizStart?->toIso8601String(),
+                                'start_at_label' => $quizStart?->format(self::DATETIME_LABEL_FORMAT),
+                                'deadline_at' => $quizEnd?->toIso8601String(),
+                                'deadline_at_label' => $quizEnd?->format(self::DATETIME_LABEL_FORMAT),
                                 'shuffle_questions' => $lesson->quiz->shuffle_questions,
                                 'questions' => $lesson->quiz->questions->map(function ($q) {
                                     return [
@@ -302,6 +309,14 @@ class CoursePlayerController extends Controller
 
         $lesson = \App\Models\Lesson::findOrFail($lessonId);
         abort_unless($lesson->module->course_id == $courseId, 404);
+
+                // Modul harus sedang dibuka (belum dibuka / sudah ditutup: tidak bisa ditandai selesai)
+        $module = \App\Models\Module::whereHas('lessons', fn ($q) => $q->where('id', $lessonId))->first();
+        if ($module && ! $module->isOpen()) {
+            return back()->withErrors([
+                'message' => 'Modul ini sedang tidak dibuka, jadi materi tidak bisa ditandai selesai.',
+            ]);
+        }
 
         // 1. Mark lesson as completed
         \App\Models\LessonProgress::updateOrCreate(

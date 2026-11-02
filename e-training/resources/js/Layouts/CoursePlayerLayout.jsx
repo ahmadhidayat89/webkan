@@ -4,7 +4,7 @@ import AccordionMenu from '@/Components/AccordionMenu';
 import { ArrowLeft, PanelLeftClose, PanelLeft, X, Award } from 'lucide-react';
 import { useState } from 'react';
 
-export default function CoursePlayerLayout({ course, modules, activeLesson, onSelectLesson, children }) {
+export default function CoursePlayerLayout({ course, modules, activeLesson, onSelectLesson, serverNow, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -13,12 +13,12 @@ export default function CoursePlayerLayout({ course, modules, activeLesson, onSe
     const progressPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="flex flex-col min-h-screen bg-gray-50">
             {/* Top Bar */}
-            <header className="h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-3 z-40 flex-shrink-0">
+            <header className="z-40 flex items-center flex-shrink-0 gap-3 px-4 bg-white border-b border-gray-200 h-14">
                 <Link
                     href={route('dashboard')}
-                    className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                    className="flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-700"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     <span className="hidden sm:inline">Kembali</span>
@@ -33,9 +33,9 @@ export default function CoursePlayerLayout({ course, modules, activeLesson, onSe
                         {course?.title || 'Kursus'}
                     </h1>
                     <div className="flex items-center gap-2">
-                        <div className="w-24 h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="w-24 h-1 overflow-hidden bg-gray-100 rounded-full">
                             <div
-                                className="h-full bg-gradient-to-r from-navy-500 to-navy-400 rounded-full transition-all duration-500"
+                                className="h-full transition-all duration-500 rounded-full bg-gradient-to-r from-navy-500 to-navy-400"
                                 style={{ width: `${progressPercent}%` }}
                             />
                         </div>
@@ -72,30 +72,30 @@ export default function CoursePlayerLayout({ course, modules, activeLesson, onSe
 
             <div className="flex flex-1 overflow-hidden">
                 {/* Desktop Sidebar */}
-                <aside className={`hidden md:flex flex-col bg-white border-r border-gray-200 transition-all duration-300 flex-shrink-0 ${
-                    sidebarOpen ? 'w-80' : 'w-0 overflow-hidden'
-                }`}>
+                <aside className={`hidden md:flex flex-col bg-white border-r border-gray-200 transition-all duration-300 flex-shrink-0 ${sidebarOpen ? 'w-80' : 'w-0 overflow-hidden'
+                    }`}>
                     <div className="p-4 border-b border-gray-100">
-                        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Materi Kursus</h2>
+                        <h2 className="mb-1 text-xs font-semibold tracking-wider text-gray-400 uppercase">Materi Kursus</h2>
                         <p className="text-xs text-gray-500">{completedLessons} dari {totalLessons} selesai</p>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-3">
+                    <div className="flex-1 p-3 overflow-y-auto">
                         <AccordionMenu
                             modules={modules}
                             activeLesson={activeLesson}
                             onSelectLesson={onSelectLesson}
+                            serverNow={serverNow}
                         />
                     </div>
                 </aside>
 
                 {/* Mobile Sidebar Overlay */}
                 {mobileSidebarOpen && (
-                    <div className="md:hidden fixed inset-0 z-50 flex">
-                        <button type="button" aria-label="Tutup navigasi kursus" className="absolute inset-0 border-0 bg-black/40 p-0" onClick={() => setMobileSidebarOpen(false)} />
+                    <div className="fixed inset-0 z-50 flex md:hidden">
+                        <button type="button" aria-label="Tutup navigasi kursus" className="absolute inset-0 p-0 border-0 bg-black/40" onClick={() => setMobileSidebarOpen(false)} />
                         <div className="relative w-80 max-w-[85vw] bg-white shadow-xl flex flex-col animate-slide-in-left">
-                            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                            <div className="flex items-center justify-between p-4 border-b border-gray-100">
                                 <div>
-                                    <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Materi Kursus</h2>
+                                    <h2 className="mb-1 text-xs font-semibold tracking-wider text-gray-400 uppercase">Materi Kursus</h2>
                                     <p className="text-xs text-gray-500">{completedLessons} dari {totalLessons} selesai</p>
                                 </div>
                                 <button
@@ -105,10 +105,11 @@ export default function CoursePlayerLayout({ course, modules, activeLesson, onSe
                                     <X className="w-4 h-4 text-gray-500" />
                                 </button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-3">
+                            <div className="flex-1 p-3 overflow-y-auto">
                                 <AccordionMenu
                                     modules={modules}
                                     activeLesson={activeLesson}
+                                    serverNow={serverNow}
                                     onSelectLesson={(lesson) => {
                                         onSelectLesson(lesson);
                                         setMobileSidebarOpen(false);

@@ -358,6 +358,20 @@ function getQuizWindow(quiz, serverNow) {
     return 'open';
 }
 
+// Status jendela waktu modul berdasarkan jam server: 'upcoming' | 'open' | 'closed'
+function getModuleWindow(module, serverNow) {
+    const start = module.start_at ? Date.parse(module.start_at) : null;
+    const end = module.end_at ? Date.parse(module.end_at) : null;
+
+    if (start !== null && serverNow < start) return 'upcoming';
+    if (end !== null && serverNow > end) return 'closed';
+    return 'open';
+}
+
+function allModulesHaveSchedule(modules) {
+    return (modules || []).some((m) => m.start_at || m.end_at);
+}
+
 // Batas waktu pengerjaan (dalam jam perangkat): yang lebih awal antara
 // durasi kuis dan tenggat kuis. Contoh: durasi 90 menit, mulai 11.00, tenggat 12.00 -> 12.00.
 function computeAttemptDeadline(quiz, clockOffset) {
@@ -999,6 +1013,22 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, onQuizActiveCha
     );
 }
 
+function ModuleLockedNotice({ module }) {
+    return (
+        <div className="max-w-2xl mx-auto animate-fade-in">
+            <div className="p-8 text-center border shadow-sm border-amber-200 card bg-amber-50/50">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100">
+                    <Clock className="w-8 h-8 text-amber-600" />
+                </div>
+                <h2 className="mb-2 text-xl font-bold text-gray-900">Modul Belum Dibuka</h2>
+                <p className="text-sm text-gray-600">
+                    {module.title} akan dibuka pada <span className="font-bold">{module.start_at_label}</span>.
+                </p>
+            </div>
+        </div>
+    );
+}
+
 export default function CoursePlayer({ courseData, initialLessonId }) {
     const course = courseData;
     const isExpired = !!course.isExpired;
@@ -1018,6 +1048,8 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
     const [quizActive, setQuizActive] = useState(false);
     // Selisih jam server dan jam perangkat, supaya batas waktu kuis tidak bergantung jam perangkat
     const [clockOffset] = useState(() => (course.server_now ? Date.parse(course.server_now) - Date.now() : 0));
+    const hasModuleSchedule = allModulesHaveSchedule(course.modules);
+    const now = useServerNow(clockOffset, hasModuleSchedule);
     const activeLesson = allLessons.find((l) => l.id === activeLessonId) || null;
 
     if (!activeLesson) {
@@ -1040,6 +1072,8 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
     }
 
     const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id);
+    const activeModule = course.modules?.find((m) => m.lessons.some((l) => l.id === activeLesson.id));
+    const moduleWindow = activeModule ? getModuleWindow(activeModule, now) : 'open';
 
     const handlePrev = () => {
         if (currentIndex > 0) setActiveLessonId(allLessons[currentIndex - 1].id);
@@ -1049,7 +1083,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
     };
 
     const handleComplete = () => {
-        if (activeLesson.isCompleted || isExpired) return;
+        if (activeLesson.isCompleted || isExpired || moduleWindow !== 'open') return;
 
         router.post(
             route('course.lesson.complete', { course: course.id, lesson: activeLesson.id }),
@@ -1087,12 +1121,19 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                 course={course}
                 modules={course.modules}
                 activeLesson={activeLesson}
+                serverNow={now}
                 onSelectLesson={(lesson) => {
                     if (quizActive && lesson.id !== activeLesson.id) {
                         alert(
                             '⚠️ Kuis sedang berlangsung.\n\n' +
                             'Anda tidak dapat berpindah ke materi lain sebelum menyelesaikan dan mengirim kuis.'
                         );
+                        return;
+                    }
+
+                    const targetModule = course.modules?.find((m) => m.lessons.some((l) => l.id === lesson.id));
+                    if (targetModule && getModuleWindow(targetModule, now) === 'upcoming') {
+                        alert(`Modul ini baru dibuka pada ${targetModule.start_at_label}.`);
                         return;
                     }
 
@@ -1109,7 +1150,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                         </div>
                     )}
 
-                    {renderContent()}
+                    {moduleWindow === 'upcoming' ? <ModuleLockedNotice module={activeModule} /> : renderContent()}
 
                     {/* Navigation between lessons */}
                     {activeLesson.type !== 'quiz' && (
@@ -1124,8 +1165,8 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                             </button>
                             <button
                                 onClick={handleComplete}
-                                disabled={activeLesson.isCompleted || isExpired}
-                                className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors border w-full sm:w-auto ${(activeLesson.isCompleted || isExpired)
+                                disabled={activeLesson.isCompleted || isExpired || moduleWindow !== 'open'}
+                                className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors border w-full sm:w-auto ${(activeLesson.isCompleted || isExpired || moduleWindow !== 'open')
                                     ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
                                     : 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200'
                                     }`}

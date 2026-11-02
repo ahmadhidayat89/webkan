@@ -52,6 +52,21 @@ class Module extends Model
     }
 
     /**
+     * Apakah jawaban kuis masih diterima: sebelum akhir modul, plus toleransi
+     * singkat untuk jawaban otomatis yang dikirim tepat saat modul ditutup.
+     */
+    public function acceptsSubmission(): bool
+    {
+        if ($this->end_at === null) {
+            return true;
+        }
+
+        return now()->lessThanOrEqualTo(
+            $this->end_at->copy()->addSeconds(Quiz::SUBMIT_GRACE_SECONDS)
+        );
+    }
+
+    /**
      * Kursus yang memiliki modul ini.
      */
     public function course(): BelongsTo

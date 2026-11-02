@@ -30,6 +30,11 @@ class QuizAdminController extends Controller
             'deadline_at.after' => 'Deadline harus setelah waktu mulai.',
         ]);
 
+        $scheduleError = $this->moduleScheduleError($quiz, $request->input('start_at'), $request->input('deadline_at'));
+        if ($scheduleError !== null) {
+            return back()->withErrors(['deadline_at' => $scheduleError]);
+        }
+
         $quiz->update($request->only([
             'duration_minutes',
             'passing_score',
@@ -42,6 +47,37 @@ class QuizAdminController extends Controller
         ]));
 
         return back()->with('success', 'Setting kuis disimpan.');
+    }
+
+    /**
+     * Pesan error kalau jadwal kuis keluar dari jadwal modulnya, atau null kalau aman.
+     */
+    private function moduleScheduleError(Quiz $quiz, ?string $startAt, ?string $deadlineAt): ?string
+    {
+        $module = \App\Models\Module::whereHas('lessons', fn($q) => $q->where('id', $quiz->lesson_id))->first();
+        if ($module === null) {
+            return null;
+        }
+
+        $start = $startAt ? \Carbon\Carbon::parse($startAt) : null;
+        $end = $deadlineAt ? \Carbon\Carbon::parse($deadlineAt) : null;
+        $opens = $module->start_at;
+        $closes = $module->end_at;
+
+        $checks = [
+            [$start && $opens && $start->lt($opens), 'Waktu mulai kuis tidak boleh lebih awal dari modul dibuka (' . $opens?->format('d M Y, H:i') . ').'],
+            [$end && $opens && $end->lt($opens), 'Deadline kuis tidak boleh lebih awal dari modul dibuka (' . $opens?->format('d M Y, H:i') . ').'],
+            [$start && $closes && $start->gt($closes), 'Waktu mulai kuis tidak boleh melewati modul ditutup (' . $closes?->format('d M Y, H:i') . ').'],
+            [$end && $closes && $end->gt($closes), 'Deadline kuis tidak boleh melewati modul ditutup (' . $closes?->format('d M Y, H:i') . ').'],
+        ];
+
+        foreach ($checks as [$invalid, $message]) {
+            if ($invalid) {
+                return $message;
+            }
+        }
+
+        return null;
     }
 
     /**

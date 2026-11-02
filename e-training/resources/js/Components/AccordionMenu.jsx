@@ -1,5 +1,5 @@
 import * as Accordion from '@radix-ui/react-accordion';
-import { ChevronDown, Video, FileText, HelpCircle, CheckCircle2, Circle, Play } from 'lucide-react';
+import { ChevronDown, Video, FileText, HelpCircle, CheckCircle2, Circle, Play, Lock, Clock } from 'lucide-react';
 
 const typeIcons = {
     video: Video,
@@ -35,7 +35,18 @@ function StatusIcon({ isCompleted, isActive }) {
     return <Circle className="w-4 h-4 text-gray-300" />;
 }
 
-export default function AccordionMenu({ modules, activeLesson, onSelectLesson }) {
+// Status jendela waktu modul berdasarkan jam server: 'upcoming' | 'open' | 'closed'
+function getModuleWindow(module, now) {
+    const start = module.start_at ? Date.parse(module.start_at) : null;
+    const end = module.end_at ? Date.parse(module.end_at) : null;
+
+    if (start !== null && now < start) return 'upcoming';
+    if (end !== null && now > end) return 'closed';
+    return 'open';
+}
+
+export default function AccordionMenu({ modules, activeLesson, onSelectLesson, serverNow }) {
+    const now = serverNow ?? Date.now();
     const defaultOpenModules = modules
         .filter((m) => m.lessons.some((l) => l.id === activeLesson?.id))
         .map((m) => `module-${m.id}`);
@@ -50,15 +61,16 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson })
                 const completedCount = module.lessons.filter((l) => l.isCompleted).length;
                 const totalCount = module.lessons.length;
                 const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+                const windowState = getModuleWindow(module, now);
 
                 return (
                     <Accordion.Item
                         key={module.id}
                         value={`module-${module.id}`}
-                        className="border border-gray-100 rounded-lg overflow-hidden bg-white"
+                        className="overflow-hidden bg-white border border-gray-100 rounded-lg"
                     >
                         <Accordion.Header>
-                            <Accordion.Trigger className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors group">
+                            <Accordion.Trigger className="flex items-center justify-between w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 group">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="text-[10px] font-semibold text-navy-500 uppercase tracking-wider">
@@ -67,25 +79,53 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson })
                                         <span className="text-[10px] text-gray-400">
                                             {completedCount}/{totalCount} selesai
                                         </span>
+                                        {windowState === 'upcoming' && <Lock className="w-3 h-3 text-amber-500" />}
+                                        {windowState === 'closed' && <Clock className="w-3 h-3 text-gray-400" />}
                                     </div>
                                     <h3 className="text-sm font-semibold text-gray-800 truncate">
                                         {module.title}
                                     </h3>
+                                    {windowState === 'upcoming' && (
+                                        <p className="mt-0.5 text-[10px] font-medium text-amber-600">
+                                            Dibuka pada {module.start_at_label}
+                                        </p>
+                                    )}
+                                    {windowState === 'closed' && (
+                                        <p className="mt-0.5 text-[10px] font-medium text-gray-400">
+                                            Ditutup pada {module.end_at_label}
+                                        </p>
+                                    )}
                                     {/* Mini progress bar */}
                                     <div className="w-full h-0.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
                                         <div
-                                            className="h-full bg-gradient-to-r from-navy-500 to-navy-400 rounded-full transition-all duration-500"
+                                            className="h-full transition-all duration-500 rounded-full bg-gradient-to-r from-navy-500 to-navy-400"
                                             style={{ width: `${progressPercent}%` }}
                                         />
                                     </div>
                                 </div>
-                                <ChevronDown className="w-4 h-4 text-gray-400 accordion-chevron flex-shrink-0" />
+                                <ChevronDown className="flex-shrink-0 w-4 h-4 text-gray-400 accordion-chevron" />
                             </Accordion.Trigger>
                         </Accordion.Header>
 
-                        <Accordion.Content className="accordion-content overflow-hidden">
+                        <Accordion.Content className="overflow-hidden accordion-content">
                             <div className="px-2 pb-2 space-y-0.5">
-                                {module.lessons.map((lesson) => {
+                                {windowState === 'upcoming' && (
+                                    <div className="flex items-start gap-2 p-3 mb-1 border rounded-lg border-amber-200 bg-amber-50">
+                                        <Lock className="w-4 h-4 mt-0.5 text-amber-600 flex-shrink-0" />
+                                        <p className="text-xs text-amber-700">
+                                            Modul ini belum dibuka. Materi dapat diakses mulai <span className="font-bold">{module.start_at_label}</span>.
+                                        </p>
+                                    </div>
+                                )}
+                                {windowState === 'closed' && (
+                                    <div className="flex items-start gap-2 p-3 mb-1 border border-gray-200 rounded-lg bg-gray-50">
+                                        <Clock className="w-4 h-4 mt-0.5 text-gray-500 flex-shrink-0" />
+                                        <p className="text-xs text-gray-600">
+                                            Akses modul ditutup pada <span className="font-bold">{module.end_at_label}</span>. Materi masih bisa dibaca, tapi kuis tidak bisa dikerjakan.
+                                        </p>
+                                    </div>
+                                )}
+                                {(windowState === 'upcoming' ? [] : module.lessons).map((lesson) => {
                                     const Icon = typeIcons[lesson.type] || FileText;
                                     const isActive = activeLesson?.id === lesson.id;
                                     const colorClass = typeColors[lesson.type] || 'text-gray-500 bg-gray-50';
@@ -94,24 +134,21 @@ export default function AccordionMenu({ modules, activeLesson, onSelectLesson })
                                         <button
                                             key={lesson.id}
                                             onClick={() => onSelectLesson(lesson)}
-                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group/item ${
-                                                isActive
-                                                    ? 'bg-navy-50 border-l-3 border-navy-600'
-                                                    : 'hover:bg-gray-50'
-                                            }`}
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group/item ${isActive
+                                                ? 'bg-navy-50 border-l-3 border-navy-600'
+                                                : 'hover:bg-gray-50'
+                                                }`}
                                         >
                                             {/* Type Icon */}
-                                            <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${
-                                                isActive ? 'bg-navy-100 text-navy-600' : colorClass
-                                            }`}>
+                                            <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-navy-100 text-navy-600' : colorClass
+                                                }`}>
                                                 <Icon className="w-3.5 h-3.5" />
                                             </div>
 
                                             {/* Lesson Info */}
                                             <div className="flex-1 min-w-0">
-                                                <p className={`text-xs font-medium truncate ${
-                                                    isActive ? 'text-navy-800' : 'text-gray-700'
-                                                }`}>
+                                                <p className={`text-xs font-medium truncate ${isActive ? 'text-navy-800' : 'text-gray-700'
+                                                    }`}>
                                                     {lesson.title}
                                                 </p>
                                                 <p className="text-[10px] text-gray-400 mt-0.5">

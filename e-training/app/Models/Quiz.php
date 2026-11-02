@@ -60,12 +60,19 @@ class Quiz extends Model
      */
     public function submissionBlockedReason(): ?string
     {
-        if (! $this->hasStarted()) {
-            return 'Kuis ini belum dibuka.';
-        }
+        $module = Module::whereHas('lessons', fn($q) => $q->where('id', $this->lesson_id))->first();
 
-        if (! $this->acceptsSubmission()) {
-            return 'Waktu pengerjaan kuis telah berakhir.';
+        $checks = [
+            [! $this->hasStarted(), 'Kuis ini belum dibuka.'],
+            [! $this->acceptsSubmission(), 'Waktu pengerjaan kuis telah berakhir.'],
+            [$module !== null && ! $module->hasStarted(), 'Modul ini belum dibuka.'],
+            [$module !== null && ! $module->acceptsSubmission(), 'Akses modul ini sudah ditutup.'],
+        ];
+
+        foreach ($checks as [$blocked, $message]) {
+            if ($blocked) {
+                return $message;
+            }
         }
 
         return null;
