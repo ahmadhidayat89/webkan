@@ -24,7 +24,7 @@ class QuizAdminController extends Controller
             'shuffle_questions'    => 'boolean',
             'show_correct_answers' => 'boolean',
             'start_at'             => 'nullable|date',
-            'deadline_at'          => 'nullable|date|after:start_at',
+            'deadline_at'          => ['nullable', 'date', \Illuminate\Validation\Rule::when($request->filled('start_at'), ['after:start_at'])],
             'quiz_mode'            => 'required|in:multiple_choice,essay,custom',
         ], [
             'deadline_at.after' => 'Deadline harus setelah waktu mulai.',

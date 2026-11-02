@@ -19,18 +19,18 @@ function ConfirmDeleteModal({ message, onConfirm, onCancel }) {
                 type="button"
                 aria-label="Tutup dialog"
                 tabIndex={-1}
-                className="absolute inset-0 w-full h-full bg-black/40 backdrop-blur-sm cursor-default"
+                className="absolute inset-0 w-full h-full cursor-default bg-black/40 backdrop-blur-sm"
                 onClick={onCancel}
             />
-            <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <div className="relative w-full max-w-sm p-6 bg-white shadow-xl rounded-2xl">
                 <div className="flex items-start gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-red-100 rounded-full">
                         <AlertTriangle className="w-5 h-5 text-red-600" />
                     </div>
                     <p className="text-sm text-gray-700 pt-1.5 font-medium">{message}</p>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={onCancel} className="flex-1 py-2 text-sm font-bold border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <button onClick={onCancel} className="flex-1 py-2 text-sm font-bold transition-colors border border-gray-200 rounded-lg hover:bg-gray-50">
                         Batal
                     </button>
                     <button onClick={onConfirm} className="flex-1 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center gap-1.5">
@@ -153,14 +153,14 @@ export default function TabModules({ courseId, modules }) {
                     </Droppable>
                 </DragDropContext>
 
-                <form onSubmit={addModule} className="flex gap-2 items-center bg-gray-50 p-4 rounded-xl border-2 border-dashed border-gray-200">
+                <form onSubmit={addModule} className="flex items-center gap-2 p-4 border-2 border-gray-200 border-dashed bg-gray-50 rounded-xl">
                     <input
                         type="text"
                         value={newModuleTitle}
                         onChange={e => setNewModuleTitle(e.target.value)}
                         aria-label="Judul modul baru"
                         placeholder="Judul modul baru..."
-                        className="flex-1 border-gray-300 rounded-lg text-sm focus:border-navy-500"
+                        className="flex-1 text-sm border-gray-300 rounded-lg focus:border-navy-500"
                     />
                     <button type="submit" className="btn-secondary whitespace-nowrap">
                         <PlusCircle className="w-4 h-4" /> Tambah Modul
@@ -174,6 +174,25 @@ export default function TabModules({ courseId, modules }) {
 function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete, onDeleteLesson, onDeleteFile }) {
     const [isOpen, setIsOpen] = useState(true);
     const [title, setTitle] = useState(module.title);
+    const [startAt, setStartAt] = useState(module.start_at || '');
+    const [endAt, setEndAt] = useState(module.end_at || '');
+
+    const isScheduleDirty = startAt !== (module.start_at || '') || endAt !== (module.end_at || '');
+
+    const saveSchedule = () => {
+        if (startAt && endAt && endAt <= startAt) {
+            alert('Waktu selesai harus setelah waktu mulai.');
+            return;
+        }
+        router.patch(route('admin.modules.update', module.id), {
+            title: title.trim() || module.title,
+            start_at: startAt,
+            end_at: endAt,
+        }, {
+            preserveScroll: true,
+            onError: (errors) => alert(Object.values(errors).join('\n')),
+        });
+    };
 
     // FIX: state isSaving dihapus karena nilainya tidak pernah dibaca
     const saveModuleTitle = () => {
@@ -192,10 +211,10 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
     };
 
     return (
-        <div className="card border border-gray-200 overflow-hidden">
-            <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
+        <div className="overflow-hidden border border-gray-200 card">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-gray-50">
                 <div {...dragHandleProps}>
-                    <GripVertical className="w-4 h-4 text-gray-300 cursor-grab flex-shrink-0" />
+                    <GripVertical className="flex-shrink-0 w-4 h-4 text-gray-300 cursor-grab" />
                 </div>
                 <span className="text-[10px] font-bold text-navy-500 uppercase tracking-wider flex-shrink-0">Modul {index + 1}</span>
                 <input
@@ -204,19 +223,19 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
                     onChange={e => setTitle(e.target.value)}
                     onBlur={saveModuleTitle}
                     aria-label={`Judul modul ${index + 1}`}
-                    className="flex-1 text-sm font-semibold bg-transparent border-none focus:ring-1 focus:ring-navy-300 rounded px-1 p-0 text-gray-800"
+                    className="flex-1 p-0 px-1 text-sm font-semibold text-gray-800 bg-transparent border-none rounded focus:ring-1 focus:ring-navy-300"
                 />
                 <button
                     onClick={() => setIsOpen(!isOpen)}
                     aria-label={isOpen ? 'Tutup modul' : 'Buka modul'}
-                    className="p-1 hover:bg-gray-200 rounded flex-shrink-0"
+                    className="flex-shrink-0 p-1 rounded hover:bg-gray-200"
                 >
                     {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
                 <button
                     onClick={() => onDelete(module.id)}
                     aria-label="Hapus modul"
-                    className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600 flex-shrink-0"
+                    className="flex-shrink-0 p-1 text-red-400 rounded hover:bg-red-50 hover:text-red-600"
                 >
                     <Trash2 className="w-4 h-4" />
                 </button>
@@ -224,6 +243,40 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
 
             {isOpen && (
                 <div className="p-3 space-y-3">
+                    <div className="flex flex-wrap items-end gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                        <div className="flex-1 min-w-[180px]">
+                            <label htmlFor={`module-${module.id}-start`} className="block mb-1 text-xs font-bold text-gray-500 uppercase">Akses Dibuka</label>
+                            <input
+                                id={`module-${module.id}-start`}
+                                type="datetime-local"
+                                value={startAt}
+                                onChange={e => setStartAt(e.target.value)}
+                                className="w-full text-sm border-gray-300 rounded focus:border-navy-500 focus:ring-navy-500"
+                            />
+                        </div>
+                        <div className="flex-1 min-w-[180px]">
+                            <label htmlFor={`module-${module.id}-end`} className="block mb-1 text-xs font-bold text-gray-500 uppercase">Akses Ditutup</label>
+                            <input
+                                id={`module-${module.id}-end`}
+                                type="datetime-local"
+                                value={endAt}
+                                onChange={e => setEndAt(e.target.value)}
+                                className="w-full text-sm border-gray-300 rounded focus:border-navy-500 focus:ring-navy-500"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={saveSchedule}
+                            disabled={!isScheduleDirty}
+                            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${isScheduleDirty
+                                ? 'bg-navy-600 hover:bg-navy-700 text-white shadow-sm'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
+                        >
+                            Simpan Jadwal
+                        </button>
+                    </div>
+
                     <DragDropContext onDragEnd={(result) => onDragEndLessons(module.id, result)}>
                         <Droppable droppableId={`lessons-${module.id}`}>
                             {(provided) => (
@@ -255,7 +308,7 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
                         </Droppable>
                     </DragDropContext>
 
-                    <div className="flex flex-wrap gap-2 pt-2 px-3 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-2 px-3 pt-2 border-t border-gray-100">
                         <span className="text-xs text-gray-400 font-medium py-1.5 mr-2">Tambah Materi:</span>
                         <button onClick={() => addLesson('video')} className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors">
                             <Video className="w-3 h-3" /> Video
@@ -335,19 +388,19 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                 <div {...dragHandleProps}>
                     <GripVertical className="w-3.5 h-3.5 text-gray-400 cursor-grab flex-shrink-0" />
                 </div>
-                <Icon className="w-4 h-4 flex-shrink-0" />
+                <Icon className="flex-shrink-0 w-4 h-4" />
                 <input
                     type="text"
                     value={title}
                     onChange={e => setTitle(e.target.value)}
                     aria-label="Judul materi"
-                    className="flex-1 text-sm bg-transparent border-none focus:ring-1 focus:ring-navy-300 rounded px-1 p-0 font-medium text-gray-800"
+                    className="flex-1 p-0 px-1 text-sm font-medium text-gray-800 bg-transparent border-none rounded focus:ring-1 focus:ring-navy-300"
                     placeholder="Judul materi..."
                 />
                 <button
                     onClick={() => setIsExpanded(!isExpanded)}
                     aria-label={isExpanded ? 'Tutup detail materi' : 'Buka detail materi'}
-                    className="p-1 hover:bg-white rounded opacity-60 hover:opacity-100 flex-shrink-0"
+                    className="flex-shrink-0 p-1 rounded hover:bg-white opacity-60 hover:opacity-100"
                 >
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
@@ -357,18 +410,18 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                     onMouseDown={e => e.preventDefault()} // Cegah blur pada input sebelum klik
                     onClick={onDelete}
                     aria-label="Hapus materi"
-                    className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600 opacity-60 hover:opacity-100 flex-shrink-0"
+                    className="flex-shrink-0 p-1 text-red-400 rounded hover:bg-red-50 hover:text-red-600 opacity-60 hover:opacity-100"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
                 </button>
             </div>
 
             {isExpanded && (
-                <div className="p-4 bg-white border-t border-gray-100 space-y-4">
+                <div className="p-4 space-y-4 bg-white border-t border-gray-100">
                     {/* Deskripsi */}
                     <div>
-                        <label htmlFor={`lesson-${lesson.id}-description`} className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                            Deskripsi / Perintah <span className="font-normal normal-case text-gray-400">(opsional)</span>
+                        <label htmlFor={`lesson-${lesson.id}-description`} className="block mb-1 text-xs font-bold text-gray-500 uppercase">
+                            Deskripsi / Perintah <span className="font-normal text-gray-400 normal-case">(opsional)</span>
                         </label>
                         <textarea
                             id={`lesson-${lesson.id}-description`}
@@ -384,7 +437,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                     {(lesson.type === 'video' || lesson.type === 'zoom') && (
                         <div className="space-y-3">
                             <div>
-                                <label htmlFor={`lesson-${lesson.id}-url`} className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                <label htmlFor={`lesson-${lesson.id}-url`} className="block mb-1 text-xs font-bold text-gray-500 uppercase">
                                     {lesson.type === 'video' ? 'URL YouTube' : 'Link Zoom Meeting'}
                                 </label>
                                 <input
@@ -399,7 +452,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
 
                             {lesson.type === 'zoom' && (
                                 <div>
-                                    <label htmlFor={`lesson-${lesson.id}-start`} className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                    <label htmlFor={`lesson-${lesson.id}-start`} className="block mb-1 text-xs font-bold text-gray-500 uppercase">
                                         Waktu Pelaksanaan Zoom
                                     </label>
                                     <input
@@ -417,10 +470,10 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                     {/* DOCUMENT FILES */}
                     {lesson.type === 'document' && (
                         <div>
-                            <p className="block text-xs font-bold text-gray-500 uppercase mb-2">File Dokumen (PDF, PPT, Word — Maks 50MB)</p>
+                            <p className="block mb-2 text-xs font-bold text-gray-500 uppercase">File Dokumen (PDF, PPT, Word — Maks 50MB)</p>
                             <div className="flex flex-wrap gap-2 mb-2">
                                 {lesson.files?.map(f => (
-                                    <div key={f.id} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm">
+                                    <div key={f.id} className="flex items-center gap-2 px-2 py-1 text-sm border border-gray-200 rounded bg-gray-50">
                                         <FileText className="w-3 h-3 text-red-500" />
                                         <span className="truncate max-w-[150px] text-xs">{f.original_name}</span>
                                         <button
@@ -428,7 +481,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
                                             onMouseDown={e => e.preventDefault()}
                                             onClick={() => onDeleteFile(f)}
                                             aria-label={`Hapus file ${f.original_name}`}
-                                            className="text-gray-400 hover:text-red-500 ml-1"
+                                            className="ml-1 text-gray-400 hover:text-red-500"
                                         >
                                             <X className="w-3 h-3" />
                                         </button>
@@ -444,7 +497,7 @@ function LessonItem({ lesson, dragHandleProps, onDelete, onDeleteFile }) {
 
                     {/* QUIZ BUILDER */}
                     {lesson.type === 'quiz' && lesson.quiz && (
-                        <div className="bg-gray-50 -mx-4 p-4 border-t border-gray-200">
+                        <div className="p-4 -mx-4 border-t border-gray-200 bg-gray-50">
                             <QuizBuilder quiz={lesson.quiz} />
                         </div>
                     )}
