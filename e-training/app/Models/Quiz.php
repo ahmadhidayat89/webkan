@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Quiz extends Model
 {
+    // Toleransi (detik) untuk jawaban yang dikirim otomatis tepat saat tenggat (jeda jaringan)
+    public const SUBMIT_GRACE_SECONDS = 30;
+
     protected $fillable = [
         'lesson_id',
         'duration_minutes',
@@ -15,6 +18,7 @@ class Quiz extends Model
         'max_attempts',
         'shuffle_questions',
         'show_correct_answers',
+        'start_at',
         'deadline_at',
         'quiz_mode',
     ];
@@ -24,8 +28,31 @@ class Quiz extends Model
         return [
             'shuffle_questions'    => 'boolean',
             'show_correct_answers' => 'boolean',
+            'start_at'             => 'datetime',
             'deadline_at'          => 'datetime',
         ];
+    }
+
+    /**
+     * Apakah kuis sudah dibuka (tanpa start_at berarti langsung dibuka).
+     */
+    public function hasStarted(): bool
+    {
+        return $this->start_at === null || now()->greaterThanOrEqualTo($this->start_at);
+    }
+
+    /**
+     * Apakah jawaban masih boleh diterima: sebelum tenggat, ditambah toleransi singkat.
+     */
+    public function acceptsSubmission(): bool
+    {
+        if ($this->deadline_at === null) {
+            return true;
+        }
+
+        return now()->lessThanOrEqualTo(
+            $this->deadline_at->copy()->addSeconds(self::SUBMIT_GRACE_SECONDS)
+        );
     }
 
     /**

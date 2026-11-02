@@ -93,7 +93,7 @@ class CourseController extends Controller
             'certificates.user',
         ]);
 
-        $modules = $course->modules->map(fn ($module) => $this->formatModule($module))->values();
+        $modules = $course->modules->map(fn($module) => $this->formatModule($module))->values();
 
         // Enrolled students
         $enrolledStudents = $course->enrollments->map(fn($e) => [
@@ -163,7 +163,7 @@ class CourseController extends Controller
             'description' => $module->description,
             'sort_order' => $module->sort_order,
             'is_published' => $module->is_published,
-            'lessons' => $module->lessons->map(fn ($lesson) => $this->formatLesson($lesson))->values(),
+            'lessons' => $module->lessons->map(fn($lesson) => $this->formatLesson($lesson))->values(),
         ];
     }
 
@@ -181,7 +181,7 @@ class CourseController extends Controller
                 : null,
             'sort_order' => $lesson->sort_order,
             'is_published' => $lesson->is_published,
-            'files' => $lesson->files->map(fn ($file) => $this->formatLessonFile($file))->values(),
+            'files' => $lesson->files->map(fn($file) => $this->formatLessonFile($file))->values(),
             'quiz' => $lesson->quiz ? $this->formatQuiz($lesson->quiz) : null,
         ];
     }
@@ -207,8 +207,9 @@ class CourseController extends Controller
             'shuffle_questions' => $quiz->shuffle_questions,
             'show_correct_answers' => $quiz->show_correct_answers,
             'deadline_at' => $quiz->deadline_at?->format(self::DATETIME_LOCAL_FORMAT),
+            'start_at' => $quiz->start_at?->format(self::DATETIME_LOCAL_FORMAT),
             'quiz_mode' => $quiz->quiz_mode,
-            'questions' => $quiz->questions->map(fn ($question) => $this->formatQuizQuestion($question))->values(),
+            'questions' => $quiz->questions->map(fn($question) => $this->formatQuizQuestion($question))->values(),
         ];
     }
 
@@ -222,7 +223,7 @@ class CourseController extends Controller
             'sort_order' => $question->sort_order,
             'explanation' => $question->explanation,
             'image_path' => $question->image_path ? Storage::url($question->image_path) : null,
-            'options' => $question->options->map(fn ($option) => [
+            'options' => $question->options->map(fn($option) => [
                 'id' => $option->id,
                 'option_text' => $option->option_text,
                 'is_correct' => $option->is_correct,

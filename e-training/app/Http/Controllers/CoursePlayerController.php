@@ -54,6 +54,7 @@ class CoursePlayerController extends Controller
             'description' => $course->description,
             'certificate_id' => $certificate ? $certificate->id : null,
             'isExpired' => $course->isExpired(),
+            'server_now' => now()->toIso8601String(),
             'deadline_at' => $course->deadline_at?->format('d M Y, H:i'),
             'modules' => $course->modules->map(function ($module) use ($lessonProgresses) {
                 return [
@@ -85,6 +86,10 @@ class CoursePlayerController extends Controller
                                 'duration_minutes' => $lesson->quiz->duration_minutes,
                                 'passing_score' => $lesson->quiz->passing_score,
                                 'max_attempts' => $lesson->quiz->max_attempts,
+                                'start_at' => $lesson->quiz->start_at?->toIso8601String(),
+                                'start_at_label' => $lesson->quiz->start_at?->format('d M Y, H:i'),
+                                'deadline_at' => $lesson->quiz->deadline_at?->toIso8601String(),
+                                'deadline_at_label' => $lesson->quiz->deadline_at?->format('d M Y, H:i'),
                                 'shuffle_questions' => $lesson->quiz->shuffle_questions,
                                 'questions' => $lesson->quiz->questions->map(function ($q) {
                                     return [
@@ -158,15 +163,25 @@ class CoursePlayerController extends Controller
     {
         return DB::transaction(function () use ($answers, $user, $quizId, $courseId) {
             $quiz = \App\Models\Quiz::with('questions.options')->lockForUpdate()->findOrFail($quizId);
+            if (! $quiz->hasStarted()) {
+                return 'Kuis ini belum dibuka.';
+            }
+            if (! $quiz->acceptsSubmission()) {
+                return 'Waktu pengerjaan kuis telah berakhir.';
+            }
             if ($this->hasReachedAttemptLimit($quiz, $user->id)) {
                 return 'Anda telah mencapai batas maksimum percobaan untuk kuis ini.';
             }
 
             $attempt = \App\Models\QuizAttempt::create([
-                'user_id' => $user->id, 'quiz_id' => $quiz->id,
-                'score' => 0, 'correct_answers' => 0,
+                'user_id' => $user->id,
+                'quiz_id' => $quiz->id,
+                'score' => 0,
+                'correct_answers' => 0,
                 'total_questions' => $quiz->questions->count(),
-                'is_passed' => null, 'started_at' => now(), 'finished_at' => now(),
+                'is_passed' => null,
+                'started_at' => now(),
+                'finished_at' => now(),
             ]);
             $correctCount = $this->storeAttemptAnswers($attempt, $quiz, $answers);
             $this->updateAttemptScore($attempt, $quiz, $correctCount);
@@ -238,7 +253,7 @@ class CoursePlayerController extends Controller
     public function markLessonComplete(Request $request, $courseId, $lessonId)
     {
         $user = auth()->user();
-        
+
         // Kursus sudah lewat deadline: tidak bisa menandai selesai
         $course = Course::findOrFail($courseId);
         if ($course->isExpired()) {
@@ -271,19 +286,19 @@ class CoursePlayerController extends Controller
 
         $allLessonIds = $course->modules->flatMap->lessons->pluck('id');
         $totalLessons = $allLessonIds->count();
-        
+
         if ($totalLessons > 0) {
             $completedLessonsCount = \App\Models\LessonProgress::where('user_id', $user->id)
                 ->whereIn('lesson_id', $allLessonIds)
                 ->where('is_completed', true)
                 ->count();
-            
+
             $progressPercent = round(($completedLessonsCount / $totalLessons) * 100);
-            
+
             $enrollment = \App\Models\Enrollment::where('user_id', $user->id)
                 ->where('course_id', $course->id)
                 ->first();
-                
+
             if ($enrollment) {
                 $enrollment->progress_percent = $progressPercent;
                 if ($progressPercent >= 100 && !$enrollment->completed_at) {

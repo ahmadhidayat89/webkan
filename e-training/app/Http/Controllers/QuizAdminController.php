@@ -23,13 +23,22 @@ class QuizAdminController extends Controller
             'max_attempts'         => 'required|integer|min:1',
             'shuffle_questions'    => 'boolean',
             'show_correct_answers' => 'boolean',
-            'deadline_at'          => 'nullable|date',
+            'start_at'             => 'nullable|date',
+            'deadline_at'          => 'nullable|date|after:start_at',
             'quiz_mode'            => 'required|in:multiple_choice,essay,custom',
+        ], [
+            'deadline_at.after' => 'Deadline harus setelah waktu mulai.',
         ]);
 
         $quiz->update($request->only([
-            'duration_minutes', 'passing_score', 'max_attempts',
-            'shuffle_questions', 'show_correct_answers', 'deadline_at', 'quiz_mode',
+            'duration_minutes',
+            'passing_score',
+            'max_attempts',
+            'shuffle_questions',
+            'show_correct_answers',
+            'start_at',
+            'deadline_at',
+            'quiz_mode',
         ]));
 
         return back()->with('success', 'Setting kuis disimpan.');
@@ -171,7 +180,7 @@ class QuizAdminController extends Controller
         $request->validate([
             'questions'             => 'required|array',
             'questions.*.id'        => 'required|exists:quiz_questions,id',
-            'questions.*.sort_order'=> 'required|integer',
+            'questions.*.sort_order' => 'required|integer',
         ]);
 
         foreach ($request->questions as $item) {
