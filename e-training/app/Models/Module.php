@@ -14,13 +14,41 @@ class Module extends Model
         'description',
         'sort_order',
         'is_published',
+        'start_at',
+        'end_at',
     ];
 
     protected function casts(): array
     {
         return [
             'is_published' => 'boolean',
+            'start_at'     => 'datetime',
+            'end_at'       => 'datetime',
         ];
+    }
+
+    /**
+     * Apakah modul sudah dibuka (tanpa start_at berarti langsung dibuka).
+     */
+    public function hasStarted(): bool
+    {
+        return $this->start_at === null || now()->greaterThanOrEqualTo($this->start_at);
+    }
+
+    /**
+     * Apakah modul sudah ditutup (tanpa end_at berarti tidak pernah ditutup).
+     */
+    public function isClosed(): bool
+    {
+        return $this->end_at !== null && now()->greaterThan($this->end_at);
+    }
+
+    /**
+     * Apakah modul sedang dalam jendela akses.
+     */
+    public function isOpen(): bool
+    {
+        return $this->hasStarted() && ! $this->isClosed();
     }
 
     /**
