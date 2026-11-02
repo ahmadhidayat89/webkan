@@ -43,6 +43,7 @@ class CoursePlayerController extends Controller
         if ($user->role === 'pengajar') {
             abort_unless($user->canManageCourse($course), 403);
         }
+        $canBypassSchedule = $user->canBypassSchedule($course);
         $lessonProgresses = \App\Models\LessonProgress::where('user_id', $user->id)
             ->whereIn('lesson_id', $course->modules->flatMap->lessons->pluck('id'))
             ->get()
@@ -60,6 +61,7 @@ class CoursePlayerController extends Controller
             'certificate_id' => $certificate ? $certificate->id : null,
             'isExpired' => $course->isExpired(),
             'server_now' => now()->toIso8601String(),
+            'can_bypass_schedule' => $canBypassSchedule,
             'deadline_at' => $course->deadline_at?->format(self::DATETIME_LABEL_FORMAT),
             'modules' => $course->modules->map(function ($module) use ($lessonProgresses) {
                 return [
@@ -168,7 +170,8 @@ class CoursePlayerController extends Controller
         $quiz = \App\Models\Quiz::findOrFail($quizId);
         abort_unless($quiz->lesson->module->course_id == $courseId, 404);
 
-        $limitError = $this->storeQuizAttempt($validated['answers'], $user, $quizId, $courseId);
+        $bypassSchedule = $user->canBypassSchedule($course);
+        $limitError = $this->storeQuizAttempt($validated['answers'], $user, $quizId, $courseId, $bypassSchedule);
 
         if ($limitError) {
             return back()->withErrors(['message' => $limitError]);
@@ -177,11 +180,11 @@ class CoursePlayerController extends Controller
         return back();
     }
 
-    private function storeQuizAttempt(array $answers, $user, $quizId, $courseId): ?string
+    private function storeQuizAttempt(array $answers, $user, $quizId, $courseId, bool $bypassSchedule = false): ?string
     {
-        return DB::transaction(function () use ($answers, $user, $quizId, $courseId) {
+        return DB::transaction(function () use ($answers, $user, $quizId, $courseId, $bypassSchedule) {
             $quiz = \App\Models\Quiz::with('questions.options')->lockForUpdate()->findOrFail($quizId);
-            $blockedReason = $quiz->submissionBlockedReason();
+            $blockedReason = $bypassSchedule ? null : $quiz->submissionBlockedReason();
             if ($blockedReason !== null) {
                 return $blockedReason;
             }
@@ -310,9 +313,9 @@ class CoursePlayerController extends Controller
         $lesson = \App\Models\Lesson::findOrFail($lessonId);
         abort_unless($lesson->module->course_id == $courseId, 404);
 
-                // Modul harus sedang dibuka (belum dibuka / sudah ditutup: tidak bisa ditandai selesai)
-        $module = \App\Models\Module::whereHas('lessons', fn ($q) => $q->where('id', $lessonId))->first();
-        if ($module && ! $module->isOpen()) {
+        // Modul harus sedang dibuka (belum dibuka / sudah ditutup: tidak bisa ditandai selesai)
+        $module = \App\Models\Module::whereHas('lessons', fn($q) => $q->where('id', $lessonId))->first();
+        if ($module && ! $user->canBypassSchedule($course) && ! $module->isOpen()) {
             return back()->withErrors([
                 'message' => 'Modul ini sedang tidak dibuka, jadi materi tidak bisa ditandai selesai.',
             ]);

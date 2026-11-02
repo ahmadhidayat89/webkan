@@ -374,13 +374,13 @@ function allModulesHaveSchedule(modules) {
 
 // Batas waktu pengerjaan (dalam jam perangkat): yang lebih awal antara
 // durasi kuis dan tenggat kuis. Contoh: durasi 90 menit, mulai 11.00, tenggat 12.00 -> 12.00.
-function computeAttemptDeadline(quiz, clockOffset) {
+function computeAttemptDeadline(quiz, clockOffset, ignoreDeadline = false) {
     const serverNow = Date.now() + clockOffset;
     const minutes = Number(quiz.duration_minutes);
     const limits = [];
 
     if (minutes > 0) limits.push(serverNow + minutes * 60 * 1000);
-    if (quiz.deadline_at) limits.push(Date.parse(quiz.deadline_at));
+    if (quiz.deadline_at && !ignoreDeadline) limits.push(Date.parse(quiz.deadline_at));
 
     return limits.length > 0 ? Math.min(...limits) - clockOffset : null;
 }
@@ -852,7 +852,7 @@ function QuizTakingView({
 // komponen di atas, dan efek samping (timer, anti-tab-switch) dipindah ke hook.
 // ───────────────────────────────────────────────────────────────────────────
 
-function QuizContent({ lesson, courseId, isExpired, clockOffset, onQuizActiveChange }) {
+function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule = false, onQuizActiveChange }) {
     const quiz = lesson.quiz;
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState({});
@@ -921,7 +921,7 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, onQuizActiveCha
     const totalQuestions = quiz.questions.length;
     const allAnswered = quiz.questions.every(q => answers[q.id] !== undefined && answers[q.id] !== '');
     const attempts = quiz.attempts || [];
-    const windowState = getQuizWindow(quiz, now);
+    const windowState = bypassSchedule ? 'open' : getQuizWindow(quiz, now);
 
     const handleAnswer = (value) => {
         if (submitted || processing) return;
@@ -939,10 +939,10 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, onQuizActiveCha
 
     const handleStart = () => {
         // Jaga-jaga: jendela waktu bisa berubah sejak halaman dimuat
-        if (getQuizWindow(quiz, Date.now() + clockOffset) !== 'open') return;
+        if (!bypassSchedule && getQuizWindow(quiz, Date.now() + clockOffset) !== 'open') return;
 
         setAutoSubmitted(false);
-        setDeadline(computeAttemptDeadline(quiz, clockOffset));
+        setDeadline(computeAttemptDeadline(quiz, clockOffset, bypassSchedule));
         setStarted(true);
         onQuizActiveChange(true);
     };
@@ -1106,6 +1106,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                         courseId={course.id}
                         isExpired={isExpired}
                         clockOffset={clockOffset}
+                        bypassSchedule={Boolean(course.can_bypass_schedule)}
                         onQuizActiveChange={setQuizActive}
                     />
                 );
@@ -1122,6 +1123,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                 modules={course.modules}
                 activeLesson={activeLesson}
                 serverNow={now}
+                bypassSchedule={Boolean(course.can_bypass_schedule)}
                 onSelectLesson={(lesson) => {
                     if (quizActive && lesson.id !== activeLesson.id) {
                         alert(

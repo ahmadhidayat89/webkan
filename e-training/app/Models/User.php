@@ -33,6 +33,11 @@ class User extends Authenticatable
         return $this->isAdmin() || ($this->role === 'pengajar' && $this->teachingCourses()->whereKey($course->id)->exists());
     }
 
+    public function canBypassSchedule(Course $course): bool
+    {
+        return $this->canManageCourse($course);
+    }
+
     /**
      * Role yang tersedia: 'peserta', 'pengajar', 'admin'
      * - peserta : peserta pelatihan
