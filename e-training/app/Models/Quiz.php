@@ -56,6 +56,22 @@ class Quiz extends Model
     }
 
     /**
+     * Alasan jawaban ditolak karena jendela waktu, atau null kalau boleh dikirim.
+     */
+    public function submissionBlockedReason(): ?string
+    {
+        if (! $this->hasStarted()) {
+            return 'Kuis ini belum dibuka.';
+        }
+
+        if (! $this->acceptsSubmission()) {
+            return 'Waktu pengerjaan kuis telah berakhir.';
+        }
+
+        return null;
+    }
+
+    /**
      * Lesson yang memiliki kuis ini.
      */
     public function lesson(): BelongsTo
