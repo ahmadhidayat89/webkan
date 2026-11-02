@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 
 class QuizAdminController extends Controller
 {
+    private const DATETIME_LABEL_FORMAT = 'd M Y, H:i';
+
     /**
      * Update setting kuis (batas waktu, passing score, dll).
      */
@@ -65,10 +67,10 @@ class QuizAdminController extends Controller
         $closes = $module->end_at;
 
         $checks = [
-            [$start && $opens && $start->lt($opens), 'Waktu mulai kuis tidak boleh lebih awal dari modul dibuka (' . $opens?->format('d M Y, H:i') . ').'],
-            [$end && $opens && $end->lt($opens), 'Deadline kuis tidak boleh lebih awal dari modul dibuka (' . $opens?->format('d M Y, H:i') . ').'],
-            [$start && $closes && $start->gt($closes), 'Waktu mulai kuis tidak boleh melewati modul ditutup (' . $closes?->format('d M Y, H:i') . ').'],
-            [$end && $closes && $end->gt($closes), 'Deadline kuis tidak boleh melewati modul ditutup (' . $closes?->format('d M Y, H:i') . ').'],
+            [$start && $opens && $start->lt($opens), 'Waktu mulai kuis tidak boleh lebih awal dari modul dibuka (' . $opens?->format(self::DATETIME_LABEL_FORMAT) . ').'],
+            [$end && $opens && $end->lt($opens), 'Deadline kuis tidak boleh lebih awal dari modul dibuka (' . $opens?->format(self::DATETIME_LABEL_FORMAT) . ').'],
+            [$start && $closes && $start->gt($closes), 'Waktu mulai kuis tidak boleh melewati modul ditutup (' . $closes?->format(self::DATETIME_LABEL_FORMAT) . ').'],
+            [$end && $closes && $end->gt($closes), 'Deadline kuis tidak boleh melewati modul ditutup (' . $closes?->format(self::DATETIME_LABEL_FORMAT) . ').'],
         ];
 
         foreach ($checks as [$invalid, $message]) {
