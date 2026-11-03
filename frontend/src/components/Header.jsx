@@ -116,7 +116,7 @@ const NAV_ITEMS = [
   },
   {
     label: 'E-Training',
-    href: 'http://127.0.0.1:8002',
+    href: 'http://127.0.0.1:8001',
     external: true,
   },
 ];
