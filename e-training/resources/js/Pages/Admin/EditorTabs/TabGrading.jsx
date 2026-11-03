@@ -28,6 +28,11 @@ export default function TabGrading({ modules, initialQuizId = null, initialAttem
     const questions = selectedQuiz?.questions ?? [];
     const selectedAttempt = attempts.find(attempt => attempt.id === selectedAttemptId);
     useEffect(() => {
+        if (initialQuizId && quizzes.some(quiz => String(quiz.id) === String(initialQuizId))) {
+            setSelectedQuizId(String(initialQuizId));
+        }
+    }, [initialQuizId, quizzes]);
+    useEffect(() => {
         if (selectedAttemptId !== null) detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, [selectedAttemptId]);
 

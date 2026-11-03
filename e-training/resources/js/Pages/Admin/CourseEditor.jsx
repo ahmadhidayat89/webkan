@@ -1,21 +1,32 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
-import { FileText, PlusCircle, HelpCircle, Award, Users, ChevronLeft, Eye, Save } from 'lucide-react';
+import { FileText, PlusCircle, HelpCircle, ClipboardList, Award, Users, ChevronLeft, Eye, Save } from 'lucide-react';
 import TabDetail from './EditorTabs/TabDetail';
 import TabModules from './EditorTabs/TabModules';
 import TabGrading from './EditorTabs/TabGrading';
+import TabGradeReport from './EditorTabs/TabGradeReport';
 import TabCertificates from './EditorTabs/TabCertificates';
 import TabStudents from './EditorTabs/TabStudents';
 import CourseTeacherAssignment from '@/Components/CourseTeacherAssignment';
 
 export default function CourseEditor({ course, categories, allStudents, teachers = [], canAssignTeachers = false, canEditCourseDetails = false, canManageParticipants = false, canIssueCertificates = false, initialTab = 'detail', initialQuizId = null, initialAttemptId = null }) {
-    const [activeTab, setActiveTab] = useState(initialTab === 'grading' ? 'grading' : 'detail');
+    const validTabs = ['detail', 'modules', 'grading', 'grade-report', 'certificates', 'students'];
+    const [activeTab, setActiveTab] = useState(validTabs.includes(initialTab) ? initialTab : 'detail');
+    const [targetQuizId, setTargetQuizId] = useState(initialQuizId);
+    const [targetAttemptId, setTargetAttemptId] = useState(initialAttemptId);
+
+    function handleInspectAttempt(quizId, attemptId) {
+        setTargetQuizId(quizId);
+        setTargetAttemptId(attemptId);
+        setActiveTab('grading');
+    }
 
     const tabs = [
         { id: 'detail', label: 'Detail Kursus', icon: FileText },
         { id: 'modules', label: 'Modul & Materi', icon: PlusCircle },
         { id: 'grading', label: 'Penilaian Kuis', icon: HelpCircle },
+        { id: 'grade-report', label: 'Laporan Nilai', icon: ClipboardList },
         { id: 'certificates', label: 'Sertifikat', icon: Award },
         { id: 'students', label: 'Peserta', icon: Users },
     ];
@@ -85,7 +96,17 @@ export default function CourseEditor({ course, categories, allStudents, teachers
                     </div>
 
                     <div className={activeTab === 'grading' ? 'block' : 'hidden'}>
-                        <TabGrading courseId={course.id} modules={course.modules} initialQuizId={initialQuizId} initialAttemptId={initialAttemptId} />
+                        <TabGrading courseId={course.id} modules={course.modules} initialQuizId={targetQuizId} initialAttemptId={targetAttemptId} />
+                    </div>
+
+                    <div className={activeTab === 'grade-report' ? 'block' : 'hidden'}>
+                        <TabGradeReport
+                            course={course}
+                            modules={course.modules}
+                            enrolledStudents={course.enrolled_students}
+                            isActive={activeTab === 'grade-report'}
+                            onInspectAttempt={handleInspectAttempt}
+                        />
                     </div>
 
                     <div className={activeTab === 'certificates' ? 'block' : 'hidden'}>

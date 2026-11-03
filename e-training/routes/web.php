@@ -143,6 +143,7 @@ Route::middleware(['auth', 'role:admin,pengajar', 'course.access'])->prefix('adm
     Route::post('/questions/reorder', [QuizAdminController::class, 'reorderQuestions'])->name('quizzes.questions.reorder');
 
     // Penilaian (Grading)
+    Route::get('/courses/{course}/grade-report', [GradingController::class, 'courseReport'])->name('grading.report');
     Route::get('/quizzes/{quiz}/attempts', [GradingController::class, 'listAttempts'])->name('grading.attempts');
     Route::post('/attempts/{attempt}/batch-grade', [GradingController::class, 'batchGrade'])->name('grading.batch');
     Route::patch('/answers/{answer}/grade', [GradingController::class, 'gradeEssay'])->name('grading.essay');

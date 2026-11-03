@@ -156,7 +156,7 @@ class CourseController extends Controller
             ],
             'categories'   => $categories,
             'allStudents'  => $allStudents,
-            'initialTab' => request()->query('tab') === 'grading' ? 'grading' : 'detail',
+            'initialTab' => in_array(request()->query('tab'), ['grading', 'grade-report'], true) ? request()->query('tab') : 'detail',
             'initialQuizId' => request()->integer('quiz'),
             'initialAttemptId' => request()->integer('attempt'),
             'canAssignTeachers' => auth()->user()->isAdmin(),

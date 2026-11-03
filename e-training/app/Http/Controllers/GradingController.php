@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Course;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizAttemptAnswer;
@@ -10,6 +11,44 @@ use Illuminate\Http\Request;
 
 class GradingController extends Controller
 {
+    /**
+     * Ringkasan pengerjaan seluruh kuis pada satu kursus untuk Laporan Nilai (Grader Report).
+     */
+    public function courseReport(Course $course)
+    {
+        $quizIds = $course->modules()
+            ->with('lessons.quiz')
+            ->get()
+            ->flatMap(fn ($module) => $module->lessons->pluck('quiz.id'))
+            ->filter()
+            ->values();
+
+        $attempts = QuizAttempt::whereIn('quiz_id', $quizIds)
+            ->with(['user', 'answers.question'])
+            ->orderByDesc('score')
+            ->orderByDesc('finished_at')
+            ->get()
+            ->map(fn (QuizAttempt $attempt) => [
+                'id' => $attempt->id,
+                'quiz_id' => $attempt->quiz_id,
+                'user_id' => $attempt->user_id,
+                'user_name' => $attempt->user?->name,
+                'user_email' => $attempt->user?->email,
+                'score' => $attempt->score,
+                'is_passed' => $attempt->is_passed,
+                'started_at' => $attempt->started_at?->format('d M Y H:i'),
+                'finished_at' => $attempt->finished_at?->format('d M Y H:i'),
+                'pending_grading' => $attempt->answers->contains(
+                    fn ($ans) => in_array($ans->question?->type, ['essay', 'short_answer'], true)
+                        && $ans->manual_score === null
+                        && filled($ans->essay_answer)
+                ),
+            ])
+            ->values();
+
+        return response()->json($attempts);
+    }
+
     /**
      * List semua attempts untuk kuis tertentu.
      * Return data via JSON (untuk AJAX dari CourseEditor).

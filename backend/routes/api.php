@@ -48,11 +48,11 @@ Route::prefix('v1')->group(function () {
 
     // Auth
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:5,1');
+        ->middleware('throttle:5,1,login');
 
     // Contact Form
     Route::post('/contact', [ContactController::class, 'submit'])
-        ->middleware('throttle:5,15');
+        ->middleware('throttle:5,15,contact');
 
     // FAQ (public)
     Route::get('/faqs', [FaqController::class, 'index']);
@@ -68,7 +68,7 @@ Route::prefix('v1')->group(function () {
 
     // Auto-translate plain UI text for EN toggle
     Route::post('/translate/texts', [TranslateController::class, 'texts'])
-        ->middleware('throttle:30,1');
+        ->middleware('throttle:30,1,translate');
 
     // News (public)
     Route::get('/news', [PublicNewsController::class, 'index']);
@@ -99,7 +99,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/surveys/{code}/upload', [PublicSurveyController::class, 'upload'])
           ->middleware('throttle:60,1,survey-upload');
     Route::post('/surveys/{code}/submit', [PublicSurveyController::class, 'submit'])
-        ->middleware('throttle:10,1');
+        ->middleware('throttle:10,1,survey-submit');
         
     // Sitemap & Robots
     Route::get('/sitemap.xml', [SitemapController::class, 'index']);
