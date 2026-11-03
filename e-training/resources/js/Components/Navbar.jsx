@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import {
+    LibraryBig,
     LayoutDashboard,
     BookOpen,
     PenTool,
@@ -73,6 +74,11 @@ export default function Navbar({ role }) {
         navLinks.splice(1, 1, { name: 'Kursus Mengajar', href: route('admin.courses.index'), icon: PenTool, active: route().current('admin.courses.*') });
     }
 
+    if (isAdmin || role === 'pengajar') {
+        const position = isAdmin ? 3 : 2;
+        navLinks.splice(position, 0, { name: 'Bank Soal', href: route('admin.question-bank.index'), icon: LibraryBig, active: route().current('admin.question-bank.*') });
+    }
+
     const roleBadges = {
         admin: { label: 'Admin', color: 'bg-gold-100 text-gold-700 border-gold-200' },
         pengajar: { label: 'Pengajar', color: 'bg-green-50 text-green-700 border-green-200' },
@@ -97,7 +103,7 @@ export default function Navbar({ role }) {
                             <Link
                                 key={link.name}
                                 href={link.href}
-                                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                className={`flex items-center gap-1.5 px-2 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
                                     link.active
                                         ? 'bg-navy-50 text-navy-700'
                                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -131,7 +137,7 @@ export default function Navbar({ role }) {
                                 }`}>
                                     {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                                 </div>
-                                <div className="text-left hidden lg:block">
+                                <div className="text-left hidden xl:block max-w-[130px]">
                                     <p className="text-xs font-semibold text-gray-800 leading-tight">{user?.name || 'User'}</p>
                                     <p className="text-[10px] text-gray-400 leading-tight">{user?.organization || user?.email}</p>
                                 </div>

@@ -224,6 +224,9 @@ class CourseController extends Controller
             'deadline_at' => $quiz->deadline_at?->format(self::DATETIME_LOCAL_FORMAT),
             'start_at' => $quiz->start_at?->format(self::DATETIME_LOCAL_FORMAT),
             'quiz_mode' => $quiz->quiz_mode,
+            'course_id' => $quiz->lesson->module->course_id,
+            'questions_locked' => $quiz->attempts()->exists() || \Illuminate\Support\Facades\DB::table('quiz_bank_draws')->where('quiz_id', $quiz->id)->exists(),
+            'random_groups' => \Illuminate\Support\Facades\DB::table('quiz_random_groups')->where('quiz_id', $quiz->id)->get(),
             'questions' => $quiz->questions->map(fn($question) => $this->formatQuizQuestion($question))->values(),
         ];
     }
@@ -237,6 +240,9 @@ class CourseController extends Controller
             'points' => $question->points,
             'sort_order' => $question->sort_order,
             'explanation' => $question->explanation,
+            'bank_question_id' => $question->bank_question_id,
+            'bank_version' => $question->bank_version,
+            'random_group_id' => $question->random_group_id,
             'image_path' => $question->image_path ? Storage::url($question->image_path) : null,
             'options' => $question->options->map(fn($option) => [
                 'id' => $option->id,
