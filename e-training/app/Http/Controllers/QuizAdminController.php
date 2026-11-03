@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BankQuestion;
+use App\Models\Module;
 use App\Models\Quiz;
-use App\Models\QuizQuestion;
 use App\Models\QuizOption;
+use App\Models\QuizQuestion;
+use App\Services\QuestionBankService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class QuizAdminController extends Controller
 {
@@ -20,14 +25,14 @@ class QuizAdminController extends Controller
     public function updateSettings(Request $request, Quiz $quiz): RedirectResponse
     {
         $request->validate([
-            'duration_minutes'     => 'nullable|integer|min:1',
-            'passing_score'        => 'required|integer|min:0|max:100',
-            'max_attempts'         => 'required|integer|min:1',
-            'shuffle_questions'    => 'boolean',
+            'duration_minutes' => 'nullable|integer|min:1',
+            'passing_score' => 'required|integer|min:0|max:100',
+            'max_attempts' => 'required|integer|min:1',
+            'shuffle_questions' => 'boolean',
             'show_correct_answers' => 'boolean',
-            'start_at'             => 'nullable|date',
-            'deadline_at'          => ['nullable', 'date', \Illuminate\Validation\Rule::when($request->filled('start_at'), ['after:start_at'])],
-            'quiz_mode'            => 'required|in:multiple_choice,essay,true_false,short_answer,custom',
+            'start_at' => 'nullable|date',
+            'deadline_at' => ['nullable', 'date', Rule::when($request->filled('start_at'), ['after:start_at'])],
+            'quiz_mode' => 'required|in:multiple_choice,essay,true_false,short_answer,custom',
         ], [
             'deadline_at.after' => 'Deadline harus setelah waktu mulai.',
         ]);
@@ -56,21 +61,21 @@ class QuizAdminController extends Controller
      */
     private function moduleScheduleError(Quiz $quiz, ?string $startAt, ?string $deadlineAt): ?string
     {
-        $module = \App\Models\Module::whereHas('lessons', fn($q) => $q->where('id', $quiz->lesson_id))->first();
+        $module = Module::whereHas('lessons', fn ($q) => $q->where('id', $quiz->lesson_id))->first();
         if ($module === null) {
             return null;
         }
 
-        $start = $startAt ? \Carbon\Carbon::parse($startAt) : null;
-        $end = $deadlineAt ? \Carbon\Carbon::parse($deadlineAt) : null;
+        $start = $startAt ? Carbon::parse($startAt) : null;
+        $end = $deadlineAt ? Carbon::parse($deadlineAt) : null;
         $opens = $module->start_at;
         $closes = $module->end_at;
 
         $checks = [
-            [$start && $opens && $start->lt($opens), 'Waktu mulai kuis tidak boleh lebih awal dari modul dibuka (' . $opens?->format(self::DATETIME_LABEL_FORMAT) . ').'],
-            [$end && $opens && $end->lt($opens), 'Deadline kuis tidak boleh lebih awal dari modul dibuka (' . $opens?->format(self::DATETIME_LABEL_FORMAT) . ').'],
-            [$start && $closes && $start->gt($closes), 'Waktu mulai kuis tidak boleh melewati modul ditutup (' . $closes?->format(self::DATETIME_LABEL_FORMAT) . ').'],
-            [$end && $closes && $end->gt($closes), 'Deadline kuis tidak boleh melewati modul ditutup (' . $closes?->format(self::DATETIME_LABEL_FORMAT) . ').'],
+            [$start && $opens && $start->lt($opens), 'Waktu mulai kuis tidak boleh lebih awal dari modul dibuka ('.$opens?->format(self::DATETIME_LABEL_FORMAT).').'],
+            [$end && $opens && $end->lt($opens), 'Deadline kuis tidak boleh lebih awal dari modul dibuka ('.$opens?->format(self::DATETIME_LABEL_FORMAT).').'],
+            [$start && $closes && $start->gt($closes), 'Waktu mulai kuis tidak boleh melewati modul ditutup ('.$closes?->format(self::DATETIME_LABEL_FORMAT).').'],
+            [$end && $closes && $end->gt($closes), 'Deadline kuis tidak boleh melewati modul ditutup ('.$closes?->format(self::DATETIME_LABEL_FORMAT).').'],
         ];
 
         foreach ($checks as [$invalid, $message]) {
@@ -87,16 +92,18 @@ class QuizAdminController extends Controller
      */
     public function addQuestion(Request $request, Quiz $quiz): RedirectResponse
     {
+        app(QuestionBankService::class)->assertQuizEditable($quiz);
         $request->validate($this->questionRules($request));
 
-        $maxOrder = $quiz->questions()->max('sort_order') ?? 0;
-
-        DB::transaction(function () use ($request, $quiz, $maxOrder) {
+        DB::transaction(function () use ($request, $quiz) {
+            $quiz = Quiz::lockForUpdate()->findOrFail($quiz->id);
+            app(QuestionBankService::class)->assertQuizEditable($quiz);
+            $maxOrder = $quiz->questions()->max('sort_order') ?? 0;
             $question = $quiz->questions()->create([
-                'question'    => $request->question,
-                'type'        => $request->type,
-                'points'      => $request->points,
-                'sort_order'  => $maxOrder + 1,
+                'question' => $request->question,
+                'type' => $request->type,
+                'points' => $request->points,
+                'sort_order' => $maxOrder + 1,
                 'explanation' => $request->explanation,
             ]);
 
@@ -111,13 +118,16 @@ class QuizAdminController extends Controller
      */
     public function updateQuestion(Request $request, QuizQuestion $question): RedirectResponse
     {
+        app(QuestionBankService::class)->assertQuizEditable($question->quiz);
         $request->validate($this->questionRules($request));
 
         DB::transaction(function () use ($request, $question) {
+            $quiz = Quiz::lockForUpdate()->findOrFail($question->quiz_id);
+            app(QuestionBankService::class)->assertQuizEditable($quiz);
             $question->update([
-                'question'    => $request->question,
-                'type'        => $request->type,
-                'points'      => $request->points,
+                'question' => $request->question,
+                'type' => $request->type,
+                'points' => $request->points,
                 'explanation' => $request->explanation,
             ]);
 
@@ -133,21 +143,21 @@ class QuizAdminController extends Controller
     private function questionRules(Request $request): array
     {
         $rules = [
-            'question'    => 'required|string',
-            'type'        => 'required|in:multiple_choice,essay,true_false,short_answer',
-            'points'      => 'required|integer|min:1',
+            'question' => 'required|string',
+            'type' => 'required|in:multiple_choice,essay,true_false,short_answer',
+            'points' => 'required|integer|min:1',
             'explanation' => 'nullable|string',
         ];
 
         if ($request->type === 'multiple_choice') {
-            $rules['options']               = 'required|array|min:2|max:8';
+            $rules['options'] = 'required|array|min:2|max:8';
             $rules['options.*.option_text'] = 'required|string';
-            $rules['options.*.is_correct']  = 'required|boolean';
+            $rules['options.*.is_correct'] = 'required|boolean';
         }
 
         if ($request->type === 'true_false') {
             // Urutan tetap: index 0 = Benar, index 1 = Salah
-            $rules['options']              = 'required|array|size:2';
+            $rules['options'] = 'required|array|size:2';
             $rules['options.*.is_correct'] = 'required|boolean';
         }
 
@@ -166,8 +176,8 @@ class QuizAdminController extends Controller
                 QuizOption::create([
                     'question_id' => $question->id,
                     'option_text' => $opt['option_text'],
-                    'is_correct'  => $opt['is_correct'],
-                    'sort_order'  => $i,
+                    'is_correct' => $opt['is_correct'],
+                    'sort_order' => $i,
                 ]);
             }
         } elseif ($request->type === 'true_false') {
@@ -177,14 +187,14 @@ class QuizAdminController extends Controller
             QuizOption::create([
                 'question_id' => $question->id,
                 'option_text' => 'Benar',
-                'is_correct'  => $benarIsCorrect,
-                'sort_order'  => 0,
+                'is_correct' => $benarIsCorrect,
+                'sort_order' => 0,
             ]);
             QuizOption::create([
                 'question_id' => $question->id,
                 'option_text' => 'Salah',
-                'is_correct'  => ! $benarIsCorrect,
-                'sort_order'  => 1,
+                'is_correct' => ! $benarIsCorrect,
+                'sort_order' => 1,
             ]);
         }
         // essay: tidak punya opsi
@@ -195,19 +205,26 @@ class QuizAdminController extends Controller
      */
     public function uploadQuestionImage(Request $request, QuizQuestion $question): RedirectResponse
     {
+        app(QuestionBankService::class)->assertQuizEditable($question->quiz);
         $request->validate([
             'image' => 'required|image|max:5120',
         ]);
 
-        // Hapus gambar lama
-        if ($question->image_path) {
-            Storage::disk('public')->delete($question->image_path);
-        }
+        DB::transaction(function () use ($request, $question) {
+            $quiz = Quiz::lockForUpdate()->findOrFail($question->quiz_id);
+            app(QuestionBankService::class)->assertQuizEditable($quiz);
+            $question->refresh();
+            // Hapus gambar lama
+            if ($question->image_path && ! $question->bank_question_id && ! BankQuestion::where('image_path', $question->image_path)->exists()) {
+                Storage::disk('public')->delete($question->image_path);
+            }
 
-        $path = $request->file('image')
-            ->store("quiz-images/{$question->quiz_id}", 'public');
+            $path = $request->file('image')
+                ->store("quiz-images/{$question->quiz_id}", 'public');
 
-        $question->update(['image_path' => $path]);
+            $question->update(['image_path' => $path]);
+
+        });
 
         return back()->with('success', 'Gambar soal berhasil diupload.');
     }
@@ -217,10 +234,17 @@ class QuizAdminController extends Controller
      */
     public function deleteQuestion(QuizQuestion $question): RedirectResponse
     {
-        if ($question->image_path) {
-            Storage::disk('public')->delete($question->image_path);
-        }
-        $question->delete();
+        DB::transaction(function () use ($question) {
+            $quiz = Quiz::lockForUpdate()->findOrFail($question->quiz_id);
+            app(QuestionBankService::class)->assertQuizEditable($quiz);
+            $question->refresh();
+            abort_if($question->random_group_id !== null, 422, 'Hapus kelompok acak melalui pengaturan bank soal.');
+            if ($question->image_path && ! $question->bank_question_id && ! BankQuestion::where('image_path', $question->image_path)->exists()) {
+                Storage::disk('public')->delete($question->image_path);
+            }
+            $question->delete();
+        });
+
         return back()->with('success', 'Soal berhasil dihapus.');
     }
 
@@ -230,15 +254,20 @@ class QuizAdminController extends Controller
     public function reorderQuestions(Request $request): RedirectResponse
     {
         $request->validate([
-            'questions'              => 'required|array',
-            'questions.*.id'         => 'required|exists:quiz_questions,id',
+            'questions' => 'required|array',
+            'questions.*.id' => 'required|exists:quiz_questions,id',
             'questions.*.sort_order' => 'required|integer',
         ]);
 
-        foreach ($request->questions as $item) {
-            QuizQuestion::where('id', $item['id'])
-                ->update(['sort_order' => $item['sort_order']]);
-        }
+        DB::transaction(function () use ($request) {
+            $quizIds = QuizQuestion::whereIn('id', array_column($request->questions, 'id'))->pluck('quiz_id')->unique()->sort()->values();
+            foreach (Quiz::whereIn('id', $quizIds)->orderBy('id')->lockForUpdate()->get() as $quiz) {
+                app(QuestionBankService::class)->assertQuizEditable($quiz);
+            }
+            foreach ($request->questions as $item) {
+                QuizQuestion::where('id', $item['id'])->update(['sort_order' => $item['sort_order']]);
+            }
+        });
 
         return back()->with('success', 'Urutan soal disimpan.');
     }

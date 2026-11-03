@@ -12,7 +12,7 @@ export const statusLabels = {
 };
 
 export function questionResult(answer, question) {
-    if (!answer) return { label: 'Belum dijawab', points: null, state: 'missing' };
+    if (!answer) return { label: question.random_group_id ? 'Tidak diambil' : 'Belum dijawab', points: null, state: 'missing' };
     if (isManualQuestion(question.type) && answer.manual_score == null) {
         if (!answer.essay_answer?.trim()) return { label: 'Tidak dijawab', points: 0, state: 'missing' };
         return { label: 'Menunggu koreksi', points: null, state: 'pending' };

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import { CheckCircle2, Image as ImageIcon, Plus, Trash2, Save, GripVertical } from 'lucide-react';
 import RichTextEditor from '@/Components/RichTextEditor';
+import QuizBankTools from '@/Components/QuizBankTools';
 
 const TYPE_BADGE = {
     multiple_choice: ['bg-blue-100 text-blue-700', 'Pilihan Ganda'],
@@ -64,6 +65,7 @@ export default function QuizBuilder({ quiz }) {
     };
 
     const addQuestion = (type) => {
+        if (quiz.questions_locked) return;
         setIsSaving(true);
         router.post(route('admin.quizzes.questions.store', quiz.id), {
             question: '<p>Pertanyaan baru</p>',
@@ -86,13 +88,14 @@ export default function QuizBuilder({ quiz }) {
     };
 
     const updateQuestion = (newContent) => {
+        if (quiz.questions_locked) return;
         const newQs = [...questions];
         newQs[activeQIndex] = { ...activeQ, ...newContent };
         setQuestions(newQs);
     };
 
     const saveActiveQuestion = () => {
-        if (!activeQ) return;
+        if (!activeQ || quiz.questions_locked) return;
         setIsSaving(true);
         router.patch(route('admin.quizzes.questions.update', activeQ.id), {
             question: activeQ.question,
@@ -115,6 +118,7 @@ export default function QuizBuilder({ quiz }) {
     };
 
     const deleteQuestion = (id) => {
+        if (quiz.questions_locked) return;
         if (!confirm('Hapus pertanyaan ini secara permanen?')) return;
         setIsSaving(true);
         router.delete(route('admin.quizzes.questions.delete', id), {
@@ -132,6 +136,7 @@ export default function QuizBuilder({ quiz }) {
     };
 
     const handleImageUpload = (e) => {
+        if (quiz.questions_locked) return;
         if (e.target.files.length > 0 && activeQ) {
             setIsSaving(true);
             const form = new FormData();
@@ -278,6 +283,7 @@ export default function QuizBuilder({ quiz }) {
 
     return (
         <div className="flex flex-col gap-4">
+            <QuizBankTools quiz={quiz} />
             {/* Setting bar */}
             <div className="p-4 border border-gray-200 bg-gray-50 rounded-xl">
                 <div className="grid items-end grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
@@ -378,7 +384,7 @@ export default function QuizBuilder({ quiz }) {
                     )}
 
                     {activeQ ? (
-                        <div className="space-y-6">
+                        <fieldset disabled={quiz.questions_locked} className="space-y-6">
                             <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                                 <h3 className="flex items-center gap-3 text-xl font-black text-gray-800">
                                     Soal Nomor {activeQIndex + 1}
@@ -400,6 +406,7 @@ export default function QuizBuilder({ quiz }) {
                                 </div>
                             </div>
 
+                            {activeQ.bank_question_id && <p className="rounded-lg bg-navy-50 px-3 py-2 text-xs text-navy-700">Salinan Bank Soal #{activeQ.bank_question_id} · versi sumber {activeQ.bank_version}. Perubahan lokal tidak memperbarui bank.</p>}
                             {/* Pertanyaan RTE (bukan kontrol native, jadi memakai <p>) */}
                             <div>
                                 <p className="block mb-2 text-sm font-bold text-gray-700">
@@ -407,6 +414,7 @@ export default function QuizBuilder({ quiz }) {
                                 </p>
                                 <RichTextEditor
                                     key={`q-${activeQ.id || 'new'}-${activeQIndex}`}
+                                    editable={!quiz.questions_locked}
                                     content={activeQ.question}
                                     onChange={html => updateQuestion({ question: html })}
                                 />
@@ -444,7 +452,7 @@ export default function QuizBuilder({ quiz }) {
                                     <Save className="w-4 h-4" /> Simpan Soal Ini
                                 </button>
                             </div>
-                        </div>
+                        </fieldset>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full py-20 text-center text-gray-400">
                             <div className="flex items-center justify-center w-20 h-20 mb-4 rounded-full bg-gray-50">
@@ -483,22 +491,22 @@ export default function QuizBuilder({ quiz }) {
                         <div className="pt-4 mt-6 space-y-2 border-t border-gray-100">
                             <p className="mb-2 text-xs font-bold text-gray-400 uppercase">Tambah Soal Baru</p>
                             {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'multiple_choice') && (
-                                <button onClick={() => addQuestion('multiple_choice')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-blue-600 transition-colors border-2 border-blue-300 border-dashed rounded-lg hover:bg-blue-50">
+                                <button disabled={quiz.questions_locked || isSaving} onClick={() => addQuestion('multiple_choice')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-blue-600 transition-colors border-2 border-blue-300 border-dashed rounded-lg hover:bg-blue-50">
                                     <Plus className="w-4 h-4" /> Pilihan Ganda
                                 </button>
                             )}
                             {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'true_false') && (
-                                <button onClick={() => addQuestion('true_false')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-green-600 transition-colors border-2 border-green-300 border-dashed rounded-lg hover:bg-green-50">
+                                <button disabled={quiz.questions_locked || isSaving} onClick={() => addQuestion('true_false')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-green-600 transition-colors border-2 border-green-300 border-dashed rounded-lg hover:bg-green-50">
                                     <Plus className="w-4 h-4" /> Benar / Salah
                                 </button>
                             )}
                             {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'short_answer') && (
-                                <button onClick={() => addQuestion('short_answer')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold transition-colors border-2 border-dashed rounded-lg text-amber-600 border-amber-300 hover:bg-amber-50">
+                                <button disabled={quiz.questions_locked || isSaving} onClick={() => addQuestion('short_answer')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold transition-colors border-2 border-dashed rounded-lg text-amber-600 border-amber-300 hover:bg-amber-50">
                                     <Plus className="w-4 h-4" /> Jawaban Singkat
                                 </button>
                             )}
                             {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'essay') && (
-                                <button onClick={() => addQuestion('essay')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-purple-600 transition-colors border-2 border-purple-300 border-dashed rounded-lg hover:bg-purple-50">
+                                <button disabled={quiz.questions_locked || isSaving} onClick={() => addQuestion('essay')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-purple-600 transition-colors border-2 border-purple-300 border-dashed rounded-lg hover:bg-purple-50">
                                     <Plus className="w-4 h-4" /> Soal Essay
                                 </button>
                             )}

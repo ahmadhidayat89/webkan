@@ -18,7 +18,7 @@ function QuestionScore({ answer, question }) {
     };
     let content = result.label;
     if (result.points === null) {
-        content = result.state === 'pending' ? 'Koreksi' : <span className="sr-only">Belum dijawab</span>;
+        content = result.state === 'pending' ? 'Koreksi' : <span className="sr-only">{result.label}</span>;
     }
     return (
         <span title={result.label} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${colors[result.state]}`}>

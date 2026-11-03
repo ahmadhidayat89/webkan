@@ -858,7 +858,8 @@ function QuizTakingView({
 // ───────────────────────────────────────────────────────────────────────────
 
 function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule = false, onQuizActiveChange }) {
-    const quiz = lesson.quiz;
+    const [drawnQuestions, setDrawnQuestions] = useState(null);
+    const quiz = lesson.quiz ? { ...lesson.quiz, questions: drawnQuestions ?? lesson.quiz.questions } : null;
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState({});
     const [submitted, setSubmitted] = useState(false);
@@ -943,16 +944,29 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
     };
 
     const handleStart = () => {
-        // Jaga-jaga: jendela waktu bisa berubah sejak halaman dimuat
-        if (!bypassSchedule && getQuizWindow(quiz, Date.now() + clockOffset) !== 'open') return;
-
-        setAutoSubmitted(false);
-        setDeadline(computeAttemptDeadline(quiz, clockOffset, bypassSchedule));
-        setStarted(true);
-        onQuizActiveChange(true);
+        if (processing || (!bypassSchedule && getQuizWindow(quiz, Date.now() + clockOffset) !== 'open')) return;
+        const begin = () => {
+            setAutoSubmitted(false);
+            setDeadline(computeAttemptDeadline(quiz, clockOffset, bypassSchedule));
+            setStarted(true);
+            onQuizActiveChange(true);
+        };
+        if (!quiz.has_random_questions) { begin(); return; }
+        setProcessing(true);
+        router.post(route('courses.quizzes.start', { course: courseId, quiz: quiz.id }), {}, {
+            preserveScroll: true,
+            onSuccess: page => {
+                const freshLesson = page.props.courseData.modules.flatMap(module => module.lessons).find(item => item.id === lesson.id);
+                setDrawnQuestions(freshLesson.quiz.questions);
+                begin();
+            },
+            onError: errors => alert(Object.values(errors).join('\n')),
+            onFinish: () => setProcessing(false),
+        });
     };
 
     const handleReset = () => {
+        setDrawnQuestions(null);
         setAnswers({});
         setResult(null);
         setDeadline(null);

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -54,8 +55,9 @@ const MenuBar = ({ editor }) => {
     );
 };
 
-export default function RichTextEditor({ content, onChange, placeholder = "Tulis di sini..." }) {
+export default function RichTextEditor({ content, onChange, editable = true, placeholder = "Tulis di sini..." }) {
     const editor = useEditor({
+        editable,
         extensions: [
             StarterKit,
             Link.configure({
@@ -77,6 +79,8 @@ export default function RichTextEditor({ content, onChange, placeholder = "Tulis
             onChange(editor.getHTML());
         },
     });
+
+    useEffect(() => { editor?.setEditable(editable); }, [editor, editable]);
 
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden flex flex-col">

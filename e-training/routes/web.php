@@ -166,4 +166,23 @@ Route::middleware(['auth', 'role:admin,pengajar', 'course.access'])->prefix('adm
         ->name('certificates.preview.template');
 });
 
+Route::middleware(['auth', 'role:admin,pengajar'])->prefix('admin/question-bank')->name('admin.question-bank.')->group(function () {
+    $controller = \App\Http\Controllers\QuestionBankController::class;
+    Route::get('/', [$controller, 'index'])->name('index');
+    Route::get('/export', [$controller, 'export'])->name('export');
+    Route::post('/import', [$controller, 'import'])->name('import');
+    Route::post('/categories', [$controller, 'storeCategory'])->name('categories.store');
+    Route::post('/questions', [$controller, 'store'])->name('store');
+    Route::patch('/questions/{bankQuestion}', [$controller, 'update'])->name('update');
+    Route::post('/questions/{bankQuestion}/duplicate', [$controller, 'duplicate'])->name('duplicate');
+    Route::patch('/questions/{bankQuestion}/archive', [$controller, 'archive'])->name('archive');
+    Route::get('/questions/{bankQuestion}/history', [$controller, 'history'])->name('history');
+    Route::post('/quizzes/{quiz}/add', [$controller, 'addToQuiz'])->name('quiz.add');
+    Route::post('/quizzes/{quiz}/collect', [$controller, 'collectQuiz'])->name('quiz.collect');
+    Route::delete('/quizzes/{quiz}/groups/{group}', [$controller, 'removeGroup'])->name('quiz.groups.delete');
+});
+
+Route::post('/course/{course}/quizzes/{quiz}/start', [CoursePlayerController::class, 'startQuiz'])
+    ->middleware('auth')->name('courses.quizzes.start');
+
 require __DIR__ . '/auth.php';

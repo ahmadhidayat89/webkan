@@ -16,6 +16,9 @@ class QuizQuestion extends Model
         'sort_order',
         'explanation',
         'image_path',
+        'bank_question_id',
+        'bank_version',
+        'random_group_id',
     ];
 
     /**

@@ -9,6 +9,7 @@ test('weighted scores distinguish pending, zero, partial and missing answers', (
     assert.equal(questionResult({ manual_score: null, essay_answer: 'Jawaban' }, question).state, 'pending');
     assert.equal(questionResult({ manual_score: null, essay_answer: ' ' }, question).points, 0);
     assert.equal(questionResult(undefined, question).state, 'missing');
+    assert.equal(questionResult(undefined, { ...question, random_group_id: 1 }).label, 'Tidak diambil');
     assert.equal(questionResult({ is_correct: true }, { type: 'multiple_choice', points: 2 }).points, 2);
 });
 

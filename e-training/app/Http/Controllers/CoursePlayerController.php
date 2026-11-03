@@ -156,13 +156,14 @@ class CoursePlayerController extends Controller
                 'deadline_at' => $quizEnd?->toIso8601String(),
                 'deadline_at_label' => $quizEnd?->format(self::DATETIME_LABEL_FORMAT),
                 'shuffle_questions' => $lesson->quiz->shuffle_questions,
-                'questions' => $lesson->quiz->questions->map(function ($q) {
+                'has_random_questions' => \Illuminate\Support\Facades\DB::table('quiz_random_groups')->where('quiz_id', $lesson->quiz->id)->exists(),
+                'questions' => app(\App\Services\QuestionBankService::class)->questionsFor($lesson->quiz, auth()->user())->map(function ($q) {
                     return [
                         'id' => $q->id,
                         'question' => $q->question,
                         'type' => $q->type,
                         'points' => $q->points,
-                        'explanation' => $q->explanation,
+                        'explanation' => auth()->user()->role === 'peserta' ? null : $q->explanation,
                         'image_path' => $q->image_path ? Storage::url($q->image_path) : null,
                         // 'is_correct' sengaja TIDAK dikirim ke browser agar kunci jawaban
                         // tidak bisa dilihat peserta. Penilaian dilakukan di server.
@@ -184,6 +185,24 @@ class CoursePlayerController extends Controller
                 })->values(),
             ] : null,
         ];
+    }
+
+    public function startQuiz(Request $request, Course $course, \App\Models\Quiz $quiz)
+    {
+        abort_unless($quiz->lesson->module->course_id === $course->id, 404);
+        app(ModuleProgression::class)->authorizeLesson($quiz->lesson, $request->user());
+        abort_if($course->isExpired(), 422, 'Masa kursus telah berakhir.');
+        DB::transaction(function () use ($quiz, $request, $course) {
+            $quiz = \App\Models\Quiz::lockForUpdate()->findOrFail($quiz->id);
+            $override = \App\Models\QuizUserOverride::where('quiz_id', $quiz->id)->where('user_id', $request->user()->id)->first();
+            $error = $request->user()->canBypassSchedule($course) ? null : $quiz->submissionBlockedReason($override);
+            if ($error) throw \Illuminate\Validation\ValidationException::withMessages(['message' => $error]);
+            if ($this->hasReachedAttemptLimit($quiz, $request->user()->id, $override?->extra_attempts ?? 0)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['message' => 'Batas percobaan kuis telah tercapai.']);
+            }
+            app(\App\Services\QuestionBankService::class)->questionsFor($quiz, $request->user(), start: true);
+        });
+        return back();
     }
 
     /**
@@ -236,6 +255,12 @@ class CoursePlayerController extends Controller
             if ($this->hasReachedAttemptLimit($quiz, $user->id, $override?->extra_attempts ?? 0)) {
                 return 'Anda telah mencapai batas maksimum percobaan untuk kuis ini.';
             }
+
+            $selected = app(\App\Services\QuestionBankService::class)->questionsFor($quiz, $user, requireDraw: true);
+            if (array_diff(array_map('intval', array_keys($answers)), $selected->pluck('id')->all())) {
+                return 'Jawaban tidak sesuai dengan paket soal yang diberikan.';
+            }
+            $quiz->setRelation('questions', $selected);
 
             $attempt = \App\Models\QuizAttempt::create([
                 'user_id' => $user->id,

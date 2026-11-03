@@ -23,7 +23,11 @@ class AdminActivityLogger
         if (Auth::check() && $request->is('admin/*') && !in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'])) {
             
             // Mask sensitive fields
-            $details = $request->except(['password', 'password_confirmation', '_token', '_method']);
+            $details = $request->except(['password', 'password_confirmation', '_token', '_method', ...array_keys($request->allFiles())]);
+
+            if ($request->allFiles()) {
+                $details['upload_fields'] = array_keys($request->allFiles());
+            }
 
             AuditLog::create([
                 'user_id' => Auth::id(),
