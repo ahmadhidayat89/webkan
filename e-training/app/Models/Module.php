@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Module extends Model
@@ -15,6 +16,7 @@ class Module extends Model
         'sort_order',
         'is_published',
         'requires_completion',
+        'is_restricted',
         'start_at',
         'end_at',
     ];
@@ -24,6 +26,7 @@ class Module extends Model
         return [
             'is_published' => 'boolean',
             'requires_completion' => 'boolean',
+            'is_restricted' => 'boolean',
             'start_at'     => 'datetime',
             'end_at'       => 'datetime',
         ];
@@ -90,5 +93,13 @@ class Module extends Model
     public function discussions(): HasMany
     {
         return $this->hasMany(Discussion::class)->orderBy('created_at');
+    }
+
+    /**
+     * Peserta yang boleh mengakses modul ini (dipakai kalau is_restricted aktif).
+     */
+    public function allowedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'module_user_access')->withTimestamps();
     }
 }

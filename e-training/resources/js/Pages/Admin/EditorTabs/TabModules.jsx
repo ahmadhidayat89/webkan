@@ -3,6 +3,7 @@ import { router, useForm } from '@inertiajs/react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { PlusCircle, GripVertical, Trash2, Video, FileText, HelpCircle, ChevronDown, ChevronUp, Upload, X, Save, AlertTriangle } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
+import ModuleAccessSetting from '@/Components/ModuleAccessSetting';
 
 // FIX: ternary bersarang diganti fungsi dengan early return
 function getSaveStatusText(isDirty, saved) {
@@ -216,7 +217,6 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
                 <div {...dragHandleProps}>
                     <GripVertical className="flex-shrink-0 w-4 h-4 text-gray-300 cursor-grab" />
                 </div>
-                <span className="text-[10px] font-bold text-navy-500 uppercase tracking-wider flex-shrink-0">Modul {index + 1}</span>
                 <input
                     type="text"
                     value={title}
@@ -244,6 +244,7 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
             {isOpen && (
                 <div className="p-3 space-y-3">
                     <ModuleCompletionSetting module={module} />
+                    <ModuleAccessSetting module={module} />
                     <div className="flex flex-wrap items-end gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
                         <div className="flex-1 min-w-[180px]">
                             <label htmlFor={`module-${module.id}-start`} className="block mb-1 text-xs font-bold text-gray-500 uppercase">Akses Dibuka</label>

@@ -40,6 +40,9 @@ class CoursePlayerController extends Controller
                 $query->where('user_id', auth()->id())
                     ->orderBy('created_at', 'desc')
                     ->orderBy('id', 'desc');
+            },
+            'modules.lessons.quiz.overrides' => function ($query) {
+                $query->where('user_id', auth()->id());
             }
         ])->findOrFail($id);
 
@@ -48,6 +51,7 @@ class CoursePlayerController extends Controller
         $progression->authorizeCourse($course, $user);
         $moduleLocks = $progression->lockedModules($course, $user);
         $lessonLocks = $progression->lockedLessons($course, $user);
+        $hiddenModuleIds = $progression->hiddenModuleIds($course, $user);
         $canBypassSchedule = $user->canBypassSchedule($course);
         $lessonProgresses = \App\Models\LessonProgress::where('user_id', $user->id)
             ->whereIn('lesson_id', $course->modules->flatMap->lessons->pluck('id'))
@@ -68,7 +72,10 @@ class CoursePlayerController extends Controller
             'server_now' => now()->toIso8601String(),
             'can_bypass_schedule' => $canBypassSchedule,
             'deadline_at' => $course->deadline_at?->format(self::DATETIME_LABEL_FORMAT),
-            'modules' => $course->modules->map(fn ($module) => $this->formatPlayerModule($module, $lessonProgresses, $moduleLocks, $lessonLocks))->values(),
+            'modules' => $course->modules
+                ->reject(fn($module) => in_array($module->id, $hiddenModuleIds, true))
+                ->map(fn($module) => $this->formatPlayerModule($module, $lessonProgresses, $moduleLocks, $lessonLocks))
+                ->values(),
         ];
 
         return Inertia::render('CoursePlayer', [
@@ -91,8 +98,8 @@ class CoursePlayerController extends Controller
             'end_at' => $module->end_at?->toIso8601String(),
             'end_at_label' => $module->end_at?->format(self::DATETIME_LABEL_FORMAT),
             'lessons' => $module->lessons
-                ->filter(fn ($lesson) => auth()->user()->role !== 'peserta' || $lesson->is_published)
-                ->map(fn ($lesson) => $this->formatPlayerLesson($lesson, $module, $lessonProgresses, $lockedReason ?? $lessonLocks[$lesson->id] ?? null))->values(),
+                ->filter(fn($lesson) => auth()->user()->role !== 'peserta' || $lesson->is_published)
+                ->map(fn($lesson) => $this->formatPlayerLesson($lesson, $module, $lessonProgresses, $lockedReason ?? $lessonLocks[$lesson->id] ?? null))->values(),
         ];
     }
 
@@ -101,13 +108,21 @@ class CoursePlayerController extends Controller
         $isCompleted = $lessonProgresses->get($lesson->id)?->is_completed ?? false;
         if ($lockedReason !== null) {
             return [
-                'id' => $lesson->id, 'title' => $lesson->title, 'type' => $lesson->type,
-                'isCompleted' => $isCompleted, 'files' => [], 'quiz' => null, 'locked_reason' => $lockedReason,
+                'id' => $lesson->id,
+                'title' => $lesson->title,
+                'type' => $lesson->type,
+                'isCompleted' => $isCompleted,
+                'files' => [],
+                'quiz' => null,
+                'locked_reason' => $lockedReason,
             ];
         }
-        // Jadwal kuis tidak boleh keluar dari jadwal modulnya
+        // Jadwal kuis tidak boleh keluar dari jadwal modulnya, kecuali ada keringanan aktif
+        $override = $lesson->quiz?->overrides->first();
         $quizStart = collect([$lesson->quiz?->start_at, $module->start_at])->filter()->max();
-        $quizEnd = collect([$lesson->quiz?->deadline_at, $module->end_at])->filter()->min();
+        $quizEnd = $override?->bypassesSchedule()
+            ? $override->open_until
+            : collect([$lesson->quiz?->deadline_at, $module->end_at])->filter()->min();
         return [
             'id' => $lesson->id,
             'title' => $lesson->title,
@@ -131,7 +146,10 @@ class CoursePlayerController extends Controller
                 'quiz_mode' => $lesson->quiz->quiz_mode,
                 'duration_minutes' => $lesson->quiz->duration_minutes,
                 'passing_score' => $lesson->quiz->passing_score,
-                'max_attempts' => $lesson->quiz->max_attempts,
+                'max_attempts' => $lesson->quiz->max_attempts
+                    ? $lesson->quiz->max_attempts + ($override?->extra_attempts ?? 0)
+                    : null,
+                'has_override' => $override !== null,
                 'start_at' => $quizStart?->toIso8601String(),
                 'start_at_label' => $quizStart?->format(self::DATETIME_LABEL_FORMAT),
                 'deadline_at' => $quizEnd?->toIso8601String(),
@@ -208,11 +226,13 @@ class CoursePlayerController extends Controller
     {
         return DB::transaction(function () use ($answers, $user, $quizId, $courseId, $bypassSchedule) {
             $quiz = \App\Models\Quiz::with('questions.options')->lockForUpdate()->findOrFail($quizId);
-            $blockedReason = $bypassSchedule ? null : $quiz->submissionBlockedReason();
+            $override = \App\Models\QuizUserOverride::where('quiz_id', $quiz->id)
+                ->where('user_id', $user->id)->first();
+            $blockedReason = $bypassSchedule ? null : $quiz->submissionBlockedReason($override);
             if ($blockedReason !== null) {
                 return $blockedReason;
             }
-            if ($this->hasReachedAttemptLimit($quiz, $user->id)) {
+            if ($this->hasReachedAttemptLimit($quiz, $user->id, $override?->extra_attempts ?? 0)) {
                 return 'Anda telah mencapai batas maksimum percobaan untuk kuis ini.';
             }
 
@@ -234,13 +254,13 @@ class CoursePlayerController extends Controller
         });
     }
 
-    private function hasReachedAttemptLimit($quiz, int $userId): bool
+    private function hasReachedAttemptLimit($quiz, int $userId, int $extraAttempts = 0): bool
     {
         if (!$quiz->max_attempts) {
             return false;
         }
         return \App\Models\QuizAttempt::where('user_id', $userId)
-            ->where('quiz_id', $quiz->id)->count() >= $quiz->max_attempts;
+            ->where('quiz_id', $quiz->id)->count() >= $quiz->max_attempts + $extraAttempts;
     }
 
     /**
@@ -340,7 +360,7 @@ class CoursePlayerController extends Controller
         abort_if($lesson->type === 'quiz', 403, 'Selesaikan kuis dengan mengirim jawaban.');
 
         // Modul harus sedang dibuka (belum dibuka / sudah ditutup: tidak bisa ditandai selesai)
-        $module = \App\Models\Module::whereHas('lessons', fn ($q) => $q->where('id', $lessonId))->first();
+        $module = \App\Models\Module::whereHas('lessons', fn($q) => $q->where('id', $lessonId))->first();
         if ($module && ! $user->canBypassSchedule($course) && ! $module->isOpen()) {
             return back()->withErrors([
                 'message' => 'Modul ini sedang tidak dibuka, jadi materi tidak bisa ditandai selesai.',
@@ -369,7 +389,11 @@ class CoursePlayerController extends Controller
             return;
         }
 
-        $allLessonIds = $course->modules->flatMap->lessons->pluck('id');
+        // Modul terbatas yang tidak bisa diakses peserta ini tidak ikut dihitung
+        $hiddenModuleIds = app(ModuleProgression::class)->hiddenModuleIds($course, $user);
+        $allLessonIds = $course->modules
+            ->reject(fn($module) => in_array($module->id, $hiddenModuleIds, true))
+            ->flatMap->lessons->pluck('id');
         $totalLessons = $allLessonIds->count();
 
         if ($totalLessons > 0) {

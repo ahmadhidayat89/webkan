@@ -11,6 +11,8 @@ use App\Http\Controllers\QuizAdminController;
 use App\Http\Controllers\GradingController;
 use App\Http\Controllers\CertificateAdminController;
 use App\Http\Controllers\CourseEnrollmentController;
+use App\Http\Controllers\QuizOverrideController;
+use App\Http\Controllers\ModuleAccessController;
 use App\Support\RoutePaths;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -48,10 +50,11 @@ Route::middleware('auth')->prefix('learning-files')->name('learning.files.')->gr
 
 // Diskusi per lesson/sesi (bisa diakses semua user yang login)
 use App\Http\Controllers\DiscussionController;
+
 Route::middleware(['auth'])->prefix('lessons/{lesson}/discussions')->name('discussions.')->group(function () {
-    Route::get('/',              [DiscussionController::class, 'index'])  ->name('index');
-    Route::post('/',             [DiscussionController::class, 'store'])  ->name('store');
-    Route::delete('/{discussion}',[DiscussionController::class, 'destroy'])->name('destroy');
+    Route::get('/',              [DiscussionController::class, 'index'])->name('index');
+    Route::post('/',             [DiscussionController::class, 'store'])->name('store');
+    Route::delete('/{discussion}', [DiscussionController::class, 'destroy'])->name('destroy');
 });
 
 // Peserta: self-enroll via referral code
@@ -111,7 +114,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         ->name('courses.unenroll');
     Route::patch('/courses/{course}/referral-code', [CourseEnrollmentController::class, 'updateReferralCode'])
         ->name('courses.referral.update');
-
 });
 
 Route::middleware(['auth', 'role:admin,pengajar', 'course.access'])->prefix('admin')->name('admin.')->group(function () {
@@ -124,6 +126,9 @@ Route::middleware(['auth', 'role:admin,pengajar', 'course.access'])->prefix('adm
     Route::patch('/modules/{module}', [ModuleController::class, 'update'])->name('modules.update');
     Route::delete('/modules/{module}', [ModuleController::class, 'destroy'])->name('modules.destroy');
     Route::post('/modules/reorder', [ModuleController::class, 'reorder'])->name('modules.reorder');
+
+    Route::get('/modules/{module}/access', [ModuleAccessController::class, 'show'])->name('modules.access.show');
+    Route::put('/modules/{module}/access', [ModuleAccessController::class, 'update'])->name('modules.access.update');
 
     Route::post('/lessons/reorder', [LessonController::class, 'reorder'])->name('lessons.reorder');
 
@@ -142,6 +147,10 @@ Route::middleware(['auth', 'role:admin,pengajar', 'course.access'])->prefix('adm
     Route::post('/questions/{question}/image', [QuizAdminController::class, 'uploadQuestionImage'])->name('quizzes.questions.image');
     Route::post('/questions/reorder', [QuizAdminController::class, 'reorderQuestions'])->name('quizzes.questions.reorder');
 
+    Route::get('/quizzes/{quiz}/overrides', [QuizOverrideController::class, 'index'])->name('quizzes.overrides.index');
+    Route::post('/quizzes/{quiz}/overrides', [QuizOverrideController::class, 'store'])->name('quizzes.overrides.store');
+    Route::delete('/quizzes/{quiz}/overrides/{override}', [QuizOverrideController::class, 'destroy'])->name('quizzes.overrides.destroy');
+
     // Penilaian (Grading)
     Route::get('/courses/{course}/grade-report', [GradingController::class, 'courseReport'])->name('grading.report');
     Route::get('/quizzes/{quiz}/attempts', [GradingController::class, 'listAttempts'])->name('grading.attempts');
@@ -155,7 +164,6 @@ Route::middleware(['auth', 'role:admin,pengajar', 'course.access'])->prefix('adm
         ->name('certificates.preview');
     Route::get('/courses/{course}/certificate-preview', [CertificateAdminController::class, 'previewTemplate'])
         ->name('certificates.preview.template');
-
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

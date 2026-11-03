@@ -8,6 +8,7 @@ use App\Models\LessonProgress;
 use App\Models\Module;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ModuleProgression
 {
@@ -20,15 +21,40 @@ class ModuleProgression
             && $course->enrollments()->where('user_id', $user->id)->exists(), 403);
     }
 
+    /**
+     * ID modul terbatas yang TIDAK boleh diakses peserta ini.
+     * Admin dan pengajar selalu mendapat daftar kosong.
+     */
+    public function hiddenModuleIds(Course $course, User $user): array
+    {
+        if ($user->role !== 'peserta') {
+            return [];
+        }
+        $course->loadMissing('modules');
+        $restricted = $course->modules->where('is_restricted', true)->pluck('id');
+        if ($restricted->isEmpty()) {
+            return [];
+        }
+        $allowed = DB::table('module_user_access')
+            ->where('user_id', $user->id)
+            ->whereIn('module_id', $restricted)
+            ->pluck('module_id');
+
+        return $restricted->diff($allowed)->map(fn ($id) => (int) $id)->values()->all();
+    }
+
     public function lockedModules(Course $course, User $user): array
     {
         if ($user->role !== 'peserta') {
             return [];
         }
         $course->loadMissing('modules.lessons');
+        $hidden = $this->hiddenModuleIds($course, $user);
         $locks = [];
         foreach ($course->modules as $module) {
-            $reason = $this->reasonFor($module);
+            $reason = in_array($module->id, $hidden, true)
+                ? 'Modul ini tidak tersedia untuk Anda.'
+                : $this->reasonFor($module);
             if ($reason !== null) {
                 $locks[$module->id] = $reason;
             }

@@ -482,7 +482,7 @@ function QuizIntroAction({ isExpired, windowState, limitReached, attempts, quiz,
     if (windowState === 'closed') {
         return (
             <p className="text-sm font-medium text-red-500">
-                Kuis ini sudah ditutup pada {quiz.deadline_at_label}.
+                Kuis ini sudah ditutup pada {quiz.deadline_at_label}. Hubungi admin atau pengajar jika membutuhkan keringanan.
             </p>
         );
     }
@@ -498,7 +498,7 @@ function QuizIntroAction({ isExpired, windowState, limitReached, attempts, quiz,
     if (limitReached) {
         return (
             <p className="text-sm font-medium text-red-500">
-                Batas percobaan tercapai ({attempts.length}/{quiz.max_attempts}).
+                Batas percobaan tercapai ({attempts.length}/{quiz.max_attempts}). Hubungi admin atau pengajar jika membutuhkan keringanan.
             </p>
         );
     }
@@ -534,6 +534,11 @@ function QuizIntro({ lesson, quiz, attempts, isExpired, windowState, limitReache
                     <QuizInfoRow label="Batas waktu" value={quiz.duration_minutes ? `${quiz.duration_minutes} menit` : 'Tanpa batas'} />
                     <QuizInfoRow label="Nilai minimum lulus" value={quiz.passing_score} />
                 </dl>
+                {quiz.has_override && (
+                    <p className="mb-4 text-xs text-green-700">
+                        Anda mendapat keringanan dari admin/pengajar untuk kuis ini.
+                    </p>
+                )}
 
                 {Boolean(quiz.duration_minutes) && Boolean(quiz.deadline_at) && (
                     <p className="mb-6 text-xs text-gray-400">

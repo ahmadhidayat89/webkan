@@ -26,14 +26,26 @@ function defaultOptions(type) {
     return [];
 }
 
+// Ubah tanggal dari server menjadi format input datetime-local, dalam jam Jakarta
+function toLocalInput(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('sv-SE', {
+        timeZone: 'Asia/Jakarta',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).format(d).replace(' ', 'T');
+}
+
 export default function QuizBuilder({ quiz }) {
     const [settings, setSettings] = useState({
         duration_minutes: quiz.duration_minutes || '',
         passing_score: quiz.passing_score || 70,
         max_attempts: quiz.max_attempts || 3,
         quiz_mode: quiz.quiz_mode || 'custom',
-        start_at: quiz.start_at || '',
-        deadline_at: quiz.deadline_at ? new Date(quiz.deadline_at).toISOString().slice(0, 16) : '',
+        start_at: toLocalInput(quiz.start_at),
+        deadline_at: toLocalInput(quiz.deadline_at),
         shuffle_questions: quiz.shuffle_questions || false,
     });
 

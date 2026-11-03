@@ -1,11 +1,21 @@
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
-import { Users, Copy, RefreshCw, UserPlus, Search, Trash2 } from 'lucide-react';
+import { Users, Copy, RefreshCw, UserPlus, Search, Trash2, Clock } from 'lucide-react';
+import QuizOverrideModal from '@/Components/QuizOverrideModal';
 
 export default function TabStudents({ course, allStudents, canManageParticipants = false }) {
     const [referralCode, setReferralCode] = useState(course.referral_code || '');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUserId, setSelectedUserId] = useState('');
+    const [overrideFor, setOverrideFor] = useState(undefined); // undefined = modal tertutup
+
+    const quizzes = (course.modules ?? []).flatMap((m) =>
+        (m.lessons ?? []).filter((l) => l.quiz).map((l) => ({
+            id: l.quiz.id, title: l.title, module_title: m.title,
+        }))
+    );
+    const canGrantOverride = quizzes.length > 0;
+    const showActions = canManageParticipants || canGrantOverride;
 
     const generateNewReferral = () => {
         if (confirm('Ubah kode referral? Kode lama tidak akan bisa digunakan lagi.')) {
@@ -132,7 +142,7 @@ export default function TabStudents({ course, allStudents, canManageParticipants
                                 <tr>
                                     <th className="px-4 py-3 font-medium">Peserta</th>
                                     <th className="px-4 py-3 font-medium">Progress</th>
-                                    {canManageParticipants && <th className="px-4 py-3 font-medium text-right">Aksi</th>}
+                                    {showActions && <th className="px-4 py-3 font-medium text-right">Aksi</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -154,22 +164,34 @@ export default function TabStudents({ course, allStudents, canManageParticipants
                                                 <span className="text-xs font-bold text-gray-700">{student.progress_percent}%</span>
                                             </div>
                                         </td>
-                                        {canManageParticipants && <td className="px-4 py-3 text-right">
-                                            <button
-                                                onClick={() => unenrollStudent(student.user_id, student.name)}
-                                                className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                                title="Keluarkan dari pelatihan"
-                                                aria-label={`Keluarkan ${student.name} dari pelatihan`}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                        {showActions && <td className="px-4 py-3 text-right whitespace-nowrap">
+                                            {canGrantOverride && (
+                                                <button
+                                                    onClick={() => setOverrideFor(student.user_id)}
+                                                    className="p-1.5 text-navy-500 hover:text-navy-700 hover:bg-navy-50 rounded transition-colors"
+                                                    title="Beri keringanan kuis"
+                                                    aria-label={`Beri keringanan kuis ${student.name}`}
+                                                >
+                                                    <Clock className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            {canManageParticipants && (
+                                                <button
+                                                    onClick={() => unenrollStudent(student.user_id, student.name)}
+                                                    className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                    title="Keluarkan dari pelatihan"
+                                                    aria-label={`Keluarkan ${student.name} dari pelatihan`}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </td>}
                                     </tr>
                                 ))}
 
                                 {filteredEnrolled.length === 0 && (
                                     <tr>
-                                        <td colSpan={canManageParticipants ? 3 : 2} className="px-4 py-8 text-center text-gray-500 text-sm">
+                                        <td colSpan={showActions ? 3 : 2} className="px-4 py-8 text-center text-gray-500 text-sm">
                                             Belum ada peserta yang terdaftar atau cocok dengan pencarian.
                                         </td>
                                     </tr>
@@ -179,6 +201,14 @@ export default function TabStudents({ course, allStudents, canManageParticipants
                     </div>
                 </div>
             </div>
+
+            {overrideFor !== undefined && (
+                <QuizOverrideModal
+                    quizzes={quizzes}
+                    initialUserId={overrideFor}
+                    onClose={() => setOverrideFor(undefined)}
+                />
+            )}
         </div>
     );
 }

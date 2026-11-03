@@ -58,15 +58,18 @@ class Quiz extends Model
     /**
      * Alasan jawaban ditolak karena jendela waktu, atau null kalau boleh dikirim.
      */
-    public function submissionBlockedReason(): ?string
+    public function submissionBlockedReason(?QuizUserOverride $override = null): ?string
     {
         $module = Module::whereHas('lessons', fn($q) => $q->where('id', $this->lesson_id))->first();
 
+        // Keringanan aktif: lewati cek tenggat kuis dan akhir modul
+        $bypass = $override?->bypassesSchedule() ?? false;
+
         $checks = [
             [! $this->hasStarted(), 'Kuis ini belum dibuka.'],
-            [! $this->acceptsSubmission(), 'Waktu pengerjaan kuis telah berakhir.'],
+            [! $bypass && ! $this->acceptsSubmission(), 'Waktu pengerjaan kuis telah berakhir.'],
             [$module !== null && ! $module->hasStarted(), 'Modul ini belum dibuka.'],
-            [$module !== null && ! $module->acceptsSubmission(), 'Akses modul ini sudah ditutup.'],
+            [! $bypass && $module !== null && ! $module->acceptsSubmission(), 'Akses modul ini sudah ditutup.'],
         ];
 
         foreach ($checks as [$blocked, $message]) {
@@ -100,5 +103,9 @@ class Quiz extends Model
     public function attempts(): HasMany
     {
         return $this->hasMany(QuizAttempt::class);
+    }
+    public function overrides(): HasMany
+    {
+        return $this->hasMany(QuizUserOverride::class);
     }
 }
