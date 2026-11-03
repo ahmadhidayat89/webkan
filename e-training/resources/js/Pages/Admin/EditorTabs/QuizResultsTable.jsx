@@ -16,12 +16,14 @@ function QuestionScore({ answer, question }) {
         pending: 'text-amber-700 bg-amber-50',
         missing: 'text-gray-400 bg-gray-50',
     };
+    let content = result.label;
+    if (result.points === null) {
+        content = result.state === 'pending' ? 'Koreksi' : <span className="sr-only">Belum dijawab</span>;
+    }
     return (
         <span title={result.label} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${colors[result.state]}`}>
             <span aria-hidden="true">{({ correct: '✓', incorrect: '×', pending: '◷', missing: '—' })[result.state]}</span>
-            {result.points === null
-                ? result.state === 'pending' ? 'Koreksi' : <span className="sr-only">Belum dijawab</span>
-                : result.label}
+            {content}
         </span>
     );
 }
@@ -45,7 +47,7 @@ export default function QuizResultsTable({ attempts, totalAttempts, questions, q
                     </select>
                 </div>
             </div>
-            <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tabel hasil kuis, geser untuk melihat semua soal">
+            <div className="overflow-x-auto">
                 <table className="w-full whitespace-nowrap text-left text-xs">
                     <caption className="sr-only">Hasil kuis {quizTitle}. Nilai tiap soal ditampilkan dalam poin.</caption>
                     <thead className="border-b border-gray-200 bg-gray-50 text-gray-500">

@@ -17,9 +17,12 @@ export function questionResult(answer, question) {
         if (!answer.essay_answer?.trim()) return { label: 'Tidak dijawab', points: 0, state: 'missing' };
         return { label: 'Menunggu koreksi', points: null, state: 'pending' };
     }
-    const points = isManualQuestion(question.type)
-        ? Number(answer.manual_score) / 100 * Number(question.points)
-        : answer.is_correct ? Number(question.points) : 0;
+    let points = 0;
+    if (isManualQuestion(question.type)) {
+        points = Number(answer.manual_score) / 100 * Number(question.points);
+    } else if (answer.is_correct) {
+        points = Number(question.points);
+    }
     return { label: points.toLocaleString('id-ID', { maximumFractionDigits: 2 }), points, state: points > 0 ? 'correct' : 'incorrect' };
 }
 
@@ -41,7 +44,7 @@ export function gradeDistribution(attempts) {
 // Quote every cell and neutralize spreadsheet formulas in user-provided text.
 export function csvCell(value) {
     const text = String(value ?? '');
-    const safe = /^[\s]*[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+    const safe = /^\s*[=+\-@\t\r]/.test(text) ? `'${text}` : text;
     return `"${safe.replaceAll('"', '""')}"`;
 }
 

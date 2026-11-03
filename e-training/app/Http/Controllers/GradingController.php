@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 
 class GradingController extends Controller
 {
+    private const ATTEMPT_DATETIME_FORMAT = 'd M Y H:i';
+
     /**
      * Ringkasan pengerjaan seluruh kuis pada satu kursus untuk Laporan Nilai (Grader Report).
      */
@@ -36,8 +38,8 @@ class GradingController extends Controller
                 'user_email' => $attempt->user?->email,
                 'score' => $attempt->score,
                 'is_passed' => $attempt->is_passed,
-                'started_at' => $attempt->started_at?->format('d M Y H:i'),
-                'finished_at' => $attempt->finished_at?->format('d M Y H:i'),
+                'started_at' => $attempt->started_at?->format(self::ATTEMPT_DATETIME_FORMAT),
+                'finished_at' => $attempt->finished_at?->format(self::ATTEMPT_DATETIME_FORMAT),
                 'pending_grading' => $attempt->answers->contains(
                     fn ($ans) => in_array($ans->question?->type, ['essay', 'short_answer'], true)
                         && $ans->manual_score === null
@@ -66,8 +68,8 @@ class GradingController extends Controller
                 'user_email'      => $a->user->email,
                 'score'           => $a->score,
                 'is_passed'       => $a->is_passed,
-                'started_at'      => $a->started_at->format('d M Y H:i'),
-                'finished_at'     => $a->finished_at?->format('d M Y H:i'),
+                'started_at'      => $a->started_at->format(self::ATTEMPT_DATETIME_FORMAT),
+                'finished_at'     => $a->finished_at?->format(self::ATTEMPT_DATETIME_FORMAT),
                 'duration_seconds' => $a->finished_at && $a->started_at
                     ? max(0, (int) $a->started_at->diffInSeconds($a->finished_at, false))
                     : null,

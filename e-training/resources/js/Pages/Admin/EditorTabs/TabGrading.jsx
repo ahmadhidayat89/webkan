@@ -70,9 +70,41 @@ export default function TabGrading({ modules, initialQuizId = null, initialAttem
                 }
                 resolve();
             },
-            onError: errors => reject(Object.values(errors).join(' ')),
-            onCancel: () => reject('Penyimpanan dibatalkan. Silakan coba lagi.'),
+            onError: errors => reject(new Error(Object.values(errors).join(' '))),
+            onCancel: () => reject(new Error('Penyimpanan dibatalkan. Silakan coba lagi.')),
         }));
+    }
+    let reportBody = null;
+    if (!selectedQuizId) {
+        reportBody = (
+            <div className="card flex min-h-[280px] flex-col items-center justify-center p-8 text-center">
+                <FileQuestion className="mb-4 h-12 w-12 text-navy-200" />
+                <h3 className="font-bold text-gray-700">Pilih kuis untuk melihat laporan</h3>
+                <p className="mt-2 text-sm text-gray-500">{quizzes.length ? 'Hasil pengerjaan dan distribusi nilai akan tampil di sini.' : 'Belum ada kuis pada kursus ini.'}</p>
+            </div>
+        );
+    } else if (loading) {
+        reportBody = <output className="card block p-16 text-center text-sm text-gray-500">Memuat hasil kuis…</output>;
+    } else if (!loadError) {
+        reportBody = (
+            <>
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{stats.map(([label, value]) => <div key={label} className="card p-4 sm:p-5"><p className="mb-3 text-xs text-gray-500">{label}</p><p className="text-2xl font-bold text-navy-900">{value}</p></div>)}</div>
+                <QuizResultsTable
+                    key={selectedQuizId}
+                    attempts={filteredAttempts}
+                    totalAttempts={attempts.length}
+                    questions={questions}
+                    quizTitle={selectedQuiz?.title}
+                    search={search}
+                    onSearch={setSearch}
+                    status={status}
+                    onStatus={setStatus}
+                    onSelect={setSelectedAttemptId}
+                />
+                <QuizGradeDistribution attempts={filteredAttempts} />
+                {selectedAttempt && <section ref={detailRef} className="scroll-mt-24" aria-label={`Detail jawaban ${selectedAttempt.user_name}`}><button type="button" onClick={() => setSelectedAttemptId(null)} className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-navy-600"><ArrowLeft className="h-4 w-4" /> Tutup detail jawaban</button><QuizAttemptDetail key={selectedAttempt.id} attempt={selectedAttempt} questions={questions} onSave={saveManualScore} /></section>}
+            </>
+        );
     }
     return <div className="space-y-6 animate-fade-in">
         <section className="card flex flex-col justify-between gap-5 p-5 sm:p-6 lg:flex-row lg:items-end">
@@ -83,22 +115,6 @@ export default function TabGrading({ modules, initialQuizId = null, initialAttem
             <button type="button" onClick={exportResults} disabled={loading || !!loadError || !filteredAttempts.length} className="btn-gold inline-flex items-center justify-center gap-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"><Download className="h-4 w-4" /> Ekspor CSV</button>
         </section>
         {loadError && <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}<button type="button" onClick={() => setReload(value => value + 1)} className="shrink-0 font-semibold underline">Muat ulang</button></div>}
-        {!selectedQuizId ? <div className="card flex min-h-[280px] flex-col items-center justify-center p-8 text-center"><FileQuestion className="mb-4 h-12 w-12 text-navy-200" /><h3 className="font-bold text-gray-700">Pilih kuis untuk melihat laporan</h3><p className="mt-2 text-sm text-gray-500">{quizzes.length ? 'Hasil pengerjaan dan distribusi nilai akan tampil di sini.' : 'Belum ada kuis pada kursus ini.'}</p></div> : loading ? <div role="status" className="card p-16 text-center text-sm text-gray-500">Memuat hasil kuis…</div> : !loadError && <>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{stats.map(([label, value]) => <div key={label} className="card p-4 sm:p-5"><p className="mb-3 text-xs text-gray-500">{label}</p><p className="text-2xl font-bold text-navy-900">{value}</p></div>)}</div>
-            <QuizResultsTable
-                key={selectedQuizId}
-                attempts={filteredAttempts}
-                totalAttempts={attempts.length}
-                questions={questions}
-                quizTitle={selectedQuiz?.title}
-                search={search}
-                onSearch={setSearch}
-                status={status}
-                onStatus={setStatus}
-                onSelect={setSelectedAttemptId}
-            />
-            <QuizGradeDistribution attempts={filteredAttempts} />
-            {selectedAttempt && <section ref={detailRef} className="scroll-mt-24" aria-label={`Detail jawaban ${selectedAttempt.user_name}`}><button type="button" onClick={() => setSelectedAttemptId(null)} className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-navy-600"><ArrowLeft className="h-4 w-4" /> Tutup detail jawaban</button><QuizAttemptDetail key={selectedAttempt.id} attempt={selectedAttempt} questions={questions} onSave={saveManualScore} /></section>}
-        </>}
+        {reportBody}
     </div>;
 }

@@ -11,7 +11,7 @@ function ManualGradeForm({ answer, onSave }) {
         setSaving(true);
         setError('');
         try { await onSave(answer.id, data.get('score'), data.get('feedback')); }
-        catch (message) { setError(String(message)); }
+        catch (error_) { setError(error_ instanceof Error ? error_.message : String(error_)); }
         finally { setSaving(false); }
     }
     return <form onSubmit={submit} className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4">

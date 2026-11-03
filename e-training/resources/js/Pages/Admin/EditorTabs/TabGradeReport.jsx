@@ -473,7 +473,7 @@ export default function TabGradeReport({ course, modules, enrolledStudents = [],
 
             {!loading && !loadError && (
                 <section className="card overflow-hidden" aria-label="Tabel laporan nilai peserta">
-                    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tabel Grader Report">
+                    <div className="overflow-x-auto">
                         <table className="w-full whitespace-nowrap border-collapse text-left text-xs">
                             <thead>
                                 {/* Course Category Header Row */}
