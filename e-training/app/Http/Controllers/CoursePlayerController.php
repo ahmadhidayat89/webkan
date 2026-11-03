@@ -123,6 +123,9 @@ class CoursePlayerController extends Controller
         $quizEnd = $override?->bypassesSchedule()
             ? $override->open_until
             : collect([$lesson->quiz?->deadline_at, $module->end_at])->filter()->min();
+        $maxAttempts = $lesson->quiz?->max_attempts
+            ? $lesson->quiz->max_attempts + ($override?->extra_attempts ?? 0)
+            : null;
         return [
             'id' => $lesson->id,
             'title' => $lesson->title,
@@ -146,9 +149,7 @@ class CoursePlayerController extends Controller
                 'quiz_mode' => $lesson->quiz->quiz_mode,
                 'duration_minutes' => $lesson->quiz->duration_minutes,
                 'passing_score' => $lesson->quiz->passing_score,
-                'max_attempts' => $lesson->quiz->max_attempts
-                    ? $lesson->quiz->max_attempts + ($override?->extra_attempts ?? 0)
-                    : null,
+                'max_attempts' => $maxAttempts,
                 'has_override' => $override !== null,
                 'start_at' => $quizStart?->toIso8601String(),
                 'start_at_label' => $quizStart?->format(self::DATETIME_LABEL_FORMAT),

@@ -105,21 +105,28 @@ function ModuleAccessModal({ module, onClose }) {
 
                         {!loading && !loadError && (
                             <>
-                                <label className="flex items-start gap-3 cursor-pointer">
+                                <div className="flex items-start gap-3">
                                     <input
+                                        id={`restrict-module-${module.id}`}
                                         type="checkbox"
                                         checked={restricted}
                                         onChange={(e) => setRestricted(e.target.checked)}
-                                        className="mt-1 rounded border-gray-300 text-navy-600"
+                                        aria-describedby={`restrict-module-${module.id}-hint`}
+                                        className="mt-1 border-gray-300 rounded text-navy-600"
                                     />
-                                    <span>
-                                        <span className="block text-sm font-semibold text-gray-800">Batasi akses modul ini</span>
-                                        <span className="block text-xs text-gray-500">
+                                    <div>
+                                        <label
+                                            htmlFor={`restrict-module-${module.id}`}
+                                            className="block text-sm font-semibold text-gray-800 cursor-pointer"
+                                        >
+                                            Batasi akses modul ini
+                                        </label>
+                                        <p id={`restrict-module-${module.id}-hint`} className="text-xs text-gray-500">
                                             Jika aktif, hanya peserta yang dicentang yang bisa melihat dan membuka modul ini.
                                             Peserta lain tidak melihat modulnya sama sekali. Admin dan pengajar tetap bisa membukanya.
-                                        </span>
-                                    </span>
-                                </label>
+                                        </p>
+                                    </div>
+                                </div>
 
                                 {restricted && (
                                     <div>
@@ -137,19 +144,23 @@ function ModuleAccessModal({ module, onClose }) {
                                             <button type="button" onClick={selectAllFiltered} className="font-medium text-navy-600 hover:underline">Pilih semua hasil</button>
                                             <button type="button" onClick={clearAll} className="font-medium text-gray-500 hover:underline">Kosongkan</button>
                                         </div>
-                                        <div className="overflow-y-auto border border-gray-100 divide-y divide-gray-50 rounded-lg max-h-64">
+                                        <div className="overflow-y-auto border border-gray-100 divide-y rounded-lg divide-gray-50 max-h-64">
                                             {filtered.map((p) => (
-                                                <label key={p.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50">
+                                                <div key={p.id} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50">
                                                     <input
+                                                        id={`access-${module.id}-user-${p.id}`}
                                                         type="checkbox"
                                                         checked={selected.includes(p.id)}
                                                         onChange={() => toggle(p.id)}
                                                     />
-                                                    <span className="flex-1 min-w-0">
+                                                    <label
+                                                        htmlFor={`access-${module.id}-user-${p.id}`}
+                                                        className="flex-1 min-w-0 cursor-pointer"
+                                                    >
                                                         <span className="block text-sm font-medium text-gray-900 truncate">{p.name}</span>
                                                         <span className="block text-xs text-gray-500 truncate">{p.email}</span>
-                                                    </span>
-                                                </label>
+                                                    </label>
+                                                </div>
                                             ))}
                                             {filtered.length === 0 && (
                                                 <p className="p-4 text-xs text-center text-gray-400">Tidak ada peserta.</p>

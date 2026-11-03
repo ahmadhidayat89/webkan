@@ -31,7 +31,7 @@ class QuizOverrideController extends Controller
 
         return response()->json([
             'max_attempts' => $quiz->max_attempts,
-            'participants' => $enrollments->filter(fn ($e) => $e->user)->map(fn ($e) => [
+            'participants' => $enrollments->filter(fn($e) => $e->user)->map(fn($e) => [
                 'id' => $e->user->id,
                 'name' => $e->user->name,
                 'email' => $e->user->email,
@@ -64,17 +64,9 @@ class QuizOverrideController extends Controller
             'open_until.after' => 'Tenggat baru harus setelah waktu sekarang.',
         ]);
 
-        if ((int) $data['extra_attempts'] === 0 && empty($data['open_until'])) {
-            return back()->withErrors(['extra_attempts' => 'Isi tambahan percobaan atau tenggat baru.']);
-        }
-        if ($course->isExpired()) {
-            return back()->withErrors(['user_ids' => 'Masa kursus sudah berakhir, keringanan kuis tidak berlaku.']);
-        }
-
-        $enrolled = Enrollment::where('course_id', $course->id)
-            ->whereIn('user_id', $data['user_ids'])->count();
-        if ($enrolled !== count($data['user_ids'])) {
-            return back()->withErrors(['user_ids' => 'Ada peserta yang tidak terdaftar di kursus ini.']);
+        $errors = $this->ruleErrors($course, $data);
+        if ($errors !== []) {
+            return back()->withErrors($errors);
         }
 
         foreach ($data['user_ids'] as $userId) {
@@ -99,6 +91,29 @@ class QuizOverrideController extends Controller
         }
 
         return back()->with('success', 'Keringanan diberikan ke ' . count($data['user_ids']) . ' peserta.');
+    }
+
+    /**
+     * Aturan bisnis di luar validasi bentuk input. Kosong berarti lolos.
+     */
+    private function ruleErrors(Course $course, array $data): array
+    {
+        $errors = [];
+
+        if ((int) $data['extra_attempts'] === 0 && empty($data['open_until'])) {
+            $errors['extra_attempts'] = 'Isi tambahan percobaan atau tenggat baru.';
+        }
+        if ($course->isExpired()) {
+            $errors['user_ids'] = 'Masa kursus sudah berakhir, keringanan kuis tidak berlaku.';
+        }
+
+        $enrolled = Enrollment::where('course_id', $course->id)
+            ->whereIn('user_id', $data['user_ids'])->count();
+        if ($enrolled !== count($data['user_ids'])) {
+            $errors['user_ids'] ??= 'Ada peserta yang tidak terdaftar di kursus ini.';
+        }
+
+        return $errors;
     }
 
     /**
