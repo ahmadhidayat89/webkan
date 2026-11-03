@@ -1,298 +1,99 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
-import { CheckCircle2, XCircle, Search, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Download, FileQuestion } from 'lucide-react';
+import QuizAttemptDetail from './QuizAttemptDetail';
+import QuizGradeDistribution from './QuizGradeDistribution';
+import QuizResultsTable from './QuizResultsTable';
+import { createReportCsv, getAttemptStatus } from './quizReport.mjs';
 
-// FIX: satu helper untuk memuat attempt, dengan pengecekan status HTTP
-const fetchAttempts = async (quizId) => {
-    const res = await fetch(route('admin.grading.attempts', quizId));
-    if (!res.ok) throw new Error(`Gagal memuat data (HTTP ${res.status})`);
-    return res.json();
-};
-
-// PERUBAHAN 1: warna badge nilai; null = menunggu koreksi essay
-function getScoreBadgeClass(isPassed) {
-    if (isPassed === null) return 'bg-amber-100 text-amber-700';
-    return isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+async function fetchAttempts(quizId, signal) {
+    const response = await fetch(route('admin.grading.attempts', quizId), { signal, headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error('Gagal memuat hasil kuis. Silakan coba lagi.');
+    return response.json();
 }
-
-function getScoreStatusLabel(isPassed) {
-    if (isPassed === null) return 'MENUNGGU KOREKSI';
-    return isPassed ? 'LULUS' : 'TIDAK LULUS';
-}
-
-// FIX: ternary bersarang (loading / kosong / daftar) diganti early return
-function AttemptList({ loading, attempts, selectedAttempt, onSelect }) {
-    if (loading) {
-        return <div className="p-8 text-center text-gray-400">Loading...</div>;
-    }
-
-    if (attempts.length === 0) {
-        return <div className="p-8 text-sm text-center text-gray-400">Belum ada yang mengerjakan kuis ini.</div>;
-    }
-
-    return (
-        <ul className="divide-y divide-gray-100">
-            {attempts.map(attempt => (
-                <li key={attempt.id}>
-                    <button
-                        type="button"
-                        onClick={() => onSelect(attempt)}
-                        aria-pressed={selectedAttempt?.id === attempt.id}
-                        className={`w-full text-left p-3 cursor-pointer hover:bg-navy-50 transition-colors ${selectedAttempt?.id === attempt.id ? 'bg-navy-50 border-l-4 border-navy-500' : ''}`}
-                    >
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <p className="text-sm font-bold text-gray-900">{attempt.user_name}</p>
-                                <p className="text-[10px] text-gray-500">{attempt.started_at}</p>
-                            </div>
-                            <div className="text-right">
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getScoreBadgeClass(attempt.is_passed)}`}>
-                                    {attempt.score}%
-                                </span>
-                            </div>
-                        </div>
-                        {attempt.pending_grading && (
-                            <div className="mt-2 text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded inline-flex items-center gap-1 font-medium">
-                                <AlertCircle className="w-3 h-3" /> Butuh Koreksi Essay
-                            </div>
-                        )}
-                    </button>
-                </li>
-            ))}
-        </ul>
-    );
-}
-
-export default function TabGrading({ courseId, modules, initialQuizId = null, initialAttemptId = null }) {
-    // Get all quizzes from modules
-    const quizzes = modules.flatMap(m =>
-        m.lessons.filter(l => l.type === 'quiz' && l.quiz).map(l => ({
-            id: l.quiz.id,
-            title: `${m.title} - ${l.title}`,
-            quiz: l.quiz
-        }))
-    );
-
-    const [selectedQuizId, setSelectedQuizId] = useState(() => quizzes.some(quiz => quiz.id === initialQuizId) ? String(initialQuizId) : '');
+export default function TabGrading({ modules, initialQuizId = null, initialAttemptId = null }) {
+    const quizzes = useMemo(() => modules.flatMap(module => module.lessons.filter(lesson => lesson.type === 'quiz' && lesson.quiz).map(lesson => ({ ...lesson.quiz, title: `${module.title} - ${lesson.title}` }))), [modules]);
+    const [selectedQuizId, setSelectedQuizId] = useState(() => quizzes.some(quiz => String(quiz.id) === String(initialQuizId)) ? String(initialQuizId) : '');
+    const detailRef = useRef(null);
+    const activeQuizRef = useRef(selectedQuizId);
+    activeQuizRef.current = selectedQuizId;
     const [attempts, setAttempts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loadError, setLoadError] = useState(null);
-    const [selectedAttempt, setSelectedAttempt] = useState(null);
+    const [selectedAttemptId, setSelectedAttemptId] = useState(null);
+    const [search, setSearch] = useState('');
+    const [status, setStatus] = useState('all');
+    const [reload, setReload] = useState(0);
+    const selectedQuiz = quizzes.find(quiz => String(quiz.id) === selectedQuizId);
+    const questions = selectedQuiz?.questions ?? [];
+    const selectedAttempt = attempts.find(attempt => attempt.id === selectedAttemptId);
+    useEffect(() => {
+        if (selectedAttemptId !== null) detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [selectedAttemptId]);
 
     useEffect(() => {
-        if (!selectedQuizId) {
-            setAttempts([]);
-            setSelectedAttempt(null);
-            setLoadError(null);
-            return;
-        }
-
-        let cancelled = false;
-
-        // FIX: async/await + try/catch/finally, tidak ada promise yang menggantung
-        const load = async () => {
-            setLoading(true);
-            setLoadError(null);
-            setSelectedAttempt(null);
-            try {
-                const data = await fetchAttempts(selectedQuizId);
-                if (!cancelled) {
-                    setAttempts(data);
-                    setSelectedAttempt(data.find(attempt => attempt.id === initialAttemptId) ?? null);
-                }
-            } catch (error) {
-                console.error('Error fetching attempts:', error);
-                if (!cancelled) {
-                    setAttempts([]);
-                    setLoadError('Gagal memuat data peserta. Coba lagi.');
-                }
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
-
-        void load();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [selectedQuizId, initialAttemptId]);
-
-    const handleSaveManualScore = (answerId, score, feedback) => {
-        router.patch(route('admin.grading.essay', answerId), {
-            manual_score: score,
-            admin_feedback: feedback
-        }, {
-            preserveScroll: true,
-            // FIX: callback async dengan try/catch untuk refresh data
+        const controller = new AbortController();
+        setAttempts([]); setSelectedAttemptId(null); setLoadError(null); setSearch(''); setStatus('all');
+        if (!selectedQuizId) { setLoading(false); return; }
+        setLoading(true);
+        fetchAttempts(selectedQuizId, controller.signal).then(data => {
+            setAttempts(data);
+            setSelectedAttemptId(data.find(attempt => String(attempt.id) === String(initialAttemptId))?.id ?? null);
+        }).catch(error => { if (error.name !== 'AbortError') setLoadError(error.message); })
+            .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        return () => controller.abort();
+    }, [selectedQuizId, initialAttemptId, reload]);
+    const filteredAttempts = useMemo(() => attempts.filter(attempt => `${attempt.user_name} ${attempt.user_email}`.toLocaleLowerCase('id-ID').includes(search.trim().toLocaleLowerCase('id-ID')) && (status === 'all' || getAttemptStatus(attempt) === status)), [attempts, search, status]);
+    const graded = filteredAttempts.filter(attempt => ['passed', 'failed'].includes(getAttemptStatus(attempt)));
+    const average = graded.length ? (graded.reduce((sum, attempt) => sum + Number(attempt.score), 0) / graded.length).toLocaleString('id-ID', { maximumFractionDigits: 1 }) : '—';
+    const stats = [['Total pengerjaan', filteredAttempts.length], ['Rata-rata nilai', average], ['Lulus', graded.filter(attempt => attempt.is_passed).length], ['Menunggu koreksi', filteredAttempts.filter(attempt => getAttemptStatus(attempt) === 'pending').length]];
+    function exportResults() {
+        const url = URL.createObjectURL(new Blob([createReportCsv(filteredAttempts, questions)], { type: 'text/csv;charset=utf-8;' }));
+        const link = document.createElement('a'); link.href = url; link.download = `hasil-kuis-${selectedQuizId}.csv`; link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    function saveManualScore(answerId, score, feedback) {
+        const quizId = selectedQuizId;
+        return new Promise((resolve, reject) => router.patch(route('admin.grading.essay', answerId), { manual_score: score, admin_feedback: feedback }, { preserveScroll: true,
             onSuccess: async () => {
                 try {
-                    const data = await fetchAttempts(selectedQuizId);
-                    setAttempts(data);
-                    // update selected attempt
-                    if (selectedAttempt) {
-                        setSelectedAttempt(data.find(a => a.id === selectedAttempt.id) ?? null);
-                    }
-                } catch (error) {
-                    console.error('Error refreshing attempts:', error);
-                    setLoadError('Nilai tersimpan, tetapi gagal memuat ulang data. Muat ulang halaman.');
+                    const updated = await fetchAttempts(quizId);
+                    if (activeQuizRef.current === quizId) setAttempts(updated);
                 }
-            }
-        });
-    };
-
-    return (
-        <div className="flex flex-col gap-6 lg:flex-row animate-fade-in">
-            {/* Left Sidebar: Quiz Selection & List of Attempts */}
-            <div className="flex flex-col w-full gap-4 lg:w-1/3">
-                <div className="p-4 card">
-                    <label htmlFor="quiz-select" className="block mb-2 text-sm font-bold text-gray-700">Pilih Kuis</label>
-                    <select
-                        id="quiz-select"
-                        value={selectedQuizId}
-                        onChange={e => setSelectedQuizId(e.target.value)}
-                        className="w-full text-sm border-gray-200 rounded-lg bg-gray-50 focus:border-navy-500"
-                    >
-                        <option value="">-- Pilih Kuis --</option>
-                        {quizzes.map(q => (
-                            <option key={q.id} value={q.id}>{q.title}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {selectedQuizId && (
-                    <div className="card border border-gray-200 flex-1 min-h-[400px] flex flex-col">
-                        <div className="p-3 border-b border-gray-100 bg-gray-50">
-                            <div className="relative">
-                                <Search className="absolute w-4 h-4 text-gray-400 -translate-y-1/2 left-3 top-1/2" />
-                                <input type="text" aria-label="Cari nama peserta" placeholder="Cari nama peserta..." className="w-full py-2 text-xs border-gray-200 rounded-lg pl-9" />
-                            </div>
-                        </div>
-                        <div className="flex-1 overflow-y-auto">
-                            {loadError && (
-                                <div role="alert" className="p-3 m-3 text-xs text-red-700 border border-red-200 rounded-lg bg-red-50">
-                                    {loadError}
-                                </div>
-                            )}
-                            <AttemptList
-                                loading={loading}
-                                attempts={attempts}
-                                selectedAttempt={selectedAttempt}
-                                onSelect={setSelectedAttempt}
-                            />
-                        </div>
-                    </div>
-                )}
+                catch {
+                    if (activeQuizRef.current === quizId) setLoadError('Nilai tersimpan, tetapi data gagal diperbarui. Muat ulang laporan.');
+                }
+                resolve();
+            },
+            onError: errors => reject(Object.values(errors).join(' ')),
+            onCancel: () => reject('Penyimpanan dibatalkan. Silakan coba lagi.'),
+        }));
+    }
+    return <div className="space-y-6 animate-fade-in">
+        <section className="card flex flex-col justify-between gap-5 p-5 sm:p-6 lg:flex-row lg:items-end">
+            <div className="min-w-0 flex-1"><h2 className="text-lg font-bold text-gray-900">Laporan hasil kuis</h2><p className="mt-1 text-sm text-gray-500">Tinjau nilai peserta, analisis hasil, dan unduh laporan kuis.</p>
+                <label htmlFor="quiz-select" className="mb-2 mt-5 block text-xs font-semibold text-gray-700">Pilih kuis</label>
+                <select id="quiz-select" value={selectedQuizId} onChange={event => setSelectedQuizId(event.target.value)} className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm focus:border-navy-500 focus:ring-navy-500 lg:max-w-xl"><option value="">-- Pilih Kuis --</option>{quizzes.map(quiz => <option key={quiz.id} value={quiz.id}>{quiz.title}</option>)}</select>
             </div>
-
-            {/* Right Panel: Grading details */}
-            <div className="w-full lg:w-2/3">
-                {selectedAttempt ? (
-                    <div className="overflow-hidden card">
-                        <div className="p-5 text-white bg-navy-900">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-lg font-bold">{selectedAttempt.user_name}</h3>
-                                    <p className="text-sm text-navy-200">{selectedAttempt.user_email}</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-3xl font-bold">{selectedAttempt.score}<span className="text-lg text-navy-300">%</span></div>
-                                    {/* PERUBAHAN 2: label status menunggu koreksi */}
-                                    <p className="text-xs tracking-wider uppercase text-navy-200">
-                                        {getScoreStatusLabel(selectedAttempt.is_passed)}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-6 space-y-6 bg-gray-50/50">
-                            <h4 className="pb-2 font-bold text-gray-900 border-b border-gray-200">Detail Jawaban</h4>
-
-                            {selectedAttempt.answers.map((ans, idx) => (
-                                <div key={ans.id} className="p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
-                                    <div className="flex gap-3">
-                                        <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 text-sm font-bold text-gray-600 bg-gray-100 rounded-full">
-                                            {idx + 1}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="mb-3 text-sm font-medium text-gray-900" dangerouslySetInnerHTML={{ __html: ans.question_text }}></div>
-
-                                            {ans.question_image && (
-                                                <img src={ans.question_image} className="max-w-md mb-3 border rounded-lg" alt="Soal" />
-                                            )}
-
-                                            {/* PERUBAHAN 3: semua tipe selain essay (Pilihan Ganda & Benar/Salah) tampil sebagai benar/salah */}
-                                            {(ans.question_type !== 'essay' && ans.question_type !== 'short_answer') ? (
-                                                <div className="flex items-center gap-2 p-3 border border-gray-100 rounded-lg bg-gray-50">
-                                                    {ans.is_correct ? (
-                                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
-                                                    ) : (
-                                                        <XCircle className="w-5 h-5 text-red-500" />
-                                                    )}
-                                                    <span className={`text-sm ${ans.is_correct ? 'text-green-700 font-medium' : 'text-red-700'}`}>
-                                                        Jawaban: {ans.selected_option || '(Tidak dijawab)'}
-                                                    </span>
-                                                </div>
-                                            ) : (
-                                                /* ESSAY GRADING */
-                                                <div className="space-y-3">
-                                                    <div className="p-3 border border-blue-100 rounded-lg bg-blue-50/50">
-                                                        <p className="mb-1 text-xs font-bold text-blue-800 uppercase">Jawaban Peserta:</p>
-                                                        <div className="text-sm text-gray-800 whitespace-pre-wrap">{ans.essay_answer || '(Kosong)'}</div>
-                                                    </div>
-
-                                                    <div className="p-4 border rounded-lg bg-amber-50 border-amber-200">
-                                                        <p className="mb-3 text-xs font-bold uppercase text-amber-800">Koreksi Manual Admin</p>
-                                                        <div className="flex flex-col gap-4 sm:flex-row">
-                                                            <div>
-                                                                <label htmlFor={`score-${ans.id}`} className="block mb-1 text-xs font-medium text-amber-900">Nilai (0-100)</label>
-                                                                <input
-                                                                    type="number"
-                                                                    className="w-24 text-sm rounded border-amber-300 focus:ring-amber-500 focus:border-amber-500"
-                                                                    defaultValue={ans.manual_score ?? ''}
-                                                                    id={`score-${ans.id}`}
-                                                                    min="0" max="100"
-                                                                />
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <label htmlFor={`feedback-${ans.id}`} className="block mb-1 text-xs font-medium text-amber-900">Feedback / Komentar (Opsional)</label>
-                                                                <textarea
-                                                                    className="w-full text-sm rounded border-amber-300 focus:ring-amber-500 focus:border-amber-500"
-                                                                    rows="2"
-                                                                    defaultValue={ans.admin_feedback || ''}
-                                                                    id={`feedback-${ans.id}`}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="mt-3 text-right">
-                                                            <button
-                                                                onClick={() => {
-                                                                    const score = document.getElementById(`score-${ans.id}`).value;
-                                                                    const feedback = document.getElementById(`feedback-${ans.id}`).value;
-                                                                    handleSaveManualScore(ans.id, score, feedback);
-                                                                }}
-                                                                className="btn-gold py-1.5 px-3 text-xs"
-                                                            >
-                                                                Simpan Nilai Essay
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="card h-full min-h-[400px] flex flex-col items-center justify-center text-gray-400 p-8">
-                        <CheckCircle2 className="w-16 h-16 mb-4 text-gray-200" />
-                        <h3 className="mb-2 text-lg font-bold text-gray-600">Pilih Peserta</h3>
-                        <p className="text-sm text-center">Pilih salah satu peserta di sidebar kiri untuk melihat detail jawaban dan memberikan penilaian essay.</p>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+            <button type="button" onClick={exportResults} disabled={loading || !!loadError || !filteredAttempts.length} className="btn-gold inline-flex items-center justify-center gap-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"><Download className="h-4 w-4" /> Ekspor CSV</button>
+        </section>
+        {loadError && <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}<button type="button" onClick={() => setReload(value => value + 1)} className="shrink-0 font-semibold underline">Muat ulang</button></div>}
+        {!selectedQuizId ? <div className="card flex min-h-[280px] flex-col items-center justify-center p-8 text-center"><FileQuestion className="mb-4 h-12 w-12 text-navy-200" /><h3 className="font-bold text-gray-700">Pilih kuis untuk melihat laporan</h3><p className="mt-2 text-sm text-gray-500">{quizzes.length ? 'Hasil pengerjaan dan distribusi nilai akan tampil di sini.' : 'Belum ada kuis pada kursus ini.'}</p></div> : loading ? <div role="status" className="card p-16 text-center text-sm text-gray-500">Memuat hasil kuis…</div> : !loadError && <>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{stats.map(([label, value]) => <div key={label} className="card p-4 sm:p-5"><p className="mb-3 text-xs text-gray-500">{label}</p><p className="text-2xl font-bold text-navy-900">{value}</p></div>)}</div>
+            <QuizResultsTable
+                key={selectedQuizId}
+                attempts={filteredAttempts}
+                totalAttempts={attempts.length}
+                questions={questions}
+                quizTitle={selectedQuiz?.title}
+                search={search}
+                onSearch={setSearch}
+                status={status}
+                onStatus={setStatus}
+                onSelect={setSelectedAttemptId}
+            />
+            <QuizGradeDistribution attempts={filteredAttempts} />
+            {selectedAttempt && <section ref={detailRef} className="scroll-mt-24" aria-label={`Detail jawaban ${selectedAttempt.user_name}`}><button type="button" onClick={() => setSelectedAttemptId(null)} className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-navy-600"><ArrowLeft className="h-4 w-4" /> Tutup detail jawaban</button><QuizAttemptDetail key={selectedAttempt.id} attempt={selectedAttempt} questions={questions} onSave={saveManualScore} /></section>}
+        </>}
+    </div>;
 }

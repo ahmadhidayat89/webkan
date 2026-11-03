@@ -29,6 +29,9 @@ class GradingController extends Controller
                 'is_passed'       => $a->is_passed,
                 'started_at'      => $a->started_at->format('d M Y H:i'),
                 'finished_at'     => $a->finished_at?->format('d M Y H:i'),
+                'duration_seconds' => $a->finished_at && $a->started_at
+                    ? max(0, (int) $a->started_at->diffInSeconds($a->finished_at, false))
+                    : null,
                 'has_essay'       => $a->answers->where('essay_answer', '!=', null)->count() > 0,
                 'pending_grading' => $a->answers->where('essay_answer', '!=', null)
                     ->where('manual_score', null)->count() > 0,
