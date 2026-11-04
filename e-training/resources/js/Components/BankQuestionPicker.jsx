@@ -17,11 +17,26 @@ export default function BankQuestionPicker({ quiz, mode, onClose }) {
     const existingIds = new Set(quiz.questions.map(question => question.bank_question_id).filter(Boolean));
     useEffect(() => {
         const controller = new AbortController();
-        setLoading(true); setLoadError('');
+        setLoading(true);
+        setLoadError('');
         fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } })
-            .then(response => { if (!response.ok) throw new Error('Bank soal gagal dimuat.'); return response.json(); })
-            .then(setData).catch(error => { if (error.name !== 'AbortError') setLoadError(error.message); })
-            .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Bank soal gagal dimuat.');
+                }
+                return response.json();
+            })
+            .then(setData)
+            .catch(error => {
+                if (error.name !== 'AbortError') {
+                    setLoadError(error.message);
+                }
+            })
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            });
         return () => controller.abort();
     }, [url]);
     function search(event) {
@@ -34,6 +49,8 @@ export default function BankQuestionPicker({ quiz, mode, onClose }) {
         form.post(route('admin.question-bank.quiz.add', quiz.id), { preserveScroll: true, onSuccess: onClose });
     }
     const input = 'rounded-lg border-gray-200 text-sm focus:border-navy-500 focus:ring-navy-500';
+    const defaultSubmitLabel = mode === 'random' ? 'Tambahkan kelompok acak' : 'Tambahkan ke kuis';
+    const submitLabel = form.processing ? 'Menambahkan…' : defaultSubmitLabel;
     return <Modal show onClose={onClose} maxWidth="3xl">
         <div className="flex items-start justify-between border-b border-gray-100 p-5"><div><h2 className="flex items-center gap-2 font-bold text-navy-900">{mode === 'random' ? <Shuffle className="h-5 w-5" /> : <LibraryBig className="h-5 w-5" />}{mode === 'random' ? 'Tambah kelompok soal acak' : 'Ambil dari Bank Soal'}</h2><p className="mt-1 text-xs text-gray-500">Pilih soal Ready. Salinan versi saat ini akan disimpan pada kuis.</p></div><button type="button" onClick={onClose} aria-label="Tutup pemilih bank soal" className="text-gray-400"><X className="h-5 w-5" /></button></div>
         <form onSubmit={search} className="space-y-3 border-b border-gray-100 p-5">
@@ -47,7 +64,7 @@ export default function BankQuestionPicker({ quiz, mode, onClose }) {
         <form onSubmit={submit}>
             <div className="max-h-[45vh] space-y-2 overflow-y-auto p-5">
                 {loadError && <p role="alert" className="text-sm text-red-600">{loadError}</p>}
-                {loading ? <p role="status" className="p-8 text-center text-sm text-gray-400">Memuat bank soal…</p> : <>
+                {loading ? <output className="block p-8 text-center text-sm text-gray-400">Memuat bank soal…</output> : <>
                     {data?.questions.data.map(question => <div key={question.id} className="rounded-lg border border-gray-200 p-3">
                         <div className="flex items-start gap-3"><input type="checkbox" aria-label={`Pilih soal: ${question.title}`} disabled={existingIds.has(question.id) || (!selected.includes(question.id) && selected.length >= 100)} checked={selected.includes(question.id)} onChange={event => setSelected(event.target.checked ? [...selected, question.id] : selected.filter(id => id !== question.id))} className="mt-1 rounded text-navy-600 focus:ring-navy-500" />
                             <div className="min-w-0 flex-1"><button type="button" onClick={() => setPreview(preview === question.id ? null : question.id)} className="text-left text-sm font-semibold text-navy-800 hover:underline">{question.title}</button><p className="mt-1 text-xs text-gray-400">{QUESTION_TYPES[question.type]} · {question.points} poin · v{question.version}{existingIds.has(question.id) ? ' · Sudah ada di kuis' : ''}</p></div>
@@ -64,7 +81,7 @@ export default function BankQuestionPicker({ quiz, mode, onClose }) {
                 <p className="text-xs text-gray-500 sm:col-span-2">Paket dipilih di server saat peserta mulai, lalu tetap sama saat halaman dimuat ulang. Setiap percobaan baru mengambil paket lagi.</p>
             </div>}
             {!!Object.keys(form.errors).length && <div role="alert" className="px-5 pb-3 text-xs text-red-600">{Object.values(form.errors).join(' ')}</div>}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 p-5"><p className="text-xs text-gray-500">{selected.length} soal dipilih</p><button disabled={!selected.length || form.processing} className="btn-gold text-sm disabled:opacity-50">{form.processing ? 'Menambahkan…' : mode === 'random' ? 'Tambahkan kelompok acak' : 'Tambahkan ke kuis'}</button></div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 p-5"><p className="text-xs text-gray-500">{selected.length} soal dipilih</p><button disabled={!selected.length || form.processing} className="btn-gold text-sm disabled:opacity-50">{submitLabel}</button></div>
         </form>
     </Modal>;
 }
