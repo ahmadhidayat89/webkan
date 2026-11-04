@@ -24,7 +24,7 @@ export default function QuestionPreview({ question, history = false, onClose }) 
             <h3 className="font-bold text-gray-900">{shown.title}</h3>
             <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: shown.question }} />
             {shown.image_path && <img src={`/storage/${shown.image_path}`} alt="Gambar soal" className="max-h-64 max-w-full rounded-lg border object-contain" />}
-            <div className="space-y-2">{shown.options?.map((option, index) => <div key={index} className={`flex items-center gap-3 rounded-lg border p-3 text-sm ${option.is_correct ? 'border-green-200 bg-green-50 text-green-800' : 'border-gray-200 text-gray-600'}`}><span>{String.fromCharCode(65 + index)}.</span><span>{option.option_text}</span>{option.is_correct && <CheckCircle2 className="ml-auto h-4 w-4 shrink-0" />}</div>)}</div>
+            <div className="space-y-2">{shown.options?.map((option, index) => <div key={index} className={`flex items-center gap-3 rounded-lg border p-3 text-sm ${option.is_correct ? 'border-green-200 bg-green-50 text-green-800' : 'border-gray-200 text-gray-600'}`}><span>{String.fromCodePoint(65 + index)}.</span><span>{option.option_text}</span>{option.is_correct && <CheckCircle2 className="ml-auto h-4 w-4 shrink-0" />}</div>)}</div>
             {shown.explanation && <div className="rounded-lg bg-gray-50 p-4"><p className="mb-1 text-xs font-bold text-gray-600">Pembahasan / panduan koreksi</p><p className="whitespace-pre-wrap text-sm text-gray-600">{shown.explanation}</p></div>}
             <p className="text-xs text-gray-400">Salinan pada kuis tidak berubah ketika versi bank diperbarui.</p>
         </div>

@@ -22,6 +22,6 @@ export default function BankToolsDialog({ mode, courses, categories, initialCour
                 {form.progress && <p className="text-xs text-navy-600">Mengunggah {form.progress.percentage}%</p>}
             </>}
         </div>
-        <div className="flex justify-end gap-3 border-t border-gray-100 p-5"><button type="button" onClick={onClose} className="btn-secondary text-sm">Batal</button><button disabled={form.processing || !courses.length} className="btn-gold text-sm disabled:opacity-50">{form.processing ? 'Menyimpan…' : mode === 'category' ? 'Simpan kategori' : 'Impor soal'}</button></div>
+        <div className="flex justify-end gap-3 border-t border-gray-100 p-5"><button type="button" onClick={onClose} className="btn-secondary text-sm">Batal</button><button type="submit" disabled={form.processing || !courses.length} className="btn-gold text-sm disabled:opacity-50">{form.processing ? 'Menyimpan…' : mode === 'category' ? 'Simpan kategori' : 'Impor soal'}</button></div>
     </form></Modal>;
 }
