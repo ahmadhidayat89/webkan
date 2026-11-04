@@ -58,7 +58,7 @@ export default function QuizOverrideModal({ quizzes, initialUserId = null, onClo
             {
                 preserveScroll: true,
                 onStart: () => { setSaving(true); setErrors({}); },
-                onSuccess: () => { setSelected([]); load(quizId); },
+                onSuccess: () => { setSelected([]); setReason(''); load(quizId); },
                 onError: setErrors,
                 onFinish: () => setSaving(false),
             }
@@ -70,6 +70,7 @@ export default function QuizOverrideModal({ quizzes, initialUserId = null, onClo
         router.delete(route('admin.quizzes.overrides.destroy', [quizId, p.override.id]), {
             preserveScroll: true,
             onSuccess: () => load(quizId),
+            onError: (errs) => alert(Object.values(errs).join('\n') || 'Gagal mencabut keringanan.'),
         });
     };
 
@@ -138,6 +139,11 @@ export default function QuizOverrideModal({ quizzes, initialUserId = null, onClo
                                                     </span>
                                                 )}
                                             </div>
+                                            {p.override?.reason && (
+                                                <div className="text-[11px] text-gray-500 italic truncate" title={p.override.reason}>
+                                                    Alasan: {p.override.reason}
+                                                </div>
+                                            )}
                                         </div>
                                         {p.override && (
                                             <button
@@ -160,7 +166,7 @@ export default function QuizOverrideModal({ quizzes, initialUserId = null, onClo
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
-                                <label htmlFor="ov-extra" className="block mb-1 text-xs font-medium text-gray-600">Tambahan percobaan</label>
+                                <label htmlFor="ov-extra" className="block mb-1 text-xs font-medium text-gray-600">Tambah percobaan</label>
                                 <input
                                     id="ov-extra"
                                     type="number" min="0" max="10"
@@ -183,7 +189,7 @@ export default function QuizOverrideModal({ quizzes, initialUserId = null, onClo
                             </div>
                         </div>
                         <p className="text-xs text-gray-400">
-                            Isi tenggat baru kalau kuis atau modul sudah ditutup. Nilai yang diisi menggantikan keringanan sebelumnya.
+                            Isi tenggat baru kalau kuis atau modul sudah ditutup. Percobaan ditambahkan ke keringanan sebelumnya; tenggat dikosongkan berarti tenggat lama tetap dipakai.
                         </p>
 
                         <div>
