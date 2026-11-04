@@ -77,17 +77,17 @@ function ReviewItem({ item, index, withAnswers }) {
                 <p className="mt-3 text-xs text-gray-500">Nilai dari pengajar: <strong>{item.manual_score}/100</strong></p>
             )}
 
+            {withAnswers && item.explanation && (
+                <div className="p-3 mt-3 text-sm text-green-900 border border-green-200 rounded-lg bg-green-50">
+                    <p className="mb-1 text-xs font-bold uppercase text-green-800">Jawaban Benar</p>
+                    <p className="whitespace-pre-wrap">{item.explanation}</p>
+                </div>
+            )}
+
             {item.feedback && (
                 <div className="p-3 mt-3 text-sm border rounded-lg border-amber-200 bg-amber-50 text-amber-900">
                     <p className="mb-1 text-xs font-bold uppercase">Komentar pengajar</p>
                     <p className="whitespace-pre-wrap">{item.feedback}</p>
-                </div>
-            )}
-
-            {withAnswers && item.explanation && (
-                <div className="p-3 mt-3 text-sm text-blue-900 border border-blue-200 rounded-lg bg-blue-50">
-                    <p className="mb-1 text-xs font-bold uppercase">Penjelasan</p>
-                    <p className="whitespace-pre-wrap">{item.explanation}</p>
                 </div>
             )}
         </div>
