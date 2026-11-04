@@ -17,6 +17,7 @@ import {
     Eye,
     HelpCircle,
 } from 'lucide-react';
+import QuizReviewPage from '@/Components/QuizReviewPage';
 
 // Helper: konversi URL YouTube ke embed URL
 function getYouTubeEmbedUrl(url) {
@@ -517,7 +518,22 @@ function QuizIntroAction({ isExpired, windowState, limitReached, attempts, quiz,
     );
 }
 
-function QuizIntro({ lesson, quiz, attempts, isExpired, windowState, limitReached, onStart }) {
+function QuizIntro({ lesson, quiz, attempts, isExpired, windowState, limitReached, onStart, courseId }) {
+    const [reviewAttemptId, setReviewAttemptId] = useState(null);
+    const reviewOpen = (quiz.review_mode ?? 'off') !== 'off';
+
+    if (reviewAttemptId) {
+        return (
+            <QuizReviewPage
+                courseId={courseId}
+                quizId={quiz.id}
+                attemptId={reviewAttemptId}
+                title={lesson.title}
+                onBack={() => setReviewAttemptId(null)}
+            />
+        );
+    }
+
     return (
         <div className="max-w-2xl mx-auto animate-fade-in">
             <div className="p-8 text-center border border-gray-200 shadow-sm card">
@@ -552,9 +568,15 @@ function QuizIntro({ lesson, quiz, attempts, isExpired, windowState, limitReache
                         <div className="space-y-2">
                             {attempts.map((attempt, idx) => {
                                 const status = getAttemptStatus(attempt);
+                                const canReview = reviewOpen && attempt.is_finished;
+                                const Card = canReview ? 'button' : 'div';
 
                                 return (
-                                    <div key={attempt.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg">
+                                    <Card
+                                        key={attempt.id}
+                                        {...(canReview ? { type: 'button', onClick: () => setReviewAttemptId(attempt.id) } : {})}
+                                        className={`flex items-center justify-between w-full p-3 text-left bg-white border border-gray-100 rounded-lg ${canReview ? 'cursor-pointer hover:border-navy-300 hover:bg-navy-50/40' : ''}`}
+                                    >
                                         <div>
                                             <p className="text-xs text-gray-500">Percobaan #{attempts.length - idx} &bull; {attempt.created_at}</p>
                                             <p className={`text-sm font-bold mt-0.5 ${status.colorClass}`}>
@@ -564,8 +586,9 @@ function QuizIntro({ lesson, quiz, attempts, isExpired, windowState, limitReache
                                         <div className="text-right">
                                             <p className="text-xs text-gray-500">Nilai</p>
                                             <p className="text-lg font-black text-gray-800">{attempt.is_passed === null ? '-' : attempt.score}</p>
+                                            {canReview && <p className="text-[10px] font-bold text-navy-600">Lihat review</p>}
                                         </div>
-                                    </div>
+                                    </Card>
                                 );
                             })}
                         </div>
@@ -983,6 +1006,7 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
     if (!started && !submitted) {
         return (
             <QuizIntro
+                courseId={courseId}
                 lesson={lesson}
                 quiz={quiz}
                 attempts={attempts}

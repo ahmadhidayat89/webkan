@@ -18,6 +18,7 @@ class Quiz extends Model
         'max_attempts',
         'shuffle_questions',
         'show_correct_answers',
+        'review_mode',
         'start_at',
         'deadline_at',
         'quiz_mode',

@@ -23,7 +23,7 @@ class CourseController extends Controller
     public function index(): Response
     {
         $courses = Course::query()
-            ->when(auth()->user()->role === 'pengajar', fn ($query) => $query->whereHas('teachers', fn ($teachers) => $teachers->where('users.id', auth()->id())))
+            ->when(auth()->user()->role === 'pengajar', fn($query) => $query->whereHas('teachers', fn($teachers) => $teachers->where('users.id', auth()->id())))
             ->with(['category', 'modules'])
             ->withCount(['enrollments', 'modules'])
             ->orderBy('created_at', 'desc')
@@ -221,6 +221,7 @@ class CourseController extends Controller
             'max_attempts' => $quiz->max_attempts,
             'shuffle_questions' => $quiz->shuffle_questions,
             'show_correct_answers' => $quiz->show_correct_answers,
+            'review_mode' => $quiz->review_mode,
             'deadline_at' => $quiz->deadline_at?->format(self::DATETIME_LOCAL_FORMAT),
             'start_at' => $quiz->start_at?->format(self::DATETIME_LOCAL_FORMAT),
             'quiz_mode' => $quiz->quiz_mode,

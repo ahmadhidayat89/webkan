@@ -30,6 +30,7 @@ class QuizAdminController extends Controller
             'max_attempts' => 'required|integer|min:1',
             'shuffle_questions' => 'boolean',
             'show_correct_answers' => 'boolean',
+            'review_mode' => 'sometimes|in:off,review,with_answers',
             'start_at' => 'nullable|date',
             'deadline_at' => ['nullable', 'date', Rule::when($request->filled('start_at'), ['after:start_at'])],
             'quiz_mode' => 'required|in:multiple_choice,essay,true_false,short_answer,custom',
@@ -48,6 +49,7 @@ class QuizAdminController extends Controller
             'max_attempts',
             'shuffle_questions',
             'show_correct_answers',
+            'review_mode',
             'start_at',
             'deadline_at',
             'quiz_mode',
@@ -61,7 +63,7 @@ class QuizAdminController extends Controller
      */
     private function moduleScheduleError(Quiz $quiz, ?string $startAt, ?string $deadlineAt): ?string
     {
-        $module = Module::whereHas('lessons', fn ($q) => $q->where('id', $quiz->lesson_id))->first();
+        $module = Module::whereHas('lessons', fn($q) => $q->where('id', $quiz->lesson_id))->first();
         if ($module === null) {
             return null;
         }
@@ -72,10 +74,10 @@ class QuizAdminController extends Controller
         $closes = $module->end_at;
 
         $checks = [
-            [$start && $opens && $start->lt($opens), 'Waktu mulai kuis tidak boleh lebih awal dari modul dibuka ('.$opens?->format(self::DATETIME_LABEL_FORMAT).').'],
-            [$end && $opens && $end->lt($opens), 'Deadline kuis tidak boleh lebih awal dari modul dibuka ('.$opens?->format(self::DATETIME_LABEL_FORMAT).').'],
-            [$start && $closes && $start->gt($closes), 'Waktu mulai kuis tidak boleh melewati modul ditutup ('.$closes?->format(self::DATETIME_LABEL_FORMAT).').'],
-            [$end && $closes && $end->gt($closes), 'Deadline kuis tidak boleh melewati modul ditutup ('.$closes?->format(self::DATETIME_LABEL_FORMAT).').'],
+            [$start && $opens && $start->lt($opens), 'Waktu mulai kuis tidak boleh lebih awal dari modul dibuka (' . $opens?->format(self::DATETIME_LABEL_FORMAT) . ').'],
+            [$end && $opens && $end->lt($opens), 'Deadline kuis tidak boleh lebih awal dari modul dibuka (' . $opens?->format(self::DATETIME_LABEL_FORMAT) . ').'],
+            [$start && $closes && $start->gt($closes), 'Waktu mulai kuis tidak boleh melewati modul ditutup (' . $closes?->format(self::DATETIME_LABEL_FORMAT) . ').'],
+            [$end && $closes && $end->gt($closes), 'Deadline kuis tidak boleh melewati modul ditutup (' . $closes?->format(self::DATETIME_LABEL_FORMAT) . ').'],
         ];
 
         foreach ($checks as [$invalid, $message]) {
@@ -223,7 +225,6 @@ class QuizAdminController extends Controller
                 ->store("quiz-images/{$question->quiz_id}", 'public');
 
             $question->update(['image_path' => $path]);
-
         });
 
         return back()->with('success', 'Gambar soal berhasil diupload.');

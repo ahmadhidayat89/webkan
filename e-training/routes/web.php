@@ -39,6 +39,8 @@ Route::get('/course/{id}', [CoursePlayerController::class, 'show'])
 
 Route::post('/course/{course}/quizzes/{quiz}/submit', [CoursePlayerController::class, 'submitQuiz'])
     ->middleware(['auth'])->name('courses.quizzes.submit');
+Route::get('/course/{course}/quizzes/{quiz}/attempts/{attempt}/review', [CoursePlayerController::class, 'reviewAttempt'])
+    ->middleware(['auth'])->name('courses.quizzes.review');
 
 Route::post('/course/{course}/lessons/{lesson}/complete', [CoursePlayerController::class, 'markLessonComplete'])
     ->middleware(['auth'])->name('course.lesson.complete');

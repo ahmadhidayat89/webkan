@@ -57,6 +57,7 @@ export default function QuizBuilder({ quiz }) {
         quiz_mode: quiz.quiz_mode || 'custom',
         start_at: toLocalInput(quiz.start_at),
         deadline_at: toLocalInput(quiz.deadline_at),
+        review_mode: quiz.review_mode || 'off',
         shuffle_questions: quiz.shuffle_questions || false,
     });
 
@@ -364,6 +365,19 @@ export default function QuizBuilder({ quiz }) {
                             onChange={e => setSettings({ ...settings, deadline_at: e.target.value })}
                             className="w-full py-2 text-sm border-gray-300 rounded-lg"
                         />
+                    </div>
+                    <div>
+                        <label htmlFor="review_mode" className="block mb-1 text-xs font-bold text-gray-600 uppercase">Review Hasil</label>
+                        <select
+                            id="review_mode"
+                            value={settings.review_mode}
+                            onChange={e => setSettings({ ...settings, review_mode: e.target.value })}
+                            className="w-full py-2 text-sm border-gray-300 rounded-lg"
+                        >
+                            <option value="off">Tidak dibuka</option>
+                            <option value="review">Review (tanpa kunci jawaban)</option>
+                            <option value="with_answers">Review + kunci jawaban</option>
+                        </select>
                     </div>
                     <div>
                         <button onClick={saveSettings} className="w-full h-10 text-sm btn-secondary">

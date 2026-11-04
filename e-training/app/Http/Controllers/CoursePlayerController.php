@@ -156,6 +156,7 @@ class CoursePlayerController extends Controller
                 'deadline_at' => $quizEnd?->toIso8601String(),
                 'deadline_at_label' => $quizEnd?->format(self::DATETIME_LABEL_FORMAT),
                 'shuffle_questions' => $lesson->quiz->shuffle_questions,
+                'review_mode' => $lesson->quiz->review_mode ?? 'off',
                 'has_random_questions' => \Illuminate\Support\Facades\DB::table('quiz_random_groups')->where('quiz_id', $lesson->quiz->id)->exists(),
                 'questions' => app(\App\Services\QuestionBankService::class)->questionsFor($lesson->quiz, auth()->user())->map(function ($q) {
                     return [
@@ -180,6 +181,7 @@ class CoursePlayerController extends Controller
                         'id' => $attempt->id,
                         'score' => $attempt->score,
                         'is_passed' => $attempt->is_passed,
+                        'is_finished' => $attempt->finished_at !== null,
                         'created_at' => $attempt->created_at->format(self::DATETIME_LABEL_FORMAT),
                     ];
                 })->values(),
@@ -205,6 +207,77 @@ class CoursePlayerController extends Controller
             app(\App\Services\QuestionBankService::class)->questionsFor($quiz, $request->user(), start: true);
         });
         return back();
+    }
+
+    /**
+     * Review satu percobaan kuis milik peserta yang sedang login.
+     * Kunci jawaban hanya dikirim jika review_mode = with_answers.
+     */
+    public function reviewAttempt(Request $request, Course $course, \App\Models\Quiz $quiz, \App\Models\QuizAttempt $attempt)
+    {
+        $user = $request->user();
+
+        abort_unless($quiz->lesson->module->course_id === $course->id, 404);
+        abort_unless($attempt->quiz_id === $quiz->id && $attempt->user_id === $user->id, 404);
+        abort_if(($quiz->review_mode ?? 'off') === 'off', 403, 'Review kuis ini belum dibuka.');
+        abort_if($attempt->finished_at === null, 404);
+
+        $withAnswers = $quiz->review_mode === 'with_answers';
+
+        $answers = $attempt->answers()
+            ->with(['question.options', 'selectedOption'])
+            ->get()
+            ->sortBy(fn($a) => $a->question->sort_order ?? 0)
+            ->values();
+
+        $items = $answers->map(function ($a) use ($withAnswers) {
+            $q = $a->question;
+            $isManual = in_array($q->type, ['essay', 'short_answer'], true);
+            $hasText = $a->essay_answer !== null && trim($a->essay_answer) !== '';
+
+            if ($isManual && $a->manual_score === null && $hasText) {
+                $state = 'pending';
+                $earned = null;
+            } elseif ($isManual && $a->manual_score !== null) {
+                $state = $a->is_correct ? 'correct' : 'wrong';
+                $earned = round(($a->manual_score / 100) * $q->points, 2);
+            } else {
+                $state = $a->is_correct ? 'correct' : 'wrong';
+                $earned = $a->is_correct ? $q->points : 0;
+            }
+
+            return [
+                'id' => $q->id,
+                'question' => $q->question,
+                'type' => $q->type,
+                'points' => $q->points,
+                'image_path' => $q->image_path ? Storage::url($q->image_path) : null,
+                'state' => $state,
+                'earned_points' => $earned,
+                'manual_score' => $a->manual_score,
+                'feedback' => $a->admin_feedback,
+                'essay_answer' => $a->essay_answer,
+                'selected_option_id' => $a->selected_option_id,
+                'options' => $q->options->map(fn($o) => array_filter([
+                    'id' => $o->id,
+                    'option_text' => $o->option_text,
+                    // is_correct hanya ikut terkirim pada mode with_answers
+                    'is_correct' => $withAnswers ? (bool) $o->is_correct : null,
+                ], fn($v) => $v !== null))->values(),
+                'explanation' => $withAnswers ? $q->explanation : null,
+            ];
+        })->values();
+
+        return response()->json([
+            'review_mode' => $quiz->review_mode,
+            'attempt' => [
+                'id' => $attempt->id,
+                'score' => $attempt->score,
+                'is_passed' => $attempt->is_passed,
+                'pending_grading' => $items->contains('state', 'pending'),
+            ],
+            'items' => $items,
+        ]);
     }
 
     /**
