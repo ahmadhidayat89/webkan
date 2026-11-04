@@ -25,6 +25,60 @@ function ManualGradeForm({ answer, onSave }) {
     </form>;
 }
 
+function AnswerComparison({ answer, question, isFinished, onSave }) {
+    const explanation = answer.question_explanation ?? question?.explanation ?? '';
+
+    if (isManualQuestion(answer.question_type)) {
+        return (
+            <div className="space-y-3">
+                <div className="rounded-lg border border-navy-100 bg-navy-50/50 p-3">
+                    <p className="mb-1 text-xs font-semibold text-navy-700">Jawaban peserta</p>
+                    <p className="whitespace-pre-wrap text-sm text-gray-800">{answer.essay_answer || '(Kosong)'}</p>
+                </div>
+                <div className="rounded-lg border border-green-200 bg-green-50/70 p-3">
+                    <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-green-800">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+                        Jawaban benar / Panduan koreksi
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm text-green-900">
+                        {explanation || '(Belum ada panduan jawaban benar pada soal ini)'}
+                    </p>
+                </div>
+                {isFinished && <ManualGradeForm answer={answer} onSave={onSave} />}
+            </div>
+        );
+    }
+
+    const correctOption = answer.correct_option ?? question?.options?.find(opt => opt.is_correct)?.option_text ?? '';
+    const answerTextClass = answer.is_correct ? 'text-green-700' : 'text-red-700';
+
+    return (
+        <div className="space-y-2.5">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                {answer.is_correct
+                    ? <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                    : <XCircle className="h-5 w-5 shrink-0 text-red-500" />}
+                <p className={`text-sm ${answerTextClass}`}>
+                    Jawaban peserta: {answer.selected_option || '(Tidak dijawab)'}
+                </p>
+            </div>
+            <div className="rounded-lg border border-green-200 bg-green-50/70 p-3">
+                <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                    <p className="text-sm font-semibold text-green-800">
+                        Jawaban benar: {correctOption || '(Kunci jawaban belum diatur)'}
+                    </p>
+                </div>
+                {explanation && (
+                    <p className="mt-1.5 border-t border-green-200/70 pt-1.5 whitespace-pre-wrap text-xs text-green-700">
+                        Penjelasan: {explanation}
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+}
+
 export default function QuizAttemptDetail({ attempt, questions, onSave }) {
     const orderedAnswers = [...attempt.answers].sort((a, b) => questions.findIndex(q => q.id === a.question_id) - questions.findIndex(q => q.id === b.question_id));
     return <div className="card overflow-hidden">
@@ -35,18 +89,18 @@ export default function QuizAttemptDetail({ attempt, questions, onSave }) {
         <div className="space-y-5 bg-gray-50/50 p-4 sm:p-6">
             <h4 className="font-bold text-gray-900">Detail jawaban</h4>
             {orderedAnswers.length === 0 && <p className="text-sm text-gray-500">Belum ada jawaban tersimpan.</p>}
-            {orderedAnswers.map(answer => <article key={answer.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                <p className="mb-3 text-xs font-semibold text-navy-600">Soal {questions.findIndex(question => question.id === answer.question_id) + 1}</p>
-                <div className="prose prose-sm mb-3 max-w-none text-gray-900" dangerouslySetInnerHTML={{ __html: answer.question_text }} />
-                {answer.question_image && <img src={answer.question_image} alt="Gambar soal" className="mb-3 max-h-72 max-w-full rounded-lg border object-contain" />}
-                {isManualQuestion(answer.question_type) ? <div className="space-y-3">
-                    <div className="rounded-lg border border-navy-100 bg-navy-50/50 p-3"><p className="mb-1 text-xs font-semibold text-navy-700">Jawaban peserta</p><p className="whitespace-pre-wrap text-sm text-gray-800">{answer.essay_answer || '(Kosong)'}</p></div>
-                    {attempt.finished_at && <ManualGradeForm answer={answer} onSave={onSave} />}
-                </div> : <div className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
-                    {answer.is_correct ? <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" /> : <XCircle className="h-5 w-5 shrink-0 text-red-500" />}
-                    <p className={`text-sm ${answer.is_correct ? 'text-green-700' : 'text-red-700'}`}>Jawaban: {answer.selected_option || '(Tidak dijawab)'}</p>
-                </div>}
-            </article>)}
+            {orderedAnswers.map(answer => {
+                const questionIndex = questions.findIndex(question => question.id === answer.question_id);
+                const matchedQuestion = questionIndex >= 0 ? questions[questionIndex] : null;
+                return (
+                    <article key={answer.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                        <p className="mb-3 text-xs font-semibold text-navy-600">Soal {questionIndex + 1}</p>
+                        <div className="prose prose-sm mb-3 max-w-none text-gray-900" dangerouslySetInnerHTML={{ __html: answer.question_text }} />
+                        {answer.question_image && <img src={answer.question_image} alt="Gambar soal" className="mb-3 max-h-72 max-w-full rounded-lg border object-contain" />}
+                        <AnswerComparison answer={answer} question={matchedQuestion} isFinished={Boolean(attempt.finished_at)} onSave={onSave} />
+                    </article>
+                );
+            })}
         </div>
     </div>;
 }

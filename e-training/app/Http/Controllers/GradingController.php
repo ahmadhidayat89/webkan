@@ -58,7 +58,7 @@ class GradingController extends Controller
     public function listAttempts(Quiz $quiz)
     {
         $attempts = QuizAttempt::where('quiz_id', $quiz->id)
-            ->with(['user', 'answers.question', 'answers.selectedOption'])
+            ->with(['user', 'answers.question.options', 'answers.selectedOption'])
             ->orderBy('started_at', 'desc')
             ->get()
             ->map(fn($a) => [
@@ -77,19 +77,21 @@ class GradingController extends Controller
                 'pending_grading' => $a->answers->where('essay_answer', '!=', null)
                     ->where('manual_score', null)->count() > 0,
                 'answers'         => $a->answers->map(fn($ans) => [
-                    'id'               => $ans->id,
-                    'question_id'      => $ans->question_id,
-                    'question_text'    => $ans->question?->question,
-                    'question_type'    => $ans->question?->type,
-                    'question_image'   => $ans->question?->image_path
+                    'id'                   => $ans->id,
+                    'question_id'          => $ans->question_id,
+                    'question_text'        => $ans->question?->question,
+                    'question_type'        => $ans->question?->type,
+                    'question_explanation' => $ans->question?->explanation,
+                    'question_image'       => $ans->question?->image_path
                         ? \Illuminate\Support\Facades\Storage::url($ans->question->image_path)
                         : null,
-                    'selected_option'  => $ans->selectedOption?->option_text,
-                    'is_correct'       => $ans->is_correct,
-                    'essay_answer'     => $ans->essay_answer,
-                    'manual_score'     => $ans->manual_score,
-                    'admin_feedback'   => $ans->admin_feedback,
-                    'max_points'       => $ans->question?->points ?? 1,
+                    'selected_option'      => $ans->selectedOption?->option_text,
+                    'correct_option'       => $ans->question?->options?->firstWhere('is_correct', true)?->option_text,
+                    'is_correct'           => $ans->is_correct,
+                    'essay_answer'         => $ans->essay_answer,
+                    'manual_score'         => $ans->manual_score,
+                    'admin_feedback'       => $ans->admin_feedback,
+                    'max_points'           => $ans->question?->points ?? 1,
                 ])->values(),
             ]);
 
