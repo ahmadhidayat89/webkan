@@ -224,49 +224,12 @@ class CoursePlayerController extends Controller
 
         $withAnswers = $quiz->review_mode === 'with_answers';
 
-        $answers = $attempt->answers()
-            ->with(['question.options', 'selectedOption'])
+        $items = $attempt->answers()
+            ->with(['question.options'])
             ->get()
             ->sortBy(fn($a) => $a->question->sort_order ?? 0)
+            ->map(fn($a) => $this->formatReviewItem($a, $withAnswers))
             ->values();
-
-        $items = $answers->map(function ($a) use ($withAnswers) {
-            $q = $a->question;
-            $isManual = in_array($q->type, ['essay', 'short_answer'], true);
-            $hasText = $a->essay_answer !== null && trim($a->essay_answer) !== '';
-
-            if ($isManual && $a->manual_score === null && $hasText) {
-                $state = 'pending';
-                $earned = null;
-            } elseif ($isManual && $a->manual_score !== null) {
-                $state = $a->is_correct ? 'correct' : 'wrong';
-                $earned = round(($a->manual_score / 100) * $q->points, 2);
-            } else {
-                $state = $a->is_correct ? 'correct' : 'wrong';
-                $earned = $a->is_correct ? $q->points : 0;
-            }
-
-            return [
-                'id' => $q->id,
-                'question' => $q->question,
-                'type' => $q->type,
-                'points' => $q->points,
-                'image_path' => $q->image_path ? Storage::url($q->image_path) : null,
-                'state' => $state,
-                'earned_points' => $earned,
-                'manual_score' => $a->manual_score,
-                'feedback' => $a->admin_feedback,
-                'essay_answer' => $a->essay_answer,
-                'selected_option_id' => $a->selected_option_id,
-                'options' => $q->options->map(fn($o) => array_filter([
-                    'id' => $o->id,
-                    'option_text' => $o->option_text,
-                    // is_correct hanya ikut terkirim pada mode with_answers
-                    'is_correct' => $withAnswers ? (bool) $o->is_correct : null,
-                ], fn($v) => $v !== null))->values(),
-                'explanation' => $withAnswers ? $q->explanation : null,
-            ];
-        })->values();
 
         return response()->json([
             'review_mode' => $quiz->review_mode,
@@ -278,6 +241,59 @@ class CoursePlayerController extends Controller
             ],
             'items' => $items,
         ]);
+    }
+
+    /**
+     * Susun satu soal beserta jawaban peserta untuk halaman review.
+     */
+    private function formatReviewItem($answer, bool $withAnswers): array
+    {
+        $q = $answer->question;
+        [$state, $earned] = $this->reviewState($answer, $q);
+
+        return [
+            'id' => $q->id,
+            'question' => $q->question,
+            'type' => $q->type,
+            'points' => $q->points,
+            'image_path' => $q->image_path ? Storage::url($q->image_path) : null,
+            'state' => $state,
+            'earned_points' => $earned,
+            'manual_score' => $answer->manual_score,
+            'feedback' => $answer->admin_feedback,
+            'essay_answer' => $answer->essay_answer,
+            'selected_option_id' => $answer->selected_option_id,
+            'options' => $q->options->map(fn($o) => array_filter([
+                'id' => $o->id,
+                'option_text' => $o->option_text,
+                // is_correct hanya ikut terkirim pada mode with_answers
+                'is_correct' => $withAnswers ? (bool) $o->is_correct : null,
+            ], fn($v) => $v !== null))->values(),
+            'explanation' => $withAnswers ? $q->explanation : null,
+        ];
+    }
+
+    /**
+     * Tentukan status soal (correct | wrong | pending) dan poin yang didapat.
+     * Essay/jawaban singkat yang belum dinilai berstatus pending, bukan 0.
+     */
+    private function reviewState($answer, $question): array
+    {
+        $isManual = in_array($question->type, ['essay', 'short_answer'], true);
+        $state = $answer->is_correct ? 'correct' : 'wrong';
+        $earned = $answer->is_correct ? $question->points : 0;
+
+        if ($isManual) {
+            $earned = 0;
+            if ($answer->manual_score !== null) {
+                $earned = round(($answer->manual_score / 100) * $question->points, 2);
+            } elseif (trim((string) $answer->essay_answer) !== '') {
+                $state = 'pending';
+                $earned = null;
+            }
+        }
+
+        return [$state, $earned];
     }
 
     /**

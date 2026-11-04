@@ -12,7 +12,7 @@ const NAV_UI = {
     pending: 'bg-blue-500 border-blue-500 text-white',
 };
 
-const MANUAL_TYPES = ['essay', 'short_answer'];
+const MANUAL_TYPES = new Set(['essay', 'short_answer']);
 
 function OptionRow({ option, selected, withAnswers }) {
     let style = 'border-gray-200 bg-white text-gray-700';
@@ -33,7 +33,7 @@ function OptionRow({ option, selected, withAnswers }) {
 
 function ReviewItem({ item, index, withAnswers }) {
     const [stateLabel, stateClass] = STATE_UI[item.state] || STATE_UI.wrong;
-    const isManual = MANUAL_TYPES.includes(item.type);
+    const isManual = MANUAL_TYPES.has(item.type);
     const hasText = item.essay_answer && item.essay_answer.trim() !== '';
 
     return (
