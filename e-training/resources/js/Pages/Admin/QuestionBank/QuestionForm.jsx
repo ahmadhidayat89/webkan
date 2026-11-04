@@ -60,7 +60,7 @@ export default function QuestionForm({ question, courses, categories, initialCou
                     <label className="block space-y-1 text-xs font-semibold text-gray-600">Pembahasan / panduan koreksi<textarea rows="3" value={form.data.explanation} onChange={event => form.setData('explanation', event.target.value)} className={input} maxLength={10000} /></label>
                     <label className="block space-y-1 text-xs font-semibold text-gray-600">Tag (pisahkan dengan koma)<input value={form.data.tags.join(', ')} onChange={event => form.setData('tags', event.target.value.split(',').map(tag => tag.trim()))} onBlur={() => form.setData('tags', [...new Set(form.data.tags.filter(Boolean))])} className={input} placeholder="bab-3, peralatan, mudah" /></label>
                 </div>
-                <div className="flex justify-end gap-3 border-t border-gray-100 p-5"><button type="button" onClick={onClose} className="btn-secondary text-sm">Batal</button><button disabled={form.processing || !courses.length} className="btn-gold inline-flex items-center gap-2 text-sm disabled:opacity-50"><Save className="h-4 w-4" /> {form.processing ? 'Menyimpan…' : 'Simpan soal'}</button></div>
+                <div className="flex justify-end gap-3 border-t border-gray-100 p-5"><button type="button" onClick={onClose} className="btn-secondary text-sm">Batal</button><button type="submit" disabled={form.processing || !courses.length} className="btn-gold inline-flex items-center gap-2 text-sm disabled:opacity-50"><Save className="h-4 w-4" /> {form.processing ? 'Menyimpan…' : 'Simpan soal'}</button></div>
             </form>
         </Modal>
     );
