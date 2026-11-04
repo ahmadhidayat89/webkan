@@ -196,7 +196,9 @@ class CoursePlayerController extends Controller
             $quiz = \App\Models\Quiz::lockForUpdate()->findOrFail($quiz->id);
             $override = \App\Models\QuizUserOverride::where('quiz_id', $quiz->id)->where('user_id', $request->user()->id)->first();
             $error = $request->user()->canBypassSchedule($course) ? null : $quiz->submissionBlockedReason($override);
-            if ($error) throw \Illuminate\Validation\ValidationException::withMessages(['message' => $error]);
+            if ($error) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['message' => $error]);
+            }
             if ($this->hasReachedAttemptLimit($quiz, $request->user()->id, $override?->extra_attempts ?? 0)) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['message' => 'Batas percobaan kuis telah tercapai.']);
             }
@@ -246,14 +248,9 @@ class CoursePlayerController extends Controller
     {
         return DB::transaction(function () use ($answers, $user, $quizId, $courseId, $bypassSchedule) {
             $quiz = \App\Models\Quiz::with('questions.options')->lockForUpdate()->findOrFail($quizId);
-            $override = \App\Models\QuizUserOverride::where('quiz_id', $quiz->id)
-                ->where('user_id', $user->id)->first();
-            $blockedReason = $bypassSchedule ? null : $quiz->submissionBlockedReason($override);
-            if ($blockedReason !== null) {
-                return $blockedReason;
-            }
-            if ($this->hasReachedAttemptLimit($quiz, $user->id, $override?->extra_attempts ?? 0)) {
-                return 'Anda telah mencapai batas maksimum percobaan untuk kuis ini.';
+            $attemptError = $this->validateQuizAttemptAccess($quiz, $user, $bypassSchedule);
+            if ($attemptError !== null) {
+                return $attemptError;
             }
 
             $selected = app(\App\Services\QuestionBankService::class)->questionsFor($quiz, $user, requireDraw: true);
@@ -278,6 +275,21 @@ class CoursePlayerController extends Controller
             $this->completeQuizLesson($quiz, $user, $courseId);
             return null;
         });
+    }
+
+    private function validateQuizAttemptAccess($quiz, $user, bool $bypassSchedule): ?string
+    {
+        $override = \App\Models\QuizUserOverride::where('quiz_id', $quiz->id)
+            ->where('user_id', $user->id)->first();
+        $blockedReason = $bypassSchedule ? null : $quiz->submissionBlockedReason($override);
+        if ($blockedReason !== null) {
+            return $blockedReason;
+        }
+        if ($this->hasReachedAttemptLimit($quiz, $user->id, $override?->extra_attempts ?? 0)) {
+            return 'Anda telah mencapai batas maksimum percobaan untuk kuis ini.';
+        }
+
+        return null;
     }
 
     private function hasReachedAttemptLimit($quiz, int $userId, int $extraAttempts = 0): bool

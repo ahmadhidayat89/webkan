@@ -208,7 +208,7 @@ class QuestionBankController extends Controller
             'category' => $q->category?->name,
         ]);
 
-        return response()->streamDownload(fn () => print (json_encode(['format' => 'etraining-question-bank', 'version' => 1, 'questions' => $questions], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)), 'bank-soal.json', ['Content-Type' => 'application/json']);
+        return response()->streamDownload(fn () => print json_encode(['format' => 'etraining-question-bank', 'version' => 1, 'questions' => $questions], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), 'bank-soal.json', ['Content-Type' => 'application/json']);
     }
 
     public function import(Request $request, QuestionBankService $service)
