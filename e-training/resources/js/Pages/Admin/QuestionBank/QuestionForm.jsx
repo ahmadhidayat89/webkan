@@ -4,6 +4,9 @@ import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { QUESTION_TYPES, defaultOptions, categoryLabel } from './helpers';
 
+let optionKeySeed = 0;
+const withKey = option => ({ ...option, _key: option.id ?? `new-${++optionKeySeed}` });
+
 export default function QuestionForm({ question, courses, categories, initialCourseId, onClose }) {
     const form = useForm({
         course_id: question?.course_id ?? initialCourseId ?? courses[0]?.id ?? '',
@@ -12,17 +15,21 @@ export default function QuestionForm({ question, courses, categories, initialCou
         points: question?.points ?? 1, status: question?.status ?? 'draft',
         tags: question?.tags ?? [], explanation: question?.explanation ?? '',
         image: null,
-        options: question?.options ?? defaultOptions('multiple_choice'),
+        options: (question?.options ?? defaultOptions('multiple_choice')).map(withKey),
     });
     const input = 'w-full rounded-lg border-gray-200 text-sm focus:border-navy-500 focus:ring-navy-500';
     const courseCategories = categories.filter(category => String(category.course_id) === String(form.data.course_id));
     function submit(event) {
         event.preventDefault();
         const options = { preserveScroll: true, onSuccess: onClose };
+        const stripKeys = data => ({ ...data, options: data.options.map(({ _key, ...rest }) => rest) });
         if (question) {
-            form.transform(data => ({ ...data, _method: 'patch' }));
+            form.transform(data => ({ ...stripKeys(data), _method: 'patch' }));
             form.post(route('admin.question-bank.update', question.id), options);
-        } else form.post(route('admin.question-bank.store'), options);
+        } else {
+            form.transform(stripKeys);
+            form.post(route('admin.question-bank.store'), options);
+        }
     }
     return (
         <Modal show onClose={onClose} maxWidth="3xl">
@@ -39,7 +46,7 @@ export default function QuestionForm({ question, courses, categories, initialCou
                     </div>
                     <label className="block space-y-1 text-xs font-semibold text-gray-600">Nama soal (untuk pengajar)<input required maxLength={255} value={form.data.title} onChange={event => form.setData('title', event.target.value)} className={input} placeholder="Contoh: BAB 3 — Identifikasi sampel" /></label>
                     <div className="grid grid-cols-3 gap-3">
-                        <label className="space-y-1 text-xs font-semibold text-gray-600">Jenis soal<select value={form.data.type} onChange={event => form.setData({ ...form.data, type: event.target.value, options: defaultOptions(event.target.value) })} className={input}>{Object.entries(QUESTION_TYPES).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
+                        <label className="space-y-1 text-xs font-semibold text-gray-600">Jenis soal<select value={form.data.type} onChange={event => form.setData({ ...form.data, type: event.target.value, options: defaultOptions(event.target.value).map(withKey) })} className={input}>{Object.entries(QUESTION_TYPES).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
                         <label className="space-y-1 text-xs font-semibold text-gray-600">Poin maksimal<input required type="number" min="1" max="1000" value={form.data.points} onChange={event => form.setData('points', event.target.value)} className={input} /></label>
                         <label className="space-y-1 text-xs font-semibold text-gray-600">Status<select value={form.data.status} onChange={event => form.setData('status', event.target.value)} className={input}><option value="draft">Draft</option><option value="ready">Ready</option></select></label>
                     </div>
@@ -49,12 +56,12 @@ export default function QuestionForm({ question, courses, categories, initialCou
                         {question?.image_path && !form.data.image && <img src={`/storage/${question.image_path}`} alt="Gambar soal saat ini" className="max-h-36 max-w-full rounded-lg border" />}
                     </div>
                     {!!form.data.options.length && <fieldset className="space-y-3"><legend className="mb-2 text-sm font-bold text-gray-700">Pilihan jawaban · pilih satu kunci benar</legend>
-                        {form.data.options.map((option, index) => <div className="flex items-center gap-3" key={index}>
+                        {form.data.options.map((option, index) => <div className="flex items-center gap-3" key={option._key}>
                             <input type="radio" name="correct-option" aria-label={`Opsi ${index + 1} benar`} checked={option.is_correct} onChange={() => form.setData('options', form.data.options.map((item, i) => ({ ...item, is_correct: i === index })))} className="text-navy-600 focus:ring-navy-500" />
                             <input required aria-label={`Teks opsi ${index + 1}`} value={option.option_text} disabled={form.data.type === 'true_false'} onChange={event => form.setData('options', form.data.options.map((item, i) => i === index ? { ...item, option_text: event.target.value } : item))} className={input} />
                             {form.data.type === 'multiple_choice' && form.data.options.length > 2 && <button type="button" aria-label={`Hapus opsi ${index + 1}`} onClick={() => form.setData('options', form.data.options.filter((_, i) => i !== index))} className="text-red-400"><Trash2 className="h-4 w-4" /></button>}
                         </div>)}
-                        {form.data.type === 'multiple_choice' && form.data.options.length < 8 && <button type="button" onClick={() => form.setData('options', [...form.data.options, { option_text: '', is_correct: false }])} className="inline-flex items-center gap-1 text-xs font-semibold text-navy-600"><Plus className="h-4 w-4" /> Tambah pilihan</button>}
+                        {form.data.type === 'multiple_choice' && form.data.options.length < 8 && <button type="button" onClick={() => form.setData('options', [...form.data.options, withKey({ option_text: '', is_correct: false })])} className="inline-flex items-center gap-1 text-xs font-semibold text-navy-600"><Plus className="h-4 w-4" /> Tambah pilihan</button>}
                     </fieldset>}
                     {['essay', 'short_answer'].includes(form.data.type) && <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">Esai dan jawaban singkat mengikuti penilaian manual yang tersedia pada aplikasi ini.</p>}
                     <label className="block space-y-1 text-xs font-semibold text-gray-600">Pembahasan / panduan koreksi<textarea rows="3" value={form.data.explanation} onChange={event => form.setData('explanation', event.target.value)} className={input} maxLength={10000} /></label>
