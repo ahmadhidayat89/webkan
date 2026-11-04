@@ -6,9 +6,9 @@ import QuizBankTools from '@/Components/QuizBankTools';
 
 const TYPE_BADGE = {
     multiple_choice: ['bg-blue-100 text-blue-700', 'Pilihan Ganda'],
-    true_false: ['bg-green-100 text-green-700', 'Benar/Salah'],
-    essay: ['bg-purple-100 text-purple-700', 'Essay'],
-    short_answer: ['bg-amber-100 text-amber-700', 'Jawaban Singkat'],
+    true_false: ['bg-blue-100 text-blue-700', 'Benar/Salah'],
+    essay: ['bg-blue-100 text-blue-700', 'Essay'],
+    short_answer: ['bg-blue-100 text-blue-700', 'Jawaban Singkat'],
 };
 
 const QUESTION_TYPES = [
@@ -502,22 +502,22 @@ export default function QuizBuilder({ quiz }) {
                         <div className="pt-4 mt-6 space-y-2 border-t border-gray-100">
                             <p className="mb-2 text-xs font-bold text-gray-400 uppercase">Tambah Soal Baru</p>
                             {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'multiple_choice') && (
-                                <button onClick={() => addQuestion('multiple_choice')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-blue-600 transition-colors border-2 border-blue-300 border-dashed rounded-lg hover:bg-blue-50">
+                                <button onClick={() => addQuestion('multiple_choice')} className={ADD_BUTTON_CLASS}>
                                     <Plus className="w-4 h-4" /> Pilihan Ganda
                                 </button>
                             )}
                             {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'true_false') && (
-                                <button onClick={() => addQuestion('true_false')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-green-600 transition-colors border-2 border-green-300 border-dashed rounded-lg hover:bg-green-50">
+                                <button onClick={() => addQuestion('true_false')} className={ADD_BUTTON_CLASS}>
                                     <Plus className="w-4 h-4" /> Benar / Salah
                                 </button>
                             )}
                             {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'short_answer') && (
-                                <button onClick={() => addQuestion('short_answer')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold transition-colors border-2 border-dashed rounded-lg text-amber-600 border-amber-300 hover:bg-amber-50">
+                                <button onClick={() => addQuestion('short_answer')} className={ADD_BUTTON_CLASS}>
                                     <Plus className="w-4 h-4" /> Jawaban Singkat
                                 </button>
                             )}
                             {(settings.quiz_mode === 'custom' || settings.quiz_mode === 'essay') && (
-                                <button onClick={() => addQuestion('essay')} className="flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-purple-600 transition-colors border-2 border-purple-300 border-dashed rounded-lg hover:bg-purple-50">
+                                <button onClick={() => addQuestion('essay')} className={ADD_BUTTON_CLASS}>
                                     <Plus className="w-4 h-4" /> Soal Essay
                                 </button>
                             )}
