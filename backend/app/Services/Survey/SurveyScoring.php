@@ -51,30 +51,49 @@ class SurveyScoring
             if (in_array($question->type, SurveyFlow::CONTENT_TYPES, true)) {
                 continue;
             }
-            $config = $question->config ?? [];
-            $answer = $answers[$question->id] ?? null;
-            if (($config['score_mode'] ?? 'exact') === 'weighted' && in_array($question->type, self::WEIGHTED_TYPES, true)) {
-                $allowed = $this->values($question->type, $question->options ?? [], $config);
-                $weights = collect($config['answer_scores'] ?? [])->whereIn('value', $allowed)->pluck('points', 'value')->all();
-                $max += $weights ? max($weights) : 0;
-                $score += is_scalar($answer) ? ($weights[(string) $answer] ?? 0) : 0;
-
-                continue;
-            }
-            $keys = $config['correct_answers'] ?? [];
-            $points = $config['points'] ?? ($keys ? 1 : 0);
-            $max += $points;
-            if (! $keys) {
-                continue;
-            }
-            $given = is_array($answer) ? $answer : [(string) $answer];
-            sort($given);
-            sort($keys);
-            if ($given === $keys) {
-                $score += $points;
-            }
+            [$earned, $possible] = $this->gradeQuestion($question, $answers[$question->id] ?? null);
+            $score += $earned;
+            $max += $possible;
         }
 
         return [$score, $max];
+    }
+
+    /** @return array{0: int|float, 1: int|float} [skor didapat, skor maksimum] */
+    private function gradeQuestion(object $question, mixed $answer): array
+    {
+        $config = $question->config ?? [];
+        if (($config['score_mode'] ?? 'exact') === 'weighted' && in_array($question->type, self::WEIGHTED_TYPES, true)) {
+            return $this->gradeWeighted($question, $config, $answer);
+        }
+
+        return $this->gradeExact($config, $answer);
+    }
+
+    /** @return array{0: int|float, 1: int|float} */
+    private function gradeWeighted(object $question, array $config, mixed $answer): array
+    {
+        $allowed = $this->values($question->type, $question->options ?? [], $config);
+        $weights = collect($config['answer_scores'] ?? [])->whereIn('value', $allowed)->pluck('points', 'value')->all();
+
+        return [
+            is_scalar($answer) ? ($weights[(string) $answer] ?? 0) : 0,
+            $weights ? max($weights) : 0,
+        ];
+    }
+
+    /** @return array{0: int|float, 1: int|float} */
+    private function gradeExact(array $config, mixed $answer): array
+    {
+        $keys = $config['correct_answers'] ?? [];
+        $points = $config['points'] ?? ($keys ? 1 : 0);
+        if (! $keys) {
+            return [0, $points];
+        }
+        $given = is_array($answer) ? $answer : [(string) $answer];
+        sort($given);
+        sort($keys);
+
+        return [$given === $keys ? $points : 0, $points];
     }
 }
