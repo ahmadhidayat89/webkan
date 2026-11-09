@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import CoursePlayerLayout from '@/Layouts/CoursePlayerLayout';
 import DiscussionPanel from '@/Components/DiscussionPanel';
+import useExamLock from '@/hooks/useExamLock';
 import { useState, useEffect, useRef } from 'react';
 import {
     Play,
@@ -319,9 +320,10 @@ function findFreshAttempts(page, lessonId) {
     return freshLesson?.quiz?.attempts || [];
 }
 
+// Blokir klik-kanan dan salin-tempel selama kuis (tanpa alert, karena alert
+// bisa memicu event blur dan dihitung sebagai pelanggaran palsu)
 function preventCheat(e) {
     e.preventDefault();
-    alert('⚠️ PERINGATAN ⚠️\n\nAksi klik-kanan dan salin-tempel (copy-paste) dinonaktifkan selama kuis berlangsung.');
 }
 
 // Status satu percobaan: label dan warna teks (menggantikan ternary bersarang)
@@ -389,6 +391,7 @@ function computeAttemptDeadline(quiz, clockOffset, ignoreDeadline = false) {
 // ───────────────────────────────────────────────────────────────────────────
 // Custom hooks, memisahkan efek samping (timer & anti-nyontek) dari
 // render logic supaya tidak menumpuk kompleksitas di satu komponen.
+// Anti-nyontek (layar penuh + kunci) ada di hooks/useExamLock.js
 // ───────────────────────────────────────────────────────────────────────────
 
 // Hitung mundur: disimpan sebagai batas waktu (timestamp), bukan sisa detik,
@@ -419,22 +422,6 @@ function useQuizCountdown(deadline, active, submitRef) {
     }, [active, deadline, submitRef]);
 
     return timeLeft;
-}
-
-// Fitur Anti-Nyontek: peringatan saat peserta pindah tab/aplikasi selama kuis aktif.
-function useTabSwitchWarning(active) {
-    useEffect(() => {
-        if (!active) return undefined;
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'hidden') {
-                alert('⚠️ PERINGATAN SISTEM ⚠️\n\nSistem mendeteksi Anda meninggalkan halaman ujian (pindah tab/aplikasi). Mohon jaga integritas akademik dengan tidak mencari referensi dari luar selama kuis berlangsung.');
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, [active]);
 }
 
 // Jam server saat ini (ms). Diperbarui tiap detik selama `active`, supaya status
@@ -877,7 +864,7 @@ function QuizTakingView({
 // ───────────────────────────────────────────────────────────────────────────
 // Komponen utama kuis. Sekarang hanya berisi: state, kalkulasi, dan beberapa
 // "if (...) return <Komponen />" — logika per layar sudah dipindah ke
-// komponen di atas, dan efek samping (timer, anti-tab-switch) dipindah ke hook.
+// komponen di atas, dan efek samping (timer, kunci ujian) dipindah ke hook.
 // ───────────────────────────────────────────────────────────────────────────
 
 function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule = false, onQuizActiveChange }) {
@@ -933,7 +920,11 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
     submitRef.current = handleSubmit;
 
     const timeLeft = useQuizCountdown(deadline, started && !submitted, submitRef);
-    useTabSwitchWarning(started && !submitted);
+    const { isFullscreen, violations, warning, enterFullscreen, dismissWarning } = useExamLock({
+        active: started && !submitted,
+        maxViolations: 3,
+        onLimitReached: () => submitRef.current?.(true), // kumpulkan otomatis
+    });
     const now = useServerNow(clockOffset, !started && !submitted);
 
     if (!quiz?.questions?.length) {
@@ -968,6 +959,7 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
 
     const handleStart = () => {
         if (processing || (!bypassSchedule && getQuizWindow(quiz, Date.now() + clockOffset) !== 'open')) return;
+        enterFullscreen(); // harus langsung dari klik, sebelum request apa pun
         const begin = () => {
             setAutoSubmitted(false);
             setDeadline(computeAttemptDeadline(quiz, clockOffset, bypassSchedule));
@@ -1019,7 +1011,7 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
     }
 
     if (submitted) {
-        // PERUBAHAN 2: layar hasil ditentukan dari status attempt (dari server),
+        // Layar hasil ditentukan dari status attempt (dari server),
         // bukan dari quiz_mode. is_passed null = masih menunggu koreksi essay.
         const shownAttempt = result ?? latestAttempt;
 
@@ -1038,21 +1030,44 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
     }
 
     return (
-        <QuizTakingView
-            lesson={lesson}
-            quiz={quiz}
-            question={question}
-            currentQuestion={currentQuestion}
-            totalQuestions={totalQuestions}
-            answers={answers}
-            allAnswered={allAnswered}
-            processing={processing}
-            timeLeft={timeLeft}
-            onAnswer={handleAnswer}
-            onClear={handleClearAnswer}
-            onNavigate={setCurrentQuestion}
-            onSubmit={handleSubmit}
-        />
+        <>
+            {(!isFullscreen || warning) && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white p-6">
+                    <div className="max-w-md text-center">
+                        <div className="mb-3 text-4xl">⚠️</div>
+                        <h2 className="mb-2 text-xl font-black text-gray-800">Kuis Dikunci</h2>
+                        <p className="mb-2 text-sm text-gray-600">
+                            {warning || 'Kuis harus dikerjakan dalam mode layar penuh.'}
+                        </p>
+                        <p className="mb-2 text-xs font-bold text-red-600">
+                            Pelanggaran: {violations} dari 3. Setelah 3 kali, kuis dikumpulkan otomatis.
+                        </p>
+                        <p className="mb-5 text-xs text-gray-400">Waktu pengerjaan tetap berjalan.</p>
+                        <button
+                            onClick={async () => { await enterFullscreen(); dismissWarning(); }}
+                            className="px-6 py-2.5 text-sm font-bold text-white rounded-lg bg-navy-600 hover:bg-navy-700"
+                        >
+                            Kembali ke Layar Penuh
+                        </button>
+                    </div>
+                </div>
+            )}
+            <QuizTakingView
+                lesson={lesson}
+                quiz={quiz}
+                question={question}
+                currentQuestion={currentQuestion}
+                totalQuestions={totalQuestions}
+                answers={answers}
+                allAnswered={allAnswered}
+                processing={processing}
+                timeLeft={timeLeft}
+                onAnswer={handleAnswer}
+                onClear={handleClearAnswer}
+                onNavigate={setCurrentQuestion}
+                onSubmit={handleSubmit}
+            />
+        </>
     );
 }
 
@@ -1098,7 +1113,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
         ? allLessons.find(l => l.id.toString() === initialLessonId.toString())
         : null;
 
-    // PERBAIKAN: simpan hanya ID, bukan objek lesson.
+    // Simpan hanya ID, bukan objek lesson.
     // Objek lesson diambil dari props terbaru di setiap render, jadi setelah
     // submit kuis (Inertia mengirim props baru) data attempt langsung segar.
     const [activeLessonId, setActiveLessonId] = useState(
@@ -1186,6 +1201,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                 activeLesson={activeLesson}
                 serverNow={now}
                 bypassSchedule={Boolean(course.can_bypass_schedule)}
+                hideSidebar={quizActive}
                 onSelectLesson={(lesson) => {
                     if (quizActive && lesson.id !== activeLesson.id) {
                         alert(
@@ -1250,8 +1266,8 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                         </div>
                     )}
 
-                    {/* Diskusi per Sesi */}
-                    {!moduleLocked && <DiscussionPanel
+                    {/* Diskusi per Sesi (disembunyikan di kuis, feedback no 14) */}
+                    {!moduleLocked && activeLesson.type !== 'quiz' && <DiscussionPanel
                         key={activeLesson.id}
                         lessonId={activeLesson.id}
                         lessonTitle={activeLesson.title}

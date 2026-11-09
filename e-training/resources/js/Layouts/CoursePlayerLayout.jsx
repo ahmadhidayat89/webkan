@@ -4,7 +4,7 @@ import AccordionMenu from '@/Components/AccordionMenu';
 import { ArrowLeft, PanelLeftClose, PanelLeft, X, Award } from 'lucide-react';
 import { useState } from 'react';
 
-export default function CoursePlayerLayout({ course, modules, activeLesson, onSelectLesson, serverNow, bypassSchedule, children }) {
+export default function CoursePlayerLayout({ course, modules, activeLesson, onSelectLesson, serverNow, bypassSchedule, hideSidebar = false, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -16,15 +16,19 @@ export default function CoursePlayerLayout({ course, modules, activeLesson, onSe
         <div className="flex flex-col min-h-screen bg-gray-50">
             {/* Top Bar */}
             <header className="z-40 flex items-center flex-shrink-0 gap-3 px-4 bg-white border-b border-gray-200 h-14">
-                <Link
-                    href={route('dashboard')}
-                    className="flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-700"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="hidden sm:inline">Kembali</span>
-                </Link>
+                {!hideSidebar && (
+                    <>
+                        <Link
+                            href={route('dashboard')}
+                            className="flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-700"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span className="hidden sm:inline">Kembali</span>
+                        </Link>
 
-                <div className="w-px h-6 bg-gray-200" />
+                        <div className="w-px h-6 bg-gray-200" />
+                    </>
+                )}
 
                 <ApplicationLogo showText={false} className="hidden sm:flex" />
 
@@ -54,25 +58,29 @@ export default function CoursePlayerLayout({ course, modules, activeLesson, onSe
                 )}
 
                 {/* Desktop sidebar toggle */}
-                <button
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100 transition-colors"
-                >
-                    {sidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
-                </button>
+                {!hideSidebar && (
+                    <button
+                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                        className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100 transition-colors"
+                    >
+                        {sidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
+                    </button>
+                )}
 
                 {/* Mobile sidebar toggle */}
-                <button
-                    onClick={() => setMobileSidebarOpen(true)}
-                    className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100 transition-colors"
-                >
-                    <PanelLeft className="w-4 h-4" />
-                </button>
+                {!hideSidebar && (
+                    <button
+                        onClick={() => setMobileSidebarOpen(true)}
+                        className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100 transition-colors"
+                    >
+                        <PanelLeft className="w-4 h-4" />
+                    </button>
+                )}
             </header>
 
             <div className="flex flex-1 overflow-hidden">
                 {/* Desktop Sidebar */}
-                <aside className={`hidden md:flex flex-col bg-white border-r border-gray-200 transition-all duration-300 flex-shrink-0 ${sidebarOpen ? 'w-80' : 'w-0 overflow-hidden'
+                {!hideSidebar && <aside className={`hidden md:flex flex-col bg-white border-r border-gray-200 transition-all duration-300 flex-shrink-0 ${sidebarOpen ? 'w-80' : 'w-0 overflow-hidden'
                     }`}>
                     <div className="p-4 border-b border-gray-100">
                         <h2 className="mb-1 text-xs font-semibold tracking-wider text-gray-400 uppercase">Materi Kursus</h2>
@@ -87,10 +95,10 @@ export default function CoursePlayerLayout({ course, modules, activeLesson, onSe
                             bypassSchedule={bypassSchedule}
                         />
                     </div>
-                </aside>
+                </aside>}
 
                 {/* Mobile Sidebar Overlay */}
-                {mobileSidebarOpen && (
+                {mobileSidebarOpen && !hideSidebar && (
                     <div className="fixed inset-0 z-50 flex md:hidden">
                         <button type="button" aria-label="Tutup navigasi kursus" className="absolute inset-0 p-0 border-0 bg-black/40" onClick={() => setMobileSidebarOpen(false)} />
                         <div className="relative w-80 max-w-[85vw] bg-white shadow-xl flex flex-col animate-slide-in-left">
