@@ -13,6 +13,7 @@ class Quiz extends Model
 
     protected $fillable = [
         'lesson_id',
+        'bank_quiz_package_id',
         'duration_minutes',
         'passing_score',
         'max_attempts',

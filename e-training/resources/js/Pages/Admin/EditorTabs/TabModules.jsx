@@ -3,6 +3,7 @@ import { router, useForm } from '@inertiajs/react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { PlusCircle, GripVertical, Trash2, Video, FileText, HelpCircle, ChevronDown, ChevronUp, Upload, X, Save, AlertTriangle } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
+import ImportQuizPackage from '@/Components/ImportQuizPackage';
 import ModuleAccessSetting from '@/Components/ModuleAccessSetting';
 
 // FIX: ternary bersarang diganti fungsi dengan early return
@@ -174,6 +175,7 @@ export default function TabModules({ courseId, modules }) {
 
 function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete, onDeleteLesson, onDeleteFile }) {
     const [isOpen, setIsOpen] = useState(true);
+    const [importPackage, setImportPackage] = useState(false);
     const [title, setTitle] = useState(module.title);
     const [startAt, setStartAt] = useState(module.start_at || '');
     const [endAt, setEndAt] = useState(module.end_at || '');
@@ -213,6 +215,7 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
 
     return (
         <div className="overflow-hidden border border-gray-200 card">
+            {importPackage && <ImportQuizPackage module={module} onClose={() => setImportPackage(false)} />}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-gray-50">
                 <div {...dragHandleProps}>
                     <GripVertical className="flex-shrink-0 w-4 h-4 text-gray-300 cursor-grab" />
@@ -318,6 +321,7 @@ function ModuleCard({ module, index, dragHandleProps, onDragEndLessons, onDelete
                         <button onClick={() => addLesson('document')} className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors">
                             <FileText className="w-3 h-3" /> Dokumen
                         </button>
+                        <button type="button" onClick={() => setImportPackage(true)} className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-navy-700 bg-navy-50 hover:bg-navy-100 rounded transition-colors">Impor Paket Kuis</button>
                         <button onClick={() => addLesson('quiz')} className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded transition-colors">
                             <HelpCircle className="w-3 h-3" /> Kuis
                         </button>

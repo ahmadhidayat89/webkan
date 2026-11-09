@@ -48,7 +48,7 @@ export default function QuestionBank({ questions, courses, categories, filters, 
     function filter(changes) {
         const next = { ...query, ...changes };
         setQuery(next);
-        router.get(route('admin.question-bank.index'), Object.fromEntries(Object.entries(next).filter(([, value]) => value !== '' && value != null)), { preserveState: true, preserveScroll: true });
+        router.get(route('admin.question-bank.index'), Object.fromEntries(Object.entries({ ...next, view: 'questions' }).filter(([, value]) => value !== '' && value != null)), { preserveState: true, preserveScroll: true });
     }
     const visibleCategories = categories.filter(
         category => !query.course_id || String(category.course_id) === String(query.course_id));
@@ -62,6 +62,7 @@ export default function QuestionBank({ questions, courses, categories, filters, 
                     <button type="button" disabled={!courses.length} onClick={() => setDialog({ mode: 'create' })} className="inline-flex items-center gap-2 text-sm btn-gold disabled:opacity-50"><Plus className="w-4 h-4" /> Tambah soal</button>
                 </div>
             </div>
+            <nav aria-label="Jenis koleksi bank soal" className="inline-flex gap-1 rounded-xl border border-gray-200 bg-white p-1 text-sm"><Link href={route('admin.question-bank.packages.index')} className="rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-50">Paket Kuis</Link><Link href={route('admin.question-bank.index', { view: 'questions' })} className="rounded-lg bg-navy-50 px-4 py-2 font-semibold text-navy-700">Soal Satuan</Link></nav>
             {flash?.success && <output className="block p-4 text-sm text-green-700 border border-green-200 rounded-xl bg-green-50">{flash.success}</output>}
             {!!Object.keys(errors ?? {}).length && !dialog && <div role="alert" className="p-4 text-sm text-red-700 rounded-xl bg-red-50">{Object.values(errors).join(' ')}</div>}
             <div className="grid grid-cols-3 gap-3">{[
@@ -87,7 +88,7 @@ export default function QuestionBank({ questions, courses, categories, filters, 
                             <select aria-label="Filter status soal" value={query.status || ''} onChange={event => filter({ status: event.target.value })} className="py-2 text-xs border-gray-200 rounded-lg"><option value="">Semua status aktif</option><option value="ready">Ready</option><option value="draft">Draft</option><option value="archived">Arsip</option></select>
                             <select aria-label="Filter tipe soal" value={query.type || ''} onChange={event => filter({ type: event.target.value })} className="py-2 text-xs border-gray-200 rounded-lg"><option value="">Semua jenis soal</option>{Object.entries(QUESTION_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
                             <input aria-label="Filter tag" placeholder="Tag, lalu tekan Cari" value={query.tag || ''} onChange={event => setQuery({ ...query, tag: event.target.value })} className="w-40 py-2 text-xs border-gray-200 rounded-lg" />
-                            <button type="button" onClick={() => { setQuery({}); router.get(route('admin.question-bank.index')); }} className="px-2 text-xs text-gray-400 hover:text-navy-600">Reset filter</button>
+                            <button type="button" onClick={() => { setQuery({}); router.get(route('admin.question-bank.index', { view: 'questions' })); }} className="px-2 text-xs text-gray-400 hover:text-navy-600">Reset filter</button>
                         </div>
                     </form>
                     <div className="overflow-x-auto"><table className="w-full text-xs text-left">

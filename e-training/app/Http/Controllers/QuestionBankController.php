@@ -19,6 +19,9 @@ class QuestionBankController extends Controller
 {
     public function index(Request $request)
     {
+        if (! $request->wantsJson() && $request->query('view') !== 'questions') {
+            return redirect()->route('admin.question-bank.packages.index', $request->only('course_id'));
+        }
         $filters = $request->validate([
             'search' => 'nullable|string|max:200', 'course_id' => 'nullable|integer',
             'category_id' => 'nullable|integer', 'status' => 'nullable|in:draft,ready,archived',

@@ -226,6 +226,7 @@ class CourseController extends Controller
             'start_at' => $quiz->start_at?->format(self::DATETIME_LOCAL_FORMAT),
             'quiz_mode' => $quiz->quiz_mode,
             'course_id' => $quiz->lesson->module->course_id,
+            'title' => $quiz->lesson->title,
             'questions_locked' => $quiz->attempts()->exists() || \Illuminate\Support\Facades\DB::table('quiz_bank_draws')->where('quiz_id', $quiz->id)->exists(),
             'random_groups' => \Illuminate\Support\Facades\DB::table('quiz_random_groups')->where('quiz_id', $quiz->id)->get(),
             'questions' => $quiz->questions->map(fn($question) => $this->formatQuizQuestion($question))->values(),

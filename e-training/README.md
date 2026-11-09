@@ -7,6 +7,20 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Pengaturan urutan modul E-Training
+
+Di editor kursus, buka **Modul & Materi**, lalu aktifkan **Kerjakan materi secara berurutan** pada modul yang diinginkan dan klik **Simpan Pengaturan**. Pengaturan awalnya nonaktif. Urutan berlaku di dalam modul itu saja, mengikuti susunan materi di editor (misalnya pretes, materi, lalu postes). Materi berikutnya terbuka setelah materi sebelumnya selesai; kuis selesai setelah jawaban dikirim, tanpa harus menunggu penilaian. Materi yang belum dipublikasikan dilewati. Modul lain tetap dapat dibuka sesuai jadwalnya. Admin dan pengajar yang ditugaskan dapat melakukan preview tanpa pembatasan urutan.
+
+Setelah menarik pembaruan ini, jalankan dari direktori `e-training`:
+
+```powershell
+php artisan migrate
+php artisan learning:protect-files
+npm run build
+```
+
+Perintah `learning:protect-files` memindahkan lampiran materi dan diskusi lama ke penyimpanan privat agar unduhan melewati pemeriksaan akses modul. Perintah dapat diulang; salinan publik hanya dihapus setelah isi salinan privat diverifikasi. Jika perintah gagal karena isi file berbeda, periksa kedua salinan sebelum melanjutkan. Sertakan `storage/app/private` dalam backup dan penyimpanan bersama pada deployment dengan beberapa server.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

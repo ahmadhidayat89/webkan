@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { FileText, PlusCircle, HelpCircle, ClipboardList, Award, Users, ChevronLeft, Eye, Save } from 'lucide-react';
 import TabDetail from './EditorTabs/TabDetail';
@@ -11,6 +11,7 @@ import TabStudents from './EditorTabs/TabStudents';
 import CourseTeacherAssignment from '@/Components/CourseTeacherAssignment';
 
 export default function CourseEditor({ course, categories, allStudents, teachers = [], canAssignTeachers = false, canEditCourseDetails = false, canManageParticipants = false, canIssueCertificates = false, initialTab = 'detail', initialQuizId = null, initialAttemptId = null }) {
+    const { flash } = usePage().props;
     const validTabs = ['detail', 'modules', 'grading', 'grade-report', 'certificates', 'students'];
     const [activeTab, setActiveTab] = useState(validTabs.includes(initialTab) ? initialTab : 'detail');
     const [targetQuizId, setTargetQuizId] = useState(initialQuizId);
@@ -65,6 +66,7 @@ export default function CourseEditor({ course, categories, allStudents, teachers
                     </div>
                 </div>
 
+                {flash?.success && <output className="block mb-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">{flash.success}</output>}
                 {canAssignTeachers && <CourseTeacherAssignment course={course} teachers={teachers} />}
 
                 {/* Tab Navigation */}
