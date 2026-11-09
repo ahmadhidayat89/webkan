@@ -1,3 +1,5 @@
+const compareValues = (a, b) => String(a).localeCompare(String(b));
+
 export const supportsWeightedScoring = type => ['choice', 'drop', 'scale', 'rating', 'linear'].includes(type);
 
 export function scoringChoices(question) {
@@ -49,7 +51,7 @@ export function gradeSurvey(questions, answers) {
       const points = config.points ?? (keys.length ? 1 : 0);
       total.max += Number(points);
       const given = Array.isArray(answer) ? [...answer] : [String(answer ?? '')];
-      if (keys.length && JSON.stringify(given.sort()) === JSON.stringify([...keys].sort())) total.score += Number(points);
+      if (keys.length && JSON.stringify(given.sort(compareValues)) === JSON.stringify([...keys].sort(compareValues))) total.score += Number(points);
     }
     return total;
   }, { score: 0, max: 0 });
