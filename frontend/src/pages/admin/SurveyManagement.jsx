@@ -1,3 +1,4 @@
+import { scoringConfig, gradeSurvey } from '../../components/survey/surveyScoring';
 import { useState, useEffect, useRef, useReducer, useMemo } from 'react';
 import ExtendedField, { CONTENT_TYPES, visibleQuestions } from '../../components/survey/ExtendedField';
 import { QuestionPrimaryOptions, QuestionMoreOptions, ValidationOptions, QuizAnswerKey, SurveySettings, ThemeSettings, ImportQuestions } from '../../components/survey/BuilderControls';
@@ -51,7 +52,7 @@ const SCALE_PRESETS = {
 };
 
 const normalizeScale = (opts) =>
-  Array.isArray(opts) && opts.length === 5 && opts.some(Boolean)
+  Array.isArray(opts) && opts.length === 5
     ? opts
     : [...SCALE_PRESETS.kualitas.labels];
 
@@ -146,7 +147,7 @@ const buildSurveyPayload = ({ title, desc, survey, questions, settings }) => ({
     options: hasOptions(q.type) || q.type === 'scale' ? q.opts : [],
     image_url: q.image_url || null,
     validation: q.validation || {},
-    config: { ...q.config, ...(q.config?.rows && { rows: q.config.rows.map(r => r.trim()).filter(Boolean) }), ...(q.config?.correct_answers && { correct_answers: q.config.correct_answers.filter(a => typeof a === 'string' && a.trim()) }) },
+    config: { ...scoringConfig(q), ...(q.config?.rows && { rows: q.config.rows.map(r => r.trim()).filter(Boolean) }), ...(q.config?.correct_answers && { correct_answers: q.config.correct_answers.filter(a => typeof a === 'string' && a.trim()) }) },
   })),
 });
 
@@ -252,7 +253,7 @@ const cloneQuestion = (q) => {
 const withScaleLabel = (q, labelIdx, val) => {
   const opts = Array.from({ length: 5 }, (_, k) => q.opts?.[k] ?? '');
   opts[labelIdx] = val;
-  return { ...q, opts };
+  return { ...q, opts, config: { ...q.config, scale_preset: 'custom' } };
 };
 
 const withNewOption = (q) => {
@@ -266,6 +267,7 @@ const withNewOption = (q) => {
 
 const withOption = (q, optIdx, val) => ({
   ...q,
+  config: { ...q.config, correct_answers: (q.config?.correct_answers || []).map(value => value === q.opts[optIdx] ? val : value), answer_scores: (q.config?.answer_scores || []).map(entry => entry.value === q.opts[optIdx] ? { ...entry, value: val } : entry) },
   opts: q.opts.map((o, i) => (i === optIdx ? val : o)),
 });
 
@@ -274,6 +276,7 @@ const withoutOption = (q, optIdx) =>
     ? q
     : {
       ...q,
+      config: { ...q.config, correct_answers: (q.config?.correct_answers || []).filter(value => value !== q.opts[optIdx]), answer_scores: (q.config?.answer_scores || []).filter(entry => entry.value !== q.opts[optIdx]) },
       opts: q.opts.filter((_, i) => i !== optIdx),
       optKeys: q.optKeys.filter((_, i) => i !== optIdx),
     };
@@ -291,7 +294,7 @@ const withQuestionType = (q, newType) => {
     delete config.branches;
     delete config.show_branches;
   }
-  if (q.type !== newType) { delete config.correct_answers; delete config.show_validation; }
+  if (q.type !== newType) { delete config.scale_preset; delete config.correct_answers; delete config.score_mode; delete config.answer_scores; delete config.show_validation; }
   return {
     ...q,
     type: newType,
@@ -406,8 +409,8 @@ function useQuestionEditor(settings) {
   const setRequired = (qIdx, req) => patchQuestion(qIdx, { req });
 
   const applyScalePreset = (qIdx, key) => {
-    if (!SCALE_PRESETS[key]) return;
-    patchQuestion(qIdx, { opts: [...SCALE_PRESETS[key].labels] });
+    if (key !== 'custom' && !SCALE_PRESETS[key]) return;
+    setQuestions(prev => mapAt(prev, qIdx, q => ({ ...q, opts: key === 'custom' ? Array(5).fill('') : [...SCALE_PRESETS[key].labels], config: { ...q.config, scale_preset: key } })));
   };
 
   const updateScaleLabel = (qIdx, labelIdx, val) =>
@@ -904,7 +907,8 @@ const ScaleEditor = ({ q, qIdx, editor }) => (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-xs font-bold text-gray-600">Label siap pakai</span>
       <select
-        value={detectScalePreset(q.opts)}
+        aria-label="Label siap pakai"
+        value={q.config?.scale_preset || detectScalePreset(q.opts)}
         onChange={(e) => editor.applyScalePreset(qIdx, e.target.value)}
         className="bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-gray-700 focus:border-blue-600 outline-none"
       >
@@ -945,18 +949,25 @@ const QuestionBody = ({ q, qIdx, isSelected, editor }) => {
     {['short', 'para'].includes(q.type) && <div className="pb-3 text-sm border-b border-dotted border-slate-300 text-slate-400">{q.type === 'short' ? 'Teks jawaban singkat' : 'Teks jawaban panjang'}</div>}
     {['linear', 'rating', 'date', 'time', 'duration', 'video'].includes(q.type) && <div className="pointer-events-none"><ExtendedField q={q} value={undefined} onChange={() => { }} /></div>}
     {['short', 'para', 'check'].includes(q.type) && hasValidation && <ValidationOptions q={q} onChange={patch => editor.patchValidation(qIdx, patch)} />}
-    {editor.quiz && !CONTENT_TYPES.includes(q.type) && <QuizAnswerKey q={q} onConfig={config} />}
   </div>;
 };
 
-const QuestionFooter = ({ q, qIdx, editor }) => (
+const QuestionFooter = ({ q, qIdx, editor, onAnswerKey, answerKeyButton }) => (
   <div className="flex flex-wrap items-center justify-between gap-3 pt-4 text-xs border-t border-slate-100">
+    {editor.quiz && !CONTENT_TYPES.includes(q.type) && <button ref={answerKeyButton} type="button" onClick={onAnswerKey} className="inline-flex items-center gap-2 py-2 text-xs font-semibold text-blue-700"><FaCheck /><span>{q.config?.score_mode === 'weighted' ? 'Skor jawaban' : 'Kunci jawaban'}</span><span className="font-normal text-slate-500">({scoringConfig(q).points ?? 0} poin)</span></button>}
     <div className="flex items-center gap-2"><button type="button" aria-label="Naikkan pertanyaan" disabled={qIdx === 0} onClick={() => editor.moveQuestion(qIdx, -1)} className="p-2 text-slate-500 disabled:opacity-30">↑</button><button type="button" aria-label="Turunkan pertanyaan" disabled={qIdx === editor.questions.length - 1} onClick={() => editor.moveQuestion(qIdx, 1)} className="p-2 text-slate-500 disabled:opacity-30">↓</button><button type="button" title="Duplikat" aria-label="Duplikat pertanyaan" onClick={() => editor.duplicateQuestion(qIdx)} className="p-2 text-slate-500 hover:text-blue-700"><FaClone /></button><button type="button" title="Hapus" aria-label="Hapus pertanyaan" onClick={() => editor.removeQuestion(qIdx)} className="p-2 text-slate-500 hover:text-rose-600"><FaTrash /></button></div>
     <div className="flex items-center gap-4">{!CONTENT_TYPES.includes(q.type) && <label className="flex items-center gap-2 text-slate-600"><input type="checkbox" checked={q.req} onChange={e => editor.setRequired(qIdx, e.target.checked)} className="accent-blue-700" />Wajib diisi</label>}<QuestionMoreOptions q={q} onConfig={patch => editor.patchQuestion(qIdx, { config: { ...q.config, ...patch } })} onPatch={patch => editor.patchQuestion(qIdx, patch)} /></div>
   </div>
 );
 
-const QuestionCard = ({ q, qIdx, isSelected, editor }) => (
+const QuestionCard = ({ q, qIdx, isSelected, editor }) => {
+  const [editingKey, setEditingKey] = useState(false);
+  const answerKeyButton = useRef(null);
+  const closeKey = () => {
+    setEditingKey(false);
+    requestAnimationFrame(() => answerKeyButton.current?.focus());
+  };
+  return (
   <div id={`survey-item-${q._key}`} tabIndex={-1}
     onDragOver={e => { if (e.dataTransfer.types.includes('application/x-kan-question')) e.preventDefault(); }}
     onDrop={e => { const from = Number(e.dataTransfer.getData('application/x-kan-question')); if (Number.isInteger(from)) { e.preventDefault(); editor.moveQuestion(from, qIdx - from); } }}
@@ -965,11 +976,14 @@ const QuestionCard = ({ q, qIdx, isSelected, editor }) => (
       : 'border-gray-200 hover:border-gray-300'
       }`}
   >
+    {isSelected && editingKey && editor.quiz ? <QuizAnswerKey q={q} onConfig={patch => editor.patchQuestion(qIdx, { config: { ...q.config, ...patch } })} onDone={closeKey} /> : <>
     <QuestionHeader q={q} qIdx={qIdx} isSelected={isSelected} editor={editor} />
     <QuestionBody q={q} qIdx={qIdx} isSelected={isSelected} editor={editor} />
-    {isSelected && <QuestionFooter q={q} qIdx={qIdx} editor={editor} />}
+    {isSelected && <QuestionFooter q={q} qIdx={qIdx} editor={editor} onAnswerKey={() => setEditingKey(true)} answerKeyButton={answerKeyButton} />}
+    </>}
   </div>
-);
+  );
+};
 
 const SurveyEditTab = ({ surveyId, title, setTitle, desc, setDesc, editor, onImport }) => {
   const { scrollTarget, clearScrollTarget } = editor;
@@ -1005,7 +1019,7 @@ const SurveyEditTab = ({ surveyId, title, setTitle, desc, setDesc, editor, onImp
 // KOMPONEN: TAB PRATINJAU
 // ══════════════════════════════════════════════════════════════════════
 
-const PreviewDone = ({ onReset, message, summary }) => (
+const PreviewDone = ({ onReset, message, summary, grade }) => (
   <div className="p-10 space-y-4 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
     <div className="flex items-center justify-center w-16 h-16 mx-auto text-3xl font-extrabold rounded-full bg-emerald-100 text-emerald-600">
       <FaCheck />
@@ -1014,6 +1028,7 @@ const PreviewDone = ({ onReset, message, summary }) => (
     <p className="max-w-sm mx-auto text-sm text-gray-500 whitespace-pre-wrap">
       {message || 'Jawaban Anda telah berhasil kami terima. Terima kasih atas masukan Anda untuk meningkatkan mutu layanan KAN.'}
     </p>
+    {grade && <p className="text-lg font-bold text-blue-800">Nilai pratinjau: {grade.score} / {grade.max}</p>}
     <ResponseSummary items={summary} />
     <button
       type="button"
@@ -1040,7 +1055,7 @@ const SurveyPreviewTab = ({ title, desc, settings, questions, preview }) => {
   };
   return <SurveyFrame settings={settings}>
     {confirmSubmit && <SubmitConfirmation onCancel={() => setConfirmSubmit(false)} onConfirm={() => { setConfirmSubmit(false); preview.submit({ preventDefault() { } }); }} />}
-    {preview.done ? <PreviewDone onReset={reset} message={settings.confirmation_message} summary={settings.show_summary ? visibleQuestions(prepared, preview.answers).filter(q => !CONTENT_TYPES.includes(q.type)).map(q => ({ question_id: q.id, text: q.text, type: q.type, options: q.options, answer: preview.answers[q.id] })) : []} /> : <SurveyForm preview survey={{ title, description: desc, settings, questions: prepared }} pages={pages} pageIndex={pageIndex} answers={preview.answers} errors={preview.errors} onAnswer={preview.setAnswer} onPrevious={() => { setSection(pageIndex - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onContinue={onContinue} onClear={reset} />}
+    {preview.done ? <PreviewDone grade={settings.quiz && settings.show_score ? gradeSurvey(visibleQuestions(prepared, preview.answers), preview.answers) : null} onReset={reset} message={settings.confirmation_message} summary={settings.show_summary ? visibleQuestions(prepared, preview.answers).filter(q => !CONTENT_TYPES.includes(q.type)).map(q => ({ question_id: q.id, text: q.text, type: q.type, options: q.options, answer: preview.answers[q.id] })) : []} /> : <SurveyForm preview survey={{ title, description: desc, settings, questions: prepared }} pages={pages} pageIndex={pageIndex} answers={preview.answers} errors={preview.errors} onAnswer={preview.setAnswer} onPrevious={() => { setSection(pageIndex - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onContinue={onContinue} onClear={reset} />}
   </SurveyFrame>;
 };
 

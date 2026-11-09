@@ -309,6 +309,7 @@ class SurveyController extends Controller
                 }
             }],
             'questions.*.config.rows.*' => 'required|string|max:255',
+            'questions.*.config.scale_preset' => 'nullable|in:custom,kualitas,kepuasan,setuju,frekuensi',
             'questions.*.config.min' => 'nullable|integer|min:0|max:1',
             'questions.*.config.max' => 'nullable|integer|min:2|max:10',
             'questions.*.config.min_label' => 'nullable|string|max:255',
@@ -330,6 +331,10 @@ class SurveyController extends Controller
             'questions.*.config.option_images.*' => 'nullable|url:http,https|max:2048',
             'questions.*.config.file_max_mb' => 'nullable|integer|min:1|max:50',
             'questions.*.config.file_types' => 'nullable|string|max:255|regex:/^[a-z0-9,. ]+$/',
+            'questions.*.config.score_mode' => 'nullable|in:exact,weighted',
+            'questions.*.config.answer_scores' => 'nullable|array|max:100',
+            'questions.*.config.answer_scores.*.value' => 'required|string|max:255',
+            'questions.*.config.answer_scores.*.points' => 'required|integer|min:0|max:1000',
             'questions.*.config.points' => 'nullable|integer|min:0|max:1000',
             'questions.*.config.correct_answers' => 'nullable|array|max:100',
             'questions.*.config.correct_answers.*' => 'string|max:2000',
@@ -362,10 +367,10 @@ class SurveyController extends Controller
             'text' => $this->sanitizer->cleanQuestionText($qData['text'], $index),
             'type' => $qData['type'],
             'is_required' => $qData['is_required'] ?? false,
-            'options' => $this->sanitizer->cleanOptions($qData['type'], $qData['options'] ?? []),
+            'options' => $this->sanitizer->cleanOptions($qData['type'], $qData['options'] ?? [], ($qData['config']['scale_preset'] ?? null) === 'custom'),
             'image_url' => $qData['image_url'] ?? null,
             'validation' => $qData['validation'] ?? null,
-            'config' => $qData['config'] ?? [],
+            'config' => app(\App\Services\Survey\SurveyScoring::class)->validateConfig($qData, $index),
         ];
     }
 

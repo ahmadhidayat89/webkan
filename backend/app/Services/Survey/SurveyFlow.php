@@ -198,27 +198,6 @@ class SurveyFlow
 
     public function grade(Collection $questions, array $answers): array
     {
-        $score = 0;
-        $max = 0;
-        foreach ($questions as $q) {
-            $config = $q->config ?? [];
-            $keys = $config['correct_answers'] ?? [];
-            if (in_array($q->type, self::CONTENT_TYPES, true)) {
-                continue;
-            }
-            $points = $config['points'] ?? ($keys ? 1 : 0);
-            $max += $points;
-            if (!$keys) {
-                continue;
-            }
-            $answer = $answers[$q->id] ?? null;
-            $given = is_array($answer) ? $answer : [(string) $answer];
-            sort($given);
-            sort($keys);
-            if ($given === $keys) {
-                $score += $points;
-            }
-        }
-        return [$score, $max];
+        return app(SurveyScoring::class)->grade($questions, $answers);
     }
 }

@@ -76,7 +76,7 @@ class SurveyController extends Controller
                         'options' => $q->options ?? [],
                         'image_url' => $q->image_url,
                         'validation' => $validation,
-                        'config' => array_diff_key($q->config ?? [], array_flip(['correct_answers', 'feedback'])),
+                        'config' => array_diff_key($q->config ?? [], array_flip(['correct_answers', 'answer_scores', 'feedback'])),
                     ];
                 }),
             ],
@@ -243,10 +243,11 @@ class SurveyController extends Controller
         }
         $feedback = [];
         foreach ($questions as $question) {
-            if (! empty($question->config['correct_answers'])) {
+            if (! empty($question->config['correct_answers']) || ! empty($question->config['answer_scores'])) {
                 $feedback[] = [
                     'question' => strip_tags($question->text),
-                    'correct_answers' => $question->config['correct_answers'],
+                    'correct_answers' => $question->config['correct_answers'] ?? [],
+                    'answer_scores' => $question->config['answer_scores'] ?? [],
                     'feedback' => $question->config['feedback'] ?? '',
                 ];
             }

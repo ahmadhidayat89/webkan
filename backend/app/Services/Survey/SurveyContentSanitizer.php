@@ -6,9 +6,10 @@ class SurveyContentSanitizer
 {
     /**
      * Skala 1–5 selalu menyimpan tepat 5 label (boleh kosong, maks 100 karakter).
-     * Jika semua kosong, pakai label bawaan. Tipe lain dikembalikan apa adanya.
+     * Jika semua kosong, pakai label bawaan kecuali skala dipilih sebagai Kustom.
+     * Tipe lain dikembalikan apa adanya.
      */
-    public function cleanOptions(string $type, array $options): array
+    public function cleanOptions(string $type, array $options, bool $custom = false): array
     {
         if ($type !== 'scale') {
             return $options;
@@ -20,7 +21,7 @@ class SurveyContentSanitizer
             $labels[] = mb_substr($label, 0, 100);
         }
 
-        if (count(array_filter($labels, fn ($l) => $l !== '')) === 0) {
+        if (!$custom && count(array_filter($labels, fn ($l) => $l !== '')) === 0) {
             return ['Sangat Tidak Baik', 'Tidak Baik', 'Cukup', 'Baik', 'Sangat Baik'];
         }
 
