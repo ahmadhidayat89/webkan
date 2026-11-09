@@ -373,7 +373,6 @@ export default function QuizBuilder({ quiz }) {
                             <option value="true_false">Benar/Salah</option>
                             <option value="essay">Essay</option>
                             <option value="short_answer">Jawaban Singkat</option>
-                            <option value="question_bank" disabled>Dari Bank Soal (Coming Soon)</option>
                         </select>
                     </div>
                     <div>
