@@ -44,7 +44,7 @@ function toLocalInput(value) {
 
 // Ambil token CSRF dari cookie Laravel
 const getXsrfToken = () =>
-    decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [])[1] || '');
+    decodeURIComponent(/XSRF-TOKEN=([^;]+)/.exec(document.cookie)?.[1] || '');
 
 // Hapus soal tanpa reload halaman
 const deleteQuestionFast = (id) =>

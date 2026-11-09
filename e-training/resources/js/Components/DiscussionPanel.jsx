@@ -44,9 +44,9 @@ function FileAttachment({ msg, own }) {
                 <a href={msg.file_path} download={msg.file_name} target="_blank" rel="noreferrer"
                     className={`flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium rounded-xl transition-colors
                         ${own ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}`}>
-                    <FileText className="w-4 h-4 flex-shrink-0" />
+                    <FileText className="flex-shrink-0 w-4 h-4" />
                     <span className="truncate max-w-[160px]">{msg.file_name}</span>
-                    <span className="opacity-60 flex-shrink-0">{fmtSize(msg.file_size)}</span>
+                    <span className="flex-shrink-0 opacity-60">{fmtSize(msg.file_size)}</span>
                     <Download className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
                 </a>
             )}
@@ -125,7 +125,7 @@ function MessageList({ loading, messages, onDelete, currentUserId, isAdmin }) {
     if (messages.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center">
-                <MessageCircle className="w-10 h-10 text-gray-200 mb-2" />
+                <MessageCircle className="w-10 h-10 mb-2 text-gray-200" />
                 <p className="text-sm font-semibold text-gray-400">Belum ada diskusi</p>
                 <p className="text-xs text-gray-300 mt-0.5">Jadilah yang pertama bertanya!</p>
             </div>
@@ -212,7 +212,7 @@ export default function DiscussionPanel({ lessonId, lessonTitle, alwaysOpen = fa
     // Auto scroll to bottom hanya saat panel baru dibuka atau ada pesan baru masuk
     useEffect(() => {
         if (!open) return;
-        const latestId = messages.length > 0 ? messages[messages.length - 1].id : null;
+        const latestId = messages.at(-1)?.id ?? null;
         if (latestId !== lastMessageIdRef.current) {
             lastMessageIdRef.current = latestId;
             bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -310,7 +310,7 @@ export default function DiscussionPanel({ lessonId, lessonTitle, alwaysOpen = fa
                     </div>
 
                     {/* Messages */}
-                    <div className="h-80 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/30">
+                    <div className="px-5 py-4 space-y-4 overflow-y-auto h-80 bg-gray-50/30">
                         <MessageList
                             loading={loading}
                             messages={messages}
@@ -324,11 +324,11 @@ export default function DiscussionPanel({ lessonId, lessonTitle, alwaysOpen = fa
                     {/* File preview */}
                     {file && (
                         <div className="flex items-center gap-2 px-5 py-2 border-t border-gray-100 bg-blue-50">
-                            <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                            <span className="text-xs text-blue-700 font-medium truncate flex-1">{file.name}</span>
+                            <FileText className="flex-shrink-0 w-4 h-4 text-blue-500" />
+                            <span className="flex-1 text-xs font-medium text-blue-700 truncate">{file.name}</span>
                             <span className="text-xs text-blue-400">{fmtSize(file.size)}</span>
                             <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }}
-                                className="p-1 hover:bg-blue-100 rounded text-blue-400">
+                                className="p-1 text-blue-400 rounded hover:bg-blue-100">
                                 <X className="w-3.5 h-3.5" />
                             </button>
                         </div>
@@ -336,13 +336,13 @@ export default function DiscussionPanel({ lessonId, lessonTitle, alwaysOpen = fa
 
                     {/* Error */}
                     {error && (
-                        <div className="px-5 py-2 bg-red-50 border-t border-red-100">
+                        <div className="px-5 py-2 border-t border-red-100 bg-red-50">
                             <p className="text-xs text-red-500">{error}</p>
                         </div>
                     )}
 
                     {/* Input Area */}
-                    <form onSubmit={handleSend} className="flex items-end gap-2 px-4 py-3 border-t border-gray-100 bg-white">
+                    <form onSubmit={handleSend} className="flex items-end gap-2 px-4 py-3 bg-white border-t border-gray-100">
                         {/* File upload */}
                         <input
                             type="file"

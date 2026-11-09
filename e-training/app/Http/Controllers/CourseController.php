@@ -214,7 +214,7 @@ class CourseController extends Controller
             'latest_discussion' => $latestDiscussion ? [
                 'id' => $latestDiscussion->id,
                 'user_name' => $latestDiscussion->user?->name ?? 'Pengguna',
-                'message' => $latestDiscussion->message ?: ($latestDiscussion->file_name ? "📎 {$latestDiscussion->file_name}" : ''),
+                'message' => DiscussionController::previewText($latestDiscussion),
                 'time_ago' => $latestDiscussion->created_at?->diffForHumans(),
                 'is_read' => $unreadCount === 0,
             ] : null,

@@ -170,15 +170,17 @@ Route::middleware(['auth', 'role:admin,pengajar', 'course.access'])->prefix('adm
 
 Route::middleware(['auth', 'role:admin,pengajar'])->prefix('admin/question-bank')->name('admin.question-bank.')->group(function () {
     $controller = \App\Http\Controllers\QuestionBankController::class;
-    Route::get('/', [$controller, 'index'])->name('index');
     $packages = \App\Http\Controllers\QuizPackageController::class;
+    $packagePath = '/packages/{package}';
+
+    Route::get('/', [$controller, 'index'])->name('index');
     Route::get('/packages', [$packages, 'index'])->name('packages.index');
     Route::post('/quizzes/{quiz}/package', [$packages, 'store'])->name('packages.store');
-    Route::get('/packages/{package}', [$packages, 'show'])->name('packages.show');
-    Route::patch('/packages/{package}', [$packages, 'update'])->name('packages.update');
-    Route::post('/packages/{package}/import', [$packages, 'import'])->name('packages.import');
-    Route::patch('/packages/{package}/archive', [$packages, 'archive'])->name('packages.archive');
-    Route::delete('/packages/{package}', [$packages, 'destroy'])->name('packages.destroy');
+    Route::get($packagePath, [$packages, 'show'])->name('packages.show');
+    Route::patch($packagePath, [$packages, 'update'])->name('packages.update');
+    Route::post($packagePath . '/import', [$packages, 'import'])->name('packages.import');
+    Route::patch($packagePath . '/archive', [$packages, 'archive'])->name('packages.archive');
+    Route::delete($packagePath, [$packages, 'destroy'])->name('packages.destroy');
     Route::get('/export', [$controller, 'export'])->name('export');
     Route::post('/import', [$controller, 'import'])->name('import');
     Route::post('/categories', [$controller, 'storeCategory'])->name('categories.store');

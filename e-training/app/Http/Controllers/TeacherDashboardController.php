@@ -91,7 +91,7 @@ class TeacherDashboardController extends Controller
             'lesson_title' => $lesson?->title ?? '-',
             'module_title' => $module?->title ?? '-',
             'course_title' => $course?->title ?? '-',
-            'message' => $latest->message ?: ($latest->file_name ? "📎 {$latest->file_name}" : ''),
+            'message' => DiscussionController::previewText($latest),
             'time_ago' => $latest->created_at?->diffForHumans(),
             'total_messages' => $group->count(),
             'unread_count' => $unreadCount,

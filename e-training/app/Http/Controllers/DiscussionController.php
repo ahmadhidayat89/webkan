@@ -101,6 +101,15 @@ class DiscussionController extends Controller
         return "discussion_read:user_{$userId}:lesson_{$lessonId}";
     }
 
+    public static function previewText(\App\Models\Discussion $discussion): string
+    {
+        if ($discussion->message) {
+            return $discussion->message;
+        }
+
+        return $discussion->file_name ? "📎 {$discussion->file_name}" : '';
+    }
+
     /**
      * Hapus pesan (hanya milik sendiri atau admin).
      */

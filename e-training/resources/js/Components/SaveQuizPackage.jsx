@@ -23,7 +23,7 @@ export default function SaveQuizPackage({ quiz }) {
                     <p className="p-3 text-xs rounded-lg bg-navy-50 text-navy-700">Jawaban dan nilai peserta tidak disertakan. Jadwal kuis akan diatur kembali pada modul tujuan.</p>
                     {!!Object.keys(form.errors).length && <p role="alert" className="text-sm text-red-600">{Object.values(form.errors).join(' ')}</p>}
                 </div>
-                <div className="flex justify-end gap-2 p-5 border-t border-gray-100"><button type="button" onClick={() => setOpen(false)} className="text-sm btn-secondary">Batal</button><button disabled={form.processing} className="text-sm btn-gold disabled:opacity-50">{form.processing ? 'Menyimpan…' : 'Simpan paket'}</button></div>
+                <div className="flex justify-end gap-2 p-5 border-t border-gray-100"><button type="button" onClick={() => setOpen(false)} className="text-sm btn-secondary">Batal</button><button type="submit" disabled={form.processing} className="text-sm btn-gold disabled:opacity-50">{form.processing ? 'Menyimpan…' : 'Simpan paket'}</button></div>
             </form>
         </Modal>
     </>;

@@ -19,7 +19,12 @@ export default function ImportQuizPackage({ module = null, preset = null, onClos
         setLoading(true); setError('');
         const timer = setTimeout(() => {
             fetch(route('admin.question-bank.packages.index', { search: search.trim(), page, archived: 0 }), { signal: controller.signal, headers: { Accept: 'application/json' } })
-                .then(response => { if (!response.ok) throw new Error('Paket kuis gagal dimuat.'); return response.json(); })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Paket kuis gagal dimuat.');
+                    }
+                    return response.json();
+                })
                 .then(result => { if (!controller.signal.aborted) setData(result); })
                 .catch(error => { if (error.name !== 'AbortError') setError(error.message); })
                 .finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -48,12 +53,14 @@ export default function ImportQuizPackage({ module = null, preset = null, onClos
                         <ComboboxInput id="import-package-picker" aria-label="Paket kuis" onClick={event => {
                             if (event.currentTarget.getAttribute('aria-expanded') !== 'true') dropdownButton.current?.click();
                         }} autoComplete="off" maxLength={200} placeholder="Pilih atau cari paket kuis…" displayValue={item => item?.title ?? ''} onChange={event => { setSearch(event.target.value); setPage(1); }} className={`${input} pr-10`} />
-                        <ComboboxButton ref={dropdownButton} aria-label="Buka daftar paket kuis" className="absolute top-0 right-0 h-10 px-3 text-gray-400"><ChevronDown className="h-4 w-4" /></ComboboxButton>
-                        <ComboboxOptions className="mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-lg focus:outline-none">
-                            {loading ? <p role="status" className="p-3 text-xs text-gray-500">Mencari paket…</p> : error ? <p role="alert" className="p-3 text-xs text-red-600">{error}</p> : <>
-                                {available.length === 0 && <p role="status" className="p-3 text-sm text-gray-500">{search.trim() ? `Tidak ada paket yang cocok dengan “${search.trim()}”.` : 'Belum ada paket kuis aktif.'}</p>}
+                        <ComboboxButton ref={dropdownButton} aria-label="Buka daftar paket kuis" className="absolute top-0 right-0 h-10 px-3 text-gray-400"><ChevronDown className="w-4 h-4" /></ComboboxButton>
+                        <ComboboxOptions className="p-1 mt-1 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 focus:outline-none">
+                            {loading && <output className="block p-3 text-xs text-gray-500">Mencari paket…</output>}
+                            {!loading && error && <p role="alert" className="p-3 text-xs text-red-600">{error}</p>}
+                            {!loading && !error && <>
+                                {available.length === 0 && <output className="block p-3 text-sm text-gray-500">{search.trim() ? `Tidak ada paket yang cocok dengan “${search.trim()}”.` : 'Belum ada paket kuis aktif.'}</output>}
                                 {available.map(item => <ComboboxOption key={item.id} value={item} className="group flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-navy-800 data-[focus]:bg-navy-50 data-[selected]:font-semibold"><Check className="h-4 w-4 shrink-0 opacity-0 group-data-[selected]:opacity-100" /><span className="min-w-0"><span className="block break-words">{item.title}</span><span className="block text-xs font-normal text-gray-400">{item.effective_questions_count} soal · {item.course?.title}</span></span></ComboboxOption>)}
-                                {data?.packages.last_page > 1 && <div className="flex items-center justify-between border-t border-gray-100 p-2">{[['Sebelumnya', -1, data.packages.prev_page_url], ['Berikutnya', 1, data.packages.next_page_url]].map(([label, step, next]) => <button key={label} type="button" disabled={!next} onClick={() => setPage(page + step)} className="text-xs font-semibold text-navy-600 disabled:text-gray-300">{label}</button>)}</div>}
+                                {data?.packages.last_page > 1 && <div className="flex items-center justify-between p-2 border-t border-gray-100">{[['Sebelumnya', -1, data.packages.prev_page_url], ['Berikutnya', 1, data.packages.next_page_url]].map(([label, step, next]) => <button key={label} type="button" disabled={!next} onClick={() => setPage(page + step)} className="text-xs font-semibold text-navy-600 disabled:text-gray-300">{label}</button>)}</div>}
                             </>}
                         </ComboboxOptions>
                     </div>
@@ -69,6 +76,6 @@ export default function ImportQuizPackage({ module = null, preset = null, onClos
             <p className="text-xs text-gray-400">Kuis baru ditambahkan di akhir modul. Jadwal mengikuti akses modul tujuan; tanggal kuis dapat diatur setelah impor. Hasil peserta dimulai dari kosong.</p>
             {!!Object.keys(form.errors).length && <p role="alert" className="text-sm text-red-600">{Object.values(form.errors).join(' ')}</p>}
         </div>
-        <div className="flex justify-end gap-2 p-5 border-t border-gray-100"><button type="button" onClick={onClose} className="text-sm btn-secondary">Batal</button><button disabled={loading || form.processing || (!preset && search !== '') || !form.data.package_id || !form.data.module_id} className="text-sm btn-gold disabled:opacity-50">{form.processing ? 'Membuat kuis…' : 'Impor sebagai kuis baru'}</button></div>
+        <div className="flex justify-end gap-2 p-5 border-t border-gray-100"><button type="button" onClick={onClose} className="text-sm btn-secondary">Batal</button><button type="submit" disabled={loading || form.processing || (!preset && search !== '') || !form.data.package_id || !form.data.module_id} className="text-sm btn-gold disabled:opacity-50">{form.processing ? 'Membuat kuis…' : 'Impor sebagai kuis baru'}</button></div>
     </form></Modal>;
 }

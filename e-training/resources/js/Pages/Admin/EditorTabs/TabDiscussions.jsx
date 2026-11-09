@@ -19,6 +19,12 @@ const TYPE_LABELS = {
     zoom: 'Zoom',
 };
 
+function rowTone(isSelected, isUnread) {
+    if (isSelected) return 'bg-navy-50/70';
+    if (isUnread) return 'bg-amber-50/40 hover:bg-amber-50/70';
+    return 'hover:bg-gray-50';
+}
+
 export default function TabDiscussions({ courseId, modules = [], initialLessonId = null, isActive = false }) {
     const allLessons = modules.flatMap((mod, modIdx) =>
         (mod.lessons || []).map((lesson) => ({
@@ -86,10 +92,10 @@ export default function TabDiscussions({ courseId, modules = [], initialLessonId
                 unreadCount: isActive && selectedLessonId === lessonId ? 0 : undefined,
                 latest: last
                     ? {
-                          user_name: last.user?.name || 'Pengguna',
-                          message: last.message || (last.file_name ? `📎 ${last.file_name}` : ''),
-                          time_ago: last.time_ago || 'Baru saja',
-                      }
+                        user_name: last.user?.name || 'Pengguna',
+                        message: last.message || (last.file_name ? `📎 ${last.file_name}` : ''),
+                        time_ago: last.time_ago || 'Baru saja',
+                    }
                     : null,
             },
         }));
@@ -120,11 +126,10 @@ export default function TabDiscussions({ courseId, modules = [], initialLessonId
                         <button
                             type="button"
                             onClick={() => setFilterWithDiscussions((v) => !v)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors border ${
-                                filterWithDiscussions
-                                    ? 'bg-navy-600 text-white border-navy-600'
-                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
-                            }`}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors border ${filterWithDiscussions
+                                ? 'bg-navy-600 text-white border-navy-600'
+                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                                }`}
                         >
                             {filterWithDiscussions ? 'Ada Diskusi' : 'Semua Materi'}
                         </button>
@@ -149,18 +154,11 @@ export default function TabDiscussions({ courseId, modules = [], initialLessonId
                                         key={lesson.id}
                                         type="button"
                                         onClick={() => setSelectedLessonId(lesson.id)}
-                                        className={`w-full text-left px-4 py-3.5 transition-colors flex items-start gap-3 ${
-                                            isSelected
-                                                ? 'bg-navy-50/70'
-                                                : isUnread
-                                                ? 'bg-amber-50/40 hover:bg-amber-50/70'
-                                                : 'hover:bg-gray-50'
-                                        }`}
+                                        className={`w-full text-left px-4 py-3.5 transition-colors flex items-start gap-3 ${rowTone(isSelected, isUnread)}`}
                                     >
                                         <div
-                                            className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                                                isSelected ? 'bg-navy-600 text-white' : 'bg-gray-100 text-gray-600'
-                                            }`}
+                                            className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${isSelected ? 'bg-navy-600 text-white' : 'bg-gray-100 text-gray-600'
+                                                }`}
                                         >
                                             <Icon className="w-4 h-4" />
                                         </div>
