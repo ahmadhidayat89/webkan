@@ -11,13 +11,6 @@ const TYPE_BADGE = {
     short_answer: ['bg-blue-100 text-blue-700', 'Jawaban Singkat'],
 };
 
-const QUESTION_TYPES = [
-    { type: 'multiple_choice', label: 'Pilihan Ganda' },
-    { type: 'true_false', label: 'Benar / Salah' },
-    { type: 'short_answer', label: 'Jawaban Singkat' },
-    { type: 'essay', label: 'Soal Essay' },
-];
-
 const ADD_BUTTON_CLASS =
     'flex items-center justify-center w-full gap-2 py-2 text-sm font-bold text-blue-600 transition-colors border-2 border-blue-300 border-dashed rounded-lg hover:bg-blue-50';
 
@@ -49,6 +42,27 @@ function toLocalInput(value) {
     }).format(d).replace(' ', 'T');
 }
 
+// Ambil token CSRF dari cookie Laravel
+const getXsrfToken = () =>
+    decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [])[1] || '');
+
+// Hapus soal tanpa reload halaman
+const deleteQuestionFast = (id) =>
+    fetch(route('admin.quizzes.questions.delete', id), {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        redirect: 'manual', // jangan ikuti redirect, cukup tahu servernya menerima
+        headers: {
+            'X-XSRF-TOKEN': getXsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+        },
+    }).then((res) => {
+        // redirect 'manual' menghasilkan type "opaqueredirect" (status 0) saat server membalas redirect = sukses
+        const success = res.type === 'opaqueredirect' || res.ok;
+        if (!success) throw new Error(`Gagal menghapus soal ${id} (status ${res.status})`);
+    });
+    
 export default function QuizBuilder({ quiz }) {
     const [settings, setSettings] = useState({
         duration_minutes: quiz.duration_minutes || '',
@@ -73,6 +87,54 @@ export default function QuizBuilder({ quiz }) {
             onSuccess: () => alert('Setting kuis berhasil disimpan!'),
             onError: (errors) => alert(Object.values(errors).join('\n')),
         });
+    };
+
+    // Ganti Mode Kuis: semua soal direset, lalu mode baru disimpan
+    const handleModeChange = async (newMode) => {
+        if (newMode === settings.quiz_mode) return;
+
+        if (newMode === 'question_bank') {
+            setSettings({ ...settings, quiz_mode: newMode });
+            return;
+        }
+
+        const toDelete = questions;
+        const nextSettings = { ...settings, quiz_mode: newMode };
+
+        // Kuis masih kosong, langsung ganti mode dan simpan
+        if (toDelete.length === 0) {
+            setSettings(nextSettings);
+            router.patch(route('admin.quizzes.settings', quiz.id), nextSettings, {
+                preserveScroll: true,
+            });
+            return;
+        }
+
+        // Soal terkunci (sudah dikerjakan peserta), tidak boleh dihapus
+        if (quiz.questions_locked) {
+            alert('Soal kuis sudah terkunci, sehingga mode tidak bisa diubah.');
+            return;
+        }
+
+        if (!confirm('Mengubah mode akan menghapus soal tersebut secara permanen. Lanjutkan?')) return;
+
+        setIsSaving(true);
+        try {
+            // Semua soal dihapus bersamaan, tanpa reload per soal
+            await Promise.all(toDelete.map((q) => deleteQuestionFast(q.id)));
+            setSettings(nextSettings);
+            setActiveQIndex(0);
+            // Satu kali request: simpan mode baru sekaligus refresh data kuis
+            router.patch(route('admin.quizzes.settings', quiz.id), nextSettings, {
+                preserveScroll: true,
+            });
+        } catch (err) {
+            console.error(err);
+            alert('Gagal menghapus sebagian soal. Silakan muat ulang halaman dan coba lagi.');
+            router.reload({ only: ['quiz'], preserveScroll: true });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const addQuestion = (type) => {
@@ -303,14 +365,14 @@ export default function QuizBuilder({ quiz }) {
                         <select
                             id="quiz_mode"
                             value={settings.quiz_mode}
-                            onChange={e => setSettings({ ...settings, quiz_mode: e.target.value })}
+                            onChange={(e) => handleModeChange(e.target.value)}
                             className="w-full py-2 text-sm border-gray-300 rounded-lg"
                         >
                             <option value="custom">Campuran (Semua Tipe)</option>
-                            <option value="multiple_choice">Pilihan Ganda Saja</option>
-                            <option value="true_false">Benar/Salah Saja</option>
-                            <option value="essay">Essay Saja</option>
-                            <option value="short_answer">Jawaban Singkat Saja</option>
+                            <option value="multiple_choice">Pilihan Ganda</option>
+                            <option value="true_false">Benar/Salah</option>
+                            <option value="essay">Essay</option>
+                            <option value="short_answer">Jawaban Singkat</option>
                             <option value="question_bank" disabled>Dari Bank Soal (Coming Soon)</option>
                         </select>
                     </div>
