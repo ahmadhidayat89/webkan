@@ -31,11 +31,12 @@ export default function QuizAnswerKey({ q, onConfig, onDone }) {
     <div className="flex items-start justify-between gap-5">
       <div className="min-w-0 flex-1 pt-2 text-sm text-slate-800">{q.text?.replace(/<[^>]*>/g, '').trim() ? <RichText html={q.text} /> : 'Pertanyaan tanpa judul'}</div>
       <label className="flex shrink-0 items-center gap-2 text-sm text-slate-600">
-        <input aria-label={weighted ? 'Poin maksimum' : 'Poin pertanyaan'} autoFocus={!weighted} type="number" min="0" max="1000" step="1" readOnly={weighted} value={maximum} onChange={event => onConfig({ points: event.target.value === '' ? 0 : Number(event.target.value) })} className="w-16 border-0 border-b border-slate-300 bg-transparent px-1 py-1 text-center text-sm text-slate-800 focus:border-blue-600 focus:ring-0 read-only:bg-slate-50" />
+        <input aria-label={weighted ? 'Poin maksimum' : 'Poin pertanyaan'} type="number" min="0" max="1000" step="1" readOnly={weighted} value={maximum} onChange={event => onConfig({ points: event.target.value === '' ? 0 : Number(event.target.value) })} className="w-16 border-0 border-b border-slate-300 bg-transparent px-1 py-1 text-center text-sm text-slate-800 focus:border-blue-600 focus:ring-0 read-only:bg-slate-50" />
         {weighted ? 'poin maks.' : 'poin'}
       </label>
     </div>
-    {supportsWeightedScoring(q.type) && <label className="block max-w-xs space-y-1 text-xs font-semibold text-slate-600">Metode penilaian
+    {supportsWeightedScoring(q.type) && <label className="block max-w-xs space-y-1 text-xs font-semibold text-slate-600">
+      <span className="block">Metode penilaian</span>
       <select value={weighted ? 'weighted' : 'exact'} onChange={event => onConfig({ score_mode: event.target.value, ...(event.target.value === 'weighted' ? { answer_scores: answerScores(q), correct_answers: [] } : {}) })} className={field}>
         <option value="exact">Kunci benar/salah</option><option value="weighted">Skor per jawaban</option>
       </select>
