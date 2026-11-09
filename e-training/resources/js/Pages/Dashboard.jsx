@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, usePage, Link } from '@inertiajs/react';
+import { Head, usePage, Link, router } from '@inertiajs/react';
+import { useEffect } from 'react';
 import CourseCard from '@/Components/CourseCard';
 import StatsCard from '@/Components/StatsCard';
 import UpcomingEvents from '@/Components/UpcomingEvents';
@@ -17,6 +18,7 @@ import {
     Shield,
     ArrowRight,
     Wifi,
+    MessageCircle,
 } from 'lucide-react';
 
 // ─── Dashboard Peserta ────────────────────────────────────────────────────────
@@ -123,9 +125,19 @@ function PelajarDashboard() {
 
 // ─── Dashboard Admin ──────────────────────────────────────────────────────────
 function AdminDashboard() {
-    const { auth, upcomingEvents = [], calendarEvents = [], adminStats = {}, adminCourses = [], onlineUsers = [] } = usePage().props;
+    const { auth, upcomingEvents = [], calendarEvents = [], adminStats = {}, adminCourses = [], onlineUsers = [], recentDiscussions = [] } = usePage().props;
     const user = auth?.user;
     const stats = adminStats;
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                router.reload({ only: ['recentDiscussions', 'onlineUsers', 'adminStats'], preserveScroll: true, preserveState: true });
+            }
+        }, 5000);
+
+        return () => clearInterval(intervalId);
+    }, []);
 
 
     return (
@@ -184,6 +196,70 @@ function AdminDashboard() {
                         {adminCourses.slice(0, 4).map((course, i) => (
                             <CourseCard key={course.id} course={course} role="admin" index={i} />
                         ))}
+                    </div>
+
+                    {/* Diskusi Modul Terbaru */}
+                    <div className="mt-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                            <div>
+                                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                    <MessageCircle className="w-4 h-4 text-navy-600" />
+                                    Diskusi Modul Terbaru
+                                </h2>
+                                <p className="text-xs text-gray-500 mt-0.5">1 notifikasi per modul yang menampilkan pesan terbaru dari peserta</p>
+                            </div>
+                            <span className="text-xs font-semibold text-navy-600 bg-navy-50 px-2.5 py-1 rounded-full">
+                                {recentDiscussions.length} modul aktif
+                            </span>
+                        </div>
+                        {recentDiscussions.length === 0 ? (
+                            <div className="p-8 text-center">
+                                <MessageCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                <p className="text-sm font-medium text-gray-500">Belum ada diskusi dari peserta</p>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-100">
+                                {recentDiscussions.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5 transition-colors ${
+                                            !item.is_read ? 'bg-amber-50/40 hover:bg-amber-50/70' : 'hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                                {!item.is_read ? (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                        Pesan Baru ({item.unread_count} Belum Dibaca)
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-semibold text-green-700">
+                                                        <CheckCircle2 className="h-2.5 w-2.5" />
+                                                        Sudah Dibaca
+                                                    </span>
+                                                )}
+                                                <span className="font-bold text-gray-900">{item.user_name}</span>
+                                                <span>•</span>
+                                                <span className="font-medium text-navy-600 truncate">{item.course_title}</span>
+                                                <span>•</span>
+                                                <span className="font-semibold text-gray-700 truncate">{item.module_title}</span>
+                                                <span className="text-gray-400">({item.lesson_title})</span>
+                                                <span>•</span>
+                                                <span className="flex-shrink-0 text-gray-400">{item.time_ago}</span>
+                                            </div>
+                                            <p className="mt-1 text-sm text-gray-700 truncate">{item.message}</p>
+                                        </div>
+                                        <Link
+                                            href={item.reply_url}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-navy-600 hover:bg-navy-700 rounded-lg whitespace-nowrap self-start sm:self-center"
+                                        >
+                                            Buka &amp; Balas <ArrowRight className="w-3.5 h-3.5" />
+                                        </Link>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 

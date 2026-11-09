@@ -6,6 +6,7 @@ use App\Models\Discussion;
 use App\Models\Lesson;
 use App\Services\ModuleProgression;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,14 +26,20 @@ class DiscussionController extends Controller
     /**
      * Ambil semua pesan diskusi untuk lesson tertentu (JSON).
      */
-    public function index(Lesson $lesson)
+    public function index(Request $request, Lesson $lesson)
     {
         $this->authorizeLessonAccess($lesson);
-        $messages = $lesson->discussions()
+        $discussions = $lesson->discussions()
             ->with('user')
             ->orderBy('created_at')
-            ->get()
-            ->map(fn($d) => $this->formatMessage($d));
+            ->get();
+
+        if ($request->boolean('mark_read') && $discussions->isNotEmpty()) {
+            $maxId = (int) $discussions->max('id');
+            Cache::forever(self::readCacheKey((int) auth()->id(), (int) $lesson->id), $maxId);
+        }
+
+        $messages = $discussions->map(fn($d) => $this->formatMessage($d));
 
         return response()->json($messages);
     }
@@ -84,8 +91,14 @@ class DiscussionController extends Controller
         ]);
 
         $discussion->load('user');
+        Cache::forever(self::readCacheKey((int) auth()->id(), (int) $lesson->id), (int) $discussion->id);
 
         return response()->json($this->formatMessage($discussion), 201);
+    }
+
+    public static function readCacheKey(int $userId, int $lessonId): string
+    {
+        return "discussion_read:user_{$userId}:lesson_{$lessonId}";
     }
 
     /**
@@ -113,7 +126,15 @@ class DiscussionController extends Controller
 
     private function authorizeLessonAccess(Lesson $lesson): void
     {
-        app(ModuleProgression::class)->authorizeLesson($lesson, auth()->user());
+        $user = auth()->user();
+        app(ModuleProgression::class)->authorizeLesson($lesson, $user);
+
+        if ($user->role === 'peserta' && $lesson->type === 'quiz') {
+            $hasCompletedQuiz = $lesson->progress()->where('user_id', $user->id)->where('is_completed', true)->exists()
+                || ($lesson->quiz && $lesson->quiz->attempts()->where('user_id', $user->id)->whereNotNull('finished_at')->exists());
+
+            abort_unless($hasCompletedQuiz, 403, 'Selesaikan kuis terlebih dahulu untuk mengakses diskusi.');
+        }
     }
 
     private function looksLikeSqli(string $value): bool
@@ -142,7 +163,7 @@ class DiscussionController extends Controller
                 'name'     => $d->user->name,
                 'username' => $d->user->username,
                 'role'     => $d->user->role,
-                'is_admin' => $d->user->isAdmin(),
+                'is_admin' => in_array($d->user->role, ['admin', 'pengajar'], true),
                 'initial'  => strtoupper(substr($d->user->name, 0, 1)),
             ],
             'is_own' => $d->user_id === auth()->id(),

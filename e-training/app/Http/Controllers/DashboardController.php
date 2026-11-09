@@ -83,12 +83,56 @@ class DashboardController extends Controller
                     'is_featured'      => $course->is_featured,
                 ]);
 
+            $userId = (int) auth()->id();
+            $recentDiscussions = \App\Models\Discussion::with(['user:id,name,role', 'lesson.module.course:id,title'])
+                ->latest('id')
+                ->take(200)
+                ->get()
+                ->filter(fn ($d) => $d->lesson?->module_id !== null)
+                ->groupBy(fn ($d) => $d->lesson->module_id)
+                ->take(8)
+                ->map(function ($group) use ($userId) {
+                    $latest = $group->first();
+                    $lesson = $latest->lesson;
+                    $module = $lesson?->module;
+                    $course = $module?->course;
+
+                    $unreadCount = $group->groupBy('lesson_id')->sum(function ($lessonMsgs, $lessonId) use ($userId) {
+                        $lastReadId = (int) \Illuminate\Support\Facades\Cache::get(
+                            DiscussionController::readCacheKey($userId, (int) $lessonId),
+                            0
+                        );
+                        return $lessonMsgs->filter(fn ($m) => $m->id > $lastReadId && (int) $m->user_id !== $userId)->count();
+                    });
+
+                    return [
+                        'id' => 'module_' . ($module?->id ?? $latest->id),
+                        'module_id' => $module?->id,
+                        'user_name' => $latest->user?->name ?? 'Pengguna',
+                        'course_title' => $course?->title ?? '-',
+                        'module_title' => $module?->title ?? '-',
+                        'lesson_title' => $lesson?->title ?? '-',
+                        'message' => $latest->message ?: ($latest->file_name ? "📎 {$latest->file_name}" : ''),
+                        'time_ago' => $latest->created_at?->diffForHumans(),
+                        'total_messages' => $group->count(),
+                        'unread_count' => $unreadCount,
+                        'is_read' => $unreadCount === 0,
+                        'reply_url' => $course && $lesson ? route('admin.courses.edit', [
+                            'course' => $course->id,
+                            'tab' => 'discussions',
+                            'lesson' => $lesson->id,
+                        ]) : '#',
+                    ];
+                })
+                ->values();
+
             return Inertia::render('Dashboard', [
                 'upcomingEvents' => $upcomingEvents,
                 'calendarEvents' => $calendarEvents,
                 'adminStats'     => $adminStats,
                 'adminCourses'   => $adminCourses,
                 'onlineUsers'    => $onlineUsers,
+                'recentDiscussions' => $recentDiscussions,
             ]);
     }
 

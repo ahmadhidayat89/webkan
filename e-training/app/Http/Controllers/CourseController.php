@@ -92,6 +92,7 @@ class CourseController extends Controller
             'teachers',
             'modules.lessons.quiz.questions.options',
             'modules.lessons.files',
+            'modules.lessons.discussions.user',
             'enrollments.user',
             'certificates.user',
         ]);
@@ -156,9 +157,10 @@ class CourseController extends Controller
             ],
             'categories'   => $categories,
             'allStudents'  => $allStudents,
-            'initialTab' => in_array(request()->query('tab'), ['grading', 'grade-report'], true) ? request()->query('tab') : 'detail',
+            'initialTab' => in_array(request()->query('tab'), ['grading', 'grade-report', 'discussions'], true) ? request()->query('tab') : 'detail',
             'initialQuizId' => request()->integer('quiz'),
             'initialAttemptId' => request()->integer('attempt'),
+            'initialLessonId' => request()->integer('lesson'),
             'canAssignTeachers' => auth()->user()->isAdmin(),
             'canEditCourseDetails' => auth()->user()->isAdmin(),
             'canManageParticipants' => auth()->user()->isAdmin(),
@@ -184,6 +186,16 @@ class CourseController extends Controller
 
     private function formatLesson($lesson): array
     {
+        $latestDiscussion = $lesson->discussions->last();
+        $userId = (int) auth()->id();
+        $lastReadId = (int) \Illuminate\Support\Facades\Cache::get(
+            DiscussionController::readCacheKey($userId, (int) $lesson->id),
+            0
+        );
+        $unreadCount = $lesson->discussions
+            ->filter(fn($d) => $d->id > $lastReadId && (int) $d->user_id !== $userId)
+            ->count();
+
         return [
             'id' => $lesson->id,
             'title' => $lesson->title,
@@ -196,6 +208,16 @@ class CourseController extends Controller
                 : null,
             'sort_order' => $lesson->sort_order,
             'is_published' => $lesson->is_published,
+            'discussions_count' => $lesson->discussions->count(),
+            'unread_discussions_count' => $unreadCount,
+            'is_read' => $unreadCount === 0,
+            'latest_discussion' => $latestDiscussion ? [
+                'id' => $latestDiscussion->id,
+                'user_name' => $latestDiscussion->user?->name ?? 'Pengguna',
+                'message' => $latestDiscussion->message ?: ($latestDiscussion->file_name ? "📎 {$latestDiscussion->file_name}" : ''),
+                'time_ago' => $latestDiscussion->created_at?->diffForHumans(),
+                'is_read' => $unreadCount === 0,
+            ] : null,
             'files' => $lesson->files->map(fn($file) => $this->formatLessonFile($file))->values(),
             'quiz' => $lesson->quiz ? $this->formatQuiz($lesson->quiz) : null,
         ];

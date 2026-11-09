@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Clock, FileText, Users } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
+import { ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Clock, FileText, Users, MessageCircle } from 'lucide-react';
 
 function StatCard({ label, value, description, icon: Icon, attention = false }) {
     return <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -73,8 +74,18 @@ function CourseList({ courses }) {
     </div>;
 }
 
-export default function Dashboard({ stats, pendingAttempts, courses }) {
+export default function Dashboard({ stats, pendingAttempts, courses, recentDiscussions = [] }) {
     const { auth } = usePage().props;
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                router.reload({ only: ['recentDiscussions', 'stats', 'pendingAttempts'], preserveScroll: true, preserveState: true });
+            }
+        }, 5000);
+
+        return () => clearInterval(intervalId);
+    }, []);
 
     return <AuthenticatedLayout>
         <Head title="Dashboard Pengajar" />
@@ -97,6 +108,70 @@ export default function Dashboard({ stats, pendingAttempts, courses }) {
                     <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">{stats.pendingAttempts} pengumpulan</span>
                 </div>
                 <PendingList attempts={pendingAttempts} />
+            </section>
+
+            <section aria-labelledby="recent-discussions-heading" className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-3 p-5 border-b border-gray-100">
+                    <div>
+                        <h2 id="recent-discussions-heading" className="flex items-center gap-2 text-lg font-bold text-gray-900">
+                            <MessageCircle className="h-5 w-5 text-navy-600" />
+                            Diskusi Modul Terbaru
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-500">1 notifikasi per modul yang menampilkan pesan terbaru dari peserta.</p>
+                    </div>
+                    <span className="rounded-full bg-navy-50 px-3 py-1 text-xs font-semibold text-navy-700">
+                        {recentDiscussions.length} modul aktif
+                    </span>
+                </div>
+                {recentDiscussions.length === 0 ? (
+                    <div className="flex flex-col items-center px-5 py-10 text-center">
+                        <MessageCircle className="mb-3 h-8 w-8 text-gray-300" />
+                        <h3 className="font-bold text-gray-800">Belum ada diskusi</h3>
+                        <p className="mt-1 text-sm text-gray-500">Pertanyaan peserta pada materi atau kuis akan tampil di sini.</p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-gray-100">
+                        {recentDiscussions.map((item) => (
+                            <div
+                                key={item.id}
+                                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 transition-colors ${
+                                    !item.is_read ? 'bg-amber-50/40 hover:bg-amber-50/70' : 'hover:bg-gray-50/70'
+                                }`}
+                            >
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                        {!item.is_read ? (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-200 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                Pesan Baru ({item.unread_count} Belum Dibaca)
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 text-[11px] font-semibold text-green-700">
+                                                <CheckCircle2 className="h-3 w-3" />
+                                                Sudah Dibaca
+                                            </span>
+                                        )}
+                                        <span className="font-bold text-gray-900">{item.user_name}</span>
+                                        <span>•</span>
+                                        <span className="font-medium text-navy-600 truncate">{item.course_title}</span>
+                                        <span>•</span>
+                                        <span className="font-semibold text-gray-700 truncate">{item.module_title}</span>
+                                        <span className="text-gray-400">({item.lesson_title})</span>
+                                        <span>•</span>
+                                        <span className="flex-shrink-0 text-gray-400">{item.time_ago}</span>
+                                    </div>
+                                    <p className="mt-1.5 text-sm text-gray-700 line-clamp-2">{item.message}</p>
+                                </div>
+                                <Link
+                                    href={item.reply_url}
+                                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-navy-600 px-3 py-2 text-xs font-semibold text-white hover:bg-navy-700 self-start sm:self-center"
+                                >
+                                    Buka &amp; Balas <ArrowRight className="h-3.5 w-3.5" />
+                                </Link>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </section>
 
             <section aria-labelledby="teaching-courses-heading" className="space-y-4">

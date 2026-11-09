@@ -1,21 +1,45 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import { FileText, PlusCircle, HelpCircle, ClipboardList, Award, Users, ChevronLeft, Eye, Save } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
+import { FileText, PlusCircle, HelpCircle, ClipboardList, Award, Users, ChevronLeft, Eye, Save, MessageCircle } from 'lucide-react';
 import TabDetail from './EditorTabs/TabDetail';
 import TabModules from './EditorTabs/TabModules';
 import TabGrading from './EditorTabs/TabGrading';
 import TabGradeReport from './EditorTabs/TabGradeReport';
 import TabCertificates from './EditorTabs/TabCertificates';
 import TabStudents from './EditorTabs/TabStudents';
+import TabDiscussions from './EditorTabs/TabDiscussions';
 import CourseTeacherAssignment from '@/Components/CourseTeacherAssignment';
 
-export default function CourseEditor({ course, categories, allStudents, teachers = [], canAssignTeachers = false, canEditCourseDetails = false, canManageParticipants = false, canIssueCertificates = false, initialTab = 'detail', initialQuizId = null, initialAttemptId = null }) {
+export default function CourseEditor({ course, categories, allStudents, teachers = [], canAssignTeachers = false, canEditCourseDetails = false, canManageParticipants = false, canIssueCertificates = false, initialTab = 'detail', initialQuizId = null, initialAttemptId = null, initialLessonId = null }) {
     const { flash } = usePage().props;
-    const validTabs = ['detail', 'modules', 'grading', 'grade-report', 'certificates', 'students'];
+    const validTabs = ['detail', 'modules', 'grading', 'grade-report', 'discussions', 'certificates', 'students'];
     const [activeTab, setActiveTab] = useState(validTabs.includes(initialTab) ? initialTab : 'detail');
     const [targetQuizId, setTargetQuizId] = useState(initialQuizId);
     const [targetAttemptId, setTargetAttemptId] = useState(initialAttemptId);
+
+    const totalDiscussions = (course.modules || []).reduce(
+        (sum, mod) => sum + (mod.lessons || []).reduce((lSum, l) => lSum + (l.discussions_count || 0), 0),
+        0
+    );
+    const unreadDiscussions = (course.modules || []).reduce(
+        (sum, mod) => sum + (mod.lessons || []).reduce((lSum, l) => lSum + (l.unread_discussions_count || 0), 0),
+        0
+    );
+
+    useEffect(() => {
+        if (activeTab === 'discussions') {
+            router.reload({ only: ['course'], preserveScroll: true, preserveState: true });
+        }
+
+        const intervalId = setInterval(() => {
+            if (document.visibilityState === 'visible' && activeTab === 'discussions') {
+                router.reload({ only: ['course'], preserveScroll: true, preserveState: true });
+            }
+        }, 5000);
+
+        return () => clearInterval(intervalId);
+    }, [activeTab]);
 
     function handleInspectAttempt(quizId, attemptId) {
         setTargetQuizId(quizId);
@@ -28,6 +52,7 @@ export default function CourseEditor({ course, categories, allStudents, teachers
         { id: 'modules', label: 'Modul & Materi', icon: PlusCircle },
         { id: 'grading', label: 'Penilaian Kuis', icon: HelpCircle },
         { id: 'grade-report', label: 'Laporan Nilai', icon: ClipboardList },
+        { id: 'discussions', label: 'Diskusi Modul', icon: MessageCircle, badge: unreadDiscussions > 0 ? `${unreadDiscussions} baru` : totalDiscussions, hasUnread: unreadDiscussions > 0 },
         { id: 'certificates', label: 'Sertifikat', icon: Award },
         { id: 'students', label: 'Peserta', icon: Users },
     ];
@@ -83,6 +108,11 @@ export default function CourseEditor({ course, categories, allStudents, teachers
                         >
                             <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-navy-600' : 'text-gray-400'}`} />
                             <span className="hidden sm:inline whitespace-nowrap">{tab.label}</span>
+                            {(tab.hasUnread || tab.badge > 0) && (
+                                <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full text-white ${tab.hasUnread ? 'bg-amber-500 animate-pulse' : 'bg-navy-600'}`}>
+                                    {tab.badge}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -108,6 +138,15 @@ export default function CourseEditor({ course, categories, allStudents, teachers
                             enrolledStudents={course.enrolled_students}
                             isActive={activeTab === 'grade-report'}
                             onInspectAttempt={handleInspectAttempt}
+                        />
+                    </div>
+
+                    <div className={activeTab === 'discussions' ? 'block' : 'hidden'}>
+                        <TabDiscussions
+                            courseId={course.id}
+                            modules={course.modules}
+                            initialLessonId={initialLessonId}
+                            isActive={activeTab === 'discussions'}
                         />
                     </div>
 

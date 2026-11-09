@@ -497,9 +497,9 @@ function QuizIntroAction({ isExpired, windowState, limitReached, attempts, quiz,
             className="flex items-center justify-center gap-2 px-8 py-3 mx-auto text-sm btn-gold"
         >
             {attempts.length > 0 ? (
-                <><RotateCcw className="w-4 h-4" /> Ulangi Kuis</>
+                <><RotateCcw className="w-4 h-4" /> <span>Ulangi Kuis</span></>
             ) : (
-                <><Play className="w-4 h-4" /> Mulai Kuis</>
+                <><Play className="w-4 h-4" /> <span>Mulai Kuis</span></>
             )}
         </button>
     );
@@ -609,7 +609,7 @@ function QuizEssayPendingResult({ onReset }) {
                     Kuis ini mengandung soal essay. Nilai akhir Anda akan muncul setelah instruktur selesai mengoreksi dan memberikan penilaian.
                 </p>
                 <button onClick={onReset} className="flex items-center gap-2 mx-auto text-sm btn-primary">
-                    <RotateCcw className="w-4 h-4" /> Kembali
+                    <RotateCcw className="w-4 h-4" /> <span>Kembali</span>
                 </button>
             </div>
         </div>
@@ -637,7 +637,7 @@ function QuizScoreResult({ quiz, shownAttempt, autoSubmitted, onReset }) {
                     <br /><span className="text-xs text-gray-400">Skor minimum: {quiz.passing_score}</span>
                 </p>
                 <button onClick={onReset} className="flex items-center gap-2 mx-auto text-sm btn-primary">
-                    <RotateCcw className="w-4 h-4" /> Kembali
+                    <RotateCcw className="w-4 h-4" /> <span>Kembali</span>
                 </button>
             </div>
         </div>
@@ -803,7 +803,7 @@ function QuizTakingView({
                                 disabled={!canSubmit}
                                 className="flex items-center gap-2 text-sm btn-gold disabled:opacity-40"
                             >
-                                <Send className="w-4 h-4" /> {processing ? 'Memproses...' : 'Kirim Jawaban'}
+                                <Send className="w-4 h-4" /> <span>{processing ? 'Memproses...' : 'Kirim Jawaban'}</span>
                             </button>
                         ) : (
                             <button
@@ -811,7 +811,7 @@ function QuizTakingView({
                                 disabled={processing}
                                 className="flex items-center gap-2 text-sm btn-primary"
                             >
-                                Selanjutnya <ChevronRight className="w-4 h-4" />
+                                <span>Selanjutnya</span> <ChevronRight className="w-4 h-4" />
                             </button>
                         )}
                     </div>
@@ -848,7 +848,7 @@ function QuizTakingView({
                         disabled={!canSubmit}
                         className="flex items-center justify-center w-full gap-2 py-3 text-sm btn-gold disabled:opacity-40"
                     >
-                        <Send className="w-4 h-4" /> {processing ? 'Memproses...' : 'Selesai & Kirim'}
+                        <Send className="w-4 h-4" /> <span>{processing ? 'Memproses...' : 'Selesai & Kirim'}</span>
                     </button>
                     {!allAnswered && (
                         <p className="text-xs text-center text-gray-400">
@@ -1151,6 +1151,12 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
     const moduleWindow = activeModule && !course.can_bypass_schedule ? getModuleWindow(activeModule, now) : 'open';
     const moduleLocked = Boolean(activeModule?.locked_reason || activeLesson.locked_reason) || moduleWindow === 'upcoming';
     const cannotComplete = activeLesson.isCompleted || isExpired || moduleLocked || moduleWindow !== 'open';
+    const hasCompletedQuiz = Boolean(
+        course.can_bypass_schedule || activeLesson.isCompleted || (activeLesson.quiz?.attempts?.length ?? 0) > 0
+    );
+    const showDiscussion = !moduleLocked && (
+        activeLesson.type !== 'quiz' || (!quizActive && hasCompletedQuiz)
+    );
 
     const handlePrev = () => {
         if (currentIndex > 0) setActiveLessonId(allLessons[currentIndex - 1].id);
@@ -1179,6 +1185,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
             case 'quiz':
                 return (
                     <QuizContent
+                        key={`quiz-${activeLesson.id}`}
                         lesson={activeLesson}
                         courseId={course.id}
                         isExpired={isExpired}
@@ -1266,9 +1273,9 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                         </div>
                     )}
 
-                    {/* Diskusi per Sesi (disembunyikan di kuis, feedback no 14) */}
-                    {!moduleLocked && activeLesson.type !== 'quiz' && <DiscussionPanel
-                        key={activeLesson.id}
+                    {/* Diskusi per Sesi */}
+                    {showDiscussion && <DiscussionPanel
+                        key={`discussion-${activeLesson.id}`}
                         lessonId={activeLesson.id}
                         lessonTitle={activeLesson.title}
                     />}

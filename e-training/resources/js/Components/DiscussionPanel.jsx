@@ -144,10 +144,10 @@ function MessageList({ loading, messages, onDelete, currentUserId, isAdmin }) {
 }
 
 // ─── Main Discussion Component ────────────────────────────────────────────────
-export default function DiscussionPanel({ lessonId, lessonTitle }) {
+export default function DiscussionPanel({ lessonId, lessonTitle, alwaysOpen = false, isActive = true, onMessagesChange = null }) {
     const { auth } = usePage().props;
     const currentUser = auth?.user;
-    const isAdmin = currentUser?.role === 'admin';
+    const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'pengajar';
 
     const [messages, setMessages]       = useState([]);
     const [loading, setLoading]         = useState(true);
@@ -155,37 +155,68 @@ export default function DiscussionPanel({ lessonId, lessonTitle }) {
     const [text, setText]               = useState('');
     const [file, setFile]               = useState(null);
     const [error, setError]             = useState('');
-    const [open, setOpen]               = useState(false);
+    const [open, setOpen]               = useState(alwaysOpen);
 
     const bottomRef  = useRef(null);
     const fileRef    = useRef(null);
     const textRef    = useRef(null);
+    const lastMessageIdRef = useRef(null);
+    const onMessagesChangeRef = useRef(onMessagesChange);
+    onMessagesChangeRef.current = onMessagesChange;
+
+    const updateMessages = useCallback((updater) => {
+        setMessages((prev) => {
+            const next = typeof updater === 'function' ? updater(prev) : updater;
+            onMessagesChangeRef.current?.(next);
+            return next;
+        });
+    }, []);
 
     // ── Fetch messages ──
-    const fetchMessages = useCallback(async () => {
+    const fetchMessages = useCallback(async (silent = false, markRead = false) => {
         try {
-            const res = await fetch(route('discussions.index', { lesson: lessonId }), {
+            const params = markRead ? { lesson: lessonId, mark_read: 1 } : { lesson: lessonId };
+            const res = await fetch(route('discussions.index', params), {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             });
+            if (!res.ok) return;
             const data = await res.json();
-            setMessages(Array.isArray(data) ? data : []);
+            if (Array.isArray(data)) {
+                updateMessages(data);
+            }
         } catch {
-            setMessages([]);
+            if (!silent) updateMessages([]);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
-    }, [lessonId]);
+    }, [lessonId, updateMessages]);
 
     useEffect(() => {
+        const shouldMarkRead = Boolean(open && isActive);
         if (open) {
             setLoading(true);
-            void fetchMessages();
+            void fetchMessages(false, shouldMarkRead);
+        } else {
+            void fetchMessages(true, false);
         }
-    }, [open, fetchMessages]);
 
-    // Auto scroll to bottom
+        const intervalId = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                void fetchMessages(true, Boolean(open && isActive));
+            }
+        }, 3000);
+
+        return () => clearInterval(intervalId);
+    }, [open, isActive, fetchMessages]);
+
+    // Auto scroll to bottom hanya saat panel baru dibuka atau ada pesan baru masuk
     useEffect(() => {
-        if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (!open) return;
+        const latestId = messages.length > 0 ? messages[messages.length - 1].id : null;
+        if (latestId !== lastMessageIdRef.current) {
+            lastMessageIdRef.current = latestId;
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
     }, [messages, open]);
 
     // ── Send message ──
@@ -219,7 +250,7 @@ export default function DiscussionPanel({ lessonId, lessonTitle }) {
             }
 
             const newMsg = await res.json();
-            setMessages(prev => [...prev, newMsg]);
+            updateMessages(prev => [...prev, newMsg]);
             setText('');
             setFile(null);
             if (fileRef.current) fileRef.current.value = '';
@@ -239,39 +270,43 @@ export default function DiscussionPanel({ lessonId, lessonTitle }) {
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         });
-        setMessages(prev => prev.filter(m => m.id !== id));
+        updateMessages(prev => prev.filter(m => m.id !== id));
     };
 
     const unread = messages.length;
 
     return (
-        <div className="mt-8">
+        <div className={alwaysOpen ? '' : 'mt-8'}>
             {/* Toggle Button */}
-            <button
-                onClick={() => setOpen(v => !v)}
-                className="flex items-center gap-2.5 px-5 py-3 bg-navy-600 hover:bg-navy-700 text-white rounded-2xl text-sm font-semibold transition-all shadow-sm w-full sm:w-auto"
-            >
-                <MessageCircle className="w-4 h-4" />
-                Diskusi Modul
-                {!open && unread > 0 && (
-                    <span className="ml-auto bg-white text-navy-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {unread}
-                    </span>
-                )}
-                <span className={`ml-auto text-xs opacity-60 transition-transform ${open ? 'rotate-180' : ''}`}>▲</span>
-            </button>
+            {!alwaysOpen && (
+                <button
+                    onClick={() => setOpen(v => !v)}
+                    className="flex items-center gap-2.5 px-5 py-3 bg-navy-600 hover:bg-navy-700 text-white rounded-2xl text-sm font-semibold transition-all shadow-sm w-full sm:w-auto"
+                >
+                    <MessageCircle className="w-4 h-4" />
+                    Diskusi Modul
+                    {!open && unread > 0 && (
+                        <span className="ml-auto bg-white text-navy-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            {unread}
+                        </span>
+                    )}
+                    <span className={`ml-auto text-xs opacity-60 transition-transform ${open ? 'rotate-180' : ''}`}>▲</span>
+                </button>
+            )}
 
             {open && (
-                <div className="mt-4 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm animate-fade-in">
+                <div className={`${alwaysOpen ? '' : 'mt-4'} bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm animate-fade-in`}>
                     {/* Header */}
                     <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50">
                         <div>
                             <h3 className="text-sm font-bold text-gray-900">💬 Diskusi — {lessonTitle}</h3>
                             <p className="text-xs text-gray-500 mt-0.5">{messages.length} pesan · Ajukan pertanyaan atau diskusi materi</p>
                         </div>
-                        <button onClick={() => setOpen(false)} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-400">
-                            <X className="w-4 h-4" />
-                        </button>
+                        {!alwaysOpen && (
+                            <button onClick={() => setOpen(false)} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-400">
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
 
                     {/* Messages */}
