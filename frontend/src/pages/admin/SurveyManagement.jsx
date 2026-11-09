@@ -410,7 +410,7 @@ function useQuestionEditor(settings) {
 
   const applyScalePreset = (qIdx, key) => {
     if (key !== 'custom' && !SCALE_PRESETS[key]) return;
-    setQuestions(prev => mapAt(prev, qIdx, q => ({ ...q, opts: key === 'custom' ? Array(5).fill('') : [...SCALE_PRESETS[key].labels], config: { ...q.config, scale_preset: key } })));
+    setQuestions(prev => mapAt(prev, qIdx, q => ({ ...q, opts: key === 'custom' ? new Array(5).fill('') : [...SCALE_PRESETS[key].labels], config: { ...q.config, scale_preset: key } })));
   };
 
   const updateScaleLabel = (qIdx, labelIdx, val) =>
