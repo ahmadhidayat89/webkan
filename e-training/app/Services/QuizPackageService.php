@@ -15,7 +15,7 @@ use Throwable;
 
 class QuizPackageService
 {
-    private const SETTINGS = ['duration_minutes', 'passing_score', 'max_attempts', 'shuffle_questions', 'show_correct_answers', 'review_mode', 'quiz_mode'];
+    private const SETTINGS = ['duration_minutes', 'passing_score', 'max_attempts', 'shuffle_questions', 'show_correct_answers', 'review_mode', 'quiz_mode', 'exam_type'];
     private const CHOICE_TYPES = ['multiple_choice', 'true_false'];
 
     public function deleteArchived(BankQuizPackage $package, int $revision): void

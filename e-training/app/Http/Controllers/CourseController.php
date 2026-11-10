@@ -247,6 +247,7 @@ class CourseController extends Controller
             'deadline_at' => $quiz->deadline_at?->format(self::DATETIME_LOCAL_FORMAT),
             'start_at' => $quiz->start_at?->format(self::DATETIME_LOCAL_FORMAT),
             'quiz_mode' => $quiz->quiz_mode,
+            'exam_type' => $quiz->exam_type,
             'course_id' => $quiz->lesson->module->course_id,
             'title' => $quiz->lesson->title,
             'questions_locked' => $quiz->attempts()->exists() || \Illuminate\Support\Facades\DB::table('quiz_bank_draws')->where('quiz_id', $quiz->id)->exists(),

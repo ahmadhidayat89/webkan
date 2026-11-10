@@ -3,6 +3,7 @@ import { router } from '@inertiajs/react';
 import { CheckCircle2, Image as ImageIcon, Plus, Trash2, Save, GripVertical } from 'lucide-react';
 import RichTextEditor from '@/Components/RichTextEditor';
 import QuizBankTools from '@/Components/QuizBankTools';
+import ExamTypeSelect from '@/Components/ExamTypeSelect';
 
 const TYPE_BADGE = {
     multiple_choice: ['bg-blue-100 text-blue-700', 'Pilihan Ganda'],
@@ -69,6 +70,7 @@ export default function QuizBuilder({ quiz }) {
         passing_score: quiz.passing_score || 70,
         max_attempts: quiz.max_attempts || 3,
         quiz_mode: quiz.quiz_mode || 'custom',
+        exam_type: quiz.exam_type ?? 'close_book',
         start_at: toLocalInput(quiz.start_at),
         deadline_at: toLocalInput(quiz.deadline_at),
         review_mode: quiz.review_mode || 'off',
@@ -360,6 +362,9 @@ export default function QuizBuilder({ quiz }) {
             {/* Setting bar */}
             <div className="p-4 border border-gray-200 bg-gray-50 rounded-xl">
                 <div className="grid items-end grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
+                    <div className="col-span-2">
+                        <ExamTypeSelect value={settings.exam_type} onChange={value => setSettings({ ...settings, exam_type: value })} />
+                    </div>
                     <div>
                         <label htmlFor="quiz_mode" className="block mb-1 text-xs font-bold text-gray-600 uppercase">Mode Kuis</label>
                         <select
@@ -455,7 +460,7 @@ export default function QuizBuilder({ quiz }) {
                         className="rounded text-navy-600 focus:ring-navy-500"
                     />
                     <label htmlFor="shuffle_q" className="text-sm font-medium text-gray-700">
-                        Acak Soal & Opsi saat peserta mengerjakan (Exam Mode)
+                        Acak Soal & Opsi saat peserta mengerjakan
                     </label>
                 </div>
             </div>

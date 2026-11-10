@@ -34,6 +34,7 @@ class QuizAdminController extends Controller
             'start_at' => 'nullable|date',
             'deadline_at' => ['nullable', 'date', Rule::when($request->filled('start_at'), ['after:start_at'])],
             'quiz_mode' => 'required|in:multiple_choice,essay,true_false,short_answer,custom',
+            'exam_type' => 'sometimes|in:open_book,close_book',
         ], [
             'deadline_at.after' => 'Deadline harus setelah waktu mulai.',
         ]);
@@ -53,6 +54,7 @@ class QuizAdminController extends Controller
             'start_at',
             'deadline_at',
             'quiz_mode',
+            'exam_type',
         ]));
 
         return back()->with('success', 'Setting kuis disimpan.');

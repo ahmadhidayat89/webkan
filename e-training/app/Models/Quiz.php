@@ -11,6 +11,8 @@ class Quiz extends Model
     // Toleransi (detik) untuk jawaban yang dikirim otomatis tepat saat tenggat (jeda jaringan)
     public const SUBMIT_GRACE_SECONDS = 30;
 
+    protected $attributes = ['exam_type' => 'close_book'];
+
     protected $fillable = [
         'lesson_id',
         'bank_quiz_package_id',
@@ -23,6 +25,7 @@ class Quiz extends Model
         'start_at',
         'deadline_at',
         'quiz_mode',
+        'exam_type',
     ];
 
     protected function casts(): array

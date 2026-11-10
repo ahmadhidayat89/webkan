@@ -147,6 +147,7 @@ class CoursePlayerController extends Controller
             'quiz' => $lesson->quiz ? [
                 'id' => $lesson->quiz->id,
                 'quiz_mode' => $lesson->quiz->quiz_mode,
+                'exam_type' => $lesson->quiz->exam_type,
                 'duration_minutes' => $lesson->quiz->duration_minutes,
                 'passing_score' => $lesson->quiz->passing_score,
                 'max_attempts' => $maxAttempts,

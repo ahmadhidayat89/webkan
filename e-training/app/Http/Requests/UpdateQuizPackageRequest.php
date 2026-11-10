@@ -42,6 +42,7 @@ class UpdateQuizPackageRequest extends FormRequest
             'settings.passing_score' => 'required|integer|min:0|max:100',
             'settings.max_attempts' => 'required|integer|min:1|max:1000',
             'settings.quiz_mode' => 'required|in:custom,multiple_choice,true_false,essay,short_answer',
+            'settings.exam_type' => 'sometimes|in:open_book,close_book',
             'settings.shuffle_questions' => 'required|boolean',
             'settings.show_correct_answers' => 'required|boolean',
             'settings.review_mode' => 'required|in:off,review,with_answers',

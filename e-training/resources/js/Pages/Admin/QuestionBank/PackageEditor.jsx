@@ -3,6 +3,7 @@ import { useForm } from '@inertiajs/react';
 import { X, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
+import ExamTypeSelect from '@/Components/ExamTypeSelect';
 import { QUESTION_TYPES, defaultOptions } from './helpers';
 
 const inputClass = 'w-full rounded-lg border-gray-200 text-sm';
@@ -35,7 +36,7 @@ function PackageEditForm({ item, onClose }) {
     const form = useForm({
         revision: item.revision, title: item.title, description: item.description || '',
         lesson_description: item.snapshot.lesson_description || '',
-        settings: { duration_minutes: '', passing_score: 70, max_attempts: 1, quiz_mode: 'custom', review_mode: 'off', shuffle_questions: false, show_correct_answers: false, ...item.snapshot.settings },
+        settings: { duration_minutes: '', passing_score: 70, max_attempts: 1, quiz_mode: 'custom', exam_type: 'close_book', review_mode: 'off', shuffle_questions: false, show_correct_answers: false, ...item.snapshot.settings },
         groups: item.snapshot.groups.map(group => ({ ...group, key: String(group.key) })),
         questions: item.snapshot.questions.map((question, index) => ({ ...question, options: keyedOptions(question.options), group_key: question.group_key == null ? null : String(question.group_key), source_index: index, image: null, remove_image: false, clientKey: `existing-${index}` })),
     });
@@ -74,6 +75,7 @@ function PackageEditForm({ item, onClose }) {
                 <Field label="Nama paket"><input required maxLength={255} className={inputClass} value={data.title} onChange={event => form.setData('title', event.target.value)} /></Field>
                 <Field label="Deskripsi paket"><textarea maxLength={2000} className={inputClass} value={data.description} onChange={event => form.setData('description', event.target.value)} /></Field>
                 <h3 className="font-bold text-navy-900">Pengaturan kuis</h3>
+                <ExamTypeSelect id="package_exam_type" value={data.settings.exam_type} onChange={value => setting('exam_type', value)} />
                 <div className="grid gap-4 sm:grid-cols-3">
                     <Field label="Durasi (menit)"><input type="number" min="1" max="10080" placeholder="Tanpa batas" className={inputClass} value={data.settings.duration_minutes ?? ''} onChange={event => setting('duration_minutes', event.target.value)} /></Field>
                     <Field label="Nilai lulus (0–100)"><input required type="number" min="0" max="100" className={inputClass} value={data.settings.passing_score} onChange={event => setting('passing_score', event.target.value)} /></Field>

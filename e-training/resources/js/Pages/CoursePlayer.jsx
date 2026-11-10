@@ -531,12 +531,18 @@ function QuizIntro({ lesson, quiz, attempts, isExpired, windowState, limitReache
 
                 <dl className="px-4 mb-4 text-left border border-gray-200 divide-y divide-gray-100 rounded-xl">
                     <QuizInfoRow label="Jumlah soal" value={`${quiz.questions.length} soal`} />
+                    <QuizInfoRow label="Tipe ujian" value={quiz.exam_type === 'open_book' ? 'Open Book' : 'Close Book'} />
                     <QuizInfoRow label="Percobaan diizinkan" value={quiz.max_attempts || 'Tanpa batas'} />
                     {quiz.start_at_label && <QuizInfoRow label="Kuis dibuka pada" value={quiz.start_at_label} />}
                     {quiz.deadline_at_label && <QuizInfoRow label="Kuis ditutup pada" value={quiz.deadline_at_label} />}
                     <QuizInfoRow label="Batas waktu" value={quiz.duration_minutes ? `${quiz.duration_minutes} menit` : 'Tanpa batas'} />
                     <QuizInfoRow label="Nilai minimum lulus" value={quiz.passing_score} />
                 </dl>
+                <p className="mb-4 text-sm text-gray-600">
+                    {quiz.exam_type === 'open_book'
+                        ? 'Anda boleh membuka materi melalui sidebar dan berpindah tab. Jawaban tetap tersimpan saat melihat materi, dan waktu pengerjaan terus berjalan. Layar penuh tidak diwajibkan.'
+                        : 'Kuis wajib dikerjakan dalam layar penuh. Keluar layar penuh atau berpindah tab dihitung sebagai pelanggaran. Setelah 3 pelanggaran, jawaban dikirim otomatis.'}
+                </p>
                 {quiz.has_override && (
                     <p className="mb-4 text-xs text-green-700">
                         Anda mendapat keringanan dari admin/pengajar untuk kuis ini.
@@ -724,10 +730,10 @@ function QuizTakingView({
     return (
         <div
             className="animate-fade-in"
-            onContextMenu={preventCheat}
-            onCopy={preventCheat}
-            onPaste={preventCheat}
-            onCut={preventCheat}
+            onContextMenu={quiz.exam_type === 'open_book' ? undefined : preventCheat}
+            onCopy={quiz.exam_type === 'open_book' ? undefined : preventCheat}
+            onPaste={quiz.exam_type === 'open_book' ? undefined : preventCheat}
+            onCut={quiz.exam_type === 'open_book' ? undefined : preventCheat}
         >
             {/* Quiz Header */}
             <div className="flex items-center justify-between p-4 mb-6 card">
@@ -867,9 +873,10 @@ function QuizTakingView({
 // komponen di atas, dan efek samping (timer, kunci ujian) dipindah ke hook.
 // ───────────────────────────────────────────────────────────────────────────
 
-function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule = false, onQuizActiveChange }) {
+function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule = false, onQuizActiveChange, isVisible = true, onReturnToQuiz }) {
     const [drawnQuestions, setDrawnQuestions] = useState(null);
     const quiz = lesson.quiz ? { ...lesson.quiz, questions: drawnQuestions ?? lesson.quiz.questions } : null;
+    const isCloseBook = quiz?.exam_type !== 'open_book';
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState({});
     const [submitted, setSubmitted] = useState(false);
@@ -921,7 +928,7 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
 
     const timeLeft = useQuizCountdown(deadline, started && !submitted, submitRef);
     const { isFullscreen, violations, warning, enterFullscreen, dismissWarning } = useExamLock({
-        active: started && !submitted,
+        active: isCloseBook && started && !submitted,
         maxViolations: 3,
         onLimitReached: () => submitRef.current?.(true), // kumpulkan otomatis
     });
@@ -959,7 +966,7 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
 
     const handleStart = () => {
         if (processing || (!bypassSchedule && getQuizWindow(quiz, Date.now() + clockOffset) !== 'open')) return;
-        enterFullscreen(); // harus langsung dari klik, sebelum request apa pun
+        if (isCloseBook) enterFullscreen(); // harus langsung dari klik, sebelum request apa pun
         const begin = () => {
             setAutoSubmitted(false);
             setDeadline(computeAttemptDeadline(quiz, clockOffset, bypassSchedule));
@@ -994,6 +1001,32 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
 
     // Batas percobaan (max_attempts dikirim dari controller)
     const limitReached = !!quiz.max_attempts && attempts.length >= quiz.max_attempts;
+
+    // Tetap mounted saat peserta membaca materi: jawaban, urutan soal acak,
+    // deadline, dan auto-submit berjalan dalam sesi kuis yang sama.
+    if (!isVisible) {
+        if (!started || submitted) return null;
+
+        return (
+            <section aria-label="Kuis Open Book sedang berlangsung" className="sticky top-3 z-30 flex flex-wrap items-center justify-between gap-3 p-4 mb-6 border shadow-sm rounded-xl border-navy-200 bg-navy-50">
+                <div className="min-w-0">
+                    <p className="text-sm font-bold text-navy-900">{lesson.title} · Open Book</p>
+                    <p className="mt-1 text-xs text-navy-700">
+                        {Object.keys(answers).length}/{totalQuestions} soal terjawab. Jawaban tersimpan selama melihat materi; waktu tetap berjalan.
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                    <span aria-label="Sisa waktu kuis" className={`flex items-center gap-2 px-3 py-2 text-sm font-bold border rounded-lg tabular-nums ${timeLeft === null ? 'bg-white text-gray-600 border-gray-200' : getTimerClass(timeLeft)}`}>
+                        <Clock className="w-4 h-4" />
+                        {timeLeft === null ? 'Tanpa batas waktu' : formatTime(timeLeft)}
+                    </span>
+                    <button type="button" onClick={onReturnToQuiz} className="text-sm btn-primary">
+                        {processing ? 'Lihat Pengiriman Kuis' : 'Kembali ke Kuis'}
+                    </button>
+                </div>
+            </section>
+        );
+    }
 
     if (!started && !submitted) {
         return (
@@ -1031,7 +1064,7 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
 
     return (
         <>
-            {(!isFullscreen || warning) && (
+            {isCloseBook && (!isFullscreen || warning) && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white p-6">
                     <div className="max-w-md text-center">
                         <div className="mb-3 text-4xl">⚠️</div>
@@ -1119,13 +1152,16 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
     const [activeLessonId, setActiveLessonId] = useState(
         initialLesson?.id ?? allLessons[0]?.id ?? null
     );
-    const [quizActive, setQuizActive] = useState(false);
+    const [runningQuizLessonId, setRunningQuizLessonId] = useState(null);
     // Selisih jam server dan jam perangkat, supaya batas waktu kuis tidak bergantung jam perangkat
     const [clockOffset] = useState(() => (course.server_now ? Date.parse(course.server_now) - Date.now() : 0));
     const hasModuleSchedule = allModulesHaveSchedule(course.modules);
     const now = useServerNow(clockOffset, hasModuleSchedule);
     useRefreshOpenedModules(course.modules || [], course.server_now, now);
     const activeLesson = allLessons.find((l) => l.id === activeLessonId) || null;
+    const runningQuizLesson = allLessons.find((lesson) => lesson.id === runningQuizLessonId) || null;
+    const quizActive = runningQuizLesson !== null;
+    const isOpenBookActive = runningQuizLesson?.quiz?.exam_type === 'open_book';
 
     if (!activeLesson) {
         return (
@@ -1158,11 +1194,32 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
         activeLesson.type !== 'quiz' || (!quizActive && hasCompletedQuiz)
     );
 
+    const handleSelectLesson = (lesson) => {
+        if (quizActive && lesson.id !== runningQuizLessonId) {
+            if (!isOpenBookActive) {
+                alert('Kuis sedang berlangsung. Selesaikan dan kirim kuis sebelum berpindah materi.');
+                return;
+            }
+            if (lesson.type === 'quiz') {
+                alert('Selesaikan kuis yang sedang berlangsung sebelum membuka kuis lain. Anda tetap bisa melihat materi.');
+                return;
+            }
+        }
+
+        const targetModule = course.modules?.find((module) => module.lessons.some((item) => item.id === lesson.id));
+        if (targetModule && !course.can_bypass_schedule && getModuleWindow(targetModule, now) === 'upcoming') {
+            alert(`Modul ini baru dibuka pada ${targetModule.start_at_label}.`);
+            return;
+        }
+
+        setActiveLessonId(lesson.id);
+    };
+
     const handlePrev = () => {
-        if (currentIndex > 0) setActiveLessonId(allLessons[currentIndex - 1].id);
+        if (currentIndex > 0) handleSelectLesson(allLessons[currentIndex - 1]);
     };
     const handleNext = () => {
-        if (currentIndex < allLessons.length - 1) setActiveLessonId(allLessons[currentIndex + 1].id);
+        if (currentIndex < allLessons.length - 1) handleSelectLesson(allLessons[currentIndex + 1]);
     };
 
     const handleComplete = () => {
@@ -1183,17 +1240,7 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
             case 'document':
                 return <PdfContent lesson={activeLesson} />;
             case 'quiz':
-                return (
-                    <QuizContent
-                        key={`quiz-${activeLesson.id}`}
-                        lesson={activeLesson}
-                        courseId={course.id}
-                        isExpired={isExpired}
-                        clockOffset={clockOffset}
-                        bypassSchedule={Boolean(course.can_bypass_schedule)}
-                        onQuizActiveChange={setQuizActive}
-                    />
-                );
+                return null; // Sesi kuis dirender terpisah agar tetap hidup saat melihat materi.
             default:
                 return <VideoContent lesson={activeLesson} />;
         }
@@ -1208,24 +1255,8 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                 activeLesson={activeLesson}
                 serverNow={now}
                 bypassSchedule={Boolean(course.can_bypass_schedule)}
-                hideSidebar={quizActive}
-                onSelectLesson={(lesson) => {
-                    if (quizActive && lesson.id !== activeLesson.id) {
-                        alert(
-                            '⚠️ Kuis sedang berlangsung.\n\n' +
-                            'Anda tidak dapat berpindah ke materi lain sebelum menyelesaikan dan mengirim kuis.'
-                        );
-                        return;
-                    }
-
-                    const targetModule = course.modules?.find((m) => m.lessons.some((l) => l.id === lesson.id));
-                    if (targetModule && !course.can_bypass_schedule && getModuleWindow(targetModule, now) === 'upcoming') {
-                        alert(`Modul ini baru dibuka pada ${targetModule.start_at_label}.`);
-                        return;
-                    }
-
-                    setActiveLessonId(lesson.id);
-                }}
+                hideSidebar={quizActive && !isOpenBookActive}
+                onSelectLesson={handleSelectLesson}
             >
                 <div className="max-w-4xl p-4 pb-24 mx-auto sm:p-6 lg:p-8">
                     {isExpired && (
@@ -1237,7 +1268,29 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                         </div>
                     )}
 
-                    {moduleLocked ? <ModuleLockedNotice module={activeModule} lesson={activeLesson} /> : renderContent()}
+                    {allLessons.filter((lesson) => lesson.id === runningQuizLessonId || (
+                        lesson.id === activeLesson.id && lesson.type === 'quiz' && !moduleLocked
+                    )).map((lesson) => (
+                        <QuizContent
+                            key={`quiz-${lesson.id}`}
+                            lesson={lesson}
+                            courseId={course.id}
+                            isExpired={isExpired}
+                            clockOffset={clockOffset}
+                            bypassSchedule={Boolean(course.can_bypass_schedule)}
+                            isVisible={lesson.id === activeLesson.id}
+                            onReturnToQuiz={() => setActiveLessonId(lesson.id)}
+                            onQuizActiveChange={(active) => {
+                                setRunningQuizLessonId(active ? lesson.id : null);
+                                // Auto-submit saat membaca materi juga membuka hasil kuis.
+                                if (!active) setActiveLessonId(lesson.id);
+                            }}
+                        />
+                    ))}
+
+                    {moduleLocked && activeLesson.id !== runningQuizLessonId
+                        ? <ModuleLockedNotice module={activeModule} lesson={activeLesson} />
+                        : renderContent()}
 
                     {/* Navigation between lessons */}
                     {activeLesson.type !== 'quiz' && (
