@@ -1136,25 +1136,147 @@ function ModuleLockedNotice({ module, lesson }) {
     );
 }
 
+// ───────────────────────────────────────────────────────────────────────────
+// Helper dan sub-komponen untuk CoursePlayer (dipecah agar Cognitive
+// Complexity fungsi utama turun, perilaku tidak berubah).
+// ───────────────────────────────────────────────────────────────────────────
+
+function findInitialLessonId(allLessons, initialLessonId) {
+    const initial = initialLessonId
+        ? allLessons.find((l) => l.id.toString() === initialLessonId.toString())
+        : null;
+    return initial?.id ?? allLessons[0]?.id ?? null;
+}
+
+function computeClockOffset(serverNow) {
+    return serverNow ? Date.parse(serverNow) - Date.now() : 0;
+}
+
+// Status akses materi aktif: modul terkunci, bisa ditandai selesai, dan tampil tidaknya diskusi
+function getLessonAccess({ course, activeLesson, isExpired, now, quizActive }) {
+    const activeModule = course.modules?.find((m) => m.lessons.some((l) => l.id === activeLesson.id));
+    const canBypass = Boolean(course.can_bypass_schedule);
+    const moduleWindow = activeModule && !canBypass ? getModuleWindow(activeModule, now) : 'open';
+    const lockedReason = activeModule?.locked_reason || activeLesson.locked_reason;
+    const moduleLocked = Boolean(lockedReason) || moduleWindow === 'upcoming';
+    const cannotComplete = activeLesson.isCompleted || isExpired || moduleLocked || moduleWindow !== 'open';
+    const hasCompletedQuiz = canBypass || activeLesson.isCompleted || (activeLesson.quiz?.attempts?.length ?? 0) > 0;
+    const showDiscussion = !moduleLocked && (
+        activeLesson.type !== 'quiz' || (!quizActive && hasCompletedQuiz)
+    );
+
+    return { activeModule, moduleLocked, cannotComplete, showDiscussion };
+}
+
+// Mengembalikan pesan alasan jika perpindahan materi diblokir, atau null jika boleh
+function getLessonSwitchBlock({ lesson, course, now, quizActive, runningQuizLessonId, isOpenBookActive }) {
+    if (quizActive && lesson.id !== runningQuizLessonId) {
+        if (!isOpenBookActive) {
+            return 'Kuis sedang berlangsung. Selesaikan dan kirim kuis sebelum berpindah materi.';
+        }
+        if (lesson.type === 'quiz') {
+            return 'Selesaikan kuis yang sedang berlangsung sebelum membuka kuis lain. Anda tetap bisa melihat materi.';
+        }
+    }
+
+    const targetModule = course.modules?.find((m) => m.lessons.some((item) => item.id === lesson.id));
+    const upcoming = targetModule && !course.can_bypass_schedule && getModuleWindow(targetModule, now) === 'upcoming';
+    return upcoming ? `Modul ini baru dibuka pada ${targetModule.start_at_label}.` : null;
+}
+
+function completeLesson(course, lesson) {
+    router.post(
+        route('course.lesson.complete', { course: course.id, lesson: lesson.id }),
+        {},
+        { preserveScroll: true }
+    );
+}
+
+function LessonContent({ lesson }) {
+    if (lesson.type === 'document') return <PdfContent lesson={lesson} />;
+    if (lesson.type === 'quiz') return null; // Sesi kuis dirender terpisah agar tetap hidup saat melihat materi.
+    return <VideoContent lesson={lesson} />;
+}
+
+function ExpiredBanner({ deadlineAt }) {
+    return (
+        <div className="flex items-center gap-2 p-3 mb-4 text-sm border text-amber-700 border-amber-200 bg-amber-50 rounded-xl">
+            <AlertCircle className="flex-shrink-0 w-4 h-4" />
+            <span>
+                Masa kursus berakhir{deadlineAt ? ` pada ${deadlineAt}` : ''}. Kamu hanya bisa melihat materi.
+            </span>
+        </div>
+    );
+}
+
+function LessonNavigation({ prevLesson, nextLesson, cannotComplete, isCompleted, onSelect, onComplete }) {
+    return (
+        <div className="flex flex-col justify-between gap-4 pt-6 mt-8 border-t border-gray-100 sm:flex-row sm:items-center">
+            <button
+                onClick={() => onSelect(prevLesson)}
+                disabled={!prevLesson}
+                className="justify-center w-full text-sm btn-secondary disabled:opacity-40 sm:w-auto"
+            >
+                <ChevronLeft className="w-4 h-4" />
+                Sebelumnya
+            </button>
+            <button
+                onClick={onComplete}
+                disabled={cannotComplete}
+                className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors border w-full sm:w-auto ${cannotComplete
+                    ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
+                    : 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200'
+                    }`}
+            >
+                <CheckCircle2 className="w-4 h-4" />
+                {isCompleted ? 'Sudah Selesai' : 'Tandai Selesai'}
+            </button>
+            <button
+                onClick={() => onSelect(nextLesson)}
+                disabled={!nextLesson}
+                className="justify-center w-full text-sm btn-primary disabled:opacity-40 sm:w-auto"
+            >
+                Selanjutnya
+                <ChevronRight className="w-4 h-4" />
+            </button>
+        </div>
+    );
+}
+
+function QuizSessions({ lessons, activeLesson, runningQuizLessonId, moduleLocked, course, isExpired, clockOffset, onQuizActiveChange, onOpenLesson }) {
+    const visibleLessons = lessons.filter((lesson) => lesson.id === runningQuizLessonId || (
+        lesson.id === activeLesson.id && lesson.type === 'quiz' && !moduleLocked
+    ));
+
+    return visibleLessons.map((lesson) => (
+        <QuizContent
+            key={`quiz-${lesson.id}`}
+            lesson={lesson}
+            courseId={course.id}
+            isExpired={isExpired}
+            clockOffset={clockOffset}
+            bypassSchedule={Boolean(course.can_bypass_schedule)}
+            isVisible={lesson.id === activeLesson.id}
+            onReturnToQuiz={() => onOpenLesson(lesson.id)}
+            onQuizActiveChange={(active) => onQuizActiveChange(lesson.id, active)}
+        />
+    ));
+}
+
 export default function CoursePlayer({ courseData, initialLessonId }) {
     const course = courseData;
     const isExpired = !!course.isExpired;
     const allLessons = course.modules?.flatMap((m) => m.lessons) || [];
 
-    // Temukan lesson awal jika ada initialLessonId
-    const initialLesson = initialLessonId
-        ? allLessons.find(l => l.id.toString() === initialLessonId.toString())
-        : null;
-
     // Simpan hanya ID, bukan objek lesson.
     // Objek lesson diambil dari props terbaru di setiap render, jadi setelah
     // submit kuis (Inertia mengirim props baru) data attempt langsung segar.
     const [activeLessonId, setActiveLessonId] = useState(
-        initialLesson?.id ?? allLessons[0]?.id ?? null
+        findInitialLessonId(allLessons, initialLessonId)
     );
     const [runningQuizLessonId, setRunningQuizLessonId] = useState(null);
     // Selisih jam server dan jam perangkat, supaya batas waktu kuis tidak bergantung jam perangkat
-    const [clockOffset] = useState(() => (course.server_now ? Date.parse(course.server_now) - Date.now() : 0));
+    const [clockOffset] = useState(() => computeClockOffset(course.server_now));
     const hasModuleSchedule = allModulesHaveSchedule(course.modules);
     const now = useServerNow(clockOffset, hasModuleSchedule);
     useRefreshOpenedModules(course.modules || [], course.server_now, now);
@@ -1183,67 +1305,25 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
     }
 
     const currentIndex = allLessons.findIndex((l) => l.id === activeLesson.id);
-    const activeModule = course.modules?.find((m) => m.lessons.some((l) => l.id === activeLesson.id));
-    const moduleWindow = activeModule && !course.can_bypass_schedule ? getModuleWindow(activeModule, now) : 'open';
-    const moduleLocked = Boolean(activeModule?.locked_reason || activeLesson.locked_reason) || moduleWindow === 'upcoming';
-    const cannotComplete = activeLesson.isCompleted || isExpired || moduleLocked || moduleWindow !== 'open';
-    const hasCompletedQuiz = Boolean(
-        course.can_bypass_schedule || activeLesson.isCompleted || (activeLesson.quiz?.attempts?.length ?? 0) > 0
-    );
-    const showDiscussion = !moduleLocked && (
-        activeLesson.type !== 'quiz' || (!quizActive && hasCompletedQuiz)
-    );
+    const { activeModule, moduleLocked, cannotComplete, showDiscussion } = getLessonAccess({
+        course, activeLesson, isExpired, now, quizActive,
+    });
 
     const handleSelectLesson = (lesson) => {
-        if (quizActive && lesson.id !== runningQuizLessonId) {
-            if (!isOpenBookActive) {
-                alert('Kuis sedang berlangsung. Selesaikan dan kirim kuis sebelum berpindah materi.');
-                return;
-            }
-            if (lesson.type === 'quiz') {
-                alert('Selesaikan kuis yang sedang berlangsung sebelum membuka kuis lain. Anda tetap bisa melihat materi.');
-                return;
-            }
-        }
-
-        const targetModule = course.modules?.find((module) => module.lessons.some((item) => item.id === lesson.id));
-        if (targetModule && !course.can_bypass_schedule && getModuleWindow(targetModule, now) === 'upcoming') {
-            alert(`Modul ini baru dibuka pada ${targetModule.start_at_label}.`);
+        const blockMessage = getLessonSwitchBlock({
+            lesson, course, now, quizActive, runningQuizLessonId, isOpenBookActive,
+        });
+        if (blockMessage) {
+            alert(blockMessage);
             return;
         }
-
         setActiveLessonId(lesson.id);
     };
 
-    const handlePrev = () => {
-        if (currentIndex > 0) handleSelectLesson(allLessons[currentIndex - 1]);
-    };
-    const handleNext = () => {
-        if (currentIndex < allLessons.length - 1) handleSelectLesson(allLessons[currentIndex + 1]);
-    };
-
-    const handleComplete = () => {
-        if (cannotComplete) return;
-
-        router.post(
-            route('course.lesson.complete', { course: course.id, lesson: activeLesson.id }),
-            {},
-            { preserveScroll: true }
-        );
-    };
-
-    const renderContent = () => {
-        switch (activeLesson.type) {
-            case 'video':
-            case 'zoom':
-                return <VideoContent lesson={activeLesson} />;
-            case 'document':
-                return <PdfContent lesson={activeLesson} />;
-            case 'quiz':
-                return null; // Sesi kuis dirender terpisah agar tetap hidup saat melihat materi.
-            default:
-                return <VideoContent lesson={activeLesson} />;
-        }
+    const handleQuizActiveChange = (lessonId, active) => {
+        setRunningQuizLessonId(active ? lessonId : null);
+        // Auto-submit saat membaca materi juga membuka hasil kuis.
+        if (!active) setActiveLessonId(lessonId);
     };
 
     return (
@@ -1259,71 +1339,34 @@ export default function CoursePlayer({ courseData, initialLessonId }) {
                 onSelectLesson={handleSelectLesson}
             >
                 <div className="max-w-4xl p-4 pb-24 mx-auto sm:p-6 lg:p-8">
-                    {isExpired && (
-                        <div className="flex items-center gap-2 p-3 mb-4 text-sm border text-amber-700 border-amber-200 bg-amber-50 rounded-xl">
-                            <AlertCircle className="flex-shrink-0 w-4 h-4" />
-                            <span>
-                                Masa kursus berakhir{course.deadline_at ? ` pada ${course.deadline_at}` : ''}. Kamu hanya bisa melihat materi.
-                            </span>
-                        </div>
-                    )}
+                    {isExpired && <ExpiredBanner deadlineAt={course.deadline_at} />}
 
-                    {allLessons.filter((lesson) => lesson.id === runningQuizLessonId || (
-                        lesson.id === activeLesson.id && lesson.type === 'quiz' && !moduleLocked
-                    )).map((lesson) => (
-                        <QuizContent
-                            key={`quiz-${lesson.id}`}
-                            lesson={lesson}
-                            courseId={course.id}
-                            isExpired={isExpired}
-                            clockOffset={clockOffset}
-                            bypassSchedule={Boolean(course.can_bypass_schedule)}
-                            isVisible={lesson.id === activeLesson.id}
-                            onReturnToQuiz={() => setActiveLessonId(lesson.id)}
-                            onQuizActiveChange={(active) => {
-                                setRunningQuizLessonId(active ? lesson.id : null);
-                                // Auto-submit saat membaca materi juga membuka hasil kuis.
-                                if (!active) setActiveLessonId(lesson.id);
-                            }}
-                        />
-                    ))}
+                    <QuizSessions
+                        lessons={allLessons}
+                        activeLesson={activeLesson}
+                        runningQuizLessonId={runningQuizLessonId}
+                        moduleLocked={moduleLocked}
+                        course={course}
+                        isExpired={isExpired}
+                        clockOffset={clockOffset}
+                        onQuizActiveChange={handleQuizActiveChange}
+                        onOpenLesson={setActiveLessonId}
+                    />
 
                     {moduleLocked && activeLesson.id !== runningQuizLessonId
                         ? <ModuleLockedNotice module={activeModule} lesson={activeLesson} />
-                        : renderContent()}
+                        : <LessonContent lesson={activeLesson} />}
 
                     {/* Navigation between lessons */}
                     {activeLesson.type !== 'quiz' && (
-                        <div className="flex flex-col justify-between gap-4 pt-6 mt-8 border-t border-gray-100 sm:flex-row sm:items-center">
-                            <button
-                                onClick={handlePrev}
-                                disabled={currentIndex === 0}
-                                className="justify-center w-full text-sm btn-secondary disabled:opacity-40 sm:w-auto"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                                Sebelumnya
-                            </button>
-                            <button
-                                onClick={handleComplete}
-                                disabled={cannotComplete}
-                                className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors border w-full sm:w-auto ${cannotComplete
-                                    ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
-                                    : 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200'
-                                    }`}
-                            >
-                                <CheckCircle2 className="w-4 h-4" />
-                                {activeLesson.isCompleted ? 'Sudah Selesai' : 'Tandai Selesai'}
-                            </button>
-
-                            <button
-                                onClick={handleNext}
-                                disabled={currentIndex === allLessons.length - 1}
-                                className="justify-center w-full text-sm btn-primary disabled:opacity-40 sm:w-auto"
-                            >
-                                Selanjutnya
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        </div>
+                        <LessonNavigation
+                            prevLesson={allLessons[currentIndex - 1]}
+                            nextLesson={allLessons[currentIndex + 1]}
+                            cannotComplete={cannotComplete}
+                            isCompleted={activeLesson.isCompleted}
+                            onSelect={handleSelectLesson}
+                            onComplete={() => completeLesson(course, activeLesson)}
+                        />
                     )}
 
                     {/* Diskusi per Sesi */}
