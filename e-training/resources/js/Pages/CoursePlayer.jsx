@@ -306,6 +306,35 @@ function buildAnswerPayload(quiz, answers) {
     return payload;
 }
 
+function resolveQuizWithQuestions(lessonQuiz, drawnQuestions) {
+    if (!lessonQuiz) return null;
+    return { ...lessonQuiz, questions: drawnQuestions ?? lessonQuiz.questions };
+}
+
+function areAllQuestionsAnswered(questions, answers) {
+    return questions.every((q) => answers[q.id] !== undefined && answers[q.id] !== '');
+}
+
+function updateAnswerMap(prev, questionId, value, locked) {
+    if (locked) return prev;
+    return { ...prev, [questionId]: value };
+}
+
+function clearAnswerFromMap(prev, questionId, locked) {
+    if (locked) return prev;
+    const next = { ...prev };
+    delete next[questionId];
+    return next;
+}
+
+function formatSubmitError(errors) {
+    return (
+        errors?.message ||
+        Object.values(errors || {}).join('\n') ||
+        'Terjadi kesalahan saat mengirim jawaban.'
+    );
+}
+
 // Percobaan terbaru = id terbesar (tidak bergantung urutan array dari backend)
 function pickLatestAttempt(attempts) {
     return attempts.reduce((best, a) => (!best || a.id > best.id ? a : best), null);
@@ -867,6 +896,151 @@ function QuizTakingView({
     );
 }
 
+function OpenBookActiveBanner({ active, lesson, answeredCount, totalQuestions, timeLeft, processing, onReturnToQuiz }) {
+    if (!active) return null;
+
+    const timerClass = timeLeft === null
+        ? 'bg-white text-gray-600 border-gray-200'
+        : getTimerClass(timeLeft);
+    const timerLabel = timeLeft === null ? 'Tanpa batas waktu' : formatTime(timeLeft);
+
+    return (
+        <section aria-label="Kuis Open Book sedang berlangsung" className="sticky top-3 z-30 flex flex-wrap items-center justify-between gap-3 p-4 mb-6 border shadow-sm rounded-xl border-navy-200 bg-navy-50">
+            <div className="min-w-0">
+                <p className="text-sm font-bold text-navy-900">{lesson.title} · Open Book</p>
+                <p className="mt-1 text-xs text-navy-700">
+                    {answeredCount}/{totalQuestions} soal terjawab. Jawaban tersimpan selama melihat materi; waktu tetap berjalan.
+                </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+                <span aria-label="Sisa waktu kuis" className={`flex items-center gap-2 px-3 py-2 text-sm font-bold border rounded-lg tabular-nums ${timerClass}`}>
+                    <Clock className="w-4 h-4" />
+                    {timerLabel}
+                </span>
+                <button type="button" onClick={onReturnToQuiz} className="text-sm btn-primary">
+                    {processing ? 'Lihat Pengiriman Kuis' : 'Kembali ke Kuis'}
+                </button>
+            </div>
+        </section>
+    );
+}
+
+function ExamLockOverlay({ isCloseBook, isFullscreen, warning, violations, onResume }) {
+    if (!isCloseBook || (isFullscreen && !warning)) return null;
+
+    return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white p-6">
+            <div className="max-w-md text-center">
+                <div className="mb-3 text-4xl">⚠️</div>
+                <h2 className="mb-2 text-xl font-black text-gray-800">Kuis Dikunci</h2>
+                <p className="mb-2 text-sm text-gray-600">
+                    {warning || 'Kuis harus dikerjakan dalam mode layar penuh.'}
+                </p>
+                <p className="mb-2 text-xs font-bold text-red-600">
+                    Pelanggaran: {violations} dari 3. Setelah 3 kali, kuis dikumpulkan otomatis.
+                </p>
+                <p className="mb-5 text-xs text-gray-400">Waktu pengerjaan tetap berjalan.</p>
+                <button
+                    onClick={onResume}
+                    className="px-6 py-2.5 text-sm font-bold text-white rounded-lg bg-navy-600 hover:bg-navy-700"
+                >
+                    Kembali ke Layar Penuh
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function QuizSubmittedResult({ quiz, result, latestAttempt, autoSubmitted, onReset }) {
+    // Layar hasil ditentukan dari status attempt (dari server),
+    // bukan dari quiz_mode. is_passed null = masih menunggu koreksi essay.
+    const shownAttempt = result ?? latestAttempt;
+
+    if (shownAttempt?.is_passed === null) {
+        return <QuizEssayPendingResult onReset={onReset} />;
+    }
+
+    return (
+        <QuizScoreResult
+            quiz={quiz}
+            shownAttempt={shownAttempt}
+            autoSubmitted={autoSubmitted}
+            onReset={onReset}
+        />
+    );
+}
+
+function submitQuizFlow({
+    auto,
+    processing,
+    allAnswered,
+    timeLeft,
+    courseId,
+    lessonId,
+    quiz,
+    answers,
+    onAutoSubmit,
+    onProcessingChange,
+    onSuccessSubmit,
+}) {
+    // onClick mengirim event sebagai argumen, jadi hanya nilai `true` yang dianggap otomatis
+    const isAuto = auto === true;
+
+    if (processing) return;
+    if (!isAuto && !allAnswered && timeLeft !== 0) return;
+
+    if (isAuto) onAutoSubmit();
+    onProcessingChange(true);
+
+    const payload = buildAnswerPayload(quiz, answers);
+
+    router.post(route('courses.quizzes.submit', { course: courseId, quiz: quiz.id }), {
+        answers: payload,
+    }, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            const freshAttempts = findFreshAttempts(page, lessonId);
+            onSuccessSubmit(pickLatestAttempt(freshAttempts));
+        },
+        onError: (errors) => {
+            onProcessingChange(false);
+            alert(formatSubmitError(errors));
+        },
+    });
+}
+
+function startQuizFlow({
+    quiz,
+    courseId,
+    lessonId,
+    clockOffset,
+    bypassSchedule,
+    processing,
+    isCloseBook,
+    enterFullscreen,
+    onBegin,
+    onDrawnQuestions,
+    onProcessingChange,
+}) {
+    if (processing || (!bypassSchedule && getQuizWindow(quiz, Date.now() + clockOffset) !== 'open')) return;
+    if (isCloseBook) enterFullscreen(); // harus langsung dari klik, sebelum request apa pun
+    if (!quiz.has_random_questions) {
+        onBegin();
+        return;
+    }
+    onProcessingChange(true);
+    router.post(route('courses.quizzes.start', { course: courseId, quiz: quiz.id }), {}, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            const freshLesson = page.props.courseData.modules.flatMap((module) => module.lessons).find((item) => item.id === lessonId);
+            onDrawnQuestions(freshLesson.quiz.questions);
+            onBegin();
+        },
+        onError: (errors) => alert(Object.values(errors).join('\n')),
+        onFinish: () => onProcessingChange(false),
+    });
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Komponen utama kuis. Sekarang hanya berisi: state, kalkulasi, dan beberapa
 // "if (...) return <Komponen />" — logika per layar sudah dipindah ke
@@ -875,7 +1049,7 @@ function QuizTakingView({
 
 function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule = false, onQuizActiveChange, isVisible = true, onReturnToQuiz }) {
     const [drawnQuestions, setDrawnQuestions] = useState(null);
-    const quiz = lesson.quiz ? { ...lesson.quiz, questions: drawnQuestions ?? lesson.quiz.questions } : null;
+    const quiz = resolveQuizWithQuestions(lesson.quiz, drawnQuestions);
     const isCloseBook = quiz?.exam_type !== 'open_book';
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState({});
@@ -887,52 +1061,16 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
     const [autoSubmitted, setAutoSubmitted] = useState(false);
 
     const submitRef = useRef(null); // selalu menunjuk handleSubmit terbaru
+    const isQuizRunning = started && !submitted;
+    const isQuizIdle = !started && !submitted;
 
-    const handleSubmit = (auto = false) => {
-        // onClick mengirim event sebagai argumen, jadi hanya nilai `true` yang dianggap otomatis
-        const isAuto = auto === true;
-
-        if (processing) return;
-        if (!isAuto && !allAnswered && timeLeft !== 0) return;
-
-        if (isAuto) setAutoSubmitted(true);
-        setProcessing(true);
-
-        const payload = buildAnswerPayload(quiz, answers);
-
-        router.post(route('courses.quizzes.submit', { course: courseId, quiz: quiz.id }), {
-            answers: payload
-        }, {
-            preserveScroll: true,
-            onSuccess: (page) => {
-                onQuizActiveChange(false);
-                const freshAttempts = findFreshAttempts(page, lesson.id);
-                setResult(pickLatestAttempt(freshAttempts));
-                setProcessing(false);
-                setSubmitted(true);
-            },
-            onError: (errors) => {
-                setProcessing(false);
-                alert(
-                    errors?.message ||
-                    Object.values(errors || {}).join('\n') ||
-                    'Terjadi kesalahan saat mengirim jawaban.'
-                );
-            }
-        });
-    };
-
-    // Selalu simpan handleSubmit terbaru, supaya hook timer memanggil versi yang
-    // tahu nilai `answers` dan `timeLeft` paling baru, bukan versi lama (closure basi).
-    submitRef.current = handleSubmit;
-
-    const timeLeft = useQuizCountdown(deadline, started && !submitted, submitRef);
+    const timeLeft = useQuizCountdown(deadline, isQuizRunning, submitRef);
     const { isFullscreen, violations, warning, enterFullscreen, dismissWarning } = useExamLock({
-        active: isCloseBook && started && !submitted,
+        active: isCloseBook && isQuizRunning,
         maxViolations: 3,
         onLimitReached: () => submitRef.current?.(true), // kumpulkan otomatis
     });
-    const now = useServerNow(clockOffset, !started && !submitted);
+    const now = useServerNow(clockOffset, isQuizIdle);
 
     if (!quiz?.questions?.length) {
         return (
@@ -946,44 +1084,62 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
 
     const question = quiz.questions[currentQuestion];
     const totalQuestions = quiz.questions.length;
-    const allAnswered = quiz.questions.every(q => answers[q.id] !== undefined && answers[q.id] !== '');
+    const allAnswered = areAllQuestionsAnswered(quiz.questions, answers);
     const attempts = quiz.attempts || [];
     const windowState = bypassSchedule ? 'open' : getQuizWindow(quiz, now);
+    const answerLocked = submitted || processing;
 
-    const handleAnswer = (value) => {
-        if (submitted || processing) return;
-        setAnswers({ ...answers, [question.id]: value });
-    };
-
-    const handleClearAnswer = () => {
-        if (submitted || processing) return;
-        setAnswers((prev) => {
-            const next = { ...prev };
-            delete next[question.id];
-            return next;
+    const handleSubmit = (auto = false) => {
+        submitQuizFlow({
+            auto,
+            processing,
+            allAnswered,
+            timeLeft,
+            courseId,
+            lessonId: lesson.id,
+            quiz,
+            answers,
+            onAutoSubmit: () => setAutoSubmitted(true),
+            onProcessingChange: setProcessing,
+            onSuccessSubmit: (latest) => {
+                onQuizActiveChange(false);
+                setResult(latest);
+                setProcessing(false);
+                setSubmitted(true);
+            },
         });
     };
 
+    // Selalu simpan handleSubmit terbaru, supaya hook timer memanggil versi yang
+    // tahu nilai `answers` dan `timeLeft` paling baru, bukan versi lama (closure basi).
+    submitRef.current = handleSubmit;
+
+    const handleAnswer = (value) => {
+        setAnswers((prev) => updateAnswerMap(prev, question.id, value, answerLocked));
+    };
+
+    const handleClearAnswer = () => {
+        setAnswers((prev) => clearAnswerFromMap(prev, question.id, answerLocked));
+    };
+
     const handleStart = () => {
-        if (processing || (!bypassSchedule && getQuizWindow(quiz, Date.now() + clockOffset) !== 'open')) return;
-        if (isCloseBook) enterFullscreen(); // harus langsung dari klik, sebelum request apa pun
-        const begin = () => {
-            setAutoSubmitted(false);
-            setDeadline(computeAttemptDeadline(quiz, clockOffset, bypassSchedule));
-            setStarted(true);
-            onQuizActiveChange(true);
-        };
-        if (!quiz.has_random_questions) { begin(); return; }
-        setProcessing(true);
-        router.post(route('courses.quizzes.start', { course: courseId, quiz: quiz.id }), {}, {
-            preserveScroll: true,
-            onSuccess: page => {
-                const freshLesson = page.props.courseData.modules.flatMap(module => module.lessons).find(item => item.id === lesson.id);
-                setDrawnQuestions(freshLesson.quiz.questions);
-                begin();
+        startQuizFlow({
+            quiz,
+            courseId,
+            lessonId: lesson.id,
+            clockOffset,
+            bypassSchedule,
+            processing,
+            isCloseBook,
+            enterFullscreen,
+            onDrawnQuestions: setDrawnQuestions,
+            onProcessingChange: setProcessing,
+            onBegin: () => {
+                setAutoSubmitted(false);
+                setDeadline(computeAttemptDeadline(quiz, clockOffset, bypassSchedule));
+                setStarted(true);
+                onQuizActiveChange(true);
             },
-            onError: errors => alert(Object.values(errors).join('\n')),
-            onFinish: () => setProcessing(false),
         });
     };
 
@@ -1005,30 +1161,20 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
     // Tetap mounted saat peserta membaca materi: jawaban, urutan soal acak,
     // deadline, dan auto-submit berjalan dalam sesi kuis yang sama.
     if (!isVisible) {
-        if (!started || submitted) return null;
-
         return (
-            <section aria-label="Kuis Open Book sedang berlangsung" className="sticky top-3 z-30 flex flex-wrap items-center justify-between gap-3 p-4 mb-6 border shadow-sm rounded-xl border-navy-200 bg-navy-50">
-                <div className="min-w-0">
-                    <p className="text-sm font-bold text-navy-900">{lesson.title} · Open Book</p>
-                    <p className="mt-1 text-xs text-navy-700">
-                        {Object.keys(answers).length}/{totalQuestions} soal terjawab. Jawaban tersimpan selama melihat materi; waktu tetap berjalan.
-                    </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <span aria-label="Sisa waktu kuis" className={`flex items-center gap-2 px-3 py-2 text-sm font-bold border rounded-lg tabular-nums ${timeLeft === null ? 'bg-white text-gray-600 border-gray-200' : getTimerClass(timeLeft)}`}>
-                        <Clock className="w-4 h-4" />
-                        {timeLeft === null ? 'Tanpa batas waktu' : formatTime(timeLeft)}
-                    </span>
-                    <button type="button" onClick={onReturnToQuiz} className="text-sm btn-primary">
-                        {processing ? 'Lihat Pengiriman Kuis' : 'Kembali ke Kuis'}
-                    </button>
-                </div>
-            </section>
+            <OpenBookActiveBanner
+                active={isQuizRunning}
+                lesson={lesson}
+                answeredCount={Object.keys(answers).length}
+                totalQuestions={totalQuestions}
+                timeLeft={timeLeft}
+                processing={processing}
+                onReturnToQuiz={onReturnToQuiz}
+            />
         );
     }
 
-    if (!started && !submitted) {
+    if (isQuizIdle) {
         return (
             <QuizIntro
                 courseId={courseId}
@@ -1044,18 +1190,11 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
     }
 
     if (submitted) {
-        // Layar hasil ditentukan dari status attempt (dari server),
-        // bukan dari quiz_mode. is_passed null = masih menunggu koreksi essay.
-        const shownAttempt = result ?? latestAttempt;
-
-        if (shownAttempt?.is_passed === null) {
-            return <QuizEssayPendingResult onReset={handleReset} />;
-        }
-
         return (
-            <QuizScoreResult
+            <QuizSubmittedResult
                 quiz={quiz}
-                shownAttempt={shownAttempt}
+                result={result}
+                latestAttempt={latestAttempt}
                 autoSubmitted={autoSubmitted}
                 onReset={handleReset}
             />
@@ -1064,27 +1203,13 @@ function QuizContent({ lesson, courseId, isExpired, clockOffset, bypassSchedule 
 
     return (
         <>
-            {isCloseBook && (!isFullscreen || warning) && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white p-6">
-                    <div className="max-w-md text-center">
-                        <div className="mb-3 text-4xl">⚠️</div>
-                        <h2 className="mb-2 text-xl font-black text-gray-800">Kuis Dikunci</h2>
-                        <p className="mb-2 text-sm text-gray-600">
-                            {warning || 'Kuis harus dikerjakan dalam mode layar penuh.'}
-                        </p>
-                        <p className="mb-2 text-xs font-bold text-red-600">
-                            Pelanggaran: {violations} dari 3. Setelah 3 kali, kuis dikumpulkan otomatis.
-                        </p>
-                        <p className="mb-5 text-xs text-gray-400">Waktu pengerjaan tetap berjalan.</p>
-                        <button
-                            onClick={async () => { await enterFullscreen(); dismissWarning(); }}
-                            className="px-6 py-2.5 text-sm font-bold text-white rounded-lg bg-navy-600 hover:bg-navy-700"
-                        >
-                            Kembali ke Layar Penuh
-                        </button>
-                    </div>
-                </div>
-            )}
+            <ExamLockOverlay
+                isCloseBook={isCloseBook}
+                isFullscreen={isFullscreen}
+                warning={warning}
+                violations={violations}
+                onResume={async () => { await enterFullscreen(); dismissWarning(); }}
+            />
             <QuizTakingView
                 lesson={lesson}
                 quiz={quiz}
