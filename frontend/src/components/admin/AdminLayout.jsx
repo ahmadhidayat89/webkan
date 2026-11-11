@@ -89,6 +89,12 @@ const MENU_GROUPS = [
         roles: ['super_admin', 'admin'],
       },
       {
+        path: '/admin/readiness-assessments',
+        icon: FaClipboardList,
+        label: 'Readiness Assessment',
+        roles: ['super_admin', 'admin'],
+      },
+      {
         path: '/admin/documents',
         icon: FaFileAlt,
         label: 'Unduh Dokumen',

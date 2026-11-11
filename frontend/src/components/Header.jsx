@@ -7,6 +7,7 @@ import {
   FaTimes,
 } from 'react-icons/fa';
 import logoKan from '../assets/kan.png';
+import { readinessCatalogPath } from './readiness/readiness';
 
 const NAV_ITEMS = [
   {
@@ -43,6 +44,7 @@ const NAV_ITEMS = [
     href: '/layanan-akreditasi',
     dropdown: [
       { label: 'Layanan Akreditasi', href: '/layanan-akreditasi' },
+      { label: 'Readiness Assessment', href: readinessCatalogPath },
       { label: 'Laboratorium', href: '/layanan/laboratorium' },
       {
         label: 'Lembaga Verifikasi dan/atau Validasi Gas Rumah Kaca',

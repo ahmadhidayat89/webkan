@@ -18,6 +18,7 @@
     "date-fns": "^3.0.0",
     "dompurify": "^3.3.2",
     "i18next": "^23.16.8",
+    "pdfmake": "^0.3.14",
     "qrcode": "^1.5.4",
     "quill": "^2.0.3",
     "quill-table-better": "^1.2.3",

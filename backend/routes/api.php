@@ -30,6 +30,8 @@ use App\Http\Controllers\Api\CustomPageController;
 use App\Http\Controllers\Api\Admin\SurveyController as AdminSurveyController;
 use App\Http\Controllers\Api\SurveyController as PublicSurveyController;
 use App\Http\Controllers\Api\Admin\LpkTypeController;
+use App\Http\Controllers\Api\Admin\ReadinessAssessmentController as AdminReadinessAssessmentController;
+use App\Http\Controllers\Api\ReadinessAssessmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +40,8 @@ use App\Http\Controllers\Api\Admin\LpkTypeController;
 */
 
 // Public routes
+Route::pattern('readinessAssessment', '[1-9][0-9]{0,17}');
+
 Route::prefix('v1')->group(function () {
     // Homepage
     Route::get('/home', [HomeController::class, 'index']);
@@ -86,6 +90,9 @@ Route::prefix('v1')->group(function () {
 
     // Daftar sub-halaman per kategori Layanan Akreditasi (Laboratorium, GRK, Sistem Manajemen, dll)
     Route::get('/layanan-services/{category}', [PageContentController::class, 'subPages']);
+
+    Route::get('/readiness-assessments', [ReadinessAssessmentController::class, 'index']);
+    Route::get('/readiness-assessments/{readinessAssessment}', [ReadinessAssessmentController::class, 'show']);
 
     // Documents (public)
     Route::get('/documents', [DocumentController::class, 'index']);
@@ -153,6 +160,12 @@ Route::prefix('v1/admin')->middleware('auth:sanctum')->group(function () {
         Route::delete('accreditation-steps/{id}', [AccreditationStepController::class, 'destroy']);
         Route::post('accreditation-steps/{id}/move-up', [AccreditationStepController::class, 'moveUp']);
         Route::post('accreditation-steps/{id}/move-down', [AccreditationStepController::class, 'moveDown']);
+
+        Route::get('readiness-assessments/template', [AdminReadinessAssessmentController::class, 'template']);
+        Route::apiResource('readiness-assessments', AdminReadinessAssessmentController::class)
+            ->parameters(['readiness-assessments' => 'readinessAssessment']);
+        Route::put('readiness-assessments/{readinessAssessment}/publish', [AdminReadinessAssessmentController::class, 'publish']);
+        Route::delete('readiness-assessments/{readinessAssessment}/publish', [AdminReadinessAssessmentController::class, 'unpublish']);
 
         // Direktori LPK (admin), per status: terakreditasi | akreditasi-dibekukan | akreditasi-dicabut
         Route::post('directory/import', [LpkController::class, 'importFile']);

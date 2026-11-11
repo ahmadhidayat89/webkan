@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import ReadinessServices from '../components/readiness/ReadinessServices';
+import { readinessCatalogPath } from '../components/readiness/readiness';
 import {
   FaHome, FaChevronRight, FaSpinner, FaCalendarAlt,
   FaArrowLeft, FaTimes, FaSearchPlus, FaSearchMinus,
@@ -11,6 +13,7 @@ import {
 
 const SURVEY_BASE = 'survey-kepuasan-pelanggan';
 const SURVEY_LIST = 'hasil-survei';
+const READINESS_PAGE = readinessCatalogPath.slice(1);
 
 // ─── Konfigurasi "hub" layanan yang punya sub-halaman ──────────────────────
 // Tambah/ubah di sini saja kalau suatu saat ada layanan lain yang butuh
@@ -351,6 +354,7 @@ const sectionPages = {
   ],
   'Layanan Akreditasi': [
     { id: 'layanan-akreditasi', label: 'Layanan Akreditasi' },
+    { id: READINESS_PAGE, label: 'Readiness Assessment' },
     { id: 'layanan/laboratorium', label: 'Laboratorium' },
     { id: 'layanan/lembaga-inspeksi', label: 'Lembaga Inspeksi' },
     { id: 'layanan/lembaga-verifikasi-validasi-grk', label: 'Lembaga Verifikasi GRK' },
@@ -389,6 +393,7 @@ const pageMeta = {
   'penanganan-banding': { label: 'Penanganan Banding', section: 'Proses Akreditasi' },
   'survey-kepuasan-pelanggan': { label: 'Survey Kepuasan Pelanggan', section: 'Proses Akreditasi' },
   'layanan-akreditasi': { label: 'Layanan Akreditasi', section: 'Layanan Akreditasi' },
+  [READINESS_PAGE]: { label: 'Readiness Assessment', section: 'Layanan Akreditasi' },
   'layanan/laboratorium': { label: 'Laboratorium', section: 'Layanan Akreditasi' },
   'layanan/lembaga-inspeksi': { label: 'Lembaga Inspeksi', section: 'Layanan Akreditasi' },
   'layanan/lembaga-verifikasi-validasi-grk': { label: 'Lembaga Verifikasi dan/atau Validasi Gas Rumah Kaca', section: 'Layanan Akreditasi' },
@@ -803,7 +808,7 @@ function usePageContent(pageId, isListPage) {
         setPageContent(null);
       })
       .finally(() => setLoading(false));
-  }, [pageId]);
+  }, [pageId, isListPage]);
 
   return { pageContent, loading };
 }
@@ -1218,6 +1223,8 @@ function ItemPageView({
   pageId, route, pageContent, content, contentRef, title, updatedAt,
   prevYear, nextYear, onOpenImage, navigate,
 }) {
+  if (pageId === READINESS_PAGE) return <ReadinessServices />;
+
   const { surveyYear, hubSlug, currentHub } = route;
   const isSubItem = !!(surveyYear || hubSlug);
   const hubCta = SUBPAGE_HUBS.find((h) => h.base === pageId);
@@ -1301,7 +1308,7 @@ const DynamicPage = () => {
   const route = resolveRoute(pageId);
   const { surveyYear, isSurveyList, currentHub, hubSlug, isHubList, activeId } = route;
 
-  const { pageContent, loading } = usePageContent(pageId, isSurveyList || isHubList);
+  const { pageContent, loading } = usePageContent(pageId, isSurveyList || isHubList || pageId === READINESS_PAGE);
   const { surveyYears, surveyLoading } = useSurveyYears(isSurveyList, surveyYear);
   const { hubItems, subpagesLoading } = useHubSubpages(currentHub);
 

@@ -1,0 +1,1615 @@
+{
+  "title": "Readiness Assessment LSP",
+  "standard": "ISO/IEC 17024:2026",
+  "subtitle": "Lembaga Sertifikasi Person (LSP)",
+  "intro": "Penilaian kesiapan (readiness assessment) ini bersifat sukarela dan membantu Anda mengevaluasi kesiapan LSP sebelum mengajukan akreditasi KAN berdasarkan ISO/IEC 17024:2026.",
+  "clauses": [
+    {
+      "id": "4",
+      "code": "4",
+      "title": "Persyaratan Umum",
+      "description": "Legalitas, keputusan sertifikasi, ketidakberpihakan, keuangan & liabilitas",
+      "always": false
+    },
+    {
+      "id": "5",
+      "code": "5",
+      "title": "Persyaratan Struktural",
+      "description": "Struktur organisasi, hubungan dengan pelatihan",
+      "always": false
+    },
+    {
+      "id": "6",
+      "code": "6",
+      "title": "Persyaratan Sumber Daya",
+      "description": "Personel, penguji, alih daya, sumber daya lain, penggunaan AI",
+      "always": false
+    },
+    {
+      "id": "7",
+      "code": "7",
+      "title": "Rekaman dan Informasi",
+      "description": "Rekaman pemohon/kandidat, informasi publik, kerahasiaan, keamanan",
+      "always": false
+    },
+    {
+      "id": "8",
+      "code": "8",
+      "title": "Skema Sertifikasi",
+      "description": "Unsur skema, pengembangan dan pemeliharaan skema",
+      "always": false
+    },
+    {
+      "id": "9",
+      "code": "9",
+      "title": "Proses Sertifikasi",
+      "description": "Asesmen, permohonan, ujian, keputusan, pembekuan, resertifikasi, tanda, banding, keluhan",
+      "always": false
+    },
+    {
+      "id": "10",
+      "code": "10",
+      "title": "Sistem Manajemen",
+      "description": "Kebijakan, tinjauan manajemen, audit internal, tindakan korektif, risiko & peluang, informasi terdokumentasi",
+      "always": false
+    },
+    {
+      "id": "KAN",
+      "code": "KAN",
+      "title": "Administrasi KAN",
+      "description": "Evaluasi mandiri lembaga.",
+      "always": true
+    }
+  ],
+  "questions": [
+    {
+      "id": "q-1",
+      "clauseId": "4",
+      "reference": "4.1",
+      "text": "Apakah LSP merupakan badan hukum, atau bagian yang ditetapkan secara jelas dari sebuah badan hukum, sehingga dapat bertanggung jawab secara hukum atas seluruh kegiatan sertifikasinya? (bila LSP dibentuk pemerintah, status badan hukum dipenuhi berdasarkan status pemerintahannya) (bukti: Akta notaris atau SK pendirian; bila LSP bagian dari badan hukum lain: dokumen penetapan bagian tersebut)",
+      "allowNA": false,
+      "documentId": "D01",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-2",
+      "clauseId": "KAN",
+      "reference": null,
+      "text": "Apakah lembaga telah mengisi formulir evaluasi mandiri FPA 09-01 LSP yang diterbitkan KAN (formulir evaluasi mandiri calon Lembaga Sertifikasi Person) sampai lengkap, dan dokumen tersebut siap diserahkan kepada KAN? (Catatan: ini persyaratan proses akreditasi KAN, bukan klausul standar 17024:2026)",
+      "allowNA": false,
+      "documentId": "D02",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-3",
+      "clauseId": "5",
+      "reference": "5.1.1",
+      "text": "Apakah kegiatan LSP distrukturkan dan dikelola sedemikian rupa untuk menjaga ketidakberpihakan (LSP tidak memihak)? (bukti: Bagan struktur organisasi; mekanisme pemisahan fungsi dalam struktur)",
+      "allowNA": false,
+      "documentId": "D03",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-4",
+      "clauseId": "5",
+      "reference": "5.1.2",
+      "text": "Apakah struktur organisasi LSP terdokumentasi dan menjelaskan tugas, tanggung jawab, serta wewenang manajemen, personel, dan komite (bila ada)? (bila LSP bagian dari badan hukum lain: apakah garis kewenangan dan hubungan dengan bagian lain juga dijelaskan?) (bukti: Bagan organisasi terdokumentasi; uraian tugas; bukti garis kewenangan bila bagian dari badan hukum lain)",
+      "allowNA": false,
+      "documentId": "D03",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-5",
+      "clauseId": "5",
+      "reference": "5.1.3",
+      "text": "Apakah tanggung jawab untuk SEMUA hal berikut ditetapkan secara jelas dalam LSP:\n(1) kebijakan dan prosedur operasional; (2) keuangan; (3) sumber daya kegiatan sertifikasi; (4) pengembangan dan pemeliharaan skema sertifikasi; (5) kegiatan asesmen; (6) keputusan sertifikasi; (7) perjanjian kontraktual?\n(bukti: Dokumen penugasan tanggung jawab (uraian tugas/SK); skema delegasi wewenang)",
+      "allowNA": false,
+      "documentId": "D03",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-6",
+      "clauseId": "6",
+      "reference": "6.1",
+      "text": "Apakah LSP mengelola kinerja SELURUH personel yang terlibat kegiatan sertifikasi, mencakup:\n(1) personel internal; (2) anggota komite; (3) kontraktor; (4) personel badan luar?\nDan apakah seluruh personel tersebut bertindak tidak memihak?\n(bukti: Dokumen manajemen kinerja personel (termasuk kontraktor/pihak luar); pernyataan komitmen ketidakberpihakan personel)",
+      "allowNA": false,
+      "documentId": "D04",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-7",
+      "clauseId": "6",
+      "reference": "6.1",
+      "text": "Apakah LSP memiliki jumlah personel yang cukup dan kompeten untuk melaksanakan kegiatan sertifikasi, serta proses untuk mengelola kompetensi personel tersebut? (bukti: Analisis kebutuhan personel; prosedur manajemen kompetensi)",
+      "allowNA": false,
+      "documentId": "D04",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-8",
+      "clauseId": "6",
+      "reference": "6.1",
+      "text": "Apakah LSP menetapkan persyaratan kompetensi bagi personel yang terlibat dalam proses sertifikasi, dan memiliki informasi terdokumentasi yang mutakhir (kualifikasi, sertifikasi, pelatihan, pengalaman) yang menunjukkan kompetensi personel tersebut? (bukti: Matriks kompetensi; berkas kualifikasi/pelatihan personel yang mutakhir)",
+      "allowNA": false,
+      "documentId": "D04",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-9",
+      "clauseId": "6",
+      "reference": "6.1",
+      "text": "Apakah setiap personel menerima instruksi tertulis dan mutakhir yang menguraikan tugas dan tanggung jawabnya? (bukti: Uraian tugas / instruksi kerja terdokumentasi dan mutakhir per personel)",
+      "allowNA": false,
+      "documentId": "D04",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-10",
+      "clauseId": "6",
+      "reference": "6.1",
+      "text": "Apakah seluruh personel (termasuk anggota komite, kontraktor, dan personel badan luar) diwajibkan menjaga kerahasiaan semua informasi yang diperoleh atau dibuat selama kegiatan sertifikasi, kecuali diizinkan oleh pemohon, kandidat, atau person tersertifikasi? (bukti: Prosedur kerahasiaan; pernyataan/perjanjian kerahasiaan personel)",
+      "allowNA": false,
+      "documentId": "D04",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-11",
+      "clauseId": "6",
+      "reference": "6.1",
+      "text": "Apakah LSP menyimpan rekaman kesepakatan personel untuk mematuhi kebijakan dan prosedur LSP, termasuk yang berkaitan dengan kerahasiaan, ketidakberpihakan, dan konflik kepentingan? (bukti: Rekaman tanda tangan personel atas kebijakan/prosedur LSP)",
+      "allowNA": false,
+      "documentId": "D04",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-12",
+      "clauseId": "6",
+      "reference": "6.1",
+      "text": "Bila LSP menyertifikasi karyawannya sendiri atau kontraktornya (jawab Tidak berlaku (N/A) bila tidak pernah): apakah ada prosedur khusus untuk mempertahankan ketidakberpihakan? (bukti: Prosedur ketidakberpihakan untuk sertifikasi karyawan/kontraktor sendiri; rekaman penerapannya)",
+      "allowNA": true,
+      "documentId": "D04",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-13",
+      "clauseId": "6",
+      "reference": "6.2.1",
+      "text": "Apakah personel diwajibkan menyatakan potensi atau konflik kepentingan yang diketahui dengan pemohon, kandidat, atau person tersertifikasi mana pun? (bukti: Formulir deklarasi konflik kepentingan personel; rekaman deklarasi)",
+      "allowNA": false,
+      "documentId": "D04",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-14",
+      "clauseId": "6",
+      "reference": "6.2.2",
+      "text": "Apakah proses seleksi dan persetujuan penguji (examiner — person yang melaksanakan dan menilai ujian) menetapkan SEMUA kriteria berikut:\n(1) kompeten di bidang ujian; (2) memahami skema sertifikasi yang relevan; (3) mampu menerapkan prosedur dan dokumen ujian; (4) memiliki keterampilan melaksanakan ujian; (5) telah menyatakan konflik kepentingan yang diketahui?\n(bukti: Prosedur seleksi dan persetujuan penguji; rekaman evaluasi kriteria per penguji)",
+      "allowNA": false,
+      "documentId": "D04",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-15",
+      "clauseId": "6",
+      "reference": "6.2.2",
+      "text": "Bila penerjemahan atau interpretasi digunakan oleh penguji: apakah tersedia prosedur untuk memastikan hal itu tidak mempengaruhi validitas, reliabilitas, dan keadilan ujian? (jawab Tidak berlaku (N/A) bila ujian tidak pernah menggunakan penerjemah/interpretasi) (bukti: Prosedur penggunaan penerjemah dalam ujian; bukti verifikasi dampaknya)",
+      "allowNA": true,
+      "documentId": "D04",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-16",
+      "clauseId": "6",
+      "reference": "6.2.2",
+      "text": "Apakah kinerja penguji serta keandalan dan keadilan penilaian mereka dipantau (mis. observasi langsung, telaah laporan penguji, umpan balik kandidat), kekurangan ditindaklanjuti dengan tindakan korektif, dan hasil pemantauan didukung bukti? (bukti: Program pemantauan penguji; rekaman hasil pemantauan dan tindakan korektif)",
+      "allowNA": false,
+      "documentId": "D04",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-17",
+      "clauseId": "6",
+      "reference": "6.2.2",
+      "text": "Bila seorang penguji memiliki potensi atau konflik kepentingan yang diketahui terhadap kandidat yang diujinya: apakah LSP mengambil langkah — dan merekamnya — untuk memastikan kerahasiaan serta ketidakberpihakan ujian tetap terjaga? (bukti: Rekaman langkah penanganan penguji berkonflik kepentingan (mis. penggantian penguji, pengawasan tambahan)) (jawab Tidak berlaku (N/A) bila tidak pernah ada penguji dengan potensi konflik kepentingan)",
+      "allowNA": true,
+      "documentId": "D04",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-18",
+      "clauseId": "6",
+      "reference": "6.2.3",
+      "text": "Bila personel lain yang terlibat asesmen (mis. pengawas ujian/invigilator, penyusun butir soal) memiliki potensi konflik kepentingan terhadap kandidat: apakah LSP mengambil langkah untuk memastikan kerahasiaan dan ketidakberpihakan asesmen tetap terjaga, dan langkah tersebut direkam? (bukti: Rekaman langkah penanganan personel asesmen lain yang berkonflik kepentingan) (jawab Tidak berlaku (N/A) bila tidak pernah terjadi konflik kepentingan personel asesmen lain)",
+      "allowNA": true,
+      "documentId": "D04",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-19",
+      "clauseId": "6",
+      "reference": "6.4",
+      "text": "Apakah LSP menggunakan tempat (premis) — termasuk lokasi ujian — serta peralatan dan sumber daya yang cukup untuk melaksanakan kegiatan sertifikasi yang dijalankan? (petunjuk: 'cukup' berarti sesuai jenis dan volume kegiatan sertifikasi LSP) (bukti: Daftar aset/premis; bukti kelayakan lokasi ujian dan peralatan)",
+      "allowNA": false,
+      "documentId": "D04",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-20",
+      "clauseId": "5",
+      "reference": "5.2",
+      "text": "Bila pendidikan atau pelatihan dijadikan prasyarat sertifikasi (jawab Tidak berlaku (N/A) bila skema tidak mensyaratkannya): apakah KEDUA syarat berikut dipenuhi —\n(1) prasyarat tersebut tidak mengurangi persyaratan sertifikasi; (2) prasyarat tersebut tidak mengorbankan ketidakberpihakan?\n(bukti: Dokumen skema (bagian prasyarat); telaah dampak prasyarat)",
+      "allowNA": true,
+      "documentId": "D05",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-21",
+      "clauseId": "5",
+      "reference": "5.2",
+      "text": "Apakah seluruh materi publikasi dan promosi LSP bebas dari klaim bahwa sertifikasi menjadi lebih mudah, lebih sederhana, atau lebih murah bila menggunakan jasa pendidikan/pelatihan tertentu? (bukti: Materi publikasi/promosi; pernyataan tertulis tidak adanya klaim kemudahan)",
+      "allowNA": false,
+      "documentId": "D05",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-22",
+      "clauseId": "5",
+      "reference": "5.2",
+      "text": "Bila LSP atau lembaga terkait juga menyelenggarakan pendidikan/pelatihan (jawab Tidak berlaku (N/A) bila tidak): apakah KETIGA larangan berikut dipenuhi —\n(1) tidak memberi kesan bahwa memakai jasa pelatihan LSP memberi keuntungan bagi pemohon; (2) tidak mewajibkan pelatihan dari lembaga sendiri sebagai satu-satunya prasyarat ketika ada alternatif setara; (3) personel tidak menjadi penguji/pengawas ujian bagi kandidat yang mereka latih — kecuali LSP dapat menunjukkan pengendalian konflik kepentingan DAN ketidakberpihakan? (jawab N/A bila tidak relevan)\n(bukti: Bukti independensi proses; rekaman penugasan penguji terhadap calon)",
+      "allowNA": true,
+      "documentId": "D05",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-23",
+      "clauseId": "5",
+      "reference": "5.2",
+      "text": "Bila LSP atau lembaga terkait juga menyelenggarakan pendidikan/pelatihan (jawab Tidak berlaku (N/A) bila tidak): apakah ketiga larangan pada butir sebelumnya dipenuhi secara konsisten dalam praktik — terbukti dari rekaman penugasan, materi promosi, dan persyaratan prasyarat yang diterapkan? (bukti: Rekaman penerapan larangan; contoh materi promosi; daftar prasyarat yang diterapkan)",
+      "allowNA": true,
+      "documentId": "D05",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-24",
+      "clauseId": "4",
+      "reference": "4.3",
+      "text": "Apakah LSP memiliki struktur, kebijakan, dan prosedur terdokumentasi untuk mengelola ketidakberpihakan (tidak memihak kepada pihak mana pun yang berkepentingan terhadap hasil sertifikasi)? (bukti: Manual mutu / dokumen prosedur pengelolaan ketidakberpihakan (impartiality))",
+      "allowNA": false,
+      "documentId": "D06",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-25",
+      "clauseId": "4",
+      "reference": "4.3",
+      "text": "Apakah manajemen puncak menunjukkan komitmen terhadap ketidakberpihakan, termasuk sebuah pernyataan yang tersedia untuk umum tanpa harus diminta, yang menyatakan pemahaman pentingnya ketidakberpihakan serta pengelolaan konflik kepentingan? (bukti: Pernyataan komitmen ketidakberpihakan yang dipublikasikan (situs web / ruang umum); bukti komitmen manajemen puncak)",
+      "allowNA": false,
+      "documentId": "D06",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-26",
+      "clauseId": "4",
+      "reference": "4.3",
+      "text": "Apakah kebijakan dan prosedur sertifikasi person berlaku adil bagi semua pemohon, kandidat, dan person tersertifikasi, dan akses ke sertifikasi tidak dihambat oleh syarat keuangan yang berlebihan atau kondisi pembatas lain (mis. kewajiban menjadi anggota asosiasi tertentu)? (bukti: Kebijakan sertifikasi; syarat pelayanan yang dipublikasikan; rekaman keputusan akses)",
+      "allowNA": false,
+      "documentId": "D06",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-27",
+      "clauseId": "4",
+      "reference": "4.3",
+      "text": "Apakah LSP memantau aktivitas dan hubungannya secara berkelanjutan — termasuk hubungan personel dan lembaga terkait (badan yang terhubung kepemilikan, kontrak, atau kepentingan dengan LSP) — untuk mengidentifikasi ancaman terhadap ketidakberpihakan?\nDan bila ancaman teridentifikasi, apakah dampaknya dihilangkan atau diminimalkan?\n(bukti: Prosedur pemantauan hubungan; daftar lembaga terkait; rekaman penanganan ancaman)",
+      "allowNA": false,
+      "documentId": "D06",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-28",
+      "clauseId": "4",
+      "reference": "4.3",
+      "text": "Apakah LSP mengidentifikasi, menganalisis, memantau, mendokumentasikan, serta menghilangkan atau meminimalkan potensi konflik kepentingan yang timbul dari kegiatan sertifikasinya, baik yang berasal dari dalam LSP maupun dari kegiatan orang lain/badan lain? (bukti: Matriks/daftar konflik kepentingan; prosedur identifikasi dan mitigasi konflik kepentingan; rekaman mitigasi)",
+      "allowNA": false,
+      "documentId": "D06",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-29",
+      "clauseId": "4",
+      "reference": "4.3",
+      "text": "Apakah LSP melindungi ketidakberpihakannya dari tekanan komersial, finansial, atau tekanan lain, sehingga ketidakberpihakan tidak dikorbankan? (bukti: Kebijakan perlindungan ketidakberpihakan dari tekanan komersial/finansial; rekaman penolakan atas tekanan (bila ada))",
+      "allowNA": false,
+      "documentId": "D06",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-30",
+      "clauseId": "4",
+      "reference": "4.4",
+      "text": "Apakah LSP memiliki sumber daya keuangan yang cukup untuk menjalankan kegiatan sertifikasi, serta pengaturan untuk menanggung tanggung gugat yang terkait (mis. asuransi atau cadangan dana)? (bukti: Anggaran/laporan keuangan; bukti asuransi atau kebijakan cadangan dana)",
+      "allowNA": false,
+      "documentId": "D07",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-31",
+      "clauseId": "8",
+      "reference": null,
+      "text": "Apakah terdapat satu skema sertifikasi (aturan lengkap satu jenis sertifikasi person) untuk setiap kategori sertifikasi person yang diselenggarakan LSP? (bukti: Daftar kategori sertifikasi dan dokumen skema per kategori)",
+      "allowNA": false,
+      "documentId": "D08",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-32",
+      "clauseId": "8",
+      "reference": null,
+      "text": "Apakah setiap skema sertifikasi memuat SEMUA unsur berikut:\n(1) ruang lingkup sertifikasi; (2) deskripsi pekerjaan dan tugas (job and task description); (3) kompetensi yang disyaratkan; (4) kemampuan yang disyaratkan (bila berlaku); (5) prasyarat (bila berlaku); (6) kode etik (bila berlaku)?\n(bukti: Dokumen skema sertifikasi; checklist kelengkapan unsur)",
+      "allowNA": false,
+      "documentId": "D08",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-33",
+      "clauseId": "8",
+      "reference": null,
+      "text": "Apakah setiap skema sertifikasi memuat SEMUA persyaratan proses berikut:\n(1) kriteria sertifikasi awal; (2) kriteria sertifikasi ulang; (3) metode asesmen untuk keduanya; (4) metode dan kriteria surveilans (bila ada); (5) kriteria pembekuan dan pencabutan; (6) kriteria perubahan lingkup atau level sertifikasi (bila ada)?\n(bukti: Dokumen skema sertifikasi (bagian proses); checklist kelengkapan)",
+      "allowNA": false,
+      "documentId": "D08",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-34",
+      "clauseId": "8",
+      "reference": null,
+      "text": "Dalam pengembangan dan penelaahan skema, apakah LSP dapat menunjukkan SEMUA hal berikut:\n(1) pelibatan pakar subjek (SME — ahli di bidang yang disertifikasi); (2) struktur yang mewakili kepentingan para pihak secara adil tanpa satu kepentingan dominan; (3) prasyarat yang selaras dengan persyaratan kompetensi; (4) mekanisme asesmen yang selaras dengan persyaratan kompetensi?\n(bukti: Rekaman pelibatan SME; komposisi struktur penyusun skema; dokumen keselarasan prasyarat dan asesmen)",
+      "allowNA": false,
+      "documentId": "D09",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-35",
+      "clauseId": "8",
+      "reference": null,
+      "text": "Apakah analisis pekerjaan/praktik (job and task analysis — pemetaan tugas dan kompetensi yang dibutuhkan) dilaksanakan dan dimutakhirkan untuk menetapkan SEMUA hal berikut:\n(1) tugas kinerja yang sukses; (2) kompetensi yang disyaratkan per tugas; (3) prasyarat (bila ada); (4) konfirmasi mekanisme asesmen dan isi ujian; (5) persyaratan dan interval sertifikasi ulang?\n(Bila skema dibuat pemilik skema lain, LSP dapat memperlihatkan bukti kesesuaian analisis tersebut.)\n(bukti: Dokumen/laporan JTA; rekaman pemutakhiran)",
+      "allowNA": false,
+      "documentId": "D09",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-36",
+      "clauseId": "8",
+      "reference": null,
+      "text": "Apakah skema sertifikasi ditelaah dan divalidasi secara berkelanjutan dan sistematis? (bukti: Program/jadwal telaah dan validasi skema; rekaman hasil telaah)",
+      "allowNA": false,
+      "documentId": "D09",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-37",
+      "clauseId": "8",
+      "reference": null,
+      "text": "Bila LSP menerapkan skema sertifikasi yang bukan miliknya (dibuat pemilik skema/scheme owner lain): apakah LSP memastikan seluruh persyaratan pada klausul 8 ini tetap dipenuhi? (jawab Tidak berlaku (N/A) bila semua skema yang diterapkan dibuat oleh LSP sendiri) (bukti: Bukti telaah pemenuhan klausul 8 terhadap skema milik pemilik skema lain)",
+      "allowNA": true,
+      "documentId": "D09",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-38",
+      "clauseId": "4",
+      "reference": "4.2",
+      "text": "Apakah seluruh keputusan sertifikasi (pemberian, pemeliharaan, sertifikasi ulang, perluasan/pengurangan ruang lingkup, pembekuan, pengaktifan kembali, dan pencabutan) diambil oleh LSP sendiri dan tidak didelegasikan kepada pihak lain? (bukti: SOP pengambilan keputusan sertifikasi; SK penunjukan pengambil keputusan / daftar penandatangan sertifikat)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-39",
+      "clauseId": "9",
+      "reference": "9.1.1",
+      "text": "Apakah LSP menerapkan metode dan mekanisme asesmen (penilaian kompetensi) yang spesifik sebagaimana didefinisikan dalam skema sertifikasi? (bukti: Prosedur pelaksanaan asesmen; bukti kesesuaian metode asesmen dengan skema)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-40",
+      "clauseId": "9",
+      "reference": "9.1.2",
+      "text": "Bila skema sertifikasi berubah sehingga memerlukan asesmen tambahan bagi person tersertifikasi (jawab Tidak berlaku (N/A) bila belum pernah terjadi): apakah metode dan mekanisme verifikasi kesesuaian person dengan persyaratan baru terdokumentasi DAN tersedia untuk umum tanpa harus diminta?\n(bukti: Dokumen metode verifikasi; bukti ketersediaan publik)",
+      "allowNA": true,
+      "documentId": "D10",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-41",
+      "clauseId": "9",
+      "reference": "9.1.3",
+      "text": "Apakah asesmen direncanakan dan distrukturkan sedemikian rupa sehingga persyaratan sertifikasi diverifikasi secara objektif dan sistematis dengan bukti terdokumentasi untuk menegaskan kompetensi kandidat? (bukti: Rencana asesmen; laporan asesmen dengan bukti terdokumentasi)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-42",
+      "clauseId": "9",
+      "reference": "9.1.4",
+      "text": "Apakah LSP memverifikasi metode untuk mengases kandidat sehingga setiap asesmen adil, valid, dan andal? (bukti: Rekaman verifikasi metode asesmen; studi validitas/reliabilitas/keadilan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-43",
+      "clauseId": "9",
+      "reference": "9.1.5",
+      "text": "Apakah LSP memverifikasi dan menyediakan penyesuaian (akomodasi wajar / reasonable accommodation) bagi kandidat dengan kebutuhan khusus (mis. penyesuaian karena disabilitas), sepanjang masuk akal dan tidak mengorbankan validitas serta keadilan asesmen? (bukti: Prosedur akomodasi kebutuhan khusus; rekaman permintaan dan pelaksanaannya)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-44",
+      "clauseId": "9",
+      "reference": "9.1.6",
+      "text": "Bila LSP memperhitungkan pekerjaan yang dilakukan badan lain: apakah tersedia laporan, data, dan rekaman yang tepat untuk menunjukkan bahwa hasilnya setara dan memenuhi persyaratan skema sertifikasi? (jawab Tidak berlaku (N/A) bila tidak pernah menggunakan hasil badan lain) (bukti: Laporan/data/rekaman dari badan lain beserta telaah kesetaraannya)",
+      "allowNA": true,
+      "documentId": "D10",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-45",
+      "clauseId": "9",
+      "reference": "9.1.7",
+      "text": "Bila interpretasi atau penerjemahan digunakan dalam asesmen: apakah tersedia prosedur untuk memastikan hal itu tidak mempengaruhi validitas, reliabilitas, dan keadilan asesmen? (jawab Tidak berlaku (N/A) bila asesmen tidak pernah menggunakan penerjemah/interpretasi) (bukti: Prosedur penggunaan penerjemah dalam asesmen)",
+      "allowNA": true,
+      "documentId": "D10",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-46",
+      "clauseId": "9",
+      "reference": "9.2.1",
+      "text": "Apakah sebagai bagian dari proses permohonan, LSP menyediakan gambaran umum proses sertifikasi sesuai skema — sekurang-kurangnya: persyaratan sertifikasi dan ruang lingkupnya, deskripsi proses asesmen, hak pemohon, kewajiban person tersertifikasi, dan biaya? (bukti: Dokumen/publikasi gambaran proses sertifikasi; checklist kelengkapan butir 9.2.1)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-47",
+      "clauseId": "9",
+      "reference": "9.2.2",
+      "text": "Apakah formulir permohonan (dengan persetujuan pemohon) memuat sekurang-kurangnya: data identitas pemohon, ruang lingkup sertifikasi yang diinginkan, pernyataan kesediaan mematuhi persyaratan sertifikasi dan memberikan informasi yang diperlukan asesmen, informasi pendukung pemenuhan prasyarat, serta pemberitahuan kesempatan mengajukan akomodasi kebutuhan khusus? (bukti: Formulir permohonan; checklist kelengkapan butir 9.2.2)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-48",
+      "clauseId": "9",
+      "reference": "9.2.3",
+      "text": "Apakah LSP menelaah setiap permohonan untuk menegaskan bahwa pemohon memenuhi persyaratan permohonan yang ditetapkan dalam skema sertifikasi? (bukti: Rekaman telaah permohonan; daftar periksa kelengkapan permohonan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-49",
+      "clauseId": "9",
+      "reference": "9.4.1",
+      "text": "Apakah informasi yang terkumpul selama proses sertifikasi ditelaah dan mencukupi untuk: pengambilan keputusan sertifikasi oleh LSP, dan ketertelusuran (traceability) bila terjadi banding atau keluhan? (bukti: Checklist kelengkapan informasi sebelum keputusan; berkas keputusan yang tertelusur)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-50",
+      "clauseId": "9",
+      "reference": "9.4.2",
+      "text": "Apakah seluruh keputusan sertifikasi (pemberian, pemeliharaan, sertifikasi ulang, perluasan, pengurangan, pembekuan, pengaktifan kembali, dan pencabutan) diambil oleh LSP sendiri, tanpa dialihdayakan ke pihak luar? (bukti: SOP keputusan sertifikasi; bukti keputusan diambil internal LSP)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-51",
+      "clauseId": "9",
+      "reference": "9.4.3",
+      "text": "Apakah keputusan sertifikasi hanya mencakup hal-hal yang berkaitan secara spesifik dengan persyaratan sertifikasi, dan dibuat semata-mata oleh LSP berdasarkan informasi yang terkumpul selama proses sertifikasi? (bukti: Rapat/notulen keputusan; basis keputusan (informasi proses sertifikasi))",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-52",
+      "clauseId": "9",
+      "reference": "9.4.4",
+      "text": "Apakah personel pengambil keputusan sertifikasi tidak pernah terlibat dalam ujian maupun pelatihan kandidat yang diputuskan, dan memiliki kompetensi yang diperlukan untuk menentukan apakah persyaratan sertifikasi telah terpenuhi? (bukti: Rekaman penugasan pengambil keputusan; matriks kompetensi pengambil keputusan; bukti tidak ada keterlibatan ujian/pelatihan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-53",
+      "clauseId": "9",
+      "reference": "9.4.5",
+      "text": "Apakah sertifikasi hanya diberikan setelah seluruh persyaratan sertifikasi terpenuhi? (bukti: Rekaman verifikasi pemenuhan seluruh persyaratan sebelum keputusan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-54",
+      "clauseId": "9",
+      "reference": "9.4.6",
+      "text": "Apakah LSP menerbitkan sertifikat bagi setiap person tersertifikasi, memelihara kepemilikan tunggal atas sertifikat, dan sertifikat berbentuk dokumen/kartu/media lain yang diotorisasi oleh personel LSP yang bertanggung jawab? (bukti: Format sertifikat; SK/otorisasi penandatangan sertifikat; kebijakan kepemilikan sertifikat)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-55",
+      "clauseId": "9",
+      "reference": "9.4.7",
+      "text": "Apakah sertifikat memuat sekurang-kurangnya: nama person tersertifikasi, identifikasi unik, nama dan kontak LSP, rujukan ke skema/standar/dokumen relevan (termasuk tanggal terbit atau versi bila relevan), ruang lingkup sertifikasi termasuk syarat dan pembatasan (bila ada), serta tanggal efektif dan tanggal kedaluwarsa? (bukti: Contoh sertifikat; checklist kelengkapan butir 9.4.7)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-56",
+      "clauseId": "9",
+      "reference": "9.4.8",
+      "text": "Apakah desain sertifikat mengurangi risiko pemalsuan? (bukti: Penjelasan fitur pengaman sertifikat (watermark, QR, nomor unik, dsb.))",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-57",
+      "clauseId": "9",
+      "reference": "9.5.1",
+      "text": "Apakah LSP memiliki kebijakan dan prosedur terdokumentasi untuk pembekuan (suspension), pencabutan (withdrawal), atau pengurangan ruang lingkup sertifikasi, yang menetapkan tindak lanjut oleh LSP? (bukti: Kebijakan dan prosedur pembekuan/pencabutan/pengurangan lingkup)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-58",
+      "clauseId": "9",
+      "reference": "9.5.2",
+      "text": "Apakah kegagalan menyelesaikan masalah yang menyebabkan pembekuan dalam waktu yang ditetapkan LSP mengakibatkan pencabutan sertifikasi atau pengurangan ruang lingkup? (bukti: Prosedur tindak lanjut pembekuan; rekaman kasus pembekuan dan hasil akhirnya)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-59",
+      "clauseId": "9",
+      "reference": "9.5.3",
+      "text": "Apakah LSP memiliki perjanjian yang mengikat secara hukum dengan person tersertifikasi yang mengatur dua hal berikut: selama pembekuan sertifikasi, person tidak lagi mempromosikan sertifikasinya; dan setelah pencabutan, person menghentikan seluruh rujukan pada status tersertifikasi? (bukti: Perjanjian kerja sama/komitmen person tersertifikasi (pernyataan kewajiban saat pembekuan/pencabutan))",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-60",
+      "clauseId": "9",
+      "reference": "9.6.1",
+      "text": "Apakah LSP memiliki prosedur terdokumentasi untuk pelaksanaan proses sertifikasi ulang (re-sertifikasi — penerbitan ulang sertifikat setelah masa berlaku habis) sesuai persyaratan skema sertifikasi? (bukti: Prosedur sertifikasi ulang)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-61",
+      "clauseId": "9",
+      "reference": "9.6.2",
+      "text": "Apakah dalam proses sertifikasi ulang LSP menegaskan kembali kompetensi person tersertifikasi dan kepatuhannya yang berkelanjutan terhadap persyaratan sertifikasi yang berlaku saat ini? (bukti: Laporan/rekaman asesmen sertifikasi ulang)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-62",
+      "clauseId": "9",
+      "reference": "9.6.3",
+      "text": "Apakah interval sertifikasi ulang mengikuti persyaratan skema, dengan dasar pertimbangan yang mencakup (bila berlaku): persyaratan regulasi, perubahan dokumen normatif, perubahan persyaratan skema, sifat dan kematangan industri, risiko dari person yang tidak kompeten, perubahan teknologi dan persyaratan person tersertifikasi, persyaratan pihak berkepentingan, serta frekuensi dan isi kegiatan surveilans? (bukti: Rationale/dokumen penetapan interval sertifikasi ulang per skema)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-63",
+      "clauseId": "9",
+      "reference": "9.6.4",
+      "text": "Apakah kegiatan sertifikasi ulang mempertimbangkan opsi metode berikut, dengan menerapkan yang relevan dengan skema (bila berlaku): asesmen di lokasi kerja, pengembangan profesional, wawancara terstruktur, konfirmasi pekerjaan dan rekaman pengalaman kerja yang berjalan memuaskan, ujian, serta pemeriksaan kemampuan fisik yang relevan dengan kompetensi? (bukti: Prosedur/program sertifikasi ulang yang memuat butir-butir tersebut)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-64",
+      "clauseId": "9",
+      "reference": "9.6.5",
+      "text": "Apakah metode sertifikasi ulang berupa asesmen yang tidak memihak untuk menegaskan kompetensi berkelanjutan person tersertifikasi? (catatan: deklarasi sendiri (self-declaration) oleh person tersertifikasi saja tidak memenuhi ketentuan ini) (bukti: Dokumentasi metode sertifikasi ulang (bukan sekadar self-declaration))",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-65",
+      "clauseId": "9",
+      "reference": "9.8.1",
+      "text": "Apakah LSP memiliki prosedur terdokumentasi penanganan banding (keberatan atas keputusan LSP) yang sekurang-kurangnya memuat: proses penerimaan dan penyelidikan banding serta penetapan tindakan tindak lanjut, pelacakan dan pencatatan banding termasuk tindakan penyelesaiannya, dan penjaminan tindakan yang tepat diambil? (bukti: Prosedur penanganan banding)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-66",
+      "clauseId": "9",
+      "reference": "9.8.2",
+      "text": "Apakah kebijakan dan prosedur memastikan semua banding ditangani secara tidak memihak dan tepat waktu, dan deskripsi proses penanganan banding tersedia untuk umum tanpa harus diminta? (bukti: Publikasi prosedur banding (situs web/profil); rekaman penanganan banding)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-67",
+      "clauseId": "9",
+      "reference": "9.8.3",
+      "text": "Apakah LSP penerima banding bertanggung jawab mengumpulkan seluruh informasi yang diperlukan untuk menentukan validitas banding, dan bertanggung jawab atas semua keputusan selama proses penanganan banding? (bukti: Berkas investigasi banding; rekaman keputusan proses banding)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-68",
+      "clauseId": "9",
+      "reference": "9.8.4",
+      "text": "Apakah keputusan banding dibuat oleh — atau ditelaah dan disetujui oleh — orang yang tidak terlibat dalam keputusan yang menjadi objek banding tersebut? (bukti: Rekaman penugasan tim banding; bukti keterbebasan dari keputusan yang dibandingkan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-69",
+      "clauseId": "9",
+      "reference": "9.8.5",
+      "text": "Apakah pengajuan, penyelidikan, dan keputusan banding tidak mengakibatkan tindakan diskriminatif terhadap pemohon banding (appellant)? (bukti: Rekaman penanganan banding yang tidak membedakan perlakuan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-70",
+      "clauseId": "9",
+      "reference": "9.8.6",
+      "text": "Apakah LSP mengonfirmasi penerimaan banding, memberikan hasilnya kepada pemohon banding beserta (bila berlaku) laporan kemajuan, dan memberikan pemberitahuan formal mengenai berakhirnya proses penanganan banding? (bukti: Rekaman konfirmasi penerimaan, hasil banding, dan pemberitahuan penutupan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-71",
+      "clauseId": "9",
+      "reference": "9.9.1",
+      "text": "Apakah LSP memiliki prosedur terdokumentasi penanganan keluhan yang sekurang-kurangnya memuat: proses penerimaan, pembuktian (substantiasi) dan penyelidikan keluhan serta penetapan tindakan tindak lanjut, pelacakan dan pencatatan keluhan termasuk tindakan penyelesaiannya, dan penjaminan tindakan yang tepat diambil? (bukti: Prosedur penanganan keluhan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-72",
+      "clauseId": "9",
+      "reference": "9.9.2",
+      "text": "Apakah prosedur menjamin semua pihak diperlakukan adil dan setara, seluruh keluhan ditangani secara konstruktif, tidak memihak, dan tepat waktu, serta deskripsi proses penanganan keluhan tersedia untuk umum tanpa harus diminta? (bukti: Publikasi prosedur keluhan; rekaman penanganan keluhan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-73",
+      "clauseId": "9",
+      "reference": "9.9.3",
+      "text": "Apakah LSP penerima keluhan bertanggung jawab mengumpulkan seluruh informasi yang diperlukan untuk menentukan apakah keluhan terbukti (substantiated), dan setelah menerima keluhan, menegaskan apakah keluhan berkaitan dengan kegiatan sertifikasinya dan — bila ya — menyelesaikannya? (bukti: Berkas investigasi keluhan; rekaman penetapan substansi dan penyelesaian keluhan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-74",
+      "clauseId": "9",
+      "reference": "9.9.4",
+      "text": "Apakah LSP menginformasikan kepada person tersertifikasi mengenai setiap keluhan yang terbukti pada waktu yang tepat, dan proses penanganan keluhan mematuhi ketentuan kerahasiaan — baik terkait pengeluh maupun subjek keluhan? (bukti: Rekaman pemberitahuan person tersertifikasi atas keluhan substantif; prosedur kerahasiaan keluhan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-75",
+      "clauseId": "9",
+      "reference": "9.9.5",
+      "text": "Apakah penyelesaian keluhan dibuat oleh — atau ditelaah dan disetujui oleh — orang yang tidak terlibat dalam subjek keluhan (atau bila sumber daya tidak memungkinkan, pendekatan alternatif tidak mengorbankan ketidakberpihakan)? (bukti: Rekaman penugasan penyelesai keluhan; bukti keterbebasan dari subjek keluhan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-76",
+      "clauseId": "9",
+      "reference": "9.9.6",
+      "text": "Apakah LSP mengonfirmasi penerimaan keluhan bila memungkinkan, memberikan hasilnya kepada pengeluh beserta (bila berlaku) laporan kemajuan, dan memberikan pemberitahuan formal mengenai berakhirnya proses penanganan keluhan? (bukti: Rekaman konfirmasi penerimaan, hasil keluhan, dan pemberitahuan penutupan)",
+      "allowNA": false,
+      "documentId": "D10",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-77",
+      "clauseId": "9",
+      "reference": "9.3.1",
+      "text": "Apakah ujian dirancang untuk mengases kompetensi berdasarkan skema sertifikasi — misalnya uji tertulis, lisan, praktik, observasi, atau cara lain yang andal dan objektif, semua dirancang untuk satu tugas kerja yang sama — melalui cara tertulis, lisan, praktik, observasi, atau cara lain yang andal dan objektif?\nDan apakah desain ujian menjamin hasil setiap bentuk ujian dapat dibandingkan (dari sisi isi dan tingkat kesulitan) serta keputusan lulus/tidak lulus sah (valid)?\n(bukti: Dokumen desain/spesifikasi ujian; bukti kesepadanan antar bentuk ujian; studi validitas)",
+      "allowNA": false,
+      "documentId": "D11",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-78",
+      "clauseId": "9",
+      "reference": "9.3.2",
+      "text": "Apakah LSP memiliki prosedur untuk menjamin pelaksanaan ujian yang konsisten, serta kriteria dan kondisi pelaksanaan ujian yang ditetapkan, terdokumentasi, dan dipantau (mis. pencahayaan, suhu, pemisahan kandidat, kebisingan, keselamatan kandidat, jaringan, perangkat TI)? (bukti: Prosedur pelaksanaan ujian; daftar kondisi ruang ujian; rekaman pemantauan kondisi ujian)",
+      "allowNA": false,
+      "documentId": "D11",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-79",
+      "clauseId": "9",
+      "reference": "9.3.4",
+      "text": "Apakah LSP mendokumentasikan dan menerapkan metodologi dan prosedur yang tepat (mis. pengumpulan dan pemeliharaan data statistik) untuk menelaah kembali — pada interval tertentu yang disertai justifikasi — keadilan, validitas, reliabilitas, dan kinerja umum setiap ujian, serta memperbaiki kekurangan yang teridentifikasi? (bukti: Laporan penelaahan ulang ujian berkala (reaffirmasi ujian — analisis statistik); rekaman perbaikan kekurangan)",
+      "allowNA": false,
+      "documentId": "D11",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-80",
+      "clauseId": "9",
+      "reference": "9.3.3",
+      "text": "Bila peralatan teknis dipakai dalam proses ujian: apakah peralatan tersebut sesuai tujuan penggunaannya dan dikalibrasi bila diperlukan? (jawab Tidak berlaku (N/A) bila ujian tidak menggunakan peralatan teknis) (bukti: Daftar peralatan ujian; rekaman verifikasi kelayakan dan kalibrasi)",
+      "allowNA": true,
+      "documentId": "D12",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-81",
+      "clauseId": "9",
+      "reference": "9.7.1",
+      "text": "Bila LSP menyediakan tanda/merek sertifikasi (certification mark): apakah kondisi penggunaannya didokumentasikan dan hak penggunaan serta perwakilannya dikelola secara tepat? (jawab Tidak berlaku (N/A) bila LSP tidak menyediakan tanda sertifikasi) (bukti: Kebijakan penggunaan tanda sertifikasi; rekaman penerbitan izin pakai)",
+      "allowNA": true,
+      "documentId": "D13",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-82",
+      "clauseId": "9",
+      "reference": "9.7.2",
+      "text": "Apakah LSP mewajibkan person tersertifikasi menyetujui ketentuan-ketentuan berikut: (1) mematuhi persyaratan sertifikasi; (2) membuat klaim sertifikasi hanya pada ruang lingkup yang diberikan; (3) tidak menyalahi reputasi LSP; (4) tidak membuat pernyataan yang menyesatkan atau tidak sah; (5) menghentikan penggunaan klaim sertifikasi dan mengembalikan sertifikat bila dibekukan/dicabut; (6) tidak memakai sertifikat secara menyesatkan; dan (7) memberitahukan LSP tanpa penundaan hal-hal yang dapat mempengaruhi kemampuannya memenuhi persyaratan sertifikasi? (bukti: Formulir/perjanjian persetujuan person tersertifikasi; template kewajiban)",
+      "allowNA": false,
+      "documentId": "D13",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-83",
+      "clauseId": "9",
+      "reference": "9.7.3",
+      "text": "Bila terjadi penyalahgunaan tanda sertifikasi: apakah LSP menanganinya dengan tindakan korektif? (jawab Tidak berlaku (N/A) bila LSP tidak menyediakan tanda sertifikasi) (bukti: Prosedur tindakan korektif atas penyalahgunaan tanda; rekaman kasus (bila ada))",
+      "allowNA": true,
+      "documentId": "D13",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-84",
+      "clauseId": "4",
+      "reference": "4.3",
+      "text": "Bila LSP menggunakan AI (kecerdasan buatan) dalam kegiatan sertifikasi: apakah LSP mendokumentasikan dan dapat menunjukkan cara menghilangkan, meminimalkan, atau mengelola risiko AI terhadap ketidakberpihakan (mis. bias/keberpihakan algoritma)? (jawab Tidak berlaku (N/A) bila LSP tidak menggunakan AI dalam kegiatan sertifikasi apa pun) (bukti: Prosedur pengelolaan risiko AI terhadap ketidakberpihakan; hasil analisis bias algoritma)",
+      "allowNA": true,
+      "documentId": "D14",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-85",
+      "clauseId": "6",
+      "reference": "6.5",
+      "text": "Bila LSP menggunakan AI (kecerdasan buatan) dalam proses sertifikasi: apakah AI diverifikasi, dikelola, dan dipantau secara berkelanjutan untuk memastikan hasilnya sesuai dengan yang dimaksudkan? (jawab Tidak berlaku (N/A) bila LSP tidak menggunakan AI dalam proses sertifikasi) (bukti: Prosedur verifikasi/pemantauan AI berkelanjutan; rekaman pemantauan kinerja AI)",
+      "allowNA": true,
+      "documentId": "D14",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-86",
+      "clauseId": "6",
+      "reference": "6.5",
+      "text": "Bila menggunakan AI dalam proses sertifikasi: apakah hasil kerja AI divalidasi oleh pakar subjek (SME — ahli di bidang yang disertifikasi)? (jawab Tidak berlaku (N/A) bila LSP tidak menggunakan AI dalam proses sertifikasi) (bukti: Laporan validasi hasil AI oleh pakar subjek; rekaman telaah SME)",
+      "allowNA": true,
+      "documentId": "D14",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-87",
+      "clauseId": "6",
+      "reference": "6.5",
+      "text": "Bila menggunakan AI dalam proses sertifikasi: apakah personel memiliki kompetensi yang diperlukan dalam pengawasan dan penggunaan AI? (jawab Tidak berlaku (N/A) bila LSP tidak menggunakan AI dalam proses sertifikasi) (bukti: Matriks kompetensi personel pengawas AI; rekaman pelatihan AI)",
+      "allowNA": true,
+      "documentId": "D14",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-88",
+      "clauseId": "6",
+      "reference": "6.5",
+      "text": "Bila menggunakan AI dalam proses sertifikasi: apakah tersedia pengawasan manusia (human oversight) atas AI? (jawab Tidak berlaku (N/A) bila LSP tidak menggunakan AI dalam proses sertifikasi) (bukti: Dokumen mekanisme pengawasan manusia atas AI (rujukan tambahan: ISO/IEC 42105))",
+      "allowNA": true,
+      "documentId": "D14",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-89",
+      "clauseId": "6",
+      "reference": "6.5",
+      "text": "Bila menggunakan AI dalam proses sertifikasi: apakah LSP dapat menunjukkan validitas, reliabilitas, dan keadilan penggunaan AI tersebut? (jawab Tidak berlaku (N/A) bila LSP tidak menggunakan AI dalam proses sertifikasi) (bukti: Studi/bukti validitas, reliabilitas, dan keadilan penggunaan AI)",
+      "allowNA": true,
+      "documentId": "D14",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-90",
+      "clauseId": "6",
+      "reference": "6.5",
+      "text": "Bila AI digunakan untuk berkomunikasi/berinteraksi dengan pemohon, kandidat, atau person tersertifikasi: apakah LSP mengungkapkan penggunaan AI tersebut dan memperoleh persetujuan (acknowledgement) dari orang yang bersangkutan? (jawab Tidak berlaku (N/A) bila LSP tidak menggunakan AI dalam proses sertifikasi atau tidak ada komunikasi/interaksi dengan AI; bila aslinya bila tidak ada interaksi dengan AI) (bukti: Pernyataan pengungkapan penggunaan AI; formulir/bukti persetujuan individu)",
+      "allowNA": true,
+      "documentId": "D14",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-91",
+      "clauseId": "7",
+      "reference": "7.1",
+      "text": "Apakah LSP memelihara rekaman pemohon, kandidat, dan person tersertifikasi yang menegaskan status person tersertifikasi dan menunjukkan bahwa sertifikasi/sertifikasi ulang telah dilaksanakan secara efektif — termasuk formulir permohonan, laporan asesmen (yang mencakup rekaman ujian), dan dokumen lain terkait pemberian, pemeliharaan, perluasan/pengurangan lingkup, pembekuan, dan pencabutan sertifikasi? (bukti: Basis data/berkas rekaman pemohon, kandidat, dan person tersertifikasi)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-92",
+      "clauseId": "7",
+      "reference": "7.1",
+      "text": "Apakah rekaman diidentifikasi, dikelola, dilindungi dari akses tidak sah, dan dimusnahkan dengan cara yang menjaga integritas proses sertifikasi serta kerahasiaan informasi, dan disimpan selama periode yang sesuai — sekurang-kurangnya satu siklus sertifikasi penuh, atau lebih lama bila diwajibkan oleh pengaturan pengakuan/kewajiban lain? (bukti: Prosedur pengendalian rekaman; kebijakan masa simpan rekaman)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-93",
+      "clauseId": "7",
+      "reference": "7.2",
+      "text": "Apakah LSP memberikan informasi atas permintaan mengenai apakah seseorang memegang sertifikasi yang masih berlaku dan apa ruang lingkupnya? (bukti: Prosedur verifikasi status sertifikasi atas permintaan)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-94",
+      "clauseId": "7",
+      "reference": "7.2",
+      "text": "Apakah informasi berikut tersedia untuk umum tanpa harus diminta: ruang lingkup sertifikasi, prasyarat (bila ada), persyaratan permohonan, persyaratan sertifikasi awal, persyaratan surveilans (pemantauan berkala setelah sertifikat terbit, bila ada), interval dan persyaratan sertifikasi ulang, serta deskripsi proses sertifikasi termasuk asesmennya? (bukti: Halaman/publikasi informasi sertifikasi (situs web/profil); checklist kelengkapan butir 7.2.2)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-95",
+      "clauseId": "7",
+      "reference": "7.2",
+      "text": "Apakah seluruh informasi yang diberikan LSP — termasuk komunikasi pemasaran atau promosi — akurat dan tidak menyesatkan? (bukti: Kebijakan komunikasi/pemasaran; materi publikasi)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-96",
+      "clauseId": "7",
+      "reference": "7.3",
+      "text": "Apakah LSP memiliki kebijakan dan prosedur terdokumentasi untuk pemeliharaan dan penerbitan (release) informasi? (bukti: Kebijakan dan prosedur pemeliharaan serta penerbitan informasi)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-97",
+      "clauseId": "7",
+      "reference": "7.3",
+      "text": "Apakah LSP memiliki kebijakan dan prosedur untuk menjamin privasi data dan perlindungan data? (bukti: Kebijakan privasi dan perlindungan data)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-98",
+      "clauseId": "7",
+      "reference": "7.3",
+      "text": "Apakah LSP bertanggung jawab — melalui perjanjian yang mengikat secara hukum — atas pengelolaan semua informasi yang diperoleh atau dibuat selama kegiatan sertifikasi, dan memberitahukan pemohon/kandidat/person tersertifikasi secara di muka mengenai informasi yang akan diberikan ke ruang publik? Seluruh informasi lainnya - yang tidak dipublikasikan sendiri oleh pemohon/kandidat/person tersertifikasi dan yang tidak disepakati untuk dipublikasikan - diperlakukan sebagai informasi proprietary (milik eksklusif) dan dijaga sebagai informasi rahasia. (bukti: Perjanjian kerahasiaan dengan pihak-pihak terkait; bukti pemberitahuan di muka)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-99",
+      "clauseId": "7",
+      "reference": "7.3",
+      "text": "Bila LSP wajib karena hukum atau diizinkan oleh perjanjian untuk melepaskan informasi rahasia: apakah pihak yang bersangkutan diberitahu tentang informasi yang dilepaskan, kecuali dilarang oleh hukum? (bukti: Rekaman pemberitahuan pelepasan informasi atas dasar hukum/kontrak) (jawab Tidak berlaku (N/A) bila tidak pernah melepaskan informasi rahasia atas dasar hukum atau perjanjian)",
+      "allowNA": true,
+      "documentId": "D15",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-100",
+      "clauseId": "7",
+      "reference": "7.3",
+      "text": "Apakah LSP memastikan kegiatan lembaga terkait tidak mengorbankan kerahasiaan, serta mengidentifikasi ancaman terhadap kerahasiaan informasi dan — bila ditemukan — menghilangkan atau meminimalkan dampaknya? (bukti: Prosedur identifikasi ancaman kerahasiaan; rekaman mitigasi; pengaturan kerahasiaan dengan lembaga terkait)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-101",
+      "clauseId": "7",
+      "reference": "7.4",
+      "text": "Apakah LSP memiliki kebijakan dan prosedur terdokumentasi untuk menjamin keamanan sepanjang kegiatan sertifikasi, termasuk langkah tindakan korektif bila terjadi pelanggaran keamanan (security breach)? (bukti: Kebijakan dan prosedur keamanan; rekaman penanganan pelanggaran keamanan (bila pernah terjadi))",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-102",
+      "clauseId": "7",
+      "reference": "7.4",
+      "text": "Apakah LSP mengidentifikasi ancaman keamanan yang mempengaruhi efektivitas kegiatan sertifikasi — termasuk ancaman yang berkaitan dengan penggunaan teknologi — dan bila ditemukan, menghilangkan atau meminimalkan dampaknya? (bukti: Register ancaman keamanan (termasuk teknologi); rekaman mitigasi)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-103",
+      "clauseId": "7",
+      "reference": "7.4",
+      "text": "Apakah kebijakan dan prosedur keamanan memuat ketentuan keamanan materi ujian dengan memperhitungkan: lokasi/penanganan materi (transportasi, pengiriman elektronik, pemusnahan, penyimpanan, lokasi ujian), sifat materi (elektronik, kertas, alat uji), tahapan proses ujian (pengembangan, pelaksanaan, pelaporan hasil), dan ancaman dari penggunaan materi ujian berulang? (bukti: Prosedur keamanan materi ujian (penyimpanan, transportasi, pengiriman elektronik, pemusnahan))",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-104",
+      "clauseId": "7",
+      "reference": "7.4",
+      "text": "Apakah LSP mencegah perilaku curang dalam ujian, kebocoran materi ujian tanpa izin, atau pelanggaran lain melalui ketentuan-ketentuan berikut: (1) perjanjian/kesanggupan kerahasiaan yang ditandatangani kandidat; (2) pengawasan ujian (invigilation — pengawasan ruang ujian saat ujian berlangsung) secara langsung/waktu nyata (kecuali LSP dapat menunjukkan pemenuhan persyaratan lain klausul ini); (3) konfirmasi identitas kandidat dalam ujian; (4) pencegahan alat bantu tidak sah dibawa dan dipakai dalam ujian; dan (5) pemantauan hasil ujian untuk indikasi kecurangan? (bukti: Perjanjian kerahasiaan (NDA) kandidat; prosedur invigilation; prosedur konfirmasi identitas; prosedur pencegahan alat bantu; rekaman pemantauan hasil ujian)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-105",
+      "clauseId": "7",
+      "reference": "7.4",
+      "text": "Apakah LSP mengidentifikasi ancaman terhadap keamanan materi ujian dan, bila ditemukan, menghilangkan atau meminimalkan dampaknya sehingga integritas materi ujian tidak terganggu? (bukti: Rekaman identifikasi ancaman keamanan materi ujian dan mitigasinya)",
+      "allowNA": false,
+      "documentId": "D15",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-106",
+      "clauseId": "10",
+      "reference": "10.1.1",
+      "text": "Apakah LSP membentuk, mendokumentasikan, menerapkan, dan memelihara sistem manajemen untuk mendukung dan menunjukkan pemenuhan konsisten persyaratan standar ini? (bukti: Manual sistem manajemen / peta dokumen sistem manajemen)",
+      "allowNA": false,
+      "documentId": "D16",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-107",
+      "clauseId": "10",
+      "reference": "10.1.2",
+      "text": "Apakah sistem manajemen LSP memuat sekurang-kurangnya enam unsur berikut: kebijakan dan tanggung jawab (10.2), tinjauan manajemen (10.3), audit internal (10.4), tindakan korektif (10.5), tindakan untuk menangani risiko dan peluang (10.6), dan informasi terdokumentasi (10.7)? (bukti: Struktur dokumen sistem manajemen; checklist enam unsur 10.1.2)",
+      "allowNA": false,
+      "documentId": "D16",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-108",
+      "clauseId": "10",
+      "reference": "10.1.3",
+      "text": "Apakah pemenuhan unsur-unsur sistem manajemen (10.1.2) dapat ditunjukkan melalui pembentukan, penerapan, dan pemeliharaan sistem manajemen mutu (mis. sesuai persyaratan ISO 9001), yang mendukung dan menunjukkan pemenuhan konsisten persyaratan standar ini? (rute sistem manajemen mutu ini merupakan cara pemenuhan alternatif, bukan pengganti kewajiban 10.1.2) (bukti: Bukti penerapan sistem manajemen mutu (mis. sertifikat/manual ISO 9001) yang memuat enam unsur 10.1.2) (jawab Tidak berlaku (N/A) bila LSP tidak memakai rute QMS — pemenuhan unsur sistem manajemen ditunjukkan langsung pada butir sebelumnya)",
+      "allowNA": true,
+      "documentId": "D16",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-109",
+      "clauseId": "10",
+      "reference": "10.2.1",
+      "text": "Apakah manajemen puncak menetapkan dan mendokumentasikan kebijakan dan sasaran untuk kegiatan LSP, serta memberikan bukti komitmen terhadap pengembangan, penerapan, dan pemeliharaan sistem manajemen sesuai standar ini — termasuk memastikan kebijakan dan sasaran dipahami, diterapkan, dan dipelihara di seluruh level organisasi? (bukti: Dokumen kebijakan dan sasaran mutu; bukti sosialisasi di seluruh level)",
+      "allowNA": false,
+      "documentId": "D16",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-110",
+      "clauseId": "10",
+      "reference": "10.2.2",
+      "text": "Apakah manajemen puncak menunjuk seorang anggota manajemen yang — terlepas dari tanggung jawab lainnya — memiliki tanggung jawab dan wewenang untuk: memastikan proses dan prosedur sistem manajemen dibentuk, diterapkan, dan dipelihara, serta melaporkan kinerja sistem manajemen dan kebutuhan perbaikan kepada manajemen puncak? (bukti: SK penunjukan perwakilan manajemen; rekaman pelaporan kinerja sistem manajemen)",
+      "allowNA": false,
+      "documentId": "D16",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-111",
+      "clauseId": "10",
+      "reference": "10.6.1",
+      "text": "Apakah LSP mempertimbangkan risiko dan peluang yang berkaitan dengan kegiatan sertifikasi guna: memberikan keyakinan bahwa sistem manajemen mencapai hasil yang dimaksudkan, meningkatkan peluang tercapainya sasaran LSP, mencegah atau mengurangi dampak yang tidak diinginkan dan potensi kegagalan kegiatan sertifikasi, mengidentifikasi potensi ketidaksesuaian dan penyebabnya, serta mencapai perbaikan? (bukti: Dokumen/daftar risiko dan peluang kegiatan sertifikasi)",
+      "allowNA": false,
+      "documentId": "D16",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-112",
+      "clauseId": "10",
+      "reference": "10.6.2",
+      "text": "Apakah tindakan untuk menangani risiko dan peluang direncanakan dan diambil, terintegrasi ke dalam sistem manajemen, dan dievaluasi efektivitasnya — dengan besaran tindakan yang proporsional terhadap dampak potensial pada kegiatan sertifikasi (metode manajemen risiko formal tidak diwajibkan)? (bukti: Rencana tindakan risiko/peluang; rekaman evaluasi efektivitas tindakan)",
+      "allowNA": false,
+      "documentId": "D16",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-113",
+      "clauseId": "10",
+      "reference": "10.7.1",
+      "text": "Apakah sistem manajemen LSP dapat diakses oleh seluruh personel yang relevan? (bukti: Bukti aksesibilitas dokumen sistem manajemen (folder bersama/server/dokumen terdistribusi))",
+      "allowNA": false,
+      "documentId": "D16",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-114",
+      "clauseId": "10",
+      "reference": "10.7.2",
+      "text": "Apakah dokumen (internal dan eksternal) yang berkaitan dengan pemenuhan standar ini dikendalikan dengan ketentuan-ketentuan berikut: (1) disetujui kecukupannya oleh personel berwenang sebelum terbit; (2) ditelaah berkala dan dimutakhirkan bila perlu; (3) perubahan dan status revisi teridentifikasi; (4) versi yang relevan tersedia di tempat penggunaan; (5) distribusi dikendalikan bila perlu; (6) teridentifikasi secara unik; dan (7) penggunaan dokumen usang dicegah (dokumen usang yang masih disimpan diberi penanda)? (bukti: Prosedur pengendalian dokumen; daftar dokumen dengan status revisi; penanda dokumen usang)",
+      "allowNA": false,
+      "documentId": "D16",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-115",
+      "clauseId": "10",
+      "reference": "10.7.3",
+      "text": "Apakah rekaman yang berkaitan dengan pemenuhan standar ini dikendalikan dari sisi identifikasi, penyimpanan, perlindungan, pengambilan kembali, masa simpan, dan pemusnahan, dengan masa simpan yang konsisten dengan kewajiban kontraktual dan hukum LSP serta akses sesuai pengaturan kerahasiaan? (bukti: Prosedur pengendalian rekaman; kebijakan masa simpan rekaman)",
+      "allowNA": false,
+      "documentId": "D16",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-116",
+      "clauseId": "10",
+      "reference": "10.3.1",
+      "text": "Apakah manajemen puncak meninjau sistem manajemen sekurang-kurangnya setahun sekali — pada interval yang direncanakan — untuk memastikan kesesuaian, kecukupan, dan efektivitasnya yang berkelanjutan (termasuk kebijakan dan sasaran yang berkaitan dengan pemenuhan standar ini)? (bukti: Program/rencana tinjauan manajemen) — dan apakah tinjauan tersebut terdokumentasi? (bukti: Notulen tinjauan manajemen tahunan)",
+      "allowNA": false,
+      "documentId": "D17",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-117",
+      "clauseId": "10",
+      "reference": "10.3.2",
+      "text": "Apakah masukan tinjauan manajemen memuat sekurang-kurangnya: hasil audit internal dan eksternal (mis. penilaian badan akreditasi), umpan balik pemohon/kandidat/person tersertifikasi/pihak berkepentingan, tindakan pengamanan ketidakberpihakan, status tindakan risiko dan peluang, tindak lanjut tinjauan manajemen sebelumnya, pemenuhan sasaran, perubahan yang dapat mempengaruhi sistem manajemen, serta banding dan keluhan? (bukti: Notulen tinjauan manajemen dengan daftar masukan lengkap butir 10.3.2)",
+      "allowNA": false,
+      "documentId": "D17",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-118",
+      "clauseId": "10",
+      "reference": "10.3.3",
+      "text": "Apakah keluaran tinjauan manajemen memuat sekurang-kurangnya keputusan dan tindakan terkait: peningkatan efektivitas sistem manajemen dan prosesnya, peningkatan layanan sertifikasi terkait pemenuhan standar ini, dan kebutuhan sumber daya? (bukti: Notulen tinjauan manajemen (bagian keputusan/tindak lanjut))",
+      "allowNA": false,
+      "documentId": "D17",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-119",
+      "clauseId": "10",
+      "reference": "10.4.1",
+      "text": "Apakah LSP melaksanakan audit internal untuk menentukan pemenuhan persyaratan standar ini dan memverifikasi bahwa sistem manajemen diterapkan dan dipelihara secara efektif? (bukti: Prosedur audit internal; laporan audit internal)",
+      "allowNA": false,
+      "documentId": "D18",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-120",
+      "clauseId": "10",
+      "reference": "10.4.2",
+      "text": "Apakah program audit direncanakan dengan mempertimbangkan kepentingan (importance) proses dan area yang diaudit serta hasil audit sebelumnya? (bukti: Program/rencong audit tahunan beserta dasar perencanaannya)",
+      "allowNA": false,
+      "documentId": "D18",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-121",
+      "clauseId": "10",
+      "reference": "10.4.3",
+      "text": "Apakah audit internal dilaksanakan sekurang-kurangnya setahun sekali? (bukti: Rekaman jadwal dan pelaksanaan audit internal)",
+      "allowNA": false,
+      "documentId": "D18",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-122",
+      "clauseId": "10",
+      "reference": "10.4.3",
+      "text": "Bila frekuensi audit internal dikurangi di bawah setahun sekali (jawab Tidak berlaku (N/A) bila frekuensi tidak pernah dikurangi): apakah pengurangan itu dibuktikan dengan kinerja sistem manajemen yang tetap efektif dan stabil? (bukti: Justifikasi pengurangan frekuensi; rekaman kinerja sistem manajemen)",
+      "allowNA": true,
+      "documentId": "D18",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-123",
+      "clauseId": "10",
+      "reference": "10.4.4",
+      "text": "Apakah LSP memastikan: audit internal dilakukan personel yang kompeten dan mengenal proses sertifikasi, audit, dan persyaratan standar ini; auditor tidak mengaudit pekerjaannya sendiri; personel penanggung jawab area yang diaudit diberitahu hasil audit; tindakan akibat audit diambil secara tepat waktu dan sesuai; serta peluang perbaikan diidentifikasi? (bukti: Bukti kompetensi auditor; rekaman pembagian tugas audit (bebas pekerjaan sendiri); rekaman pemberitahuan hasil dan tindak lanjut)",
+      "allowNA": false,
+      "documentId": "D18",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-124",
+      "clauseId": "10",
+      "reference": "10.5.1",
+      "text": "Apakah LSP mengidentifikasi dan mengelola ketidaksesuaian dalam operasinya, dan bila perlu mengambil tindakan untuk menghilangkan penyebab ketidaksesuaian agar tidak terulang, dengan tindakan yang sesuai dampak masalah yang dihadapi? (bukti: Prosedur tindakan korektif; rekaman ketidaksesuaian dan tindakan korektif)",
+      "allowNA": false,
+      "documentId": "D19",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-125",
+      "clauseId": "10",
+      "reference": "10.5.2",
+      "text": "Apakah LSP menetapkan persyaratan untuk: identifikasi ketidaksesuaian, penentuan penyebab, koreksi, evaluasi kebutuhan tindakan agar ketidaksesuaian tidak terulang atau terjadi di tempat lain, penetapan dan penerapan tindakan yang diperlukan secara tepat waktu, pencatatan hasil tindakan yang diambil, dan penelaahan efektivitas tindakan korektif? (bukti: Prosedur tindakan korektif yang memuat enam elemen; formulir rekaman tindakan korektif)",
+      "allowNA": false,
+      "documentId": "D19",
+      "evidence": "Wajib"
+    },
+    {
+      "id": "q-126",
+      "clauseId": "6",
+      "reference": "6.3",
+      "text": "Bila LSP mengalihdayakan (menyubkontrakkan ke pihak luar) sebagian layanan yang berkaitan dengan kegiatan sertifikasi: apakah setiap badan penyedia jasa alih daya terikat perjanjian yang mengikat secara hukum yang mengatur tata kerja, menjamin kerahasiaan, dan menghindari konflik kepentingan? (jawab Tidak berlaku (N/A) bila LSP tidak mengalihdayakan layanan sertifikasi apa pun) (bukti: Perjanjian alih daya yang mengikat secara hukum per badan penyedia)",
+      "allowNA": true,
+      "documentId": "D20",
+      "evidence": "Jika ada"
+    },
+    {
+      "id": "q-127",
+      "clauseId": "6",
+      "reference": "6.3",
+      "text": "Bila mengalihdayakan layanan sertifikasi: apakah LSP bertanggung jawab penuh atas seluruh layanan alih daya, memastikan badan pelaksana kompeten dan memenuhi standar ini, menilai dan memantau kinerjanya sesuai prosedur terdokumentasi, menyimpan rekaman pemenuhan persyaratan, dan memelihara daftar badan pelaksana alih daya? (jawab Tidak berlaku (N/A) bila LSP tidak mengalihdayakan layanan sertifikasi apa pun) (bukti: Prosedur penilaian dan pemantauan badan alih daya; rekaman penilaian; daftar terkini badan alih daya)",
+      "allowNA": true,
+      "documentId": "D20",
+      "evidence": "Jika ada"
+    }
+  ],
+  "identity": [
+    {
+      "id": "i-1",
+      "label": "Nama Lembaga Sertifikasi Person (LSP)"
+    },
+    {
+      "id": "i-2",
+      "label": "Nama badan hukum induk"
+    },
+    {
+      "id": "i-3",
+      "label": "Alamat lengkap"
+    },
+    {
+      "id": "i-4",
+      "label": "Kontak (telepon / email / website)"
+    },
+    {
+      "id": "i-5",
+      "label": "Personel penghubung (nama, jabatan, kontak)"
+    },
+    {
+      "id": "i-6",
+      "label": "Pimpinan LSP (nama dan jabatan)"
+    },
+    {
+      "id": "i-7",
+      "label": "Status pendirian"
+    },
+    {
+      "id": "i-8",
+      "label": "Legalitas hukum (jenis & nomor)"
+    },
+    {
+      "id": "i-9",
+      "label": "Bidang/kategori sertifikasi person yang dimohonkan"
+    },
+    {
+      "id": "i-10",
+      "label": "Tahun berdiri / mulai beroperasi"
+    },
+    {
+      "id": "i-11",
+      "label": "Skema sertifikasi yang dioperasikan per kategori"
+    },
+    {
+      "id": "i-12",
+      "label": "Sistem manajemen mutu (mis. ISO 9001)"
+    },
+    {
+      "id": "i-13",
+      "label": "Pengalaman akreditasi sebelumnya"
+    }
+  ],
+  "documents": [
+    {
+      "id": "D01",
+      "code": "D01",
+      "title": "Legalitas hukum (akta notaris / SK Kemenkumham / NIB-OSS; LSP pemerintah: peraturan pembentukan organisasi)",
+      "sample": "1-Legalitas-LSP.pdf"
+    },
+    {
+      "id": "D02",
+      "code": "D02",
+      "title": "Evaluasi mandiri (Laporan Asesmen FPA 09-01 LSP berbasis SNI ISO/IEC 17024:2026 terisi lengkap)",
+      "sample": "2-Laporan-Asesmen.docx"
+    },
+    {
+      "id": "D03",
+      "code": "D03",
+      "title": "Bagan organisasi dan uraian tugas-tanggung jawab-wewenang manajemen serta personel (job roles)",
+      "sample": "3-Bagan-Organisasi.pdf"
+    },
+    {
+      "id": "D04",
+      "code": "D04",
+      "title": "Data personel dan kompetensi berdasarkan fungsi dan ruang lingkup, termasuk kompetensi pengawasan dan penggunaan AI bila relevan (format FPA 03-02-LSP)",
+      "sample": "4-Data-Personel-dan-Kompetensi.xlsx"
+    },
+    {
+      "id": "D05",
+      "code": "D05",
+      "title": "Pengaturan keterkaitan dengan kegiatan pelatihan (penawaran pelatihan oleh LSP/organisasi induk, pengelolaan risiko ketidakberpihakan terkait pelatihan, prasyarat pelatihan dalam skema) [JIKA ADA]",
+      "sample": "5-Pengaturan-Kegiatan-Pelatihan.pdf"
+    },
+    {
+      "id": "D06",
+      "code": "D06",
+      "title": "Bukti identifikasi, analisis, dan tindak lanjut risiko ketidakberpihakan (imparsialitas) dalam kegiatan sertifikasi person, termasuk risiko bias dari penggunaan AI bila ada",
+      "sample": "6-Identifikasi-Risiko-Ketidakberpihakan.xlsx"
+    },
+    {
+      "id": "D07",
+      "code": "D07",
+      "title": "Pengaturan liabilitas/pertanggunggugatan beserta bukti (asuransi, penyisihan biaya), laporan/anggaran keuangan operasional, dan bukti kestabilan sumber pendapatan",
+      "sample": "7-Liabilitas-dan-Keuangan.pdf"
+    },
+    {
+      "id": "D08",
+      "code": "D08",
+      "title": "Skema sertifikasi per kategori dalam ruang lingkup (status skema: dikembangkan sendiri / pihak lain) dan perjanjian/pengaturan formal dengan pemilik skema (scheme owner) bila skema bukan milik LSP",
+      "sample": "8-Skema-dan-Perjanjian-Scheme-Owner.pdf"
+    },
+    {
+      "id": "D09",
+      "code": "D09",
+      "title": "Rekaman pengembangan, review, dan validasi skema sertifikasi (job/practice analysis, keterlibatan pakar/para pihak, prasyarat, kesesuaian metode asesmen/ujian dengan persyaratan kompetensi, interval resertifikasi)",
+      "sample": "9-Rekaman-Pengembangan-Skema.pdf"
+    },
+    {
+      "id": "D10",
+      "code": "D10",
+      "title": "Prosedur proses sertifikasi person (proses asesmen, permohonan, ujian, keputusan sertifikasi, penundaan/pencabutan/pengurangan ruang lingkup, resertifikasi, penggunaan sertifikat dan tanda, banding, keluhan)",
+      "sample": "10-Prosedur-Proses-Sertifikasi-Person.pdf"
+    },
+    {
+      "id": "D11",
+      "code": "D11",
+      "title": "Prosedur pengelolaan uji kompetensi (penyusunan materi ujian, kondisi penyelenggaraan, penentuan skor dan kriteria kelulusan, afirmasi validitas/keadilan/kehandalan, keamanan materi dan pelaksanaan ujian, reafirmasi dan analisis statistik)",
+      "sample": "11-Prosedur-Uji-Kompetensi.pdf"
+    },
+    {
+      "id": "D12",
+      "code": "D12",
+      "title": "Rekaman pelaksanaan uji kompetensi/asesmen person (materi ujian, daftar hadir/invigilasi, berita acara, hasil ujian, data dan analisis statistik reafirmasi)",
+      "sample": "12-Rekaman-Uji-Kompetensi.pdf"
+    },
+    {
+      "id": "D13",
+      "code": "D13",
+      "title": "Contoh sertifikat kompetensi person dan pengaturan penggunaan tanda kompetensi/simbol akreditasi KAN",
+      "sample": "13-Contoh-Sertifikat-Person.pdf"
+    },
+    {
+      "id": "D14",
+      "code": "D14",
+      "title": "Prosedur dan rekaman pengelolaan AI dalam proses sertifikasi: verifikasi/pemantauan AI berkelanjutan, validasi keluaran AI oleh pakar (subject matter expert), pengawasan manusia atas AI (human oversight), bukti validitas-keadilan-kehandalan penggunaan AI, pengungkapan dan persetujuan kandidat, serta rekaman pengawasan manusia [JIKA ADA]",
+      "sample": "14-Prosedur-Pengelolaan-AI.pdf"
+    },
+    {
+      "id": "D15",
+      "code": "D15",
+      "title": "Dokumentasi rekaman dan informasi: rekaman pemohon/kandidat/person tersertifikasi (retensi minimal satu siklus sertifikasi penuh), informasi publik, kebijakan dan prosedur kerahasiaan serta privasi data, dan keamanan informasi",
+      "sample": "14-Dokumentasi-Rekaman-dan-Informasi.pdf"
+    },
+    {
+      "id": "D16",
+      "code": "D16",
+      "title": "Dokumentasi sistem manajemen: kebijakan dan sasaran oleh pimpinan puncak, penugasan personel manajemen SM, serta pengendalian informasi terdokumentasi (pengendalian dokumen dan rekaman SM)",
+      "sample": "15-Dokumentasi-Sistem-Manajemen.pdf"
+    },
+    {
+      "id": "D17",
+      "code": "D17",
+      "title": "Bukti pelaksanaan tinjauan manajemen (daftar hadir, undangan, notulensi, masukan sesuai 10.3.2 termasuk status risiko-peluang dan tindakan perlindungan imparsialitas, dan output 10.3.3); dilakukan minimal setahun sekali",
+      "sample": "16-Tinjauan-Manajemen.pdf"
+    },
+    {
+      "id": "D18",
+      "code": "D18",
+      "title": "Bukti pelaksanaan audit internal (program audit, daftar hadir, penugasan, agenda, kompetensi auditor internal, hasil, tindak lanjut); minimal setahun sekali",
+      "sample": "17-Audit-Internal.pdf"
+    },
+    {
+      "id": "D19",
+      "code": "D19",
+      "title": "Bukti tindakan korektif atas ketidaksesuaian dan tindakan menangani risiko dan peluang (identifikasi, perencanaan, integrasi ke SM, evaluasi efektivitas)",
+      "sample": "18-Tindakan-Korektif-dan-Risiko.xlsx"
+    },
+    {
+      "id": "D20",
+      "code": "D20",
+      "title": "Kondisional: perjanjian alih daya dan bukti pemenuhan persyaratan lembaga alih daya, dan/atau sertifikat QMS (mis. ISO 9001) sebagai bukti route sistem manajemen 10.1.3 bila digunakan [JIKA ADA]",
+      "sample": "19-Alih-Daya-dan-Bukti-QMS.pdf"
+    }
+  ],
+  "glossary": [
+    {
+      "id": "g-1",
+      "term": "KAN",
+      "definition": "Komite Akreditasi Nasional, lembaga pemerintah yang memberikan akreditasi, yaitu pengakuan formal bahwa lembaga/laboratorium Anda kompeten melaksanakan kegiatan tertentu.",
+      "note": "-"
+    },
+    {
+      "id": "g-2",
+      "term": "SNI ISO/IEC 17065:2012",
+      "definition": "Standar berisi persyaratan umum untuk lembaga yang mensertifikasi produk, proses, atau jasa; menjadi dasar seluruh pertanyaan pada lembar kuesioner sertifikasi produk.",
+      "note": "Hanya menjadi dasar workbook 17065; singkatan SNI = Standar Nasional Indonesia."
+    },
+    {
+      "id": "g-3",
+      "term": "SNI ISO/IEC 17025:2017",
+      "definition": "Standar berisi persyaratan umum kompetensi laboratorium pengujian dan kalibrasi; menjadi dasar seluruh pertanyaan pada lembar kuesioner laboratorium.",
+      "note": "Hanya menjadi dasar workbook 17025; singkatan SNI = Standar Nasional Indonesia."
+    },
+    {
+      "id": "g-4",
+      "term": "LS / LSPr",
+      "definition": "LS (Lembaga Sertifikasi) adalah organisasi yang melaksanakan kegiatan sertifikasi, dan LSPr adalah Lembaga Sertifikasi Produk - sebutan untuk lembaga Anda pada jalur 17065.",
+      "note": "Dipakai pada workbook 17065; pada workbook 17025 padanannya adalah LP-LK (laboratorium)."
+    },
+    {
+      "id": "g-5",
+      "term": "LKS",
+      "definition": "Singkatan yang dipakai pada lembar sampul/ringkasan untuk lembaga yang mengajukan akreditasi; artinya sama dengan LS/LSPr.",
+      "note": "Tidak muncul di teks Kuesioner (hanya Cover/Ringkasan); samakan satu ejaan (LS atau LKS) di seluruh workbook saat finalisasi."
+    },
+    {
+      "id": "g-6",
+      "term": "LP-LK",
+      "definition": "Gabungan sebutan Laboratorium Penguji (LP) dan Laboratorium Kalibrasi (LK), yaitu jenis organisasi Anda pada jalur akreditasi ISO/IEC 17025.",
+      "note": "Dipakai pada workbook 17025 (mis. FPA 09-01 LP-LK); padanannya di workbook 17065 adalah LSPr."
+    },
+    {
+      "id": "g-7",
+      "term": "CAB / LPK",
+      "definition": "Istilah umum untuk badan penilaian kesesuaian - CAB (Conformity Assessment Body) dalam bahasa Inggris, LPK (Lembaga Penilaian Kesesuaian) dalam bahasa Indonesia; mencakup lembaga sertifikasi maupun laboratorium.",
+      "note": "-"
+    },
+    {
+      "id": "g-8",
+      "term": "FPA (FPA 09-01, FPA 03-02)",
+      "definition": "Kode formulir resmi KAN yang dipakai dalam proses akreditasi - workbook ini merujuk FPA 09-01 (Laporan Asesmen/evaluasi mandiri) dan FPA 03-02 (data personel dan sumber daya berdasarkan kompetensi dan ruang lingkup).",
+      "note": "Kode formulir berbeda per jalur: FPA 09-01 LSPr dan FPA 03-02-LSPr-1 untuk 17065, FPA 09-01 LP-LK dan FPA 03-02 LP/LK untuk 17025; kepanjangan resmi FPA mengikuti daftar formulir KAN pada Panduan Upload."
+    },
+    {
+      "id": "g-9",
+      "term": "KK1 / KK2",
+      "definition": "Kode penilaian yang dipakai pada lembar penilaian/asesmen KAN untuk menandai status kesesuaian setiap butir; cara mengisi dan arti lengkap kodenya dijelaskan pada lembar Panduan Upload.",
+      "note": "KK1/KK2 tidak muncul di teks Kuesioner - hanya di lembar Penilaian/Ringkasan; konfirmasi arti persisnya dengan template FPA KAN yang berlaku sebelum finalisasi."
+    },
+    {
+      "id": "g-10",
+      "term": "NIB-OSS",
+      "definition": "Nomor Induk Berusaha yang diterbitkan melalui sistem OSS (Online Single Submission), yaitu perizinan berusaha daring yang menjadi salah satu bukti legalitas lembaga/laboratorium.",
+      "note": "-"
+    },
+    {
+      "id": "g-11",
+      "term": "Badan hukum, akta notaris, SK",
+      "definition": "Badan hukum adalah organisasi yang diakui hukum dan bertanggung jawab secara hukum; buktinya berupa akta notaris yang disahkan dengan Surat Keputusan (SK) Kemenkumham, SK pembentukan, atau NIB-OSS.",
+      "note": "Laboratorium/lembaga milik pemerintah cukup menunjukkan peraturan pembentukan organisasi atau status kepemerintahan."
+    },
+    {
+      "id": "g-12",
+      "term": "Klausul",
+      "definition": "Nomor bagian pada standar (mis. 4.1.1 atau 7.8) yang menjadi dasar setiap pertanyaan - berguna saat Anda membuka teks standar untuk memeriksa persyaratannya.",
+      "note": "-"
+    },
+    {
+      "id": "g-13",
+      "term": "Ketidakberpihakan (imparsialitas) & konflik kepentingan",
+      "definition": "Ketidakberpihakan (kadang ditulis imparsialitas) berarti keputusan dibuat objektif tanpa pengaruh pihak mana pun, sedangkan konflik kepentingan adalah situasi ketika kepentingan pribadi atau hubungan tertentu dapat memengaruhi keputusan itu.",
+      "note": "Tema pertanyaan terbanyak di kedua workbook (klausul 4.2 pada 17065, 4.1 pada 17025)."
+    },
+    {
+      "id": "g-14",
+      "term": "Skema sertifikasi",
+      "definition": "Aturan dan persyaratan teknis yang dipakai lembaga sertifikasi untuk mensertifikasi jenis produk tertentu.",
+      "note": "Hanya relevan pada workbook 17065."
+    },
+    {
+      "id": "g-15",
+      "term": "Ruang lingkup",
+      "definition": "Batas kegiatan, produk, atau parameter yang akan dicakup oleh akreditasi atau sertifikasi Anda.",
+      "note": "-"
+    },
+    {
+      "id": "g-16",
+      "term": "Dokumen normatif (dokumen acuan)",
+      "definition": "Dokumen acuan seperti standar, spesifikasi, atau metode yang dijadikan dasar penilaian kesesuaian.",
+      "note": "Pada 17025 contohnya metode uji/kalibrasi (SNI, ASTM, dll.); pada 17065 adalah standar persyaratan produk yang disertifikasi."
+    },
+    {
+      "id": "g-17",
+      "term": "Evaluasi mandiri",
+      "definition": "Pemeriksaan sendiri atas pemenuhan seluruh persyaratan standar dengan mengisi Laporan Asesmen FPA 09-01, yang wajib dilakukan sebelum mengajukan akreditasi.",
+      "note": "-"
+    },
+    {
+      "id": "g-18",
+      "term": "Alih daya (outsourcing)",
+      "definition": "Penugasan sebagian kegiatan kepada pihak di luar lembaga/laboratorium - bila Anda melakukannya, pertanyaan tentang alih daya wajib dijawab dan disertai bukti kontrak/penilaian pihak tersebut.",
+      "note": "-"
+    },
+    {
+      "id": "g-19",
+      "term": "Surveilans (pemantauan) & resertifikasi",
+      "definition": "Surveilans adalah pemantauan berkala setelah sertifikat terbit (dalam teks sempat tertulis 'survailen'), sedangkan resertifikasi adalah penilaian menyeluruh ulang ketika masa berlaku berakhir.",
+      "note": "Pada 17065 surveilans ditujukan kepada klien tersertifikasi dan hanya bila dipersyaratkan skema; pada 17025 kata 'pemantauan' umumnya berarti pemantauan kinerja internal (kompetensi, peralatan), bukan surveilans."
+    },
+    {
+      "id": "g-20",
+      "term": "Ketidaksesuaian & tindakan korektif",
+      "definition": "Ketidaksesuaian adalah keadaan tidak memenuhi persyaratan, dan tindakan korektif adalah langkah menghilangkan penyebabnya agar tidak terulang - berbeda dari tindakan koreksi yang hanya memperbaiki masalah yang sudah terjadi.",
+      "note": "-"
+    },
+    {
+      "id": "g-21",
+      "term": "Audit internal & tinjauan manajemen",
+      "definition": "Audit internal adalah pemeriksaan berkala oleh pihak sendiri atas sistem manajemen, sedangkan tinjauan manajemen adalah rapat terjadwal manajemen untuk menilai keseluruhan pengoperasian dan menetapkan perbaikan.",
+      "note": "Dipakai di kedua workbook (D23/D24 pada 17065; D12/D13 pada 17025); bukti yang diminta sama: daftar hadir, penugasan, agenda/notulensi."
+    },
+    {
+      "id": "g-22",
+      "term": "Jalur sistem manajemen mutu (QMS route)",
+      "definition": "Edisi 2026 tidak lagi membedakan Opsi A/Opsi B. Lembaga memenuhi persyaratan sistem manajemen (10.1-10.7) secara langsung; bila memiliki sistem manajemen mutu (mis. ISO 9001), jalur tersebut dapat dipakai sebagai bukti pemenuhan 10.1.3 - tetapi seluruh butir 10.2-10.7 tetap dijawab.",
+      "note": "Berlaku untuk workbook ISO/IEC 17024:2026; workbook 17065/17025 masih memakai istilah Opsi A/Opsi B."
+    },
+    {
+      "id": "g-23",
+      "term": "Klien & pelanggan",
+      "definition": "Sebutan untuk pihak yang dilayani - lembar 17065 memakai kata 'klien', lembar 17025 memakai kata 'pelanggan'; keduanya bermakna sama.",
+      "note": "-"
+    },
+    {
+      "id": "g-24",
+      "term": "Ya / Sebagian / Tidak / N/A (dan kolom Bukti/Catatan)",
+      "definition": "Pilihan jawaban setiap pertanyaan: Ya berarti terpenuhi penuh, Sebagian berarti baru sebagian terpenuhi atau terdokumentasi, Tidak berarti belum terpenuhi, dan N/A (Tidak Berlaku) berarti pertanyaan tidak relevan dengan kondisi Anda - tuliskan dokumen dan penjelasan pendukung setiap jawaban pada kolom Bukti/Catatan.",
+      "note": "N/A hanya untuk pertanyaan kondisional, mis. alih daya (6.2.2.2) atau hasil evaluasi pra-permohonan (7.4.5); jangan pakai N/A untuk pertanyaan yang Anda belum bisa penuhi."
+    },
+    {
+      "id": "g-25",
+      "term": "Verifikasi metode vs validasi metode",
+      "definition": "Verifikasi metode berarti membuktikan laboratorium mampu menjalankan metode baku (metode standar) dengan benar, sedangkan validasi metode berarti membuktikan metode non-baku atau yang dikembangkan sendiri benar-benar sesuai untuk tujuan penggunaannya.",
+      "note": "Hanya dipakai pada workbook 17025 (klausul 7.2.1.5 dan 7.2.2); tidak ada padanannya di 17065."
+    },
+    {
+      "id": "g-26",
+      "term": "Kalibrasi & ketertelusuran metrologi",
+      "definition": "Kalibrasi adalah perbandingan alat ukur dengan acuan untuk mengetahui ketepatannya, dan ketertelusuran metrologi adalah rantai kalibrasi tidak terputus yang menghubungkan hasil pengukuran ke satuan SI (mis. kilogram, meter) - bahan acuan bersertifikat dapat menjadi salah satu acuan tersebut.",
+      "note": "Hanya relevan pada workbook 17025 (klausul 6.4-6.5)."
+    },
+    {
+      "id": "g-27",
+      "term": "Uji profisiensi & perbandingan antarlaboratorium",
+      "definition": "Kegiatan membandingkan hasil laboratorium Anda dengan laboratorium lain untuk sampel yang sama, sebagai bukti bahwa hasil pengujian/kalibrasi Anda dapat dipercaya.",
+      "note": "Hanya diminta pada workbook 17025 (D09, klausul 7.7)."
+    },
+    {
+      "id": "g-28",
+      "term": "LIMS",
+      "definition": "Laboratory Information Management System, yaitu perangkat lunak untuk mengelola data laboratorium (pengumpulan, pengolahan, pelaporan, penyimpanan) yang fungsinya harus divalidasi sebelum digunakan.",
+      "note": "Hanya dipakai pada workbook 17025 (klausul 7.11)."
+    },
+    {
+      "id": "g-29",
+      "term": "Permen LHK 23/2020 (limbah B3 & K3)",
+      "definition": "Peraturan Menteri Lingkungan Hidup dan Kehutanan No. 23 Tahun 2020 memuat persyaratan tambahan khusus laboratorium lingkungan, antara lain pengelolaan limbah B3 (Bahan Berbahaya dan Beracun) serta program K3 (Keselamatan dan Kesehatan Kerja).",
+      "note": "Bagian KONDISIONAL - hanya wajib dijawab laboratorium lingkungan; laboratorium lain boleh menjawab N/A pada bagian ini."
+    },
+    {
+      "id": "g-30",
+      "term": "Tanda kesesuaian & simbol akreditasi KAN",
+      "definition": "Tanda kesesuaian adalah logo/marka yang melekat pada produk yang Anda sertifikasi, dan simbol akreditasi KAN dipakai lembaga setelah diakreditasi - keduanya wajib dikendalikan agar tidak disalahgunakan.",
+      "note": "Hanya dipakai pada workbook 17065 (D17, klausul 4.1.3)."
+    },
+    {
+      "id": "g-31",
+      "term": "Penggunaan AI dalam proses sertifikasi (6.5)",
+      "definition": "Pemanfaatan kecerdasan buatan (sistem otonom yang melakukan fungsi yang lazim terkait kecerdasan manusia seperti penalaran, pembelajaran, dan perbaikan diri) untuk melaksanakan bagian mana pun dari proses sertifikasi person.",
+      "note": "Bila digunakan, LSP wajib memverifikasi dan memantau AI secara berkelanjutan, membuktikan validitas-keadilan-kehandalannya, serta mengungkapkan penggunaannya kepada kandidat (klausul 6.5); juga memunculkan risiko imparsialitas yang wajib dikelola (4.3)."
+    },
+    {
+      "id": "g-32",
+      "term": "Pengawasan manusia atas AI (human oversight)",
+      "definition": "Pengawasan oleh personel LSP atas pengoperasian dan keluaran AI dalam proses sertifikasi sehingga keputusan akhir tetap berada di tangan manusia.",
+      "note": "ISO/IEC 17024:2026 merujuk ISO/IEC 42105 sebagai panduan pengawasan manusia; personel juga wajib memiliki kompetensi pengawasan dan penggunaan AI (6.5)."
+    },
+    {
+      "id": "g-33",
+      "term": "Validasi keluaran AI oleh pakar",
+      "definition": "Pemeriksaan dan konfirmasi hasil kerja AI oleh pakar subjek materi (subject matter expert) yang kompeten sebelum hasil tersebut dipakai dalam proses sertifikasi.",
+      "note": "Merupakan kewajiban eksplisit 6.5 b) - berbeda dari 'validasi ujian' (reafirmasi, 9.3): yang divalidasi di sini adalah keluaran AI, bukan instrumen ujian secara keseluruhan."
+    },
+    {
+      "id": "g-34",
+      "term": "Proses asesmen (assessment process, 9.1)",
+      "definition": "Pelaksanaan metode dan mekanisme asesmen yang ditetapkan dalam skema untuk memverifikasi secara objektif dan sistematis pemenuhan persyaratan sertifikasi oleh kandidat.",
+      "note": "Menjadi sub-klausul tingkat atas sendiri (9.1) pada edisi 2026, terpisah dari proses permohonan (9.2) dan ujian (9.3); mencakup akomodasi kebutuhan khusus dan penggunaan hasil kerja badan lain."
+    },
+    {
+      "id": "g-35",
+      "term": "Penundaan (pembekuan) vs pencabutan sertifikasi (9.5)",
+      "definition": "Penundaan/pembekuan adalah penangguhan sementara sertifikasi (pemegang dilarang mempromosikan statusnya selama ditunda), sedangkan pencabutan adalah pengakhiran sertifikasi (pemegang wajib menghentikan seluruh rujukan status tersertifikasi).",
+      "note": "Keduanya kini dituangkan dalam perjanjian yang mengikat secara hukum dengan person tersertifikasi (9.5.3-9.5.4); gagal menyelesaikan isu penundaan dalam waktu yang ditetapkan berujung pencabutan atau pengurangan ruang lingkup."
+    },
+    {
+      "id": "g-36",
+      "term": "Informasi terdokumentasi (documented information, 10.7)",
+      "definition": "Informasi yang dikendalikan LSP dalam bentuk dokumen maupun rekaman pada medium apa pun, meliputi persetujuan, kaji ulang, identifikasi, penyimpanan, perlindungan, penyimpanan kembali, masa retensi, dan penghapusan.",
+      "note": "Istilah generik bergaya Annex SL yang menggantikan pasangan 'pengendalian dokumen' dan 'pengendalian rekaman' pada edisi 2012; rekaman kandidat/person tersertifikasi tetap mengacu pada 7.1."
+    },
+    {
+      "id": "g-37",
+      "term": "Tindakan untuk menangani risiko dan peluang (10.6)",
+      "definition": "Perencanaan dan pelaksanaan tindakan yang terintegrasi ke dalam sistem manajemen untuk menjamin SM mencapai hasil yang dimaksud, mencegah dampak yang tidak diinginkan, dan mencapai perbaikan, lalu dievaluasi efektivitasnya.",
+      "note": "Berbeda dari risiko ketidakberpihakan (4.3) yang berdiri sendiri; catatan standar menyatakan tidak mewajibkan metode manajemen risiko formal (mis. ISO 31000 hanya rujukan bibliografi)."
+    },
+    {
+      "id": "g-38",
+      "term": "Route QMS (10.1.3)",
+      "definition": "Salah satu cara memenuhi persyaratan sistem manajemen 10.1.2, yaitu dengan menetapkan, menerapkan, dan memelihara sistem manajemen mutu (misalnya berdasarkan ISO 9001) yang mendukung pemenuhan konsisten persyaratan 17024:2026.",
+      "note": "Menggantikan Opsi A/B edisi 2012: tidak ada lagi pengecualian butir - seluruh persyaratan 10.2-10.7 tetap berlaku; sertifikat ISO 9001 hanyalah bukti pendukung, bukan jalur penskoran terpisah."
+    }
+  ]
+}

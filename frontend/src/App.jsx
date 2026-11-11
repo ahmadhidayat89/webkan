@@ -37,6 +37,9 @@ import MenuManagement from './pages/admin/MenuManagement';
 import AccreditationStepsManagement from './pages/admin/AccreditationStepsManagement';
 import SurveyManagement from './pages/admin/SurveyManagement';
 import PublicSurvey from './pages/PublicSurvey';
+import { readinessCatalogPath } from './components/readiness/readiness';
+const ReadinessManagement = lazy(() => import('./pages/admin/ReadinessManagement'));
+const PublicReadiness = lazy(() => import('./pages/PublicReadiness'));
 
 // Proses Akreditasi
 import ProsesAkreditasi from './pages/ProsesAkreditasi';
@@ -179,6 +182,16 @@ function App() {
         <Route
           path="/layanan-akreditasi"
           element={<DynamicPage />}
+        />
+
+        <Route
+          path={readinessCatalogPath}
+          element={<DynamicPage />}
+        />
+
+        <Route
+          path={readinessCatalogPath + '/:id'}
+          element={<Suspense fallback={<p className="p-8" role="status">Memuat asesmen…</p>}><PublicReadiness /></Suspense>}
         />
 
         <Route
@@ -479,6 +492,15 @@ function App() {
               roles={['super_admin', 'admin']}
             >
               <AccreditationStepsManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/readiness-assessments"
+          element={
+            <ProtectedRoute roles={['super_admin', 'admin']}>
+              <Suspense fallback={<p className="p-8" role="status">Memuat editor asesmen…</p>}><ReadinessManagement /></Suspense>
             </ProtectedRoute>
           }
         />
