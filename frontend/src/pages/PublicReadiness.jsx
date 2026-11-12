@@ -45,7 +45,7 @@ function AssessmentPage({ id }) {
         </div>
         <div className="mx-auto max-w-4xl px-4 pb-16 pt-4 sm:px-6 print:max-w-none print:p-0">
           {message && <p role="alert" className="rounded-xl border border-slate-200 bg-white p-5 text-slate-700">{message}</p>}
-          {!assessment && !message && <p role="status" className="text-slate-700">Memuat asesmen…</p>}
+          {!assessment && !message && <output className="block text-slate-700">Memuat asesmen…</output>}
           {assessment && <ReadinessForm assessment={assessment} />}
         </div>
       </main>
