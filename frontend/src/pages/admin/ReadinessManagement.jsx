@@ -26,18 +26,27 @@ const card = 'rounded-2xl border border-slate-200 bg-white p-5 sm:p-6';
 const rowActions = 'flex shrink-0 flex-wrap items-start gap-2';
 
 function Field({ name, label, value, onChange, max, required, multiline, options }) {
+  const shared = { name, className: readinessInput, required, value: value ?? '', onChange };
+
+  let control;
+  if (options) {
+    control = (
+      <select {...shared}>
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>{optionLabel}</option>
+        ))}
+      </select>
+    );
+  } else if (multiline) {
+    control = <textarea {...shared} rows={4} maxLength={max} />;
+  } else {
+    control = <input {...shared} maxLength={max} />;
+  }
+
   return (
     <label className="block text-sm font-medium text-slate-700">
       {label}{required && ' *'}
-      {options ? (
-        <select name={name} className={readinessInput} required={required} value={value ?? ''} onChange={onChange}>
-          {options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-        </select>
-      ) : multiline ? (
-        <textarea name={name} className={readinessInput} rows={4} maxLength={max} required={required} value={value ?? ''} onChange={onChange} />
-      ) : (
-        <input name={name} className={readinessInput} maxLength={max} required={required} value={value ?? ''} onChange={onChange} />
-      )}
+      {control}
     </label>
   );
 }
@@ -124,7 +133,7 @@ function ItemEditor({ section, item, draft, onApply, onCancel }) {
     }
   };
   return (
-    <form className="mt-4 grid gap-4 rounded-xl border border-primary-200 bg-primary-50 p-4" onSubmit={apply}>
+    <form className="grid gap-4 p-4 mt-4 border rounded-xl border-primary-200 bg-primary-50" onSubmit={apply}>
       <h3 className="font-semibold text-slate-900">{draft[section].some(({ id }) => id === item.id) ? 'Edit' : 'Tambah'} {collections[section].singular}</h3>
       <ItemFields section={section} item={value} draft={draft} onChange={change} />
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
@@ -212,8 +221,8 @@ function Collection({ section, draft, item, setItem, update, confirm }) {
         {filtered.slice((currentPage - 1) * 10, currentPage * 10).map(({ entry, index, description: [title, detail] }) => (
           <li className="flex flex-col justify-between gap-3 py-4 lg:flex-row" key={entry.id}>
             <div className="min-w-0">
-              <p className="whitespace-pre-line break-words text-sm font-semibold text-slate-900">{title}</p>
-              {detail && <p className="mt-1 break-words text-xs text-slate-600">{detail}</p>}
+              <p className="text-sm font-semibold break-words whitespace-pre-line text-slate-900">{title}</p>
+              {detail && <p className="mt-1 text-xs break-words text-slate-600">{detail}</p>}
             </div>
             <div className={rowActions}>
               <button type="button" className={readinessButton} aria-label={'Naikkan ' + collections[section].singular + ' ' + (index + 1)} disabled={!!item || index === 0} onClick={() => move(index, -1)}>↑</button>
@@ -224,7 +233,7 @@ function Collection({ section, draft, item, setItem, update, confirm }) {
           </li>
         ))}
       </ul>
-      {pages > 1 && <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-700">
+      {pages > 1 && <div className="flex flex-wrap items-center gap-3 mt-4 text-sm text-slate-700">
         <button type="button" className={readinessButton} disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Sebelumnya</button>
         <span>Halaman {currentPage} dari {pages} · {filtered.length} entri</span>
         <button type="button" className={readinessButton} disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}>Berikutnya</button>
@@ -238,7 +247,7 @@ function Preview({ draft, onClose }) {
   useEffect(() => { dialog.current.showModal(); }, []);
   return (
     <dialog ref={dialog} onClose={onClose} aria-labelledby="readiness-preview" className="max-h-[90vh] w-[min(94vw,64rem)] rounded-2xl bg-slate-50 p-4 backdrop:bg-slate-950/60 sm:p-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 mb-4">
         <h2 id="readiness-preview" className="text-lg font-bold">Pratinjau formulir</h2>
         <button type="button" className={readinessButton} onClick={() => dialog.current.close()}>Tutup</button>
       </div>
@@ -350,21 +359,21 @@ export default function ReadinessManagement() {
       <Toaster />
       <div className="space-y-6">
         {draft && <button type="button" className={readinessButton} disabled={busy} onClick={() => void back()}>← Daftar asesmen</button>}
-        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 p-5 text-white shadow-xl sm:p-7">
-          <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-white/5 blur-3xl" />
+        <section className="relative p-5 overflow-hidden text-white shadow-xl rounded-2xl bg-gradient-to-r from-primary-700 via-primary-800 to-primary-900 sm:p-7">
+          <div aria-hidden="true" className="absolute w-56 h-56 rounded-full pointer-events-none -right-10 -top-10 bg-white/5 blur-3xl" />
           <div className="relative flex flex-wrap items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
+            <div className="flex items-center min-w-0 gap-4">
+              <span className="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-white/15">
                 <FaClipboardCheck className="text-xl" aria-hidden="true" />
               </span>
               <div className="min-w-0">
                 {draft?.standard && <p className="text-xs font-semibold text-white/80">{draft.standard}</p>}
-                <h1 className="break-words text-2xl font-black">{draft ? draft.title || 'Asesmen baru' : 'Kelola Readiness Assessment'}</h1>
+                <h1 className="text-2xl font-black break-words">{draft ? draft.title || 'Asesmen baru' : 'Kelola Readiness Assessment'}</h1>
                 <p className="mt-0.5 text-sm text-white/80">{draft ? draft.subtitle || 'Atur formulir penilaian kesiapan.' : 'Kelola asesmen kesiapan lembaga untuk setiap standar akreditasi.'}</p>
               </div>
             </div>
             {!draft && (
-              <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+              <div className="flex flex-wrap items-center w-full gap-3 sm:w-auto">
                 <button
                   type="button"
                   className="rounded-xl border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-60"
@@ -385,20 +394,20 @@ export default function ReadinessManagement() {
             )}
           </div>
         </section>
-        {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</p>}
+        {error && <p role="alert" className="p-4 text-sm text-red-800 border border-red-200 rounded-lg bg-red-50">{error}</p>}
 
         {!draft && (
           <div className="grid gap-4 lg:grid-cols-2">
-            {catalog === null && !error && <p role="status">Memuat daftar asesmen…</p>}
+            {catalog === null && !error && <output className="block">Memuat daftar asesmen…</output>}
             {catalog === null && error && <div><button type="button" className={readinessButton} onClick={() => { setError(''); setReload((value) => value + 1); }}>Coba lagi</button></div>}
             {catalog?.length === 0 && <p className={card + ' text-sm text-slate-600'}>Belum ada asesmen. Buat asesmen baru atau mulai dari templat LSP.</p>}
             {catalog?.map((entry) => (
               <article key={entry.id} className={card}>
                 <div className="flex flex-wrap gap-2 text-xs font-semibold text-primary-800">
-                  <span className="rounded-full bg-primary-50 px-2 py-1">{entry.standard}</span>
+                  <span className="px-2 py-1 rounded-full bg-primary-50">{entry.standard}</span>
                   <span className={'rounded-full px-2 py-1 ' + (entry.published_at ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700')}>{entry.published_at ? 'Terbit' : 'Draf'}</span>
                 </div>
-                <h2 className="mt-3 break-words text-lg font-bold text-slate-900">{entry.title}</h2>
+                <h2 className="mt-3 text-lg font-bold break-words text-slate-900">{entry.title}</h2>
                 <p className="text-sm text-slate-700">{entry.subtitle}</p>
                 <p className="mt-3 text-sm text-slate-700">{entry.clause_count} klausul · {entry.question_count} butir</p>
                 <div className={rowActions + ' mt-4'}>
@@ -415,10 +424,10 @@ export default function ReadinessManagement() {
           <fieldset disabled={busy} className="min-w-0 space-y-5">
             <legend className="sr-only">Pengaturan asesmen</legend>
             <div className={card}>
-              <p className="text-sm text-slate-700" role="status">
+              <output className="block text-sm text-slate-700">
                 {record?.published_at ? 'Versi publik terbit.' : 'Belum terbit.'} {unsaved ? 'Ada perubahan yang belum disimpan.' : 'Draf tersimpan.'}
                 {record?.published_at && ' Simpan dan terbitkan ulang untuk memperbarui versi publik.'}
-              </p>
+              </output>
               <div className={rowActions + ' mt-3'}>
                 <button type="button" className={readinessPrimary} disabled={!dirty || !!item} onClick={save}>Simpan draf</button>
                 <button type="button" className={readinessButton} disabled={!draft.questions.length || !!item} onClick={() => setPreview(true)}>Pratinjau formulir</button>
@@ -431,11 +440,11 @@ export default function ReadinessManagement() {
             </div>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {Object.entries(collections).filter(([key]) => key !== 'glossary').map(([key, { label }]) => (
-                <div key={key} className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xl font-bold text-primary-800">{draft[key].length}</p><p className="text-sm text-slate-600">{label}</p></div>
+                <div key={key} className="p-4 bg-white border rounded-xl border-slate-200"><p className="text-xl font-bold text-primary-800">{draft[key].length}</p><p className="text-sm text-slate-600">{label}</p></div>
               ))}
             </div>
             <div className={card}>
-              <nav className="mb-5 flex flex-wrap gap-2 border-b border-slate-200 pb-4" aria-label="Bagian pengaturan asesmen">
+              <nav className="flex flex-wrap gap-2 pb-4 mb-5 border-b border-slate-200" aria-label="Bagian pengaturan asesmen">
                 {[...Object.entries(collections).map(([key, { label }]) => [key, label]), ['settings', 'Pengaturan']].map(([key, label]) => (
                   <button key={key} type="button" aria-pressed={section === key} className={section === key ? readinessPrimary : readinessButton} disabled={!!item} onClick={() => setSection(key)}>{label}</button>
                 ))}
