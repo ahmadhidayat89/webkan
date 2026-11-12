@@ -2,7 +2,13 @@ export const readinessCatalogPath = '/layanan-akreditasi/readiness-assessment';
 export const readinessUrl = (id) => readinessCatalogPath + '/' + id;
 
 export const readinessLimitation = 'Hasil penilaian mandiri ini hanya mencakup butir yang dipilih. Keputusan akreditasi KAN didasarkan pada asesmen oleh asesor yang berwenang.';
-export const formatReadinessScore = (score) => score === null ? '—' : score.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+export const formatReadinessScore = (score) => score === null ? '—' : score.toLocaleString('id-ID', { maximumFractionDigits: 3 });
+export const readinessRatings = [
+  { label: 'Sangat Baik', minimum: 1.5, range: '1,5–2' },
+  { label: 'Baik', minimum: 1, range: '1–<1,5' },
+  { label: 'Cukup', minimum: 0.5, range: '0,5–<1' },
+  { label: 'Kurang', minimum: 0, range: '0–<0,5' },
+];
 
 export const answersList = [
   ['yes', 'Ya', 'Praktik sudah terdokumentasi dan diterapkan penuh.'],
@@ -24,11 +30,9 @@ export function tallyReadiness(questions, responses) {
   const applicable = counts.yes + counts.partial + counts.no;
   const answered = applicable + counts.na;
   const score = applicable ? (2 * counts.yes + counts.partial) / applicable : null;
-  let status = 'Siap diajukan';
+  let status = 'Tidak ada butir yang berlaku';
   if (answered < questions.length) status = 'Belum lengkap';
-  else if (score === null) status = 'Tidak ada butir yang berlaku';
-  else if (counts.no) status = 'Perlu perbaikan';
-  else if (counts.partial) status = 'Hampir siap';
+  else if (score !== null) status = readinessRatings.find(({ minimum }) => score >= minimum).label;
   return { counts, applicable, answered, score, status };
 }
 

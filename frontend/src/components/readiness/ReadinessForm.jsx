@@ -7,6 +7,7 @@ import {
   readinessInput,
   readinessLimitation as limitation,
   readinessPrimary,
+  readinessRatings,
   tallyReadiness,
 } from './readiness';
 
@@ -75,12 +76,16 @@ function Question({ question, clause, number, document, response = {}, onChange 
   );
 }
 
-function ResultStatus({ result }) {
-  let tone = answerColors.na;
-  if (result.status === 'Siap diajukan') tone = answerColors.yes;
-  if (result.status === 'Hampir siap') tone = answerColors.partial;
-  if (result.status === 'Perlu perbaikan') tone = answerColors.no;
-  return <span className={'inline-block rounded-full px-3 py-1 text-xs font-bold ' + tone}>{result.status}</span>;
+const ratingColors = {
+  'Kurang': answerColors.no,
+  'Cukup': answerColors.partial,
+  'Baik': 'bg-primary-100 text-primary-900',
+  'Sangat Baik': answerColors.yes,
+};
+
+function ResultStatus({ status, large = false }) {
+  const size = large ? 'px-4 py-1.5 text-base' : 'px-3 py-1 text-xs';
+  return <span className={`inline-block rounded-full font-bold ${size} ${ratingColors[status] || answerColors.na}`}>{status}</span>;
 }
 
 function Results({ groups, questions, responses, summary }) {
@@ -88,7 +93,8 @@ function Results({ groups, questions, responses, summary }) {
   return (
     <>
       <div className="mt-5 rounded-xl border border-primary-100 bg-primary-50 p-4 text-center sm:p-5">
-        <ResultStatus result={summary} />
+        <h2 className="mb-2 text-sm font-semibold text-primary-900">Penilaian keseluruhan</h2>
+        <ResultStatus status={summary.status} large />
         <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="rounded-lg border border-primary-100 bg-white p-3">
             <dt className="text-xs font-semibold text-slate-600">Skor kesiapan</dt>
@@ -105,34 +111,34 @@ function Results({ groups, questions, responses, summary }) {
         </dl>
         <p className="mt-3 text-xs text-slate-600">Ya bernilai 2, Sebagian bernilai 1, dan Tidak bernilai 0. Butir N/A dikeluarkan dari skor.</p>
       </div>
-      <div className="mt-6 overflow-x-auto">
-        <table className="w-full min-w-[30rem] text-left text-sm print:min-w-0">
-          <caption className={'mb-3 text-left ' + subheading}>Hasil per klausul</caption>
-          <thead className="bg-primary-50 text-primary-950">
-            <tr>{['Klausul', 'Ya', 'Sebagian', 'Tidak', 'N/A', 'Skor', 'Status'].map((label) => <th key={label} scope="col" className="p-2">{label}</th>)}</tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200">
-            {groups.map(({ clause, items }) => {
-              const result = tallyReadiness(items, responses);
-              return (
-                <tr key={clause.id} className="print:break-inside-avoid">
-                  <th scope="row" className="p-2 font-medium">{clause.code} — {clause.title}</th>
-                  {Object.entries(result.counts).map(([key, count]) => <td key={key} className="p-2">{count}</td>)}
-                  <td className="p-2">
-                    {formatScore(result.score)}
-                    {result.score !== null && (
-                      <div className="mt-1 h-1.5 w-12 overflow-hidden rounded-full bg-primary-100 print:hidden" aria-hidden="true">
-                        <div className="h-full rounded-full bg-primary-600" style={{ width: result.score / 2 * 100 + '%' }} />
-                      </div>
-                    )}
-                  </td>
-                  <td className="p-2"><ResultStatus result={result} /></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <section className="mt-6">
+        <h2 className={subheading}>Hasil per klausul</h2>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+          {groups.map(({ clause, items }) => {
+            const { counts, score, status } = tallyReadiness(items, responses);
+            return (
+              <li key={clause.id} className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm print:break-inside-avoid">
+                <h3 className="break-words text-sm font-bold text-primary-950">{clause.code} — {clause.title}</h3>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <ResultStatus status={status} />
+                  <span className="text-sm font-semibold text-primary-900">Skor {formatScore(score)}{score !== null && ' / 2'}</span>
+                </div>
+                <dl className="mt-3 grid grid-cols-4 gap-1 rounded-lg bg-slate-50 p-2 text-center text-xs text-slate-600">
+                  {answersList.map(([key, label]) => (
+                    <div key={key}>
+                      <dt>{key === 'na' ? 'N/A' : label}</dt>
+                      <dd className="font-bold text-slate-900">{counts[key]}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-3 text-xs leading-relaxed text-slate-600">
+          Skala kategori: {[...readinessRatings].reverse().map(({ label, range }) => `${label} (${range})`).join(' · ')}.
+        </p>
+      </section>
       {priorities.length > 0 && (
         <div className="mt-6">
           <h2 className={subheading}>Butir prioritas perbaikan</h2>
@@ -146,15 +152,36 @@ function Results({ groups, questions, responses, summary }) {
   );
 }
 
-export default function ReadinessForm({ assessment, preview = false }) {
+function readDraft(storageKey) {
+  if (!storageKey) return {};
+  try {
+    return JSON.parse(sessionStorage.getItem(storageKey)) || {};
+  } catch {
+    return {};
+  }
+}
+
+export default function ReadinessForm({ assessment, assessmentId, preview = false }) {
+  const storageKey = assessmentId && !preview ? 'kan-readiness-draft:' + assessmentId : null;
+  const [draft] = useState(() => readDraft(storageKey));
   const [step, setStep] = useState('intro');
-  const [selection, setSelection] = useState([]);
-  const [identity, setIdentity] = useState({});
-  const [responses, setResponses] = useState({});
+  const [selection, setSelection] = useState(draft.selection ?? []);
+  const [identity, setIdentity] = useState(draft.identity ?? {});
+  const [responses, setResponses] = useState(draft.responses ?? {});
+  const [storageUnavailable, setStorageUnavailable] = useState(false);
   const [pdfStatus, setPdfStatus] = useState('idle');
   const focusTarget = useRef(null);
   const targetQuestion = useRef(null);
   const previousStep = useRef(step);
+
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify({ selection, identity, responses }));
+    } catch {
+      setStorageUnavailable(true);
+    }
+  }, [storageKey, selection, identity, responses]);
 
   useEffect(() => {
     if (previousStep.current === step) return;
@@ -183,13 +210,21 @@ export default function ReadinessForm({ assessment, preview = false }) {
     ...current, [id]: { ...current[id], ...change },
   }));
 
+  const filledIdentity = assessment.identity
+    .map(({ id, label }) => ({ id, label, value: Object.hasOwn(identity, id) ? identity[id].trim() : '' }))
+    .filter(({ value }) => value);
+
   const downloadResults = () => {
     const payload = {
       title: assessment.title,
       standard: assessment.standard,
       date: new Date().toISOString(),
       scope: label,
-      clauses: groups.map(({ clause }) => ({ code: clause.code, title: clause.title })),
+      clauses: groups.map(({ clause, items }) => ({
+        code: clause.code,
+        title: clause.title,
+        summary: tallyReadiness(items, responses),
+      })),
       identity: assessment.identity.map(({ id, label }) => ({ label, value: identity[id] || '' })),
       results: questions.map(({ id, text, reference, clauseId }, index) => ({
         id, number: index + 1, text, reference, clauseId, ...responses[id],
@@ -208,7 +243,7 @@ export default function ReadinessForm({ assessment, preview = false }) {
     setPdfStatus('loading');
     try {
       const { downloadReadinessPdf } = await import('./readinessPdf.js');
-      await downloadReadinessPdf({ assessment, scope: label, groups, questions, responses, summary });
+      await downloadReadinessPdf({ assessment, identity: filledIdentity, scope: label, groups, questions, responses, summary });
       setPdfStatus('idle');
     } catch {
       setPdfStatus('error');
@@ -218,6 +253,7 @@ export default function ReadinessForm({ assessment, preview = false }) {
   return (
     <>
       <Progress step={step} answered={progressAnswered} total={progressQuestions.length} preview={preview} />
+      {storageUnavailable && <p role="alert" className="mb-4 text-sm text-accent-900">Penyimpanan browser tidak tersedia. Unduh hasil sebelum memuat ulang atau menutup tab.</p>}
       <section className={panel} aria-labelledby="readiness-step-title">
         {step !== 'intro' && <p className="mb-1 break-words text-sm font-semibold text-primary-700">{assessment.title}</p>}
         <h1 id="readiness-step-title" ref={focusTarget} tabIndex={-1} className={heading}>{stepTitles[step] || assessment.title}</h1>
@@ -234,7 +270,7 @@ export default function ReadinessForm({ assessment, preview = false }) {
             <div className="mt-5 space-y-3">
               <p className={info}>
                 <strong>Cara pengisian</strong><br />
-                Pilih klausul, isi penilaian, lalu tinjau jawaban dan lihat hasilnya. Jawaban dan identitas hanya digunakan di halaman ini. Unduh hasil sebelum menutup halaman.
+                Pilih klausul, isi penilaian, lalu tinjau jawaban dan lihat hasilnya. Identitas dan jawaban tersimpan selama sesi tab ini. Unduh hasil sebelum menutup tab.
               </p>
               <p className={notice}><strong>Batasan penilaian</strong><br />{limitation}</p>
             </div>

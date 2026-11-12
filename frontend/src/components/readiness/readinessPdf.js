@@ -6,7 +6,7 @@ import {
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
-export function downloadReadinessPdf({ assessment, scope, groups, questions, responses, summary }) {
+export function downloadReadinessPdf({ assessment, identity = [], scope, groups, questions, responses, summary }) {
   const priorities = questions.flatMap((question, index) => {
     const answer = responses[question.id]?.answer;
     if (answer !== 'no' && answer !== 'partial') return [];
@@ -55,7 +55,17 @@ export function downloadReadinessPdf({ assessment, scope, groups, questions, res
       { text: assessmentTitle, fontSize: 14, bold: true, color: '#1e40af', margin: [0, 5, 0, 3] },
       { text: [assessment.standard, assessment.subtitle].filter(Boolean).join(' - '), style: 'secondary' },
       { text: date + ' | ' + scope, style: 'secondary', margin: [0, 5, 0, 0] },
-      { text: summary.status, style: 'section' },
+      ...(identity.length ? [
+        { text: 'Identitas lembaga', style: 'section', headlineLevel: 1 },
+        {
+          layout: 'lightHorizontalLines',
+          table: {
+            widths: [145, '*'],
+            body: identity.map(({ label, value }) => [{ text: label, bold: true }, value]),
+          },
+        },
+      ] : []),
+      { text: 'Penilaian keseluruhan: ' + summary.status, style: 'section' },
       {
         columns: [
           { text: [{ text: 'Skor kesiapan\n', bold: true }, score] },
