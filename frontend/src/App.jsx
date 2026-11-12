@@ -191,7 +191,7 @@ function App() {
 
         <Route
           path={readinessCatalogPath + '/:id'}
-          element={<Suspense fallback={<p className="p-8" role="status">Memuat asesmen…</p>}><PublicReadiness /></Suspense>}
+          element={<Suspense fallback={<output className="block p-8">Memuat asesmen…</output>}><PublicReadiness /></Suspense>}
         />
 
         <Route
@@ -500,7 +500,7 @@ function App() {
           path="/admin/readiness-assessments"
           element={
             <ProtectedRoute roles={['super_admin', 'admin']}>
-              <Suspense fallback={<p className="p-8" role="status">Memuat editor asesmen…</p>}><ReadinessManagement /></Suspense>
+              <Suspense fallback={<output className="block p-8">Memuat editor asesmen…</output>}><ReadinessManagement /></Suspense>
             </ProtectedRoute>
           }
         />

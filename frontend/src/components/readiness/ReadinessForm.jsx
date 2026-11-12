@@ -75,7 +75,7 @@ function Question({ question, clause, number, document, response = {}, onChange 
           <textarea className={readinessInput} rows={2} maxLength={3000} value={response.note ?? ''} onChange={(event) => onChange({ note: event.target.value })} />
         </label>
         <label className="text-sm text-slate-700">
-          Kejelasan butir (1–5)
+          Kejelasan butir (1–5){' '}
           <select className={readinessInput} value={response.clarity ?? ''} onChange={(event) => onChange({ clarity: event.target.value })}>
             <option value="">Belum dinilai</option>
             {[1, 2, 3, 4, 5].map((value) => <option key={value}>{value}</option>)}
