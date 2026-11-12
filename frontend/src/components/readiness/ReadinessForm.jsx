@@ -36,7 +36,8 @@ function Progress({ step, answered, total, preview }) {
   const offset = preview ? 'top-0' : 'top-14 md:top-[4.5rem] lg:top-20';
   return (
     <div className={'sticky z-20 -mx-1 mb-4 border-b border-slate-200 bg-slate-50/95 px-1 pb-3 pt-2 backdrop-blur-sm print:hidden ' + offset}>
-      <div role="progressbar" aria-label="Butir dijawab" aria-valuemin={0} aria-valuemax={total} aria-valuenow={answered} className="h-2 overflow-hidden rounded-full bg-primary-100">
+      <progress aria-label="Butir dijawab" max={total || 1} value={answered} className="sr-only" />
+      <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-primary-100">
         <div className="h-full rounded-full bg-gradient-to-r from-primary-700 to-primary-500 motion-safe:transition-[width]" style={{ width: (total ? answered / total * 100 : 0) + '%' }} />
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-slate-600 sm:text-sm">
@@ -61,14 +62,15 @@ function Question({ question, clause, number, document, response = {}, onChange 
           {document.sample && <span className="block">Contoh nama berkas: {document.sample}</span>}
         </p>
       )}
-      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Pilihan jawaban">
+      <fieldset className="mt-4 flex flex-wrap gap-2">
+        <legend className="sr-only">Pilihan jawaban</legend>
         {answersList.filter(([key]) => key !== 'na' || question.allowNA).map(([key, label]) => (
           <label key={key} className={'flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-primary-500 ' + (response.answer === key ? answerColors[key] : 'border-slate-300 text-slate-700 hover:border-primary-500 hover:bg-primary-50')}>
             <input type="radio" className="accent-primary-700" name={'answer-' + question.id} checked={response.answer === key} onChange={() => onChange({ answer: key })} />
             {label}
           </label>
         ))}
-      </div>
+      </fieldset>
       <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_12rem]">
         <label className="text-sm text-slate-700">
           Bukti / catatan {response.answer === 'na' && '(alasan N/A)'}

@@ -28,7 +28,7 @@ export default function ReadinessServices() {
         </div>
       </div>
       {error && <p role="alert" className="mt-4 text-sm text-slate-700">Daftar asesmen belum dapat dimuat. Silakan muat ulang halaman.</p>}
-      {!error && assessments === null && <p role="status" className="mt-4 text-sm text-slate-700">Memuat daftar asesmen…</p>}
+      {!error && assessments === null && <output className="mt-4 block text-sm text-slate-700">Memuat daftar asesmen…</output>}
       {assessments?.length === 0 && <p className="mt-4 text-sm text-slate-700">Belum ada asesmen yang diterbitkan.</p>}
       {assessments?.length > 0 && (
         <ul className="mt-5 grid gap-3 sm:grid-cols-2">
