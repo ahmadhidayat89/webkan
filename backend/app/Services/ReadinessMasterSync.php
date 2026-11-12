@@ -36,25 +36,11 @@ class ReadinessMasterSync
         $result = [];
 
         foreach ($items as $item) {
-            $id = (string) $item['id'];
+            $kept = self::resolveItem($item, $oldMap, $newMap);
 
-            if (! isset($oldMap[$id])) {
-                $result[] = $item;
-
-                continue;
+            if ($kept !== null) {
+                $result[] = $kept;
             }
-
-            $untouched = self::same($item, $oldMap[$id]);
-
-            if (! isset($newMap[$id])) {
-                if (! $untouched) {
-                    $result[] = $item;
-                }
-
-                continue;
-            }
-
-            $result[] = $untouched ? $newMap[$id] : $item;
         }
 
         $present = array_map('strval', array_column($result, 'id'));
@@ -77,23 +63,55 @@ class ReadinessMasterSync
         return $result;
     }
 
+    /**
+     * Menentukan nasib satu item form terhadap perubahan master.
+     * Mengembalikan item yang dipakai, atau null bila item harus dibuang.
+     */
+    private static function resolveItem(array $item, array $oldMap, array $newMap): ?array
+    {
+        $id = (string) $item['id'];
+
+        // Item buatan sendiri di form (bukan dari master): tidak disentuh.
+        if (! isset($oldMap[$id])) {
+            return $item;
+        }
+
+        $untouched = self::same($item, $oldMap[$id]);
+
+        // Item dihapus dari master: ikut dihapus, kecuali sudah diubah khusus di form.
+        if (! isset($newMap[$id])) {
+            return $untouched ? null : $item;
+        }
+
+        // Item master diubah: ikut diperbarui, kecuali sudah diubah khusus di form.
+        return $untouched ? $newMap[$id] : $item;
+    }
+
     private static function canAdd(string $key, array $item, array $list, array $draft): bool
     {
         if (count($list) >= self::LIMITS[$key]) {
             return false;
         }
 
-        if (in_array($key, ['clauses', 'documents'], true)) {
-            $codes = array_map('mb_strtolower', array_column($list, 'code'));
+        return match ($key) {
+            'clauses', 'documents' => ! self::hasCode($list, $item['code']),
+            'questions' => self::clauseExists($draft, $item['clauseId']),
+            default => true,
+        };
+    }
 
-            return ! in_array(mb_strtolower($item['code']), $codes, true);
-        }
+    private static function hasCode(array $list, mixed $code): bool
+    {
+        $codes = array_map('mb_strtolower', array_column($list, 'code'));
 
-        if ($key === 'questions') {
-            return in_array((string) $item['clauseId'], array_map('strval', array_column($draft['clauses'], 'id')), true);
-        }
+        return in_array(mb_strtolower((string) $code), $codes, true);
+    }
 
-        return true;
+    private static function clauseExists(array $draft, mixed $clauseId): bool
+    {
+        $clauseIds = array_map('strval', array_column($draft['clauses'], 'id'));
+
+        return in_array((string) $clauseId, $clauseIds, true);
     }
 
     private static function insertOrdered(array $list, array $master, int $index, array $item): array
@@ -135,7 +153,7 @@ class ReadinessMasterSync
             }
 
             return $question;
-        }, array_filter($draft['questions'], fn ($question) => in_array((string) $question['clauseId'], $clauseIds, true))));
+        }, array_filter($draft['questions'], fn($question) => in_array((string) $question['clauseId'], $clauseIds, true))));
 
         return $draft;
     }
