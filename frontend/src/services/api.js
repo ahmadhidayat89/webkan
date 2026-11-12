@@ -166,7 +166,8 @@ export const getPublicReadiness = (id, signal) =>
   api.get(readinessPath + '/' + encodeURIComponent(id), { signal });
 export const listReadiness = (signal) => api.get(adminReadinessPath, { signal });
 export const getReadiness = (id) => api.get(adminReadinessPath + '/' + id);
-export const getReadinessTemplate = () => api.get(adminReadinessPath + '/template');
+export const getReadinessTemplate = (signal) => api.get(adminReadinessPath + '/template', { signal });
+export const saveReadinessTemplate = (draft) => api.put(adminReadinessPath + '/template', { draft });
 export const saveReadiness = (id, draft) => id
   ? api.put(adminReadinessPath + '/' + id, { draft })
   : api.post(adminReadinessPath, { draft });

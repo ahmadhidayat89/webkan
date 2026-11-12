@@ -8,7 +8,7 @@ export const answersList = [
   ['yes', 'Ya', 'Praktik sudah terdokumentasi dan diterapkan penuh.'],
   ['partial', 'Sebagian', 'Praktik belum sepenuhnya terdokumentasi atau diterapkan.'],
   ['no', 'Tidak', 'Praktik belum ada.'],
-  ['na', 'Tidak berlaku (N/A)', 'Persyaratan tidak relevan. Beri alasan pada kolom catatan.'],
+  ['na', 'Tidak berlaku (N/A)', 'Persyaratan tidak relevan dengan lembaga Anda.'],
 ];
 
 export const readinessAnswerLabel = (answer) => answersList.find(([key]) => key === answer)?.[1];

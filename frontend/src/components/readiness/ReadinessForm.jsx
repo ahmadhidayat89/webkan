@@ -71,19 +71,6 @@ function Question({ question, clause, number, document, response = {}, onChange 
           </label>
         ))}
       </fieldset>
-      <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_12rem]">
-        <label className="text-sm text-slate-700">
-          Bukti / catatan {response.answer === 'na' && '(alasan N/A)'}
-          <textarea className={readinessInput} rows={2} maxLength={3000} value={response.note ?? ''} onChange={(event) => onChange({ note: event.target.value })} />
-        </label>
-        <label className="text-sm text-slate-700">
-          Kejelasan butir (1–5){' '}
-          <select className={readinessInput} value={response.clarity ?? ''} onChange={(event) => onChange({ clarity: event.target.value })}>
-            <option value="">Belum dinilai</option>
-            {[1, 2, 3, 4, 5].map((value) => <option key={value}>{value}</option>)}
-          </select>
-        </label>
-      </div>
     </fieldset>
   );
 }
@@ -366,7 +353,6 @@ export default function ReadinessForm({ assessment, preview = false }) {
                             <span className={'rounded-full px-2.5 py-1 text-xs font-bold ' + (answerColors[response?.answer] || answerColors.na)}>{answerLabel(response?.answer) || 'Belum dijawab'}</span>
                           </span>
                           <span className="whitespace-pre-line">{item.text}</span>
-                          {response?.note && <span className="mt-1 block text-slate-600">Catatan: {response.note}</span>}
                         </button>
                       </li>
                     );

@@ -8,7 +8,7 @@ import { readinessButton, readinessInput, readinessPrimary, readinessUrl } from 
 import { useConfirm } from '../../hooks/useConfirm';
 import {
   deleteReadiness, getReadiness, getReadinessTemplate, listReadiness,
-  publishReadiness, saveReadiness, unpublishReadiness,
+  publishReadiness, saveReadiness, saveReadinessTemplate, unpublishReadiness,
 } from '../../services/api';
 
 const collections = {
@@ -159,11 +159,112 @@ function describeItem(section, item, draft, number) {
   return [item.label, ''];
 }
 
-function Collection({ section, draft, item, setItem, update, confirm }) {
+function insertOrdered(list, masterList, value) {
+  const index = masterList.findIndex(({ id }) => id === value.id);
+  for (let j = index - 1; j >= 0; j -= 1) {
+    const pos = list.findIndex(({ id }) => id === masterList[j].id);
+    if (pos !== -1) return [...list.slice(0, pos + 1), value, ...list.slice(pos + 1)];
+  }
+  for (let j = index + 1; j < masterList.length; j += 1) {
+    const pos = list.findIndex(({ id }) => id === masterList[j].id);
+    if (pos !== -1) return [...list.slice(0, pos), value, ...list.slice(pos)];
+  }
+  return [...list, value];
+}
+
+const codeTaken = (list, code) => list.some((entry) => entry.code?.toLowerCase() === code?.toLowerCase());
+
+// Alasan item master tidak bisa diambil ke form (string kosong = bisa diambil).
+function masterBlocked(draft, master, section, entry) {
+  if ((section === 'clauses' || section === 'documents') && codeTaken(draft[section], entry.code)) {
+    return 'Kode sudah dipakai di form ini';
+  }
+  if (section === 'questions' && !draft.clauses.some(({ id }) => id === entry.clauseId)) {
+    const clause = master.clauses.find(({ id }) => id === entry.clauseId);
+    if (!clause || codeTaken(draft.clauses, clause.code)) return 'Klausul butir ini tidak tersedia di form';
+  }
+  return '';
+}
+
+// Menyalin satu item master (beserta item terkait) ke draf form.
+function importFromMaster(draft, master, section, itemId) {
+  const next = Object.fromEntries(Object.keys(collections).map((key) => [key, draft[key]]));
+  const has = (key, id) => !!id && next[key].some((entry) => entry.id === id);
+  const add = (key, value) => {
+    if (value && !has(key, value.id)) next[key] = insertOrdered(next[key], master[key], structuredClone(value));
+  };
+  const addQuestion = (question) => {
+    if (question.documentId && !has('documents', question.documentId)) {
+      const document = master.documents.find(({ id }) => id === question.documentId);
+      if (document && !codeTaken(next.documents, document.code)) add('documents', document);
+    }
+    add('questions', has('documents', question.documentId) ? question : { ...question, documentId: null, evidence: null });
+  };
+  const value = master[section].find(({ id }) => id === itemId);
+  if (section === 'clauses') {
+    add('clauses', value);
+    master.questions.filter(({ clauseId }) => clauseId === itemId).forEach(addQuestion);
+  } else if (section === 'questions') {
+    if (!has('clauses', value.clauseId)) add('clauses', master.clauses.find(({ id }) => id === value.clauseId));
+    addQuestion(value);
+  } else {
+    add(section, value);
+  }
+  return next;
+}
+
+function MasterImport({ section, draft, master, update, onClose }) {
+  const missing = master[section].filter(({ id }) => !draft[section].some((entry) => entry.id === id));
+  const available = missing.filter((entry) => !masterBlocked(draft, master, section, entry));
+  const importAll = () => {
+    let current = draft;
+    missing.forEach((entry) => {
+      if (!masterBlocked(current, master, section, entry)) current = { ...current, ...importFromMaster(current, master, section, entry.id) };
+    });
+    update(Object.fromEntries(Object.keys(collections).map((key) => [key, current[key]])));
+  };
+
+  return (
+    <div className="p-4 mt-4 border rounded-xl border-primary-200 bg-primary-50">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-semibold text-slate-900">Ambil {collections[section].singular} dari data master</h3>
+        <div className={rowActions}>
+          <button type="button" className={readinessPrimary} disabled={!available.length} onClick={importAll}>Tambah semua ({available.length})</button>
+          <button type="button" className={readinessButton} onClick={onClose}>Tutup</button>
+        </div>
+      </div>
+      {!missing.length && <p className="mt-3 text-sm text-slate-600">Semua {collections[section].singular} dari data master sudah ada di form ini.</p>}
+      <ul className="mt-3 divide-y divide-primary-100">
+        {missing.map((entry) => {
+          const [title, detail] = describeItem(section, entry, master, master[section].indexOf(entry) + 1);
+          const blocked = masterBlocked(draft, master, section, entry);
+          return (
+            <li key={entry.id} className="flex flex-col justify-between gap-3 py-3 lg:flex-row">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold break-words whitespace-pre-line text-slate-900">{title}</p>
+                {detail && <p className="mt-1 text-xs break-words text-slate-600">{detail}</p>}
+                {blocked && <p className="mt-1 text-xs text-amber-700">{blocked}</p>}
+              </div>
+              <div className={rowActions}>
+                <button type="button" className={readinessButton} disabled={!!blocked} onClick={() => update(importFromMaster(draft, master, section, entry.id))}>
+                  <FaPlus aria-hidden="true" /> Tambah
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function Collection({ section, draft, item, setItem, update, confirm, master }) {
   const [query, setQuery] = useState('');
   const [clauseFilter, setClauseFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [importing, setImporting] = useState(false);
   const list = draft[section];
+  const missingCount = master ? master[section].filter(({ id }) => !list.some((entry) => entry.id === id)).length : 0;
   const filtered = list.map((entry, index) => ({ entry, index, description: describeItem(section, entry, draft, index + 1) }))
     .filter(({ entry, description }) => (!clauseFilter || entry.clauseId === clauseFilter)
       && description.join(' ').toLowerCase().includes(query.trim().toLowerCase()));
@@ -212,8 +313,16 @@ function Collection({ section, draft, item, setItem, update, confirm }) {
           <Field name="query" label={'Cari ' + collections[section].singular} value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} />
           {section === 'questions' && <Field name="filter" label="Filter klausul" value={clauseFilter} options={[['', 'Semua klausul'], ...draft.clauses.map(({ id, code, title }) => [id, code + ' — ' + title])]} onChange={(event) => { setClauseFilter(event.target.value); setPage(1); }} />}
         </div>
-        <button type="button" className={readinessPrimary} disabled={!!item || missingClause} onClick={add}><FaPlus aria-hidden="true" /> Tambah {collections[section].singular}</button>
+        <div className={rowActions}>
+          {master && (
+            <button type="button" className={readinessButton} disabled={!!item} aria-expanded={importing} onClick={() => setImporting((value) => !value)}>
+              Ambil dari master ({missingCount})
+            </button>
+          )}
+          <button type="button" className={readinessPrimary} disabled={!!item || missingClause} onClick={add}><FaPlus aria-hidden="true" /> Tambah {collections[section].singular}</button>
+        </div>
       </div>
+      {importing && master && !item && <MasterImport section={section} draft={draft} master={master} update={update} onClose={() => setImporting(false)} />}
       {item && <ItemEditor key={item.id} section={section} item={item} draft={draft} onApply={apply} onCancel={() => setItem(null)} />}
       {missingClause && <p className="mt-4 text-sm text-slate-600">Tambahkan klausul terlebih dahulu untuk membuat butir penilaian.</p>}
       {!filtered.length && !missingClause && <p className="mt-4 text-sm text-slate-600">{list.length ? 'Tidak ada hasil yang cocok.' : 'Belum ada ' + collections[section].singular + '.'}</p>}
@@ -258,6 +367,9 @@ function Preview({ draft, onClose }) {
 
 export default function ReadinessManagement() {
   const [catalog, setCatalog] = useState(null);
+  const [master, setMaster] = useState(blank);
+  const [masterSection, setMasterSection] = useState(null);
+  const [masterItem, setMasterItem] = useState(null);
   const [reload, setReload] = useState(0);
   const [record, setRecord] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -272,8 +384,14 @@ export default function ReadinessManagement() {
 
   useEffect(() => {
     const controller = new AbortController();
-    listReadiness(controller.signal)
-      .then(({ data }) => setCatalog(data.data))
+    Promise.all([
+      listReadiness(controller.signal),
+      getReadinessTemplate(controller.signal),
+    ])
+      .then(([{ data: catalogRes }, { data: templateRes }]) => {
+        setCatalog(catalogRes.data);
+        setMaster(templateRes.data);
+      })
       .catch(() => {
         if (!controller.signal.aborted) setError('Daftar asesmen gagal dimuat. Silakan coba lagi.');
       });
@@ -300,9 +418,43 @@ export default function ReadinessManagement() {
     }
   };
 
-  const open = (data = null, initial = blank(), tab = 'settings') => {
+  const updateMaster = (change) => {
+    const next = {
+      ...master,
+      ...change,
+      title: (change.title ?? master.title)?.trim() || 'Readiness Assessment LSP',
+      standard: (change.standard ?? master.standard)?.trim() || 'ISO/IEC 17024:2026',
+    };
+    setMaster(next);
+    void perform(async () => {
+      const { data: { data, synced } } = await saveReadinessTemplate(next);
+      setMaster(data);
+      toast.success(synced ? `Data master diperbarui dan diterapkan ke ${synced} form draf.` : 'Data master diperbarui.');
+    });
+  };
+
+  const saveMasterSettings = () => {
+    if (!master.title.trim() || !master.standard.trim()) {
+      setError('Isi judul dan standar pada pengaturan master sebelum menyimpan.');
+      return;
+    }
+    return perform(async () => {
+      const { data: { data } } = await saveReadinessTemplate(master);
+      setMaster(data);
+      toast.success('Pengaturan master tersimpan.');
+    });
+  };
+
+  const open = (data = null, initial = null, tab = 'settings') => {
+    const base = initial || {
+      ...blank(),
+      clauses: structuredClone(master.clauses),
+      identity: structuredClone(master.identity),
+      documents: structuredClone(master.documents),
+      glossary: structuredClone(master.glossary),
+    };
     setRecord(data);
-    setDraft(data?.draft || initial);
+    setDraft(data?.draft || base);
     setSection(tab);
     setItem(null);
     setError('');
@@ -316,13 +468,15 @@ export default function ReadinessManagement() {
     setReload((value) => value + 1);
   };
   const edit = (id, duplicate = false) => perform(async () => {
-    const { data: { data } } = await getReadiness(id);
+    const [{ data: { data } }, { data: { data: latestMaster } }] = await Promise.all([getReadiness(id), getReadinessTemplate()]);
+    setMaster(latestMaster);
     if (duplicate) open(null, { ...data.draft, title: (data.draft.title.slice(0, 190) + ' (Salinan)') });
     else open(data, data.draft, 'clauses');
   });
   const useTemplate = () => perform(async () => {
     const { data: { data } } = await getReadinessTemplate();
-    open(null, data, 'clauses');
+    setMaster(data);
+    open(null, structuredClone(data), 'clauses');
   });
   const save = () => {
     if (!draft.title.trim() || !draft.standard.trim()) {
@@ -397,27 +551,85 @@ export default function ReadinessManagement() {
         {error && <p role="alert" className="p-4 text-sm text-red-800 border border-red-200 rounded-lg bg-red-50">{error}</p>}
 
         {!draft && (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {catalog === null && !error && <output className="block">Memuat daftar asesmen…</output>}
-            {catalog === null && error && <div><button type="button" className={readinessButton} onClick={() => { setError(''); setReload((value) => value + 1); }}>Coba lagi</button></div>}
-            {catalog?.length === 0 && <p className={card + ' text-sm text-slate-600'}>Belum ada asesmen. Buat asesmen baru atau mulai dari templat LSP.</p>}
-            {catalog?.map((entry) => (
-              <article key={entry.id} className={card}>
-                <div className="flex flex-wrap gap-2 text-xs font-semibold text-primary-800">
-                  <span className="px-2 py-1 rounded-full bg-primary-50">{entry.standard}</span>
-                  <span className={'rounded-full px-2 py-1 ' + (entry.published_at ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700')}>{entry.published_at ? 'Terbit' : 'Draf'}</span>
-                </div>
-                <h2 className="mt-3 text-lg font-bold break-words text-slate-900">{entry.title}</h2>
-                <p className="text-sm text-slate-700">{entry.subtitle}</p>
-                <p className="mt-3 text-sm text-slate-700">{entry.clause_count} klausul · {entry.question_count} butir</p>
-                <div className={rowActions + ' mt-4'}>
-                  <button type="button" className={readinessPrimary} disabled={busy} onClick={() => edit(entry.id)}>Kelola</button>
-                  <button type="button" className={readinessButton} disabled={busy} onClick={() => edit(entry.id, true)}>Duplikat</button>
-                  <button type="button" className={readinessButton + ' text-red-700'} disabled={busy} onClick={() => void remove(entry)}>Hapus</button>
-                </div>
-              </article>
-            ))}
-          </div>
+          <>
+            <fieldset disabled={busy} className="min-w-0 space-y-5">
+              <legend className="sr-only">Data Master Readiness Assessment</legend>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {Object.entries(collections).filter(([key]) => key !== 'glossary').map(([key, { label }]) => (
+                  <div key={key} className="p-4 bg-white border rounded-xl border-slate-200">
+                    <p className="text-xl font-bold text-primary-800">{master[key].length}</p>
+                    <p className="text-sm text-slate-600">{label}</p>
+                  </div>
+                ))}
+              </div>
+              <div className={card}>
+                <nav className={'flex flex-wrap gap-2' + (masterSection ? ' pb-4 mb-5 border-b border-slate-200' : '')} aria-label="Bagian data master asesmen">
+                  {[...Object.entries(collections).map(([key, { label }]) => [key, label]), ['settings', 'Pengaturan']].map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={masterSection === key}
+                      className={masterSection === key ? readinessPrimary : readinessButton}
+                      disabled={!!masterItem}
+                      onClick={() => setMasterSection((current) => (current === key ? null : key))}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+                {masterSection && (
+                  <>
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                      <h2 className="text-lg font-bold text-slate-900">Master {collections[masterSection]?.label || 'Pengaturan'}</h2>
+                      <span className="text-xs text-slate-500">Perubahan di sini otomatis diterapkan ke semua form yang masih draf. Form yang sudah terbit tidak ikut berubah.</span>
+                    </div>
+                    {masterSection === 'settings' ? (
+                      <div className="space-y-4">
+                        <Settings draft={master} onChange={({ target }) => setMaster({ ...master, [target.name]: target.value })} />
+                        <div className={rowActions}>
+                          <button type="button" className={readinessPrimary} disabled={busy} onClick={() => void saveMasterSettings()}>
+                            Simpan pengaturan master
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Collection
+                        key={masterSection}
+                        section={masterSection}
+                        draft={master}
+                        item={masterItem}
+                        setItem={setMasterItem}
+                        update={updateMaster}
+                        confirm={confirm}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+            </fieldset>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              {catalog === null && !error && <output className="block">Memuat daftar asesmen…</output>}
+              {catalog === null && error && <div><button type="button" className={readinessButton} onClick={() => { setError(''); setReload((value) => value + 1); }}>Coba lagi</button></div>}
+              {catalog?.length === 0 && <p className={card + ' text-sm text-slate-600'}>Belum ada asesmen. Buat asesmen baru atau mulai dari templat LSP.</p>}
+              {catalog?.map((entry) => (
+                <article key={entry.id} className={card}>
+                  <div className="flex flex-wrap gap-2 text-xs font-semibold text-primary-800">
+                    <span className="px-2 py-1 rounded-full bg-primary-50">{entry.standard}</span>
+                    <span className={'rounded-full px-2 py-1 ' + (entry.published_at ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700')}>{entry.published_at ? 'Terbit' : 'Draf'}</span>
+                  </div>
+                  <h2 className="mt-3 text-lg font-bold break-words text-slate-900">{entry.title}</h2>
+                  <p className="text-sm text-slate-700">{entry.subtitle}</p>
+                  <p className="mt-3 text-sm text-slate-700">{entry.clause_count} klausul · {entry.question_count} butir</p>
+                  <div className={rowActions + ' mt-4'}>
+                    <button type="button" className={readinessPrimary} disabled={busy} onClick={() => edit(entry.id)}>Kelola</button>
+                    <button type="button" className={readinessButton} disabled={busy} onClick={() => edit(entry.id, true)}>Duplikat</button>
+                    <button type="button" className={readinessButton + ' text-red-700'} disabled={busy} onClick={() => void remove(entry)}>Hapus</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
         )}
 
         {draft && (
@@ -428,6 +640,11 @@ export default function ReadinessManagement() {
                 {record?.published_at ? 'Versi publik terbit.' : 'Belum terbit.'} {unsaved ? 'Ada perubahan yang belum disimpan.' : 'Draf tersimpan.'}
                 {record?.published_at && ' Simpan dan terbitkan ulang untuk memperbarui versi publik.'}
               </output>
+              <p className="mt-1 text-xs text-slate-500">
+                {record?.published_at
+                  ? 'Form sudah terbit, sehingga perubahan pada data master tidak diterapkan otomatis. Gunakan "Ambil dari master" bila ingin menambahkan item master secara manual.'
+                  : 'Form draf otomatis mengikuti perubahan data master (item yang sudah diubah khusus di form ini tidak ditimpa). Gunakan "Ambil dari master" untuk menambahkan item master yang belum ada.'}
+              </p>
               <div className={rowActions + ' mt-3'}>
                 <button type="button" className={readinessPrimary} disabled={!dirty || !!item} onClick={save}>Simpan draf</button>
                 <button type="button" className={readinessButton} disabled={!draft.questions.length || !!item} onClick={() => setPreview(true)}>Pratinjau formulir</button>
@@ -452,7 +669,7 @@ export default function ReadinessManagement() {
               <h2 className="mb-4 text-lg font-bold text-slate-900">{collections[section]?.label || 'Pengaturan'}</h2>
               {section === 'settings'
                 ? <Settings draft={draft} onChange={({ target }) => setDraft({ ...draft, [target.name]: target.value })} />
-                : <Collection key={section} section={section} draft={draft} item={item} setItem={setItem} update={(change) => setDraft({ ...draft, ...change })} confirm={confirm} />}
+                : <Collection key={section} section={section} draft={draft} item={item} setItem={setItem} update={(change) => setDraft({ ...draft, ...change })} confirm={confirm} master={master} />}
             </div>
           </fieldset>
         )}

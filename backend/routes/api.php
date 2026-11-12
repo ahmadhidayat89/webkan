@@ -162,6 +162,7 @@ Route::prefix('v1/admin')->middleware('auth:sanctum')->group(function () {
         Route::post('accreditation-steps/{id}/move-down', [AccreditationStepController::class, 'moveDown']);
 
         Route::get('readiness-assessments/template', [AdminReadinessAssessmentController::class, 'template']);
+        Route::put('readiness-assessments/template', [AdminReadinessAssessmentController::class, 'updateTemplate']);
         Route::apiResource('readiness-assessments', AdminReadinessAssessmentController::class)
             ->parameters(['readiness-assessments' => 'readinessAssessment']);
         Route::put('readiness-assessments/{readinessAssessment}/publish', [AdminReadinessAssessmentController::class, 'publish']);
