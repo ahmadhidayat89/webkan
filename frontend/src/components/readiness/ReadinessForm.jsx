@@ -47,6 +47,17 @@ const cardBorderClasses = {
   no: 'border-solid border-red-200 border-l-4 border-l-red-600 bg-white',
 };
 
+const reviewAnswerDisplay = {
+  yes: { text: 'Ya', tone: 'hijau' },
+  partial: { text: 'Sebagian', tone: 'kuning' },
+  no: { text: 'Tidak', tone: 'merah' },
+};
+
+const reviewUnansweredDisplay = {
+  optional: { text: 'Dilewati (Opsional)', tone: 'abu' },
+  mandatory: { text: 'Belum dijawab (Wajib)', tone: 'abu' },
+};
+
 function StatusPill({ label, tone = 'abu', large = false }) {
   const size = large ? 'px-5 py-1.5 text-base' : 'px-3 py-1 text-xs';
   return (
@@ -73,7 +84,7 @@ function ProgressStepper({ step, summary, hasQuestions, hasSubmitted, onNavigate
 
   return (
     <div className={`sticky z-20 mb-4 rounded-xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm print:hidden ${offset}`}>
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <div className="flex flex-wrap gap-1.5">
           {tabs.map((tab) => {
             const active = step === tab.key;
@@ -132,8 +143,8 @@ function IntroStep({ assessment, allCounts, identity, onIdentityChange, onNext, 
       </div>
 
       <h2 className={subheadingClass}>Panduan Pilihan Jawaban</h2>
-      <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
-        <table className="w-full text-left text-sm">
+      <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
+        <table className="w-full text-sm text-left">
           <thead className="bg-primary-50 text-primary-950">
             <tr>
               <th scope="col" className="w-44 px-3 py-2.5 sm:px-4">Pilihan Jawaban</th>
@@ -161,7 +172,7 @@ function IntroStep({ assessment, allCounts, identity, onIdentityChange, onNext, 
             </tr>
             <tr>
               <td className="px-3 py-2.5 align-middle sm:px-4">
-                <span className="inline-block rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-bold text-accent-900">
+                <span className="inline-block px-3 py-1 text-xs font-bold border rounded-full border-accent-200 bg-accent-50 text-accent-900">
                   Opsional (Lewati)
                 </span>
               </td>
@@ -175,8 +186,8 @@ function IntroStep({ assessment, allCounts, identity, onIdentityChange, onNext, 
       </div>
 
       <h3 className={h3Class}>Arti Kategori Hasil Kesiapan</h3>
-      <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
-        <table className="w-full text-left text-sm">
+      <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
+        <table className="w-full text-sm text-left">
           <thead className="bg-primary-50 text-primary-950">
             <tr>
               <th scope="col" className="w-36 px-3 py-2.5 sm:px-4">Kategori</th>
@@ -201,7 +212,7 @@ function IntroStep({ assessment, allCounts, identity, onIdentityChange, onNext, 
       </div>
 
       {assessment.identity.length > 0 && (
-        <div id="identSection" className="mt-6 border-t border-slate-200 pt-5">
+        <div id="identSection" className="pt-5 mt-6 border-t border-slate-200">
           <h3 className={h3Class}>Profil Singkat Lembaga Sertifikasi Person</h3>
           <p className={subtitleClass}>
             Silakan lengkapi {assessment.identity.length} data dasar instansi Anda di bawah ini untuk dicantumkan pada lembar ringkasan hasil.
@@ -253,14 +264,14 @@ function GlossaryStep({ assessment, onBack }) {
       <p className={subtitleClass}>
         Penjelasan singkat mengenai istilah dan singkatan yang sering digunakan dalam proses akreditasi LSP.
       </p>
-      <dl className="mt-5 gap-6 text-sm sm:columns-2">
+      <dl className="gap-6 mt-5 text-sm sm:columns-2">
         {assessment.glossary.map(({ id, term, definition, note }) => (
-          <div key={id} className="mb-3 break-inside-avoid break-words rounded-lg border border-slate-200 p-3">
+          <div key={id} className="p-3 mb-3 break-words border rounded-lg break-inside-avoid border-slate-200">
             <dt className="font-bold text-primary-900">{term}</dt>
             <dd className="mt-1 leading-relaxed text-slate-700">
               {definition}
               {note && note !== '-' && (
-                <span className="mt-1 block text-xs italic text-slate-500">{note}</span>
+                <span className="block mt-1 text-xs italic text-slate-500">{note}</span>
               )}
             </dd>
           </div>
@@ -312,11 +323,10 @@ function ScopeStep({ available, selection, allCounts, summary, onToggleAll, onTo
           <button
             type="button"
             onClick={onToggleAll}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-5 py-2.5 text-sm transition ${
-              isAll
-                ? 'border-primary-700 bg-primary-700 font-bold text-white'
-                : 'border-slate-300 bg-white font-semibold text-slate-700 hover:border-primary-500 hover:bg-primary-50 hover:text-primary-800'
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-5 py-2.5 text-sm transition ${isAll
+              ? 'border-primary-700 bg-primary-700 font-bold text-white'
+              : 'border-slate-300 bg-white font-semibold text-slate-700 hover:border-primary-500 hover:bg-primary-50 hover:text-primary-800'
+              }`}
           >
             Pilih Semua Bagian — Kuesioner Lengkap ({allCounts.mandTotal} Wajib + {allCounts.optTotal} Opsional)
           </button>
@@ -330,11 +340,10 @@ function ScopeStep({ available, selection, allCounts, summary, onToggleAll, onTo
                   type="button"
                   disabled={clause.always}
                   onClick={() => onToggleClause(clause.id)}
-                  className={`min-w-[290px] rounded-full border px-5 py-2 text-left text-xs transition sm:text-sm ${
-                    selected
-                      ? 'border-primary-500 bg-primary-50 font-bold text-primary-900'
-                      : 'border-slate-300 bg-white font-semibold text-slate-700 hover:border-primary-500 hover:bg-primary-50'
-                  }`}
+                  className={`min-w-[290px] rounded-full border px-5 py-2 text-left text-xs transition sm:text-sm ${selected
+                    ? 'border-primary-500 bg-primary-50 font-bold text-primary-900'
+                    : 'border-slate-300 bg-white font-semibold text-slate-700 hover:border-primary-500 hover:bg-primary-50'
+                    }`}
                 >
                   {formatScopeClauseLabel(clause, items)}
                 </button>
@@ -400,12 +409,12 @@ function QuestionCard({ question, number, response, onAnswer }) {
       </p>
 
       {isOptional && (
-        <div className="mb-3 rounded-lg border-l-4 border-accent-500 bg-accent-50 px-3 py-2 text-xs text-accent-950">
+        <div className="px-3 py-2 mb-3 text-xs border-l-4 rounded-lg border-accent-500 bg-accent-50 text-accent-950">
           <strong>Catatan Opsional:</strong> {getOptionalHint(question)}
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 mt-3">
         {answersList.map(([key, label]) => {
           const selected = curAns === key;
           const pillCls = selected
@@ -427,7 +436,7 @@ function QuestionCard({ question, number, response, onAnswer }) {
           <button
             type="button"
             onClick={() => onAnswer(question.id, undefined)}
-            className="px-2 py-1 text-xs font-medium text-slate-500 underline hover:text-red-700"
+            className="px-2 py-1 text-xs font-medium underline text-slate-500 hover:text-red-700"
           >
             Kosongkan (Lewati)
           </button>
@@ -466,7 +475,7 @@ function QuestionsStep({
   return (
     <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[270px_1fr]">
       <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto print:hidden">
-        <div className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+        <div className="mb-2 text-xs font-bold tracking-wider uppercase text-slate-500">
           Profil Instansi
         </div>
         <button
@@ -476,17 +485,16 @@ function QuestionsStep({
         >
           <span>Profil Lembaga</span>
           <span
-            className={`rounded-full border px-2 py-0.5 text-xs ${
-              identityCount === identityTotal && identityTotal > 0
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                : 'border-slate-200 bg-slate-50 text-slate-600'
-            }`}
+            className={`rounded-full border px-2 py-0.5 text-xs ${identityCount === identityTotal && identityTotal > 0
+              ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+              : 'border-slate-200 bg-slate-50 text-slate-600'
+              }`}
           >
             {identityCount}/{identityTotal}
           </span>
         </button>
 
-        <div className="mt-4 mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+        <div className="mt-4 mb-2 text-xs font-bold tracking-wider uppercase text-slate-500">
           Bagian Kuesioner
         </div>
         <div>
@@ -503,11 +511,10 @@ function QuestionsStep({
               >
                 <span className="truncate">{shortClauseTitle(clause)}</span>
                 <span
-                  className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${
-                    allDone
-                      ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                      : 'border-slate-200 bg-slate-50 text-slate-600'
-                  }`}
+                  className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${allDone
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                    : 'border-slate-200 bg-slate-50 text-slate-600'
+                    }`}
                 >
                   {mandDone}/{mandItems.length} wajib
                 </span>
@@ -516,7 +523,7 @@ function QuestionsStep({
           })}
         </div>
 
-        <div className="mt-4 mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+        <div className="mt-4 mb-2 text-xs font-bold tracking-wider uppercase text-slate-500">
           Saring Pertanyaan
         </div>
         <div className="flex flex-col gap-1.5">
@@ -529,11 +536,10 @@ function QuestionsStep({
               key={key}
               type="button"
               onClick={() => setFilter(key)}
-              className={`rounded-lg border px-2.5 py-1.5 text-left text-xs font-semibold transition ${
-                filter === key
-                  ? 'border-primary-500 bg-primary-50 text-primary-900'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-primary-500'
-              }`}
+              className={`rounded-lg border px-2.5 py-1.5 text-left text-xs font-semibold transition ${filter === key
+                ? 'border-primary-500 bg-primary-50 text-primary-900'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-primary-500'
+                }`}
             >
               {label}
             </button>
@@ -582,7 +588,7 @@ function QuestionsStep({
                 <button
                   type="button"
                   onClick={() => onToggleCollapse(clause.id, !isCollapsed)}
-                  className="mt-5 mb-3 flex w-full items-center justify-between rounded-xl border border-slate-200 bg-primary-50/60 px-4 py-3 text-left select-none"
+                  className="flex items-center justify-between w-full px-4 py-3 mt-5 mb-3 text-left border select-none rounded-xl border-slate-200 bg-primary-50/60"
                 >
                   <span className="text-base font-bold text-primary-950">{friendlyClauseTitle(clause)}</span>
                   <span className="flex items-center gap-2 text-xs font-semibold text-slate-600">
@@ -648,8 +654,8 @@ function ReviewStep({
       {assessment.identity.length > 0 && (
         <>
           <h3 className={h3Class}>Profil Singkat Lembaga Sertifikasi Person</h3>
-          <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
-            <table className="w-full text-left text-sm">
+          <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
+            <table className="w-full text-sm text-left">
               <thead className="bg-primary-50 text-primary-950">
                 <tr>
                   <th scope="col" className="w-2/5 px-3 py-2.5 sm:px-4">Informasi</th>
@@ -675,34 +681,22 @@ function ReviewStep({
       )}
 
       {groups.map(({ clause, items }) => (
-        <div key={clause.id} className="mt-5 overflow-hidden rounded-xl border border-slate-200">
-          <h2 className="bg-primary-50 px-4 py-3 text-sm font-bold text-primary-950">{friendlyClauseTitle(clause)}</h2>
+        <div key={clause.id} className="mt-5 overflow-hidden border rounded-xl border-slate-200">
+          <h2 className="px-4 py-3 text-sm font-bold bg-primary-50 text-primary-950">{friendlyClauseTitle(clause)}</h2>
           <div className="divide-y divide-slate-200">
             {items.map((item) => {
               const ans = normalizeAnswer(responses[item.id]?.answer);
               const isOpt = Boolean(item.allowNA);
-              let ansText = 'Belum dijawab (Wajib)';
-              let ansTone = 'abu';
-              if (ans === 'yes') {
-                ansText = 'Ya';
-                ansTone = 'hijau';
-              } else if (ans === 'partial') {
-                ansText = 'Sebagian';
-                ansTone = 'kuning';
-              } else if (ans === 'no') {
-                ansText = 'Tidak';
-                ansTone = 'merah';
-              } else if (isOpt) {
-                ansText = 'Dilewati (Opsional)';
-                ansTone = 'abu';
-              }
+              const { text: ansText, tone: ansTone } =
+                reviewAnswerDisplay[ans] ??
+                (isOpt ? reviewUnansweredDisplay.optional : reviewUnansweredDisplay.mandatory);
 
               return (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => onEditQuestion(item)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
+                  className="flex items-center justify-between w-full gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
                 >
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -732,7 +726,7 @@ function ReviewStep({
       ))}
 
       {submitError && (
-        <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p role="alert" className="px-4 py-3 mt-4 text-sm text-red-800 border border-red-200 rounded-lg bg-red-50">
           {submitError}
         </p>
       )}
@@ -777,8 +771,8 @@ function ResultsStep({
       <h1 className={headingClass}>Ringkasan Kesiapan Bukti Akreditasi LSP</h1>
 
       <h3 className={h3Class}>Profil Lembaga Sertifikasi Person</h3>
-      <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
-        <table className="w-full text-left text-sm">
+      <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
+        <table className="w-full text-sm text-left">
           <thead className="bg-primary-50 text-primary-950">
             <tr>
               <th scope="col" className="w-2/5 px-3 py-2.5 sm:px-4">Informasi Instansi</th>
@@ -805,32 +799,32 @@ function ResultsStep({
         </table>
       </div>
 
-      <div className="my-5 rounded-xl border border-primary-100 bg-primary-50 px-5 py-6 text-center">
-        <div className="mb-2 text-xs font-bold uppercase tracking-wider text-primary-900">
+      <div className="px-5 py-6 my-5 text-center border rounded-xl border-primary-100 bg-primary-50">
+        <div className="mb-2 text-xs font-bold tracking-wider uppercase text-primary-900">
           Status Kesiapan Bukti LSP Anda
         </div>
         <StatusPill label={summary.status} tone={summary.tone} large />
-        <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-700">{summary.description}</p>
+        <p className="max-w-2xl mx-auto mt-3 text-sm text-slate-700">{summary.description}</p>
       </div>
 
-      <div className="my-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+      <div className="grid grid-cols-2 gap-3 my-4 sm:grid-cols-5">
+        <div className="p-4 text-center border rounded-xl border-slate-200 bg-slate-50">
           <div className="text-2xl font-bold text-emerald-700">{summary.counts.yes}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">Ya (Sudah Lengkap)</div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+        <div className="p-4 text-center border rounded-xl border-slate-200 bg-slate-50">
           <div className="text-2xl font-bold text-accent-700">{summary.counts.partial}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">Sebagian</div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+        <div className="p-4 text-center border rounded-xl border-slate-200 bg-slate-50">
           <div className="text-2xl font-bold text-red-700">{summary.counts.no}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">Tidak (Belum Ada)</div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+        <div className="p-4 text-center border rounded-xl border-slate-200 bg-slate-50">
           <div className="text-2xl font-bold text-slate-700">{summary.counts.na}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">Opsional Dilewati</div>
         </div>
-        <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-center sm:col-span-1">
+        <div className="col-span-2 p-4 text-center border rounded-xl border-slate-200 bg-slate-50 sm:col-span-1">
           <div className="text-2xl font-bold text-primary-900">
             {summary.mandDone}/{summary.mandTotal}
           </div>
@@ -839,9 +833,9 @@ function ResultsStep({
       </div>
 
       <h2 className={subheadingClass}>Kesiapan per Bagian</h2>
-      <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
+      <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-sm text-left">
             <thead className="bg-primary-50 text-primary-950">
               <tr>
                 <th scope="col" className="px-3 py-2.5 sm:px-4">Bagian</th>
@@ -876,9 +870,9 @@ function ResultsStep({
       {assessment.documents?.length > 0 && (
         <>
           <h2 className={subheadingClass}>Kesiapan Dokumen Pendukung Pengajuan Akreditasi</h2>
-          <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
+          <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-sm text-left">
                 <thead className="bg-primary-50 text-primary-950">
                   <tr>
                     <th scope="col" className="w-20 px-3 py-2.5 sm:px-4">Kode</th>
@@ -922,9 +916,9 @@ function ResultsStep({
       {priorities.length > 0 ? (
         <>
           <h2 className={subheadingClass}>Daftar Bukti yang Perlu Dilengkapi ({priorities.length} Butir)</h2>
-          <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
+          <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-sm text-left">
                 <thead className="bg-primary-50 text-primary-950">
                   <tr>
                     <th scope="col" className="w-20 px-3 py-2.5 sm:px-4">No.</th>

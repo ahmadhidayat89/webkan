@@ -88,26 +88,29 @@ export const getIdentityMeta = (item, index) =>
     fullSpan: index === 0 || index === 1 || index === 3,
   };
 
-export const readinessAnswerLabel = (answer) => {
-  if (answer === 'yes' || answer === 'Ya') return 'Ya';
-  if (answer === 'partial' || answer === 'Sebagian') return 'Sebagian';
-  if (answer === 'no' || answer === 'Tidak') return 'Tidak';
-  return undefined;
-};
+const ANSWER_ALIASES = new Map([
+  ['yes', 'yes'],
+  ['Ya', 'yes'],
+  ['partial', 'partial'],
+  ['Sebagian', 'partial'],
+  ['no', 'no'],
+  ['Tidak', 'no'],
+]);
 
-export const readinessPlainAnswerLabel = (answer) => {
-  if (answer === 'yes' || answer === 'Ya') return 'Ya';
-  if (answer === 'partial' || answer === 'Sebagian') return 'Sebagian';
-  if (answer === 'no' || answer === 'Tidak') return 'Tidak';
-  return undefined;
-};
+const ANSWER_LABELS = new Map([
+  ['yes', 'Ya'],
+  ['partial', 'Sebagian'],
+  ['no', 'Tidak'],
+]);
 
 export function normalizeAnswer(raw) {
-  if (raw === 'yes' || raw === 'Ya') return 'yes';
-  if (raw === 'partial' || raw === 'Sebagian') return 'partial';
-  if (raw === 'no' || raw === 'Tidak') return 'no';
-  return undefined;
+  return ANSWER_ALIASES.get(raw);
 }
+
+export const readinessAnswerLabel = (answer) => ANSWER_LABELS.get(normalizeAnswer(answer));
+
+// Alias: implementasinya sama dengan readinessAnswerLabel
+export const readinessPlainAnswerLabel = readinessAnswerLabel;
 
 export function friendlyClauseTitle(clause) {
   if (!clause) return '';
@@ -131,69 +134,97 @@ export function formatScopeClauseLabel(clause, items = []) {
   return `${clause.code} — ${clause.title} (${countLabel})`;
 }
 
-export function tallyReadiness(questions, responses) {
+function countAnswers(questions, responses) {
   const counts = { yes: 0, partial: 0, no: 0, na: 0 };
-  let unansweredMand = 0;
-  let mandTotal = 0;
-  let optTotal = 0;
-  let mandDone = 0;
-  let optDone = 0;
+  const totals = { unansweredMand: 0, mandTotal: 0, optTotal: 0, mandDone: 0, optDone: 0 };
 
   for (const question of questions) {
     const isOptional = Boolean(question.allowNA);
-    if (isOptional) optTotal += 1;
-    else mandTotal += 1;
-
     const answer = normalizeAnswer(responses[question.id]?.answer);
+
+    totals[isOptional ? 'optTotal' : 'mandTotal'] += 1;
+
     if (answer) {
       counts[answer] += 1;
-      if (isOptional) optDone += 1;
-      else mandDone += 1;
+      totals[isOptional ? 'optDone' : 'mandDone'] += 1;
     } else if (isOptional) {
       counts.na += 1;
     } else {
-      unansweredMand += 1;
+      totals.unansweredMand += 1;
     }
   }
 
+  return { counts, ...totals };
+}
+
+function buildCukupDescription(noCount) {
+  const note = noCount > 0
+    ? ` Lengkapi terlebih dahulu ${noCount} bukti yang masih berstatus "Tidak".`
+    : ' Lengkapi beberapa bukti yang masih berstatus "Sebagian".';
+  return 'Sebagian besar bukti sudah tersedia dengan baik.' + note;
+}
+
+function resolveReadinessStatus({ unansweredMand, applicable, naCount, noCount, pct }) {
+  if (unansweredMand > 0) {
+    return {
+      status: 'Belum Lengkap',
+      tone: 'abu',
+      description: `Masih ada ${unansweredMand} pertanyaan wajib yang belum dijawab.`,
+    };
+  }
+  if (applicable === 0 && naCount > 0) {
+    return {
+      status: 'Tidak Diperlukan (Dilewati)',
+      tone: 'abu',
+      description: 'Tidak diperlukan karena kegiatan opsional terkait tidak dilakukan di LSP Anda.',
+    };
+  }
+  if (pct >= 80 && noCount === 0) {
+    return {
+      status: 'Siap',
+      tone: 'hijau',
+      description: 'Dokumen dan rekaman bukti LSP Anda sudah sangat lengkap. Anda siap melanjutkan ke pengisian formulir FPA 09-01 LSP.',
+    };
+  }
+  if (pct >= 60) {
+    return { status: 'Cukup', tone: 'hijau', description: buildCukupDescription(noCount) };
+  }
+  if (pct >= 40) {
+    return {
+      status: 'Kurang',
+      tone: 'kuning',
+      description: 'Ketersediaan bukti saat ini masih terbatas. Disarankan untuk melengkapi prosedur dan rekaman yang belum tersedia sebelum mengajukan akreditasi.',
+    };
+  }
+  return {
+    status: 'Belum',
+    tone: 'merah',
+    description: 'Sebagian besar bukti belum tersedia. LSP Anda memerlukan persiapan dokumen sistem manajemen dan skema secara menyeluruh.',
+  };
+}
+
+export function tallyReadiness(questions, responses) {
+  const { counts, unansweredMand, mandTotal, optTotal, mandDone, optDone } =
+    countAnswers(questions, responses);
+
   const applicable = counts.yes + counts.partial + counts.no;
-  const answered = applicable;
-  const pct = applicable ? Math.round(((counts.yes + 0.5 * counts.partial) / applicable) * 100) : 0;
+  const pct = applicable
+    ? Math.round(((counts.yes + 0.5 * counts.partial) / applicable) * 100)
+    : 0;
   const score = applicable ? (2 * counts.yes + counts.partial) / applicable : null;
 
-  let status = 'Belum';
-  let tone = 'merah';
-  let description = 'Sebagian besar bukti belum tersedia. LSP Anda memerlukan persiapan dokumen sistem manajemen dan skema secara menyeluruh.';
-
-  if (unansweredMand > 0) {
-    status = 'Belum Lengkap';
-    tone = 'abu';
-    description = `Masih ada ${unansweredMand} pertanyaan wajib yang belum dijawab.`;
-  } else if (applicable === 0 && counts.na > 0) {
-    status = 'Tidak Diperlukan (Dilewati)';
-    tone = 'abu';
-    description = 'Tidak diperlukan karena kegiatan opsional terkait tidak dilakukan di LSP Anda.';
-  } else if (pct >= 80 && counts.no === 0) {
-    status = 'Siap';
-    tone = 'hijau';
-    description = 'Dokumen dan rekaman bukti LSP Anda sudah sangat lengkap. Anda siap melanjutkan ke pengisian formulir FPA 09-01 LSP.';
-  } else if (pct >= 60) {
-    const noteTidak = counts.no > 0
-      ? ` Lengkapi terlebih dahulu ${counts.no} bukti yang masih berstatus "Tidak".`
-      : ' Lengkapi beberapa bukti yang masih berstatus "Sebagian".';
-    status = 'Cukup';
-    tone = 'hijau';
-    description = 'Sebagian besar bukti sudah tersedia dengan baik.' + noteTidak;
-  } else if (pct >= 40) {
-    status = 'Kurang';
-    tone = 'kuning';
-    description = 'Ketersediaan bukti saat ini masih terbatas. Disarankan untuk melengkapi prosedur dan rekaman yang belum tersedia sebelum mengajukan akreditasi.';
-  }
+  const { status, tone, description } = resolveReadinessStatus({
+    unansweredMand,
+    applicable,
+    naCount: counts.na,
+    noCount: counts.no,
+    pct,
+  });
 
   return {
     counts,
     applicable,
-    answered,
+    answered: applicable,
     pct,
     score,
     status,

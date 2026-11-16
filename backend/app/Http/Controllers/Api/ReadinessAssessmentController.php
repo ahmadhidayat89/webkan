@@ -16,7 +16,7 @@ class ReadinessAssessmentController extends Controller
         app(AdminReadinessAssessmentController::class)->ensureDefaultTemplateSynced();
 
         $assessments = ReadinessAssessment::query()->whereNotNull('published_at')
-            ->latest('published_at')->get(['id', 'published'])->map(fn ($assessment) => [
+            ->latest('published_at')->get(['id', 'published'])->map(fn($assessment) => [
                 'id' => $assessment->id,
                 'title' => $assessment->published['title'],
                 'standard' => $assessment->published['standard'],
@@ -107,7 +107,7 @@ class ReadinessAssessmentController extends Controller
     {
         $clauses = $published['clauses'] ?? [];
         $selected = $selectedClauses ?? array_column($clauses, 'id');
-        $always = array_column(array_filter($clauses, fn ($c) => ! empty($c['always'])), 'id');
+        $always = array_column(array_filter($clauses, fn($c) => ! empty($c['always'])), 'id');
 
         return array_values(array_unique(array_merge($selected, $always)));
     }
@@ -117,7 +117,7 @@ class ReadinessAssessmentController extends Controller
         $questions = $published['questions'] ?? [];
         $active = array_values(array_filter(
             $questions,
-            fn ($q) => in_array((string) $q['clauseId'], $activeClauseIds, true)
+            fn($q) => in_array((string) $q['clauseId'], $activeClauseIds, true)
         ));
 
         return $active === [] ? $questions : $active;
@@ -162,37 +162,23 @@ class ReadinessAssessmentController extends Controller
 
     private function normalizeAnswer(mixed $raw): ?string
     {
-        if ($raw === 'yes' || $raw === 'Ya') {
-            return 'yes';
-        }
-        if ($raw === 'partial' || $raw === 'Sebagian') {
-            return 'partial';
-        }
-        if ($raw === 'no' || $raw === 'Tidak') {
-            return 'no';
-        }
-
-        return null;
+        return match ($raw) {
+            'yes', 'Ya' => 'yes',
+            'partial', 'Sebagian' => 'partial',
+            'no', 'Tidak' => 'no',
+            default => null,
+        };
     }
 
     private function determineStatus(int $unansweredMand, int $applicable, int $na, int $pct, int $no): string
     {
-        if ($unansweredMand > 0) {
-            return 'Belum Lengkap';
-        }
-        if ($applicable === 0 && $na > 0) {
-            return 'Tidak Diperlukan (Dilewati)';
-        }
-        if ($pct >= 80 && $no === 0) {
-            return 'Siap';
-        }
-        if ($pct >= 60) {
-            return 'Cukup';
-        }
-        if ($pct >= 40) {
-            return 'Kurang';
-        }
-
-        return 'Belum';
+        return match (true) {
+            $unansweredMand > 0 => 'Belum Lengkap',
+            $applicable === 0 && $na > 0 => 'Tidak Diperlukan (Dilewati)',
+            $pct >= 80 && $no === 0 => 'Siap',
+            $pct >= 60 => 'Cukup',
+            $pct >= 40 => 'Kurang',
+            default => 'Belum',
+        };
     }
 }
