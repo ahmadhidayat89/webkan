@@ -53,7 +53,86 @@ class ReadinessMasterData
 
     public function load(): array
     {
-        // ← pindahkan isi loadMasterData() persis seperti aslinya
+        $settings = DB::table('readiness_master_settings')->first();
+
+        $clauses = DB::table('readiness_master_clauses')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($row) => [
+                'id' => (string) $row->item_id,
+                'code' => $row->code,
+                'title' => $row->title,
+                'description' => $row->description,
+                'always' => (bool) $row->always,
+            ])
+            ->values()
+            ->all();
+
+        $documents = DB::table('readiness_master_documents')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($row) => [
+                'id' => (string) $row->item_id,
+                'code' => $row->code,
+                'title' => $row->title,
+                'sample' => $row->sample,
+            ])
+            ->values()
+            ->all();
+
+        $questions = DB::table('readiness_master_questions')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($row) => [
+                'id' => (string) $row->item_id,
+                'clauseId' => (string) $row->clause_id,
+                'reference' => $row->reference,
+                'text' => $row->text,
+                'allowNA' => (bool) $row->allow_na,
+                'documentId' => $row->document_id !== null ? (string) $row->document_id : null,
+                'evidence' => $row->evidence,
+            ])
+            ->values()
+            ->all();
+
+        $identity = DB::table('readiness_master_identities')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($row) => [
+                'id' => (string) $row->item_id,
+                'label' => $row->label,
+            ])
+            ->values()
+            ->all();
+
+        $glossary = DB::table('readiness_master_glossaries')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($row) => [
+                'id' => (string) $row->item_id,
+                'term' => $row->term,
+                'definition' => $row->definition,
+                'note' => $row->note,
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'title' => $settings->title ?? 'SiapKAN — Penilaian Kesiapan Akreditasi LSP',
+            'standard' => $settings->standard ?? 'SNI ISO/IEC 17024:2026',
+            'subtitle' => $settings->subtitle ?? null,
+            'intro' => $settings->intro ?? null,
+            'clauses' => $clauses,
+            'questions' => $questions,
+            'identity' => $identity,
+            'documents' => $documents,
+            'glossary' => $glossary,
+        ];
     }
 
     private function defaultTemplate(): array
@@ -65,16 +144,142 @@ class ReadinessMasterData
 
     private function syncDefaultTemplate(array $default): void
     {
-        // ← pindahkan isi syncDefaultTemplate(), ganti $this->loadMasterData() menjadi $this->load()
+        DB::transaction(function () use ($default) {
+            $old = $this->load();
+            $this->saveMasterData($default);
+            $new = $this->load();
+
+            ReadinessAssessment::query()->lockForUpdate()->get()
+                ->each(function (ReadinessAssessment $assessment) use ($old, $new) {
+                    $updatedDraft = ReadinessMasterSync::apply($old, $new, $assessment->draft);
+                    $changes = [];
+                    if ($updatedDraft != $assessment->draft) {
+                        $changes['draft'] = $updatedDraft;
+                    }
+                    if ($assessment->published !== null) {
+                        $updatedPublished = ReadinessMasterSync::apply($old, $new, $assessment->published);
+                        if ($updatedPublished != $assessment->published) {
+                            $changes['published'] = $updatedPublished;
+                        }
+                    }
+                    if ($changes !== []) {
+                        $assessment->update($changes);
+                    }
+                });
+        });
     }
 
     private function saveMasterData(array $draft): void
     {
-        // ← pindahkan isi saveMasterData() persis seperti aslinya
+        DB::transaction(function () use ($draft) {
+            $now = now();
+
+            DB::table('readiness_master_settings')->delete();
+            DB::table('readiness_master_settings')->insert([
+                'title' => $draft['title'],
+                'standard' => $draft['standard'],
+                'subtitle' => $draft['subtitle'] ?? null,
+                'intro' => $draft['intro'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            DB::table('readiness_master_clauses')->delete();
+            foreach ($draft['clauses'] ?? [] as $index => $clause) {
+                DB::table('readiness_master_clauses')->insert([
+                    'item_id' => (string) $clause['id'],
+                    'code' => $clause['code'],
+                    'title' => $clause['title'],
+                    'description' => $clause['description'] ?? null,
+                    'always' => (bool) ($clause['always'] ?? false),
+                    'sort_order' => $index,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            DB::table('readiness_master_documents')->delete();
+            foreach ($draft['documents'] ?? [] as $index => $doc) {
+                DB::table('readiness_master_documents')->insert([
+                    'item_id' => (string) $doc['id'],
+                    'code' => $doc['code'],
+                    'title' => $doc['title'],
+                    'sample' => $doc['sample'] ?? null,
+                    'sort_order' => $index,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            DB::table('readiness_master_questions')->delete();
+            foreach ($draft['questions'] ?? [] as $index => $question) {
+                DB::table('readiness_master_questions')->insert([
+                    'item_id' => (string) $question['id'],
+                    'clause_id' => (string) $question['clauseId'],
+                    'reference' => $question['reference'] ?? null,
+                    'text' => $question['text'],
+                    'allow_na' => (bool) ($question['allowNA'] ?? false),
+                    'document_id' => $question['documentId'] ?? null,
+                    'evidence' => $question['evidence'] ?? null,
+                    'sort_order' => $index,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            DB::table('readiness_master_identities')->delete();
+            foreach ($draft['identity'] ?? [] as $index => $identity) {
+                DB::table('readiness_master_identities')->insert([
+                    'item_id' => (string) $identity['id'],
+                    'label' => $identity['label'],
+                    'sort_order' => $index,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            DB::table('readiness_master_glossaries')->delete();
+            foreach ($draft['glossary'] ?? [] as $index => $glossary) {
+                DB::table('readiness_master_glossaries')->insert([
+                    'item_id' => (string) $glossary['id'],
+                    'term' => $glossary['term'],
+                    'definition' => $glossary['definition'],
+                    'note' => $glossary['note'] ?? null,
+                    'sort_order' => $index,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        });
     }
 
     private function ensureResponsesTableExists(): void
     {
-        // ← pindahkan isi ensureResponsesTableExists() persis seperti aslinya
+        if (Schema::hasTable('readiness_assessment_responses')) {
+            return;
+        }
+
+        Schema::create('readiness_assessment_responses', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('readiness_assessment_id')
+                ->constrained('readiness_assessments')
+                ->cascadeOnDelete();
+            $table->string('submission_token', 64)->nullable()->unique();
+            $table->string('scope', 250)->nullable();
+            $table->json('selected_clauses')->nullable();
+            $table->json('identity')->nullable();
+            $table->json('responses')->nullable();
+            $table->string('status', 80)->default('Belum');
+            $table->unsignedSmallInteger('percentage')->default(0);
+            $table->unsignedSmallInteger('yes_count')->default(0);
+            $table->unsignedSmallInteger('partial_count')->default(0);
+            $table->unsignedSmallInteger('no_count')->default(0);
+            $table->unsignedSmallInteger('na_count')->default(0);
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->timestamps();
+
+            $table->index(['readiness_assessment_id', 'created_at']);
+        });
     }
 }
