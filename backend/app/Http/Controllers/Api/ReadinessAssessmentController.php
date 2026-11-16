@@ -51,63 +51,14 @@ class ReadinessAssessmentController extends Controller
         ]);
 
         $published = $readinessAssessment->published;
-        $selectedClauses = $validated['selected_clauses'] ?? array_column($published['clauses'] ?? [], 'id');
-        $alwaysClauses = array_column(
-            array_filter($published['clauses'] ?? [], fn ($c) => ! empty($c['always'])),
-            'id'
-        );
-        $activeClauseIds = array_values(array_unique(array_merge($selectedClauses, $alwaysClauses)));
+        $activeClauseIds = $this->resolveActiveClauseIds($published, $validated['selected_clauses'] ?? null);
+        $activeQuestions = $this->resolveActiveQuestions($published, $activeClauseIds);
+        $cleanIdentity = $this->cleanIdentity($published['identity'] ?? [], $validated['identity'] ?? []);
+        $tally = $this->tallyResponses($activeQuestions, $validated['responses']);
 
-        $activeQuestions = array_values(array_filter(
-            $published['questions'] ?? [],
-            fn ($q) => in_array((string) $q['clauseId'], $activeClauseIds, true)
-        ));
-
-        if ($activeQuestions === []) {
-            $activeQuestions = $published['questions'] ?? [];
-        }
-
-        $cleanIdentity = [];
-        foreach ($published['identity'] ?? [] as $field) {
-            $id = (string) $field['id'];
-            $val = $validated['identity'][$id] ?? '';
-            if (is_scalar($val)) {
-                $cleanIdentity[$id] = mb_substr(trim((string) $val), 0, 500);
-            }
-        }
-
-        $cleanResponses = [];
-        $yes = 0;
-        $partial = 0;
-        $no = 0;
-        $na = 0;
-        $unansweredMand = 0;
-
-        foreach ($activeQuestions as $question) {
-            $qId = (string) $question['id'];
-            $isOptional = ! empty($question['allowNA']);
-            $raw = $validated['responses'][$qId]['answer'] ?? $validated['responses'][$qId] ?? null;
-            $norm = $this->normalizeAnswer($raw);
-
-            if ($norm !== null) {
-                $cleanResponses[$qId] = ['answer' => $norm];
-                if ($norm === 'yes') {
-                    $yes++;
-                } elseif ($norm === 'partial') {
-                    $partial++;
-                } elseif ($norm === 'no') {
-                    $no++;
-                }
-            } elseif ($isOptional) {
-                $na++;
-            } else {
-                $unansweredMand++;
-            }
-        }
-
-        $applicable = $yes + $partial + $no;
-        $pct = $applicable > 0 ? (int) round((($yes + 0.5 * $partial) / $applicable) * 100) : 0;
-        $status = $this->determineStatus($unansweredMand, $applicable, $na, $pct, $no);
+        $applicable = $tally['yes'] + $tally['partial'] + $tally['no'];
+        $pct = $applicable > 0 ? (int) round((($tally['yes'] + 0.5 * $tally['partial']) / $applicable) * 100) : 0;
+        $status = $this->determineStatus($tally['unansweredMand'], $applicable, $tally['na'], $pct, $tally['no']);
 
         $existing = null;
         if (! empty($validated['submission_token'])) {
@@ -124,13 +75,13 @@ class ReadinessAssessmentController extends Controller
             'scope' => $validated['scope'] ?? 'Cakupan lengkap',
             'selected_clauses' => $activeClauseIds,
             'identity' => $cleanIdentity,
-            'responses' => $cleanResponses,
+            'responses' => $tally['clean'],
             'status' => $status,
             'percentage' => $pct,
-            'yes_count' => $yes,
-            'partial_count' => $partial,
-            'no_count' => $no,
-            'na_count' => $na,
+            'yes_count' => $tally['yes'],
+            'partial_count' => $tally['partial'],
+            'no_count' => $tally['no'],
+            'na_count' => $tally['na'],
             'ip_address' => $request->ip(),
             'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000),
         ];
@@ -150,6 +101,63 @@ class ReadinessAssessmentController extends Controller
                 'percentage' => $record->percentage,
             ],
         ]);
+    }
+
+    private function resolveActiveClauseIds(array $published, ?array $selectedClauses): array
+    {
+        $clauses = $published['clauses'] ?? [];
+        $selected = $selectedClauses ?? array_column($clauses, 'id');
+        $always = array_column(array_filter($clauses, fn ($c) => ! empty($c['always'])), 'id');
+
+        return array_values(array_unique(array_merge($selected, $always)));
+    }
+
+    private function resolveActiveQuestions(array $published, array $activeClauseIds): array
+    {
+        $questions = $published['questions'] ?? [];
+        $active = array_values(array_filter(
+            $questions,
+            fn ($q) => in_array((string) $q['clauseId'], $activeClauseIds, true)
+        ));
+
+        return $active === [] ? $questions : $active;
+    }
+
+    private function cleanIdentity(array $fields, array $input): array
+    {
+        $clean = [];
+
+        foreach ($fields as $field) {
+            $id = (string) $field['id'];
+            $value = $input[$id] ?? '';
+            if (is_scalar($value)) {
+                $clean[$id] = mb_substr(trim((string) $value), 0, 500);
+            }
+        }
+
+        return $clean;
+    }
+
+    private function tallyResponses(array $questions, array $responses): array
+    {
+        $tally = ['clean' => [], 'yes' => 0, 'partial' => 0, 'no' => 0, 'na' => 0, 'unansweredMand' => 0];
+
+        foreach ($questions as $question) {
+            $qId = (string) $question['id'];
+            $raw = $responses[$qId]['answer'] ?? $responses[$qId] ?? null;
+            $norm = $this->normalizeAnswer($raw);
+
+            if ($norm !== null) {
+                $tally['clean'][$qId] = ['answer' => $norm];
+                $tally[$norm]++;
+            } elseif (! empty($question['allowNA'])) {
+                $tally['na']++;
+            } else {
+                $tally['unansweredMand']++;
+            }
+        }
+
+        return $tally;
     }
 
     private function normalizeAnswer(mixed $raw): ?string

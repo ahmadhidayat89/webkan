@@ -123,8 +123,7 @@ export function formatScopeClauseLabel(clause, items = []) {
   const mandCount = items.filter((q) => !q.allowNA).length;
   const optCount = items.filter((q) => q.allowNA).length;
   const countLabel = optCount > 0 ? `${mandCount} wajib, ${optCount} opsional` : `${mandCount} wajib`;
-  const match = clause.title?.match(/^([A-Z])\.\s*(.+)$/);
-  if (match) {
+  const match = clause.title?.match(/^([A-Z])\.\s*(\S.*)$/); if (match) {
     const [, letter, rest] = match;
     const shortRest = ['D', 'F', 'G'].includes(letter) ? rest.replace(/^Persyaratan\s+/i, '') : rest;
     return `Bagian ${letter} — ${shortRest} (${countLabel})`;

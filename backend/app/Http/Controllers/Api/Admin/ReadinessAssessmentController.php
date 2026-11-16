@@ -16,6 +16,8 @@ class ReadinessAssessmentController extends Controller
 {
     private const DISPLAY_DATE_TIME_FORMAT = 'd/m/Y H:i';
 
+    private const DISPLAY_TIMEZONE = 'Asia/Jakarta';
+
     public function index()
     {
         $this->ensureDefaultTemplateSynced();
@@ -146,7 +148,7 @@ class ReadinessAssessmentController extends Controller
             ->get();
 
         $total = $responses->count();
-        $last = $responses->first()?->created_at?->copy()->timezone('Asia/Jakarta');
+        $last = $responses->first()?->created_at?->copy()->timezone(self::DISPLAY_TIMEZONE);
         $avgPct = $total > 0 ? round($responses->avg('percentage'), 1) : 0;
 
         $statusCounts = [
@@ -199,9 +201,9 @@ class ReadinessAssessmentController extends Controller
             'partial_count' => $r->partial_count,
             'no_count' => $r->no_count,
             'na_count' => $r->na_count,
-            'created_at' => $r->created_at?->copy()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
-            'created_at_human' => $r->created_at?->copy()->timezone('Asia/Jakarta')->format(self::DISPLAY_DATE_TIME_FORMAT),
-            'updated_at_human' => $r->updated_at?->copy()->timezone('Asia/Jakarta')->format(self::DISPLAY_DATE_TIME_FORMAT),
+            'created_at' => $r->created_at?->copy()->timezone(self::DISPLAY_TIMEZONE)->format('Y-m-d H:i:s'),
+            'created_at_human' => $r->created_at?->copy()->timezone(self::DISPLAY_TIMEZONE)->format(self::DISPLAY_DATE_TIME_FORMAT),
+            'updated_at_human' => $r->updated_at?->copy()->timezone(self::DISPLAY_TIMEZONE)->format(self::DISPLAY_DATE_TIME_FORMAT),
         ])->values()->all();
 
         return response()->json([
@@ -245,71 +247,87 @@ class ReadinessAssessmentController extends Controller
             'Content-Disposition' => 'attachment; filename="hasil-readiness-assessment-' . $readinessAssessment->id . '.csv"',
         ];
 
-        $callback = function () use ($responses, $identities, $questions) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
-
-            $colHeaders = [
-                '#',
-                'Waktu Pengisian',
-                'Cakupan',
-                'Status Kesiapan',
-                'Kesiapan (%)',
-                'Ya',
-                'Sebagian',
-                'Tidak',
-                'Opsional Dilewati',
-            ];
-            foreach ($identities as $ident) {
-                $colHeaders[] = $ident['label'];
-            }
-            foreach ($questions as $idx => $q) {
-                $ref = ! empty($q['reference']) ? ' (' . $q['reference'] . ')' : '';
-                $colHeaders[] = 'P' . ($idx + 1) . $ref . ': ' . $q['text'];
-            }
-            fputcsv($file, array_map([$this, 'safeCsvCell'], $colHeaders));
-
-            foreach ($responses as $rIdx => $resp) {
-                $row = [
-                    $rIdx + 1,
-                    $resp->created_at?->copy()->timezone('Asia/Jakarta')->format(self::DISPLAY_DATE_TIME_FORMAT) ?? '',
-                    $resp->scope ?? 'Cakupan lengkap',
-                    $resp->status,
-                    $resp->percentage . '%',
-                    $resp->yes_count,
-                    $resp->partial_count,
-                    $resp->no_count,
-                    $resp->na_count,
-                ];
-
-                foreach ($identities as $ident) {
-                    $idKey = (string) $ident['id'];
-                    $row[] = $resp->identity[$idKey] ?? '';
-                }
-
-                foreach ($questions as $q) {
-                    $qId = (string) $q['id'];
-                    $ans = $resp->responses[$qId]['answer'] ?? null;
-                    if ($ans === 'yes') {
-                        $row[] = 'Ya';
-                    } elseif ($ans === 'partial') {
-                        $row[] = 'Sebagian';
-                    } elseif ($ans === 'no') {
-                        $row[] = 'Tidak';
-                    } elseif (! empty($q['allowNA'])) {
-                        $row[] = 'Dilewati (Opsional)';
-                    } else {
-                        $row[] = 'Belum Dijawab';
-                    }
-                }
-
-                fputcsv($file, array_map([$this, 'safeCsvCell'], $row));
-            }
-
-            fclose($file);
-        };
+        $callback = fn () => $this->writeCsv($responses, $identities, $questions);
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    private function writeCsv(iterable $responses, array $identities, array $questions): void
+    {
+        $file = fopen('php://output', 'w');
+        fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        fputcsv($file, array_map([$this, 'safeCsvCell'], $this->csvHeaderRow($identities, $questions)));
+
+        foreach ($responses as $index => $response) {
+            $row = $this->csvResponseRow($index, $response, $identities, $questions);
+            fputcsv($file, array_map([$this, 'safeCsvCell'], $row));
+        }
+
+        fclose($file);
+    }
+
+    private function csvHeaderRow(array $identities, array $questions): array
+    {
+        $headers = [
+            '#',
+            'Waktu Pengisian',
+            'Cakupan',
+            'Status Kesiapan',
+            'Kesiapan (%)',
+            'Ya',
+            'Sebagian',
+            'Tidak',
+            'Opsional Dilewati',
+        ];
+
+        foreach ($identities as $identity) {
+            $headers[] = $identity['label'];
+        }
+
+        foreach ($questions as $index => $question) {
+            $reference = ! empty($question['reference']) ? ' (' . $question['reference'] . ')' : '';
+            $headers[] = 'P' . ($index + 1) . $reference . ': ' . $question['text'];
+        }
+
+        return $headers;
+    }
+
+    private function csvResponseRow(int $index, ReadinessAssessmentResponse $response, array $identities, array $questions): array
+    {
+        $row = [
+            $index + 1,
+            $response->created_at?->copy()->timezone(self::DISPLAY_TIMEZONE)->format(self::DISPLAY_DATE_TIME_FORMAT) ?? '',
+            $response->scope ?? 'Cakupan lengkap',
+            $response->status,
+            $response->percentage . '%',
+            $response->yes_count,
+            $response->partial_count,
+            $response->no_count,
+            $response->na_count,
+        ];
+
+        foreach ($identities as $identity) {
+            $row[] = $response->identity[(string) $identity['id']] ?? '';
+        }
+
+        foreach ($questions as $question) {
+            $answer = $response->responses[(string) $question['id']]['answer'] ?? null;
+            $row[] = $this->csvAnswerLabel($answer, ! empty($question['allowNA']));
+        }
+
+        return $row;
+    }
+
+    private function csvAnswerLabel(mixed $answer, bool $optional): string
+    {
+        $labels = ['yes' => 'Ya', 'partial' => 'Sebagian', 'no' => 'Tidak'];
+
+        if (is_string($answer) && isset($labels[$answer])) {
+            return $labels[$answer];
+        }
+
+        return $optional ? 'Dilewati (Opsional)' : 'Belum Dijawab';
     }
 
     private function safeCsvCell(mixed $value): string
