@@ -2,18 +2,20 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Admin\ReadinessAssessmentController as AdminReadinessAssessmentController;
 use App\Http\Controllers\Controller;
 use App\Models\ReadinessAssessment;
 use App\Models\ReadinessAssessmentResponse;
+use App\Services\ReadinessMasterData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class ReadinessAssessmentController extends Controller
 {
+    public function __construct(private readonly ReadinessMasterData $masterData) {}
+
     public function index()
     {
-        app(AdminReadinessAssessmentController::class)->ensureDefaultTemplateSynced();
+        $this->masterData->ensureDefaultTemplateSynced();
 
         $assessments = ReadinessAssessment::query()->whereNotNull('published_at')
             ->latest('published_at')->get(['id', 'published'])->map(fn($assessment) => [
@@ -28,7 +30,7 @@ class ReadinessAssessmentController extends Controller
 
     public function show(ReadinessAssessment $readinessAssessment)
     {
-        app(AdminReadinessAssessmentController::class)->ensureDefaultTemplateSynced();
+        $this->masterData->ensureDefaultTemplateSynced();
         $readinessAssessment->refresh();
         abort_unless($readinessAssessment->published_at, 404);
 
@@ -37,7 +39,7 @@ class ReadinessAssessmentController extends Controller
 
     public function submit(Request $request, ReadinessAssessment $readinessAssessment)
     {
-        app(AdminReadinessAssessmentController::class)->ensureDefaultTemplateSynced();
+        $this->masterData->ensureDefaultTemplateSynced();
         $readinessAssessment->refresh();
         abort_unless($readinessAssessment->published_at, 404);
 
