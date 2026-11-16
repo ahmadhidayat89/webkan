@@ -14,34 +14,41 @@ class SaveReadinessAssessment extends FormRequest
             return;
         }
 
-        $draft['messages'] = isset($draft['messages']) && is_array($draft['messages']) ? $draft['messages'] : null;
+        $draft['messages'] = is_array($draft['messages'] ?? null) ? $draft['messages'] : null;
 
-        if (isset($draft['questions']) && is_array($draft['questions'])) {
-            $draft['questions'] = array_map(function ($q) {
-                if (is_array($q) && ! array_key_exists('optHint', $q)) {
-                    $q['optHint'] = null;
-                }
-
-                return $q;
-            }, $draft['questions']);
+        if (is_array($draft['questions'] ?? null)) {
+            $draft['questions'] = array_map(
+                fn ($question) => $this->withNullDefaults($question, ['optHint']),
+                $draft['questions']
+            );
         }
 
-        if (isset($draft['identity']) && is_array($draft['identity'])) {
-            $draft['identity'] = array_map(function ($ident) {
-                if (is_array($ident)) {
-                    if (! array_key_exists('placeholder', $ident)) {
-                        $ident['placeholder'] = null;
-                    }
-                    if (! array_key_exists('hint', $ident)) {
-                        $ident['hint'] = null;
-                    }
-                }
-
-                return $ident;
-            }, $draft['identity']);
+        if (is_array($draft['identity'] ?? null)) {
+            $draft['identity'] = array_map(
+                fn ($identity) => $this->withNullDefaults($identity, ['placeholder', 'hint']),
+                $draft['identity']
+            );
         }
 
         $this->merge(['draft' => $draft]);
+    }
+
+    /**
+     * Pastikan key tertentu selalu ada (default null) pada item berbentuk array.
+     */
+    private function withNullDefaults(mixed $item, array $keys): mixed
+    {
+        if (! is_array($item)) {
+            return $item;
+        }
+
+        foreach ($keys as $key) {
+            if (! array_key_exists($key, $item)) {
+                $item[$key] = null;
+            }
+        }
+
+        return $item;
     }
 
     public function rules(): array

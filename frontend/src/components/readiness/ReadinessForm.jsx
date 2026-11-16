@@ -690,7 +690,6 @@ function ReviewStep({
                 ansTone = 'merah';
               } else if (isOpt) {
                 ansText = 'Dilewati (Opsional)';
-                ansTone = 'abu';
               }
 
               return (
