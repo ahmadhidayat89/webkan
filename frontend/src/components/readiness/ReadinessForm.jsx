@@ -13,8 +13,11 @@ import {
   readinessInput,
   readinessPlainAnswerLabel,
   readinessPrimary,
+  sanitizeIdentityInput,
   shortClauseTitle,
   tallyReadiness,
+  validateAllIdentity,
+  validateIdentityField,
 } from './readiness';
 
 const panelClass = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 print:border-0 print:p-0 print:shadow-none';
@@ -107,7 +110,18 @@ function ProgressStepper({ step, summary, hasQuestions, hasSubmitted, onNavigate
   );
 }
 
-function IntroStep({ assessment, messages, ratings, allCounts, identity, onIdentityChange, onNext, onGlossary }) {
+function IntroStep({
+  assessment,
+  messages,
+  ratings,
+  allCounts,
+  identity,
+  identityErrors,
+  onIdentityChange,
+  onIdentityBlur,
+  onNext,
+  onGlossary,
+}) {
   const entityLabel = assessment.subtitle || 'Lembaga';
 
   return (
@@ -202,6 +216,9 @@ function IntroStep({ assessment, messages, ratings, allCounts, identity, onIdent
           <div className="grid grid-cols-1 gap-3.5 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
             {assessment.identity.map((item, idx) => {
               const meta = getIdentityMeta(item, idx);
+              const err = identityErrors?.[item.id];
+              const isNumber = meta.type === 'number';
+              const maxLen = isNumber ? 4 : meta.type === 'email' ? 254 : 300;
               return (
                 <div key={item.id} className={meta.fullSpan ? 'sm:col-span-2' : ''}>
                   <label htmlFor={`ident_${item.id}`} className="block text-sm font-semibold text-primary-900">
@@ -209,13 +226,25 @@ function IntroStep({ assessment, messages, ratings, allCounts, identity, onIdent
                   </label>
                   <input
                     id={`ident_${item.id}`}
-                    type={meta.type}
+                    type={isNumber ? 'text' : meta.type}
+                    inputMode={isNumber ? 'numeric' : undefined}
                     placeholder={meta.placeholder}
-                    maxLength={500}
+                    maxLength={maxLen}
+                    aria-invalid={Boolean(err)}
+                    aria-describedby={err ? `ident_err_${item.id}` : undefined}
                     value={identity[item.id] ?? ''}
-                    onChange={(e) => onIdentityChange(item.id, e.target.value)}
-                    className={readinessInput}
+                    onChange={(e) => onIdentityChange(item, idx, e.target.value)}
+                    onBlur={(e) => onIdentityBlur(item, idx, e.target.value)}
+                    className={
+                      readinessInput +
+                      (err ? ' border-red-500 focus:border-red-600 focus:ring-red-600' : '')
+                    }
                   />
+                  {err && (
+                    <p id={`ident_err_${item.id}`} role="alert" className="mt-1 text-xs font-medium text-red-600">
+                      {err}
+                    </p>
+                  )}
                   {meta.hint && <p className="mt-1 text-xs text-slate-500">{meta.hint}</p>}
                 </div>
               );
@@ -996,6 +1025,7 @@ export default function ReadinessForm({ assessment, assessmentId, preview = fals
   const [prevStep, setPrevStep] = useState('intro');
   const [selection, setSelection] = useState(allClauseIds);
   const [identity, setIdentity] = useState({});
+  const [identityErrors, setIdentityErrors] = useState({});
   const [responses, setResponses] = useState({});
   const [submissionToken, setSubmissionToken] = useState(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -1059,7 +1089,45 @@ export default function ReadinessForm({ assessment, assessmentId, preview = fals
     .map(({ id, label }) => ({ id, label, value: Object.hasOwn(identity, id) ? (identity[id] || '').trim() : '' }))
     .filter(({ value }) => value);
 
+  const checkIdentityValid = () => {
+    const { errors, firstInvalidId, isValid } = validateAllIdentity(assessment.identity, identity);
+    setIdentityErrors(errors);
+    if (!isValid) {
+      setPrevStep(step);
+      setStep('intro');
+      window.setTimeout(() => {
+        const el = document.getElementById(`ident_${firstInvalidId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.focus({ preventScroll: true });
+        }
+      }, 60);
+    }
+    return isValid;
+  };
+
+  const handleIdentityChange = (item, idx, rawValue) => {
+    const meta = getIdentityMeta(item, idx);
+    const sanitized = sanitizeIdentityInput(rawValue, meta);
+    setIdentity((cur) => ({ ...cur, [item.id]: sanitized }));
+    const rawError = validateIdentityField(rawValue, item, meta);
+    const cleanError = validateIdentityField(sanitized, item, meta);
+    setIdentityErrors((cur) => ({
+      ...cur,
+      [item.id]: meta.type === 'email' || meta.type === 'number' ? '' : rawError || cleanError,
+    }));
+  };
+
+  const handleIdentityBlur = (item, idx, rawValue) => {
+    const meta = getIdentityMeta(item, idx);
+    const sanitized = sanitizeIdentityInput(rawValue, meta).trim();
+    setIdentity((cur) => ({ ...cur, [item.id]: sanitized }));
+    const err = validateIdentityField(sanitized, item, meta);
+    setIdentityErrors((cur) => ({ ...cur, [item.id]: err }));
+  };
+
   const handleSubmitAssessment = async () => {
+    if (!checkIdentityValid()) return;
     setSubmitError('');
     if (preview || !assessmentId) {
       setHasSubmitted(true);
@@ -1084,14 +1152,18 @@ export default function ReadinessForm({ assessment, assessmentId, preview = fals
       setHasSubmitted(true);
       setPrevStep(step);
       setStep('results');
-    } catch {
-      setSubmitError('Gagal mengirim jawaban ke server. Silakan periksa koneksi Anda dan coba lagi.');
+    } catch (err) {
+      const serverMsg = Object.values(err.response?.data?.errors || {}).flat()[0];
+      setSubmitError(serverMsg || 'Gagal mengirim jawaban ke server. Silakan periksa kembali isian Anda dan coba lagi.');
     } finally {
       setSubmitting(false);
     }
   };
 
   const navigateTo = (nextStep) => {
+    if (nextStep !== 'intro' && nextStep !== 'glossary' && !checkIdentityValid()) {
+      return;
+    }
     if ((nextStep === 'review' || nextStep === 'results') && summary.mandDone === 0 && summary.optDone === 0) {
       window.alert('Silakan jawab minimal satu pertanyaan pada kuesioner terlebih dahulu sebelum melihat tinjauan atau ringkasan hasil.');
       setPrevStep(step);
@@ -1099,7 +1171,7 @@ export default function ReadinessForm({ assessment, assessmentId, preview = fals
       return;
     }
     if (nextStep === 'results' && !hasSubmitted && !preview) {
-      window.alert('Silakan tinjau jawaban Anda dan klik tombol Kirim Jawaban terlebih dahulu.');
+      window.alert('Silakan tinjau jawaban Anda dan klik tombol Submit Jawaban terlebih dahulu.');
       setPrevStep(step);
       setStep('review');
       return;
@@ -1174,7 +1246,9 @@ export default function ReadinessForm({ assessment, assessmentId, preview = fals
           ratings={ratings}
           allCounts={allCounts}
           identity={identity}
-          onIdentityChange={(id, val) => setIdentity((cur) => ({ ...cur, [id]: val }))}
+          identityErrors={identityErrors}
+          onIdentityChange={handleIdentityChange}
+          onIdentityBlur={handleIdentityBlur}
           onNext={() => navigateTo('scope')}
           onGlossary={() => navigateTo('glossary')}
         />

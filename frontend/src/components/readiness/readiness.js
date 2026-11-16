@@ -92,20 +92,102 @@ export const identityMeta = {
   },
 };
 
+function inferIdentityType(preset, label) {
+  if (preset?.type) return preset.type;
+  const lower = (label || '').toLowerCase();
+  if (lower.includes('email')) return 'email';
+  if (lower.includes('tahun')) return 'number';
+  return 'text';
+}
+
 export const getIdentityMeta = (item, index) => {
   const preset = identityMeta[item.id];
-  const labelLower = (item.label || '').toLowerCase();
-  let inferredType = preset?.type || 'text';
-  if (!preset && labelLower.includes('email')) inferredType = 'email';
-  else if (!preset && labelLower.includes('tahun')) inferredType = 'number';
-
   return {
     hint: item.hint?.trim() || preset?.hint || '',
-    type: item.type || inferredType,
+    type: item.type || inferIdentityType(preset, item.label),
     placeholder: item.placeholder?.trim() || preset?.placeholder || '',
     fullSpan: preset ? preset.fullSpan : index === 0 || index === 1 || index === 3,
   };
 };
+
+const DANGEROUS_PATTERNS = [
+  /['"]\s*(or|and)\s+\S+\s*=\s*\S+/i,
+  /\b(or|and)\s+(\d+)\s*=\s*\2\b/i,
+  /\bunion\s+(all\s+)?select\b/i,
+  /\b(drop|truncate|alter)\s+table\b/i,
+  /['"]\s*--/,
+  /\bxp_cmdshell\b/i,
+  /\bsleep\s*\(\s*\d+\s*\)/i,
+  /\bbenchmark\s*\(/i,
+  /<\s*\/?\s*(script|iframe|object|embed|svg|img|style|link|meta)\b/i,
+  /\b(javascript|vbscript|data)\s*:/i,
+  /\bon[a-z]+\s*=/i,
+];
+
+export function sanitizeIdentityInput(raw, meta = {}) {
+  const str = String(raw ?? '')
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/[<>`]/g, '');
+
+  if (meta.type === 'number') {
+    return str.replace(/\D/g, '').slice(0, 4);
+  }
+  if (meta.type === 'email') {
+    return str.replace(/[\s"'\\;()]/g, '').slice(0, 254);
+  }
+  return str.replace(/\s{2,}/g, ' ').slice(0, 300);
+}
+
+function validateYearValue(trimmed) {
+  const currentYear = new Date().getFullYear();
+  const yearNum = Number(trimmed);
+  if (!/^\d{4}$/.test(trimmed) || yearNum < 1900 || yearNum > currentYear) {
+    return `Tahun berdiri harus berupa 4 digit angka antara 1900 dan ${currentYear}.`;
+  }
+  return '';
+}
+
+function validateEmailValue(trimmed) {
+  const emailOk = /^[^\s@?&=<>]+@[^\s@?&=<>]+\.[^\s@?&=<>]{2,}$/.test(trimmed);
+  return emailOk ? '' : 'Format alamat email tidak valid (contoh: sekretariat@lsp-contoh.or.id).';
+}
+
+export function validateIdentityField(value, item, meta = {}) {
+  const raw = String(value ?? '');
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+
+  if (DANGEROUS_PATTERNS.some((pattern) => pattern.test(raw))) {
+    return 'Isian mengandung pola atau karakter yang tidak diizinkan.';
+  }
+  if (meta.type === 'email') {
+    return validateEmailValue(trimmed);
+  }
+  if (meta.type === 'number' || (item?.label || '').toLowerCase().includes('tahun')) {
+    return validateYearValue(trimmed);
+  }
+  if (!/^[\p{L}\p{N}\s.,/()&\-:'"+#]+$/u.test(trimmed)) {
+    return 'Isian hanya boleh menggunakan huruf, angka, dan tanda baca umum.';
+  }
+  return '';
+}
+
+export function validateAllIdentity(identityItems = [], identityValues = {}) {
+  const errors = {};
+  let firstInvalidId = null;
+
+  identityItems.forEach((item, idx) => {
+    const meta = getIdentityMeta(item, idx);
+    const err = validateIdentityField(identityValues[item.id], item, meta);
+    if (err) {
+      errors[item.id] = err;
+      firstInvalidId ??= item.id;
+    }
+  });
+
+  return { errors, firstInvalidId, isValid: !firstInvalidId };
+}
 
 const ANSWER_ALIASES = new Map([
   ['yes', 'yes'],
