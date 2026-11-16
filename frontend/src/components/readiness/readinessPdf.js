@@ -2,8 +2,8 @@ import pdfMake from 'pdfmake/build/pdfmake.js';
 import pdfFonts from 'pdfmake/build/vfs_fonts.js';
 import {
   friendlyClauseTitle,
+  getReadinessMessages,
   normalizeAnswer,
-  readinessLimitation,
   readinessPlainAnswerLabel,
   tallyReadiness,
 } from './readiness.js';
@@ -11,6 +11,9 @@ import {
 pdfMake.addVirtualFileSystem(pdfFonts);
 
 export function downloadReadinessPdf({ assessment, identity = [], scope, groups, questions, responses, summary }) {
+  const messages = getReadinessMessages(assessment);
+  const entityLabel = assessment.subtitle || 'Lembaga';
+
   const priorityRows = questions.flatMap((question, index) => {
     const answer = normalizeAnswer(responses[question.id]?.answer);
     if (answer !== 'no' && answer !== 'partial') return [];
@@ -23,7 +26,7 @@ export function downloadReadinessPdf({ assessment, identity = [], scope, groups,
 
   const columnHeadings = ['Bagian', 'Ya', 'Sebagian', 'Tidak', 'Opsional Dilewati', 'Status Kesiapan'];
   const clauseRows = groups.map(({ clause, items }) => {
-    const { counts, status } = tallyReadiness(items, responses);
+    const { counts, status } = tallyReadiness(items, responses, messages);
     return [
       friendlyClauseTitle(clause),
       ...[counts.yes, counts.partial, counts.no, counts.na]
@@ -33,16 +36,19 @@ export function downloadReadinessPdf({ assessment, identity = [], scope, groups,
   });
 
   const docRows = (assessment.documents || []).flatMap((doc) => {
-    if (doc.code === 'D02') {
+    const hasAnyQuestionInAssessment = (assessment.questions || []).some(
+      (q) => q.documentId === doc.id || q.documentId === doc.code
+    );
+    if (!hasAnyQuestionInAssessment) {
       return [[
-        { text: 'D02', bold: true },
+        { text: doc.code, bold: true },
         doc.title,
         'Diisi Tahap Berikutnya',
       ]];
     }
     const dItems = questions.filter((q) => q.documentId === doc.id || q.documentId === doc.code);
     if (!dItems.length) return [];
-    const ev = tallyReadiness(dItems, responses);
+    const ev = tallyReadiness(dItems, responses, messages);
     return [[
       { text: doc.code, bold: true },
       doc.title,
@@ -76,11 +82,10 @@ export function downloadReadinessPdf({ assessment, identity = [], scope, groups,
       ],
     }),
     content: [
-      { text: 'Ringkasan Kesiapan Bukti Akreditasi LSP', fontSize: 20, bold: true, color: '#172554' },
-      { text: assessmentTitle, fontSize: 13, bold: true, color: '#1e40af', margin: [0, 4, 0, 2] },
-      { text: [assessment.standard, assessment.subtitle].filter(Boolean).join(' · '), style: 'secondary' },
-      { text: date + ' | ' + scope, style: 'secondary', margin: [0, 4, 0, 0] },
-      { text: 'Profil Lembaga Sertifikasi Person', style: 'section', headlineLevel: 1 },
+      { text: 'Ringkasan Hasil — ' + assessmentTitle, fontSize: 18, bold: true, color: '#172554' },
+      { text: [assessment.standard, assessment.subtitle].filter(Boolean).join(' · '), style: 'secondary', margin: [0, 4, 0, 2] },
+      { text: date + ' | ' + scope, style: 'secondary', margin: [0, 2, 0, 0] },
+      { text: 'Profil ' + entityLabel, style: 'section', headlineLevel: 1 },
       {
         layout: 'lightHorizontalLines',
         table: {
@@ -88,7 +93,7 @@ export function downloadReadinessPdf({ assessment, identity = [], scope, groups,
           body: identityBody,
         },
       },
-      { text: 'Status Kesiapan Bukti LSP Anda: ' + summary.status, style: 'section' },
+      { text: 'Status Kesiapan ' + entityLabel + ' Anda: ' + summary.status, style: 'section' },
       { text: summary.description, margin: [0, 0, 0, 8] },
       {
         columns: [
@@ -159,9 +164,9 @@ export function downloadReadinessPdf({ assessment, identity = [], scope, groups,
         },
       ] : []),
       { text: 'Langkah Selanjutnya', style: 'section', headlineLevel: 1 },
-      { text: 'Apabila hasil kesiapan Anda telah mencapai kategori Siap, silakan gunakan laporan ini sebagai panduan saat mengisi dokumen evaluasi mandiri FPA 09-01 LSP.' },
+      { text: messages.nextStepMessage },
       { text: 'Catatan Penting', style: 'section', headlineLevel: 1 },
-      { text: readinessLimitation, style: 'secondary' },
+      { text: messages.limitation, style: 'secondary' },
     ],
     pageBreakBefore: (node, context) =>
       node.headlineLevel === 1 && context.getFollowingNodesOnPage().length === 0,

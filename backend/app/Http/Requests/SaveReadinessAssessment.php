@@ -7,14 +7,63 @@ use Illuminate\Validation\Validator;
 
 class SaveReadinessAssessment extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $draft = $this->input('draft');
+        if (! is_array($draft)) {
+            return;
+        }
+
+        $draft['messages'] = isset($draft['messages']) && is_array($draft['messages']) ? $draft['messages'] : null;
+
+        if (isset($draft['questions']) && is_array($draft['questions'])) {
+            $draft['questions'] = array_map(function ($q) {
+                if (is_array($q) && ! array_key_exists('optHint', $q)) {
+                    $q['optHint'] = null;
+                }
+
+                return $q;
+            }, $draft['questions']);
+        }
+
+        if (isset($draft['identity']) && is_array($draft['identity'])) {
+            $draft['identity'] = array_map(function ($ident) {
+                if (is_array($ident)) {
+                    if (! array_key_exists('placeholder', $ident)) {
+                        $ident['placeholder'] = null;
+                    }
+                    if (! array_key_exists('hint', $ident)) {
+                        $ident['hint'] = null;
+                    }
+                }
+
+                return $ident;
+            }, $draft['identity']);
+        }
+
+        $this->merge(['draft' => $draft]);
+    }
+
     public function rules(): array
     {
         return [
-            'draft' => 'required|array:title,standard,subtitle,intro,clauses,questions,identity,documents,glossary',
+            'draft' => 'required|array:title,standard,subtitle,intro,messages,clauses,questions,identity,documents,glossary',
             'draft.title' => 'required|string|max:200',
             'draft.standard' => 'required|string|max:120',
             'draft.subtitle' => 'present|nullable|string|max:250',
             'draft.intro' => 'present|nullable|string|max:3000',
+            'draft.messages' => 'nullable|array:limitation,guideYes,guidePartial,guideNo,guideOptional,descSiap,descCukup,descKurang,descBelum,completeMessage,nextStepMessage',
+            'draft.messages.limitation' => 'nullable|string|max:2000',
+            'draft.messages.guideYes' => 'nullable|string|max:2000',
+            'draft.messages.guidePartial' => 'nullable|string|max:2000',
+            'draft.messages.guideNo' => 'nullable|string|max:2000',
+            'draft.messages.guideOptional' => 'nullable|string|max:2000',
+            'draft.messages.descSiap' => 'nullable|string|max:2000',
+            'draft.messages.descCukup' => 'nullable|string|max:2000',
+            'draft.messages.descKurang' => 'nullable|string|max:2000',
+            'draft.messages.descBelum' => 'nullable|string|max:2000',
+            'draft.messages.completeMessage' => 'nullable|string|max:2000',
+            'draft.messages.nextStepMessage' => 'nullable|string|max:2000',
             'draft.clauses' => 'present|array|list|max:100',
             'draft.clauses.*' => 'required|array:id,code,title,description,always',
             'draft.clauses.*.id' => 'required|string|alpha_dash:ascii|max:64|distinct',
@@ -23,18 +72,21 @@ class SaveReadinessAssessment extends FormRequest
             'draft.clauses.*.description' => 'present|nullable|string|max:600',
             'draft.clauses.*.always' => 'required|boolean:strict',
             'draft.questions' => 'present|array|list|max:500',
-            'draft.questions.*' => 'required|array:id,clauseId,reference,text,allowNA,documentId,evidence',
+            'draft.questions.*' => 'required|array:id,clauseId,reference,text,allowNA,optHint,documentId,evidence',
             'draft.questions.*.id' => 'required|string|alpha_dash:ascii|max:64|distinct',
             'draft.questions.*.clauseId' => 'required|string',
             'draft.questions.*.reference' => 'present|nullable|string|max:120',
             'draft.questions.*.text' => 'required|string|max:4000',
             'draft.questions.*.allowNA' => 'required|boolean:strict',
+            'draft.questions.*.optHint' => 'nullable|string|max:1000',
             'draft.questions.*.documentId' => 'present|nullable|string',
             'draft.questions.*.evidence' => 'present|nullable|in:Wajib,Jika ada',
             'draft.identity' => 'present|array|list|max:50',
-            'draft.identity.*' => 'required|array:id,label',
+            'draft.identity.*' => 'required|array:id,label,placeholder,hint',
             'draft.identity.*.id' => 'required|string|alpha_dash:ascii|max:64|distinct',
             'draft.identity.*.label' => 'required|string|max:250',
+            'draft.identity.*.placeholder' => 'nullable|string|max:250',
+            'draft.identity.*.hint' => 'nullable|string|max:600',
             'draft.documents' => 'present|array|list|max:100',
             'draft.documents.*' => 'required|array:id,code,title,sample',
             'draft.documents.*.id' => 'required|string|alpha_dash:ascii|max:64|distinct',

@@ -12,12 +12,16 @@ class ReadinessMasterData
     public function ensureDefaultTemplateSynced(): void
     {
         $this->ensureResponsesTableExists();
+        $this->ensureMasterColumnsExist();
 
         $settings = DB::table('readiness_master_settings')->first();
 
         if (! $settings) {
             $this->saveMasterData($this->defaultTemplate());
-        } elseif (DB::table('readiness_master_clauses')->where('item_id', 'KAN')->exists()) {
+        } elseif (
+            DB::table('readiness_master_clauses')->where('item_id', 'KAN')->exists()
+            || ($settings->messages ?? null) === null
+        ) {
             $this->syncDefaultTemplate($this->defaultTemplate());
         }
     }
@@ -29,6 +33,7 @@ class ReadinessMasterData
      */
     public function updateFromDraft(array $draft): int
     {
+        $this->ensureMasterColumnsExist();
         $synced = 0;
 
         DB::transaction(function () use ($draft, &$synced) {
@@ -53,6 +58,7 @@ class ReadinessMasterData
 
     public function load(): array
     {
+        $this->ensureMasterColumnsExist();
         $settings = DB::table('readiness_master_settings')->first();
 
         $clauses = DB::table('readiness_master_clauses')
@@ -92,6 +98,7 @@ class ReadinessMasterData
                 'reference' => $row->reference,
                 'text' => $row->text,
                 'allowNA' => (bool) $row->allow_na,
+                'optHint' => $row->opt_hint ?? null,
                 'documentId' => $row->document_id !== null ? (string) $row->document_id : null,
                 'evidence' => $row->evidence,
             ])
@@ -105,6 +112,8 @@ class ReadinessMasterData
             ->map(fn ($row) => [
                 'id' => (string) $row->item_id,
                 'label' => $row->label,
+                'placeholder' => $row->placeholder ?? null,
+                'hint' => $row->hint ?? null,
             ])
             ->values()
             ->all();
@@ -122,11 +131,16 @@ class ReadinessMasterData
             ->values()
             ->all();
 
+        $messages = isset($settings->messages) && $settings->messages !== null
+            ? json_decode($settings->messages, true)
+            : ($this->defaultTemplate()['messages'] ?? null);
+
         return [
             'title' => $settings->title ?? 'SiapKAN — Penilaian Kesiapan Akreditasi LSP',
             'standard' => $settings->standard ?? 'SNI ISO/IEC 17024:2026',
             'subtitle' => $settings->subtitle ?? null,
             'intro' => $settings->intro ?? null,
+            'messages' => $messages,
             'clauses' => $clauses,
             'questions' => $questions,
             'identity' => $identity,
@@ -180,6 +194,7 @@ class ReadinessMasterData
                 'standard' => $draft['standard'],
                 'subtitle' => $draft['subtitle'] ?? null,
                 'intro' => $draft['intro'] ?? null,
+                'messages' => isset($draft['messages']) ? json_encode($draft['messages']) : null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
@@ -219,6 +234,7 @@ class ReadinessMasterData
                     'reference' => $question['reference'] ?? null,
                     'text' => $question['text'],
                     'allow_na' => (bool) ($question['allowNA'] ?? false),
+                    'opt_hint' => $question['optHint'] ?? null,
                     'document_id' => $question['documentId'] ?? null,
                     'evidence' => $question['evidence'] ?? null,
                     'sort_order' => $index,
@@ -232,6 +248,8 @@ class ReadinessMasterData
                 DB::table('readiness_master_identities')->insert([
                     'item_id' => (string) $identity['id'],
                     'label' => $identity['label'],
+                    'placeholder' => $identity['placeholder'] ?? null,
+                    'hint' => $identity['hint'] ?? null,
                     'sort_order' => $index,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -251,6 +269,28 @@ class ReadinessMasterData
                 ]);
             }
         });
+    }
+
+    private function ensureMasterColumnsExist(): void
+    {
+        if (Schema::hasTable('readiness_master_settings') && ! Schema::hasColumn('readiness_master_settings', 'messages')) {
+            Schema::table('readiness_master_settings', function (Blueprint $table) {
+                $table->json('messages')->nullable()->after('intro');
+            });
+        }
+
+        if (Schema::hasTable('readiness_master_questions') && ! Schema::hasColumn('readiness_master_questions', 'opt_hint')) {
+            Schema::table('readiness_master_questions', function (Blueprint $table) {
+                $table->text('opt_hint')->nullable()->after('allow_na');
+            });
+        }
+
+        if (Schema::hasTable('readiness_master_identities') && ! Schema::hasColumn('readiness_master_identities', 'placeholder')) {
+            Schema::table('readiness_master_identities', function (Blueprint $table) {
+                $table->string('placeholder', 250)->nullable()->after('label');
+                $table->string('hint', 600)->nullable()->after('placeholder');
+            });
+        }
     }
 
     private function ensureResponsesTableExists(): void

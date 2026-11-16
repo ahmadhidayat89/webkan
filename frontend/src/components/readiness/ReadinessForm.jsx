@@ -6,13 +6,13 @@ import {
   friendlyClauseTitle,
   getIdentityMeta,
   getOptionalHint,
+  getReadinessMessages,
+  getReadinessRatings,
   normalizeAnswer,
   readinessButton,
   readinessInput,
-  readinessLimitation as limitation,
   readinessPlainAnswerLabel,
   readinessPrimary,
-  readinessRatings,
   shortClauseTitle,
   tallyReadiness,
 } from './readiness';
@@ -47,17 +47,6 @@ const cardBorderClasses = {
   no: 'border-solid border-red-200 border-l-4 border-l-red-600 bg-white',
 };
 
-const reviewAnswerDisplay = {
-  yes: { text: 'Ya', tone: 'hijau' },
-  partial: { text: 'Sebagian', tone: 'kuning' },
-  no: { text: 'Tidak', tone: 'merah' },
-};
-
-const reviewUnansweredDisplay = {
-  optional: { text: 'Dilewati (Opsional)', tone: 'abu' },
-  mandatory: { text: 'Belum dijawab (Wajib)', tone: 'abu' },
-};
-
 function StatusPill({ label, tone = 'abu', large = false }) {
   const size = large ? 'px-5 py-1.5 text-base' : 'px-3 py-1 text-xs';
   return (
@@ -84,7 +73,7 @@ function ProgressStepper({ step, summary, hasQuestions, hasSubmitted, onNavigate
 
   return (
     <div className={`sticky z-20 mb-4 rounded-xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm print:hidden ${offset}`}>
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1.5">
           {tabs.map((tab) => {
             const active = step === tab.key;
@@ -118,33 +107,35 @@ function ProgressStepper({ step, summary, hasQuestions, hasSubmitted, onNavigate
   );
 }
 
-function IntroStep({ assessment, allCounts, identity, onIdentityChange, onNext, onGlossary }) {
+function IntroStep({ assessment, messages, ratings, allCounts, identity, onIdentityChange, onNext, onGlossary }) {
+  const entityLabel = assessment.subtitle || 'Lembaga';
+
   return (
     <div className={panelClass}>
       <span className={badgeClass}>Langkah Awal Sebelum Pengajuan Akreditasi</span>
       <h1 className={headingClass}>
-        Selamat Datang di Kuesioner Kesiapan Akreditasi LSP
+        {assessment.title || 'Penilaian Kesiapan Akreditasi'}
       </h1>
       <p className={subtitleClass}>
-        {assessment.intro || 'Halaman ini membantu Anda memeriksa kelengkapan dokumen dan rekaman Lembaga Sertifikasi Person (LSP) secara mandiri sebelum mengisi formulir resmi FPA 09-01 LSP.'}
+        {assessment.intro || 'Halaman ini membantu Anda memeriksa kelengkapan dokumen dan rekaman lembaga secara mandiri sebelum mengajukan permohonan akreditasi KAN.'}
       </p>
 
       <div className={infoBoxClass}>
         <strong>Cara Mengisi (Cukup 3 Pilihan Jawaban):</strong>
         <br />
-        1. <strong>Isi Profil Singkat:</strong> Lengkapi {assessment.identity.length || 5} informasi dasar mengenai instansi Anda di bagian bawah halaman ini.
+        1. <strong>Isi Profil Singkat:</strong> Lengkapi informasi dasar mengenai instansi Anda di bagian bawah halaman ini.
         <br />
         2. <strong>Jawab Pertanyaan dengan 3 Pilihan (Ya / Sebagian / Tidak):</strong> Terdapat{' '}
         <strong>{allCounts.mandTotal} pertanyaan wajib</strong> dan{' '}
         <strong>{allCounts.optTotal} pertanyaan opsional</strong>. Untuk pertanyaan berlabel <em>Opsional</em>, cukup{' '}
-        <strong>lewati (kosongkan)</strong> apabila kegiatan tersebut tidak dilakukan di LSP Anda.
+        <strong>lewati (kosongkan)</strong> apabila kegiatan tersebut tidak dilakukan di lembaga Anda.
         <br />
         3. <strong>Lihat Ringkasan Kesiapan:</strong> Di akhir kuesioner, Anda akan mendapatkan gambaran kesiapan dokumen beserta daftar bukti yang masih perlu dilengkapi.
       </div>
 
       <h2 className={subheadingClass}>Panduan Pilihan Jawaban</h2>
-      <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
-        <table className="w-full text-sm text-left">
+      <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
+        <table className="w-full text-left text-sm">
           <thead className="bg-primary-50 text-primary-950">
             <tr>
               <th scope="col" className="w-44 px-3 py-2.5 sm:px-4">Pilihan Jawaban</th>
@@ -154,40 +145,31 @@ function IntroStep({ assessment, allCounts, identity, onIdentityChange, onNext, 
           <tbody className="divide-y divide-slate-200">
             <tr>
               <td className="px-3 py-2.5 align-middle sm:px-4"><StatusPill label="Ya" tone="hijau" /></td>
-              <td className="px-3 py-2.5 text-slate-700 sm:px-4">
-                Pilih ini jika dokumen, prosedur, atau rekaman yang ditanyakan <strong>sudah ada secara lengkap</strong> dan sudah dijalankan di LSP Anda.
-              </td>
+              <td className="px-3 py-2.5 text-slate-700 sm:px-4">{messages.guideYes}</td>
             </tr>
             <tr>
               <td className="px-3 py-2.5 align-middle sm:px-4"><StatusPill label="Sebagian" tone="kuning" /></td>
-              <td className="px-3 py-2.5 text-slate-700 sm:px-4">
-                Pilih ini jika dokumen atau rekamannya <strong>baru disusun sebagian</strong> (masih berupa draf) atau belum sepenuhnya dijalankan.
-              </td>
+              <td className="px-3 py-2.5 text-slate-700 sm:px-4">{messages.guidePartial}</td>
             </tr>
             <tr>
               <td className="px-3 py-2.5 align-middle sm:px-4"><StatusPill label="Tidak" tone="merah" /></td>
-              <td className="px-3 py-2.5 text-slate-700 sm:px-4">
-                Pilih ini jika ketentuan tersebut berlaku bagi LSP Anda, namun dokumen atau rekamannya <strong>belum tersedia sama sekali</strong>.
-              </td>
+              <td className="px-3 py-2.5 text-slate-700 sm:px-4">{messages.guideNo}</td>
             </tr>
             <tr>
               <td className="px-3 py-2.5 align-middle sm:px-4">
-                <span className="inline-block px-3 py-1 text-xs font-bold border rounded-full border-accent-200 bg-accent-50 text-accent-900">
+                <span className="inline-block rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-bold text-accent-900">
                   Opsional (Lewati)
                 </span>
               </td>
-              <td className="px-3 py-2.5 text-slate-700 sm:px-4">
-                Khusus pada <strong>{allCounts.optTotal} pertanyaan berlabel Opsional</strong> (seperti penggunaan AI, alih daya, atau pelatihan):{' '}
-                <strong>biarkan kosong (lewati)</strong> jika kegiatan tersebut memang tidak dilakukan di LSP Anda. Pertanyaan opsional yang dilewati tidak akan mengurangi penilaian kesiapan Anda.
-              </td>
+              <td className="px-3 py-2.5 text-slate-700 sm:px-4">{messages.guideOptional}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <h3 className={h3Class}>Arti Kategori Hasil Kesiapan</h3>
-      <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
-        <table className="w-full text-sm text-left">
+      <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
+        <table className="w-full text-left text-sm">
           <thead className="bg-primary-50 text-primary-950">
             <tr>
               <th scope="col" className="w-36 px-3 py-2.5 sm:px-4">Kategori</th>
@@ -195,7 +177,7 @@ function IntroStep({ assessment, allCounts, identity, onIdentityChange, onNext, 
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {readinessRatings.map((rating) => (
+            {ratings.map((rating) => (
               <tr key={rating.label}>
                 <td className="px-3 py-2.5 align-middle sm:px-4">
                   <StatusPill label={rating.label} tone={rating.tone} />
@@ -208,12 +190,12 @@ function IntroStep({ assessment, allCounts, identity, onIdentityChange, onNext, 
       </div>
 
       <div className={noticeBoxClass}>
-        <strong>Catatan Penting:</strong> {limitation}
+        <strong>Catatan Penting:</strong> {messages.limitation}
       </div>
 
       {assessment.identity.length > 0 && (
-        <div id="identSection" className="pt-5 mt-6 border-t border-slate-200">
-          <h3 className={h3Class}>Profil Singkat Lembaga Sertifikasi Person</h3>
+        <div id="identSection" className="mt-6 border-t border-slate-200 pt-5">
+          <h3 className={h3Class}>Profil Singkat {entityLabel}</h3>
           <p className={subtitleClass}>
             Silakan lengkapi {assessment.identity.length} data dasar instansi Anda di bawah ini untuk dicantumkan pada lembar ringkasan hasil.
           </p>
@@ -260,18 +242,18 @@ function GlossaryStep({ assessment, onBack }) {
   return (
     <div className={panelClass}>
       <span className={badgeClass}>Kamus Istilah</span>
-      <h1 className={headingClass}>Glosarium Akreditasi LSP ({assessment.standard})</h1>
+      <h1 className={headingClass}>Glosarium ({assessment.standard})</h1>
       <p className={subtitleClass}>
-        Penjelasan singkat mengenai istilah dan singkatan yang sering digunakan dalam proses akreditasi LSP.
+        Penjelasan singkat mengenai istilah dan singkatan yang sering digunakan dalam proses akreditasi.
       </p>
-      <dl className="gap-6 mt-5 text-sm sm:columns-2">
+      <dl className="mt-5 gap-6 text-sm sm:columns-2">
         {assessment.glossary.map(({ id, term, definition, note }) => (
-          <div key={id} className="p-3 mb-3 break-words border rounded-lg break-inside-avoid border-slate-200">
+          <div key={id} className="mb-3 break-inside-avoid break-words rounded-lg border border-slate-200 p-3">
             <dt className="font-bold text-primary-900">{term}</dt>
             <dd className="mt-1 leading-relaxed text-slate-700">
               {definition}
               {note && note !== '-' && (
-                <span className="block mt-1 text-xs italic text-slate-500">{note}</span>
+                <span className="mt-1 block text-xs italic text-slate-500">{note}</span>
               )}
             </dd>
           </div>
@@ -323,10 +305,11 @@ function ScopeStep({ available, selection, allCounts, summary, onToggleAll, onTo
           <button
             type="button"
             onClick={onToggleAll}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-5 py-2.5 text-sm transition ${isAll
-              ? 'border-primary-700 bg-primary-700 font-bold text-white'
-              : 'border-slate-300 bg-white font-semibold text-slate-700 hover:border-primary-500 hover:bg-primary-50 hover:text-primary-800'
-              }`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-5 py-2.5 text-sm transition ${
+              isAll
+                ? 'border-primary-700 bg-primary-700 font-bold text-white'
+                : 'border-slate-300 bg-white font-semibold text-slate-700 hover:border-primary-500 hover:bg-primary-50 hover:text-primary-800'
+            }`}
           >
             Pilih Semua Bagian — Kuesioner Lengkap ({allCounts.mandTotal} Wajib + {allCounts.optTotal} Opsional)
           </button>
@@ -340,10 +323,11 @@ function ScopeStep({ available, selection, allCounts, summary, onToggleAll, onTo
                   type="button"
                   disabled={clause.always}
                   onClick={() => onToggleClause(clause.id)}
-                  className={`min-w-[290px] rounded-full border px-5 py-2 text-left text-xs transition sm:text-sm ${selected
-                    ? 'border-primary-500 bg-primary-50 font-bold text-primary-900'
-                    : 'border-slate-300 bg-white font-semibold text-slate-700 hover:border-primary-500 hover:bg-primary-50'
-                    }`}
+                  className={`min-w-[290px] rounded-full border px-5 py-2 text-left text-xs transition sm:text-sm ${
+                    selected
+                      ? 'border-primary-500 bg-primary-50 font-bold text-primary-900'
+                      : 'border-slate-300 bg-white font-semibold text-slate-700 hover:border-primary-500 hover:bg-primary-50'
+                  }`}
                 >
                   {formatScopeClauseLabel(clause, items)}
                 </button>
@@ -409,12 +393,12 @@ function QuestionCard({ question, number, response, onAnswer }) {
       </p>
 
       {isOptional && (
-        <div className="px-3 py-2 mb-3 text-xs border-l-4 rounded-lg border-accent-500 bg-accent-50 text-accent-950">
+        <div className="mb-3 rounded-lg border-l-4 border-accent-500 bg-accent-50 px-3 py-2 text-xs text-accent-950">
           <strong>Catatan Opsional:</strong> {getOptionalHint(question)}
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 mt-3">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {answersList.map(([key, label]) => {
           const selected = curAns === key;
           const pillCls = selected
@@ -436,7 +420,7 @@ function QuestionCard({ question, number, response, onAnswer }) {
           <button
             type="button"
             onClick={() => onAnswer(question.id, undefined)}
-            className="px-2 py-1 text-xs font-medium underline text-slate-500 hover:text-red-700"
+            className="px-2 py-1 text-xs font-medium text-slate-500 underline hover:text-red-700"
           >
             Kosongkan (Lewati)
           </button>
@@ -447,6 +431,7 @@ function QuestionCard({ question, number, response, onAnswer }) {
 }
 
 function QuestionsStep({
+  assessment,
   groups,
   questions,
   responses,
@@ -475,7 +460,7 @@ function QuestionsStep({
   return (
     <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[270px_1fr]">
       <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto print:hidden">
-        <div className="mb-2 text-xs font-bold tracking-wider uppercase text-slate-500">
+        <div className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
           Profil Instansi
         </div>
         <button
@@ -485,16 +470,17 @@ function QuestionsStep({
         >
           <span>Profil Lembaga</span>
           <span
-            className={`rounded-full border px-2 py-0.5 text-xs ${identityCount === identityTotal && identityTotal > 0
-              ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-              : 'border-slate-200 bg-slate-50 text-slate-600'
-              }`}
+            className={`rounded-full border px-2 py-0.5 text-xs ${
+              identityCount === identityTotal && identityTotal > 0
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                : 'border-slate-200 bg-slate-50 text-slate-600'
+            }`}
           >
             {identityCount}/{identityTotal}
           </span>
         </button>
 
-        <div className="mt-4 mb-2 text-xs font-bold tracking-wider uppercase text-slate-500">
+        <div className="mt-4 mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
           Bagian Kuesioner
         </div>
         <div>
@@ -511,10 +497,11 @@ function QuestionsStep({
               >
                 <span className="truncate">{shortClauseTitle(clause)}</span>
                 <span
-                  className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${allDone
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                    : 'border-slate-200 bg-slate-50 text-slate-600'
-                    }`}
+                  className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${
+                    allDone
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                      : 'border-slate-200 bg-slate-50 text-slate-600'
+                  }`}
                 >
                   {mandDone}/{mandItems.length} wajib
                 </span>
@@ -523,7 +510,7 @@ function QuestionsStep({
           })}
         </div>
 
-        <div className="mt-4 mb-2 text-xs font-bold tracking-wider uppercase text-slate-500">
+        <div className="mt-4 mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
           Saring Pertanyaan
         </div>
         <div className="flex flex-col gap-1.5">
@@ -536,10 +523,11 @@ function QuestionsStep({
               key={key}
               type="button"
               onClick={() => setFilter(key)}
-              className={`rounded-lg border px-2.5 py-1.5 text-left text-xs font-semibold transition ${filter === key
-                ? 'border-primary-500 bg-primary-50 text-primary-900'
-                : 'border-slate-200 bg-white text-slate-700 hover:border-primary-500'
-                }`}
+              className={`rounded-lg border px-2.5 py-1.5 text-left text-xs font-semibold transition ${
+                filter === key
+                  ? 'border-primary-500 bg-primary-50 text-primary-900'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-primary-500'
+              }`}
             >
               {label}
             </button>
@@ -552,7 +540,7 @@ function QuestionsStep({
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div>
               <span className={badgeClass}>Pemeriksaan Ketersediaan Bukti</span>
-              <h1 className={headingClass}>Kuesioner Kesiapan Bukti LSP</h1>
+              <h1 className={headingClass}>{assessment.title || 'Kuesioner Kesiapan Bukti'}</h1>
             </div>
             <button
               type="button"
@@ -565,7 +553,7 @@ function QuestionsStep({
           <p className="mt-2 mb-3 text-sm text-slate-600">
             Jawab <strong>{summary.mandTotal} pertanyaan wajib</strong> di bawah ini dengan memilih{' '}
             <strong>Ya</strong>, <strong>Sebagian</strong>, atau <strong>Tidak</strong>. Untuk{' '}
-            <strong>{summary.optTotal} pertanyaan berlabel Opsional</strong>, cukup lewati (biarkan kosong) jika kegiatan tersebut tidak dilakukan di LSP Anda.
+            <strong>{summary.optTotal} pertanyaan berlabel Opsional</strong>, cukup lewati (biarkan kosong) jika kegiatan tersebut tidak dilakukan di lembaga Anda.
           </p>
 
           {groups.map(({ clause, items }) => {
@@ -588,7 +576,7 @@ function QuestionsStep({
                 <button
                   type="button"
                   onClick={() => onToggleCollapse(clause.id, !isCollapsed)}
-                  className="flex items-center justify-between w-full px-4 py-3 mt-5 mb-3 text-left border select-none rounded-xl border-slate-200 bg-primary-50/60"
+                  className="mt-5 mb-3 flex w-full items-center justify-between rounded-xl border border-slate-200 bg-primary-50/60 px-4 py-3 text-left select-none"
                 >
                   <span className="text-base font-bold text-primary-950">{friendlyClauseTitle(clause)}</span>
                   <span className="flex items-center gap-2 text-xs font-semibold text-slate-600">
@@ -642,6 +630,8 @@ function ReviewStep({
   onBack,
   onSubmit,
 }) {
+  const entityLabel = assessment.subtitle || 'Lembaga';
+
   return (
     <div className={panelClass}>
       <span className={badgeClass}>Pemeriksaan Sebelum Hasil Akhir</span>
@@ -653,9 +643,9 @@ function ReviewStep({
 
       {assessment.identity.length > 0 && (
         <>
-          <h3 className={h3Class}>Profil Singkat Lembaga Sertifikasi Person</h3>
-          <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
-            <table className="w-full text-sm text-left">
+          <h3 className={h3Class}>Profil Singkat {entityLabel}</h3>
+          <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
+            <table className="w-full text-left text-sm">
               <thead className="bg-primary-50 text-primary-950">
                 <tr>
                   <th scope="col" className="w-2/5 px-3 py-2.5 sm:px-4">Informasi</th>
@@ -681,22 +671,34 @@ function ReviewStep({
       )}
 
       {groups.map(({ clause, items }) => (
-        <div key={clause.id} className="mt-5 overflow-hidden border rounded-xl border-slate-200">
-          <h2 className="px-4 py-3 text-sm font-bold bg-primary-50 text-primary-950">{friendlyClauseTitle(clause)}</h2>
+        <div key={clause.id} className="mt-5 overflow-hidden rounded-xl border border-slate-200">
+          <h2 className="bg-primary-50 px-4 py-3 text-sm font-bold text-primary-950">{friendlyClauseTitle(clause)}</h2>
           <div className="divide-y divide-slate-200">
             {items.map((item) => {
               const ans = normalizeAnswer(responses[item.id]?.answer);
               const isOpt = Boolean(item.allowNA);
-              const { text: ansText, tone: ansTone } =
-                reviewAnswerDisplay[ans] ??
-                (isOpt ? reviewUnansweredDisplay.optional : reviewUnansweredDisplay.mandatory);
+              let ansText = 'Belum dijawab (Wajib)';
+              let ansTone = 'abu';
+              if (ans === 'yes') {
+                ansText = 'Ya';
+                ansTone = 'hijau';
+              } else if (ans === 'partial') {
+                ansText = 'Sebagian';
+                ansTone = 'kuning';
+              } else if (ans === 'no') {
+                ansText = 'Tidak';
+                ansTone = 'merah';
+              } else if (isOpt) {
+                ansText = 'Dilewati (Opsional)';
+                ansTone = 'abu';
+              }
 
               return (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => onEditQuestion(item)}
-                  className="flex items-center justify-between w-full gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
                 >
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -726,7 +728,7 @@ function ReviewStep({
       ))}
 
       {submitError && (
-        <p role="alert" className="px-4 py-3 mt-4 text-sm text-red-800 border border-red-200 rounded-lg bg-red-50">
+        <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {submitError}
         </p>
       )}
@@ -745,6 +747,7 @@ function ReviewStep({
 
 function ResultsStep({
   assessment,
+  messages,
   groups,
   questions,
   responses,
@@ -755,6 +758,7 @@ function ResultsStep({
   onBack,
   onDownloadPdf,
 }) {
+  const entityLabel = assessment.subtitle || 'Lembaga';
   const priorities = questions.filter((q) => {
     const a = normalizeAnswer(responses[q.id]?.answer);
     return a === 'no' || a === 'partial';
@@ -768,11 +772,11 @@ function ResultsStep({
   return (
     <div className={panelClass}>
       <span className={badgeClass}>Laporan Kesiapan Mandiri</span>
-      <h1 className={headingClass}>Ringkasan Kesiapan Bukti Akreditasi LSP</h1>
+      <h1 className={headingClass}>Ringkasan Hasil — {assessment.title || 'Kesiapan Akreditasi'}</h1>
 
-      <h3 className={h3Class}>Profil Lembaga Sertifikasi Person</h3>
-      <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
-        <table className="w-full text-sm text-left">
+      <h3 className={h3Class}>Profil {entityLabel}</h3>
+      <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
+        <table className="w-full text-left text-sm">
           <thead className="bg-primary-50 text-primary-950">
             <tr>
               <th scope="col" className="w-2/5 px-3 py-2.5 sm:px-4">Informasi Instansi</th>
@@ -799,32 +803,32 @@ function ResultsStep({
         </table>
       </div>
 
-      <div className="px-5 py-6 my-5 text-center border rounded-xl border-primary-100 bg-primary-50">
-        <div className="mb-2 text-xs font-bold tracking-wider uppercase text-primary-900">
-          Status Kesiapan Bukti LSP Anda
+      <div className="my-5 rounded-xl border border-primary-100 bg-primary-50 px-5 py-6 text-center">
+        <div className="mb-2 text-xs font-bold uppercase tracking-wider text-primary-900">
+          Status Kesiapan {entityLabel} Anda
         </div>
         <StatusPill label={summary.status} tone={summary.tone} large />
-        <p className="max-w-2xl mx-auto mt-3 text-sm text-slate-700">{summary.description}</p>
+        <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-700">{summary.description}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 my-4 sm:grid-cols-5">
-        <div className="p-4 text-center border rounded-xl border-slate-200 bg-slate-50">
+      <div className="my-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
           <div className="text-2xl font-bold text-emerald-700">{summary.counts.yes}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">Ya (Sudah Lengkap)</div>
         </div>
-        <div className="p-4 text-center border rounded-xl border-slate-200 bg-slate-50">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
           <div className="text-2xl font-bold text-accent-700">{summary.counts.partial}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">Sebagian</div>
         </div>
-        <div className="p-4 text-center border rounded-xl border-slate-200 bg-slate-50">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
           <div className="text-2xl font-bold text-red-700">{summary.counts.no}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">Tidak (Belum Ada)</div>
         </div>
-        <div className="p-4 text-center border rounded-xl border-slate-200 bg-slate-50">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
           <div className="text-2xl font-bold text-slate-700">{summary.counts.na}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">Opsional Dilewati</div>
         </div>
-        <div className="col-span-2 p-4 text-center border rounded-xl border-slate-200 bg-slate-50 sm:col-span-1">
+        <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-center sm:col-span-1">
           <div className="text-2xl font-bold text-primary-900">
             {summary.mandDone}/{summary.mandTotal}
           </div>
@@ -833,9 +837,9 @@ function ResultsStep({
       </div>
 
       <h2 className={subheadingClass}>Kesiapan per Bagian</h2>
-      <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
+      <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-left text-sm">
             <thead className="bg-primary-50 text-primary-950">
               <tr>
                 <th scope="col" className="px-3 py-2.5 sm:px-4">Bagian</th>
@@ -848,7 +852,7 @@ function ResultsStep({
             </thead>
             <tbody className="divide-y divide-slate-200">
               {groups.map(({ clause, items }) => {
-                const ev = tallyReadiness(items, responses);
+                const ev = tallyReadiness(items, responses, messages);
                 return (
                   <tr key={clause.id}>
                     <td className="px-3 py-2.5 font-bold text-slate-800 sm:px-4">{friendlyClauseTitle(clause)}</td>
@@ -870,9 +874,9 @@ function ResultsStep({
       {assessment.documents?.length > 0 && (
         <>
           <h2 className={subheadingClass}>Kesiapan Dokumen Pendukung Pengajuan Akreditasi</h2>
-          <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
+          <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full text-left text-sm">
                 <thead className="bg-primary-50 text-primary-950">
                   <tr>
                     <th scope="col" className="w-20 px-3 py-2.5 sm:px-4">Kode</th>
@@ -882,7 +886,10 @@ function ResultsStep({
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {assessment.documents.map((doc) => {
-                    if (doc.code === 'D02') {
+                    const hasAnyQuestionInAssessment = assessment.questions.some(
+                      (q) => q.documentId === doc.id || q.documentId === doc.code
+                    );
+                    if (!hasAnyQuestionInAssessment) {
                       return (
                         <tr key={doc.id}>
                           <td className="px-3 py-2.5 font-bold text-slate-800 sm:px-4">{doc.code}</td>
@@ -895,7 +902,7 @@ function ResultsStep({
                     }
                     const dItems = questions.filter((q) => q.documentId === doc.id || q.documentId === doc.code);
                     if (!dItems.length) return null;
-                    const ev = tallyReadiness(dItems, responses);
+                    const ev = tallyReadiness(dItems, responses, messages);
                     return (
                       <tr key={doc.id}>
                         <td className="px-3 py-2.5 font-bold text-slate-800 sm:px-4">{doc.code}</td>
@@ -916,9 +923,9 @@ function ResultsStep({
       {priorities.length > 0 ? (
         <>
           <h2 className={subheadingClass}>Daftar Bukti yang Perlu Dilengkapi ({priorities.length} Butir)</h2>
-          <div className="my-3 overflow-hidden border rounded-xl border-slate-200">
+          <div className="my-3 overflow-hidden rounded-xl border border-slate-200">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full text-left text-sm">
                 <thead className="bg-primary-50 text-primary-950">
                   <tr>
                     <th scope="col" className="w-20 px-3 py-2.5 sm:px-4">No.</th>
@@ -951,13 +958,13 @@ function ResultsStep({
       ) : (
         summary.unansweredMand === 0 && (
           <div className={infoBoxClass}>
-            <strong>Seluruh bukti yang berlaku telah lengkap!</strong> Tidak ada pertanyaan yang berstatus &quot;Tidak&quot; atau &quot;Sebagian&quot;. Anda siap melanjutkan ke pengisian formulir evaluasi mandiri <strong>FPA 09-01 LSP</strong>.
+            {messages.completeMessage}
           </div>
         )
       )}
 
       <div className={noticeBoxClass}>
-        <strong>Langkah Selanjutnya:</strong> Apabila hasil kesiapan Anda telah mencapai kategori <strong>Siap</strong>, silakan unduh laporan ini sebagai PDF untuk menjadi panduan saat mengisi dokumen evaluasi mandiri <strong>FPA 09-01 LSP</strong>.
+        <strong>Langkah Selanjutnya:</strong> {messages.nextStepMessage}
       </div>
 
       <div className={actionsClass}>
@@ -1032,6 +1039,9 @@ export default function ReadinessForm({ assessment, assessmentId, preview = fals
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step]);
 
+  const messages = getReadinessMessages(assessment);
+  const ratings = getReadinessRatings(messages);
+
   const available = assessment.clauses
     .map((clause) => ({
       clause,
@@ -1041,8 +1051,8 @@ export default function ReadinessForm({ assessment, assessmentId, preview = fals
   const selectable = available.filter(({ clause }) => !clause.always);
   const groups = available.filter(({ clause }) => clause.always || selection.includes(clause.id));
   const questions = groups.flatMap(({ items }) => items);
-  const allCounts = tallyReadiness(assessment.questions, responses);
-  const summary = tallyReadiness(questions.length ? questions : assessment.questions, responses);
+  const allCounts = tallyReadiness(assessment.questions, responses, messages);
+  const summary = tallyReadiness(questions.length ? questions : assessment.questions, responses, messages);
   const allSelected = selectable.every(({ clause }) => selection.includes(clause.id));
   const scopeLabel = allSelected ? 'Cakupan lengkap' : 'Bagian ' + groups.map(({ clause }) => clause.code).join(', ');
 
@@ -1161,6 +1171,8 @@ export default function ReadinessForm({ assessment, assessmentId, preview = fals
       {step === 'intro' && (
         <IntroStep
           assessment={assessment}
+          messages={messages}
+          ratings={ratings}
           allCounts={allCounts}
           identity={identity}
           onIdentityChange={(id, val) => setIdentity((cur) => ({ ...cur, [id]: val }))}
@@ -1197,6 +1209,7 @@ export default function ReadinessForm({ assessment, assessmentId, preview = fals
 
       {step === 'questions' && (
         <QuestionsStep
+          assessment={assessment}
           groups={groups}
           questions={questions}
           responses={responses}
@@ -1234,6 +1247,7 @@ export default function ReadinessForm({ assessment, assessmentId, preview = fals
       {step === 'results' && (
         <ResultsStep
           assessment={assessment}
+          messages={messages}
           groups={groups}
           questions={questions}
           responses={responses}

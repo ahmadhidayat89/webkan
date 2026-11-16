@@ -3,6 +3,19 @@
   "standard": "SNI ISO/IEC 17024:2026",
   "subtitle": "Lembaga Sertifikasi Person",
   "intro": "Halaman ini membantu Anda memeriksa kelengkapan dokumen dan rekaman Lembaga Sertifikasi Person (LSP) secara mandiri sebelum mengisi formulir resmi FPA 09-01 LSP.",
+  "messages": {
+    "limitation": "Kuesioner ini merupakan alat bantu kesiapan mandiri bagi LSP dan bukan merupakan keputusan akreditasi. Pemberian akreditasi KAN tetap didasarkan pada evaluasi resmi dan asesmen oleh tim asesor KAN.",
+    "guideYes": "Pilih ini jika dokumen, prosedur, atau rekaman yang ditanyakan sudah ada secara lengkap dan sudah dijalankan di LSP Anda.",
+    "guidePartial": "Pilih ini jika dokumen atau rekamannya baru disusun sebagian (masih berupa draf) atau belum sepenuhnya dijalankan.",
+    "guideNo": "Pilih ini jika ketentuan tersebut berlaku bagi LSP Anda, namun dokumen atau rekamannya belum tersedia sama sekali.",
+    "guideOptional": "Khusus pada pertanyaan berlabel Opsional (seperti penggunaan AI, alih daya, atau pelatihan): biarkan kosong (lewati) jika kegiatan tersebut memang tidak dilakukan di LSP Anda. Pertanyaan opsional yang dilewati tidak akan mengurangi penilaian kesiapan Anda.",
+    "descSiap": "Dokumen dan rekaman bukti LSP Anda sudah sangat lengkap. Anda siap melanjutkan ke pengisian formulir FPA 09-01 LSP.",
+    "descCukup": "Sebagian besar bukti sudah tersedia dengan baik, namun masih ada beberapa dokumen yang perlu dilengkapi sebelum mengajukan permohonan.",
+    "descKurang": "Bukti yang tersedia masih terbatas. Sebaiknya fokus menyusun prosedur dan rekaman yang belum lengkap terlebih dahulu.",
+    "descBelum": "Sebagian besar bukti belum tersedia. LSP Anda memerlukan persiapan dokumen sistem manajemen dan skema secara menyeluruh.",
+    "completeMessage": "Seluruh bukti yang berlaku telah lengkap! Tidak ada pertanyaan yang berstatus \"Tidak\" atau \"Sebagian\". Anda siap melanjutkan ke pengisian formulir evaluasi mandiri FPA 09-01 LSP.",
+    "nextStepMessage": "Apabila hasil kesiapan Anda telah mencapai kategori Siap, silakan unduh laporan ini sebagai PDF untuk menjadi panduan saat mengisi dokumen evaluasi mandiri FPA 09-01 LSP."
+  },
   "clauses": [
     {
       "id": "4",
@@ -115,6 +128,7 @@
       "reference": "4.3",
       "text": "Apakah LSP Anda memiliki prosedur dan bukti analisis untuk mengendalikan risiko bias atau ketidakberpihakan dari penggunaan sistem AI?",
       "allowNA": true,
+      "optHint": "Lewati (kosongkan) pertanyaan ini jika LSP Anda tidak menggunakan sistem Kecerdasan Buatan (AI).",
       "documentId": "D14",
       "evidence": "Jika ada"
     },
@@ -151,6 +165,7 @@
       "reference": "5.2",
       "text": "Apakah LSP Anda memiliki bukti pemisahan antara kegiatan pelatihan dan sertifikasi (seperti materi promosi yang tidak menjanjikan kemudahan kelulusan serta aturan agar pelatih tidak menguji peserta yang dilatihnya)?",
       "allowNA": true,
+      "optHint": "Lewati (kosongkan) pertanyaan ini jika skema tidak mensyaratkan pelatihan dan LSP/lembaga induk tidak menyelenggarakan pelatihan.",
       "documentId": "D05",
       "evidence": "Jika ada"
     },
@@ -187,6 +202,7 @@
       "reference": "6.1",
       "text": "Apakah LSP Anda memiliki prosedur khusus dan rekaman pengendalian untuk menjaga ketidakberpihakan saat mensertifikasi pegawai atau kontraktor internal sendiri?",
       "allowNA": true,
+      "optHint": "Lewati (kosongkan) pertanyaan ini jika LSP Anda tidak mensertifikasi pegawai atau kontraktor internal sendiri.",
       "documentId": "D04",
       "evidence": "Jika ada"
     },
@@ -205,6 +221,7 @@
       "reference": "6.3",
       "text": "Apakah LSP Anda memiliki perjanjian kerja sama alih daya yang mengikat secara hukum, daftar mitra alih daya, serta prosedur dan rekaman evaluasi kinerjanya?",
       "allowNA": true,
+      "optHint": "Lewati (kosongkan) pertanyaan ini jika LSP Anda tidak menyerahkan sebagian kegiatan sertifikasi kepada lembaga lain (alih daya).",
       "documentId": "D20",
       "evidence": "Jika ada"
     },
@@ -223,6 +240,7 @@
       "reference": "6.5",
       "text": "Apakah LSP Anda memiliki prosedur pemantauan AI, bukti kompetensi pengawas AI, mekanisme pengawasan manusia (human oversight), laporan validasi hasil AI oleh pakar (SME), serta bukti persetujuan dari kandidat?",
       "allowNA": true,
+      "optHint": "Lewati (kosongkan) pertanyaan ini jika LSP Anda tidak menggunakan sistem Kecerdasan Buatan (AI) dalam proses sertifikasi.",
       "documentId": "D14",
       "evidence": "Jika ada"
     },
@@ -286,6 +304,7 @@
       "reference": "8 (8.6)",
       "text": "Apakah LSP Anda memiliki perjanjian resmi dengan pemilik skema (scheme owner) serta bukti evaluasi bahwa skema tersebut telah memenuhi seluruh persyaratan standar?",
       "allowNA": true,
+      "optHint": "Lewati (kosongkan) pertanyaan ini jika seluruh skema sertifikasi disusun sendiri oleh LSP Anda.",
       "documentId": "D08",
       "evidence": "Jika ada"
     },
@@ -403,6 +422,7 @@
       "reference": "10.1.3",
       "text": "Apakah LSP Anda memiliki sertifikat atau pedoman Sistem Manajemen Mutu (seperti ISO 9001) yang masih berlaku dan mendukung pemenuhan sistem manajemen LSP?",
       "allowNA": true,
+      "optHint": "Lewati (kosongkan) pertanyaan ini jika LSP Anda tidak menggunakan sertifikat atau pedoman ISO 9001 sebagai dasar sistem manajemen.",
       "documentId": "D20",
       "evidence": "Jika ada"
     },
@@ -430,6 +450,7 @@
       "reference": "10.4.3",
       "text": "Apakah LSP Anda memiliki dokumen kajian pertimbangan dan bukti bahwa sistem manajemen tetap berjalan efektif dan stabil ketika frekuensi audit internal dikurangi?",
       "allowNA": true,
+      "optHint": "Lewati (kosongkan) pertanyaan ini jika LSP Anda tetap melaksanakan audit internal minimal satu kali setiap tahun.",
       "documentId": "D18",
       "evidence": "Jika ada"
     },
@@ -464,23 +485,33 @@
   "identity": [
     {
       "id": "I-01",
-      "label": "Nama Instansi"
+      "label": "Nama Instansi",
+      "placeholder": "Contoh: LSP Las Indonesia (PT Sertifikasi Profesi Nusantara)",
+      "hint": "Nama LSP sesuai nomenklatur KAN (mis. LSP-XXX-IDN); cantumkan brand jika ada dan nama badan hukum induk jika berbeda"
     },
     {
       "id": "I-03",
-      "label": "Alamat"
+      "label": "Alamat",
+      "placeholder": "Contoh: Jl. Jenderal Gatot Subroto Kav. 10, Jakarta Selatan",
+      "hint": "Alamat operasional lengkap LSP; tambahkan keterangan bila memiliki Tempat Uji Kompetensi (TUK) di lokasi lain"
     },
     {
       "id": "I-04",
-      "label": "Email"
+      "label": "Email",
+      "placeholder": "Contoh: sekretariat@lsp-contoh.or.id",
+      "hint": "Alamat email resmi instansi / narahubung akreditasi LSP"
     },
     {
       "id": "I-09",
-      "label": "Bidang/Kategori sertifikasi person yang dimohonkan"
+      "label": "Bidang/Kategori sertifikasi person yang dimohonkan",
+      "placeholder": "Contoh: Welder / Inspektur Las / Ahli K3 Listrik",
+      "hint": "Daftar bidang dan kategori per ruang lingkup yang akan diajukan (dasar penentuan skema, Klausul 8)"
     },
     {
       "id": "I-10",
-      "label": "Tahun berdiri"
+      "label": "Tahun berdiri",
+      "placeholder": "Contoh: 2023",
+      "hint": "Tahun pendirian LSP atau tahun mulai beroperasi kegiatan sertifikasi person"
     }
   ],
   "documents": [

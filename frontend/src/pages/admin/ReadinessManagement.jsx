@@ -5,7 +5,14 @@ import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/admin/AdminLayout';
 import ReadinessForm from '../../components/readiness/ReadinessForm';
 import ReadinessResultsAdmin from '../../components/readiness/ReadinessResultsAdmin';
-import { readinessButton, readinessInput, readinessPrimary, readinessUrl } from '../../components/readiness/readiness';
+import {
+  defaultReadinessMessages,
+  getReadinessMessages,
+  readinessButton,
+  readinessInput,
+  readinessPrimary,
+  readinessUrl,
+} from '../../components/readiness/readiness';
 import { useConfirm } from '../../hooks/useConfirm';
 import {
   deleteReadiness, getReadiness, getReadinessTemplate, listReadiness,
@@ -14,13 +21,14 @@ import {
 
 const collections = {
   clauses: { label: 'Klausul', singular: 'klausul', empty: { code: '', title: '', description: '', always: false } },
-  questions: { label: 'Butir Penilaian', singular: 'butir', empty: { clauseId: '', reference: '', text: '', allowNA: false, documentId: '', evidence: '' } },
-  identity: { label: 'Identitas Lembaga', singular: 'kolom identitas', empty: { label: '' } },
+  questions: { label: 'Butir Penilaian', singular: 'butir', empty: { clauseId: '', reference: '', text: '', allowNA: false, optHint: '', documentId: '', evidence: '' } },
+  identity: { label: 'Identitas Lembaga', singular: 'kolom identitas', empty: { label: '', placeholder: '', hint: '' } },
   documents: { label: 'Dokumen Acuan', singular: 'dokumen acuan', empty: { code: '', title: '', sample: '' } },
   glossary: { label: 'Glosarium', singular: 'istilah', empty: { term: '', definition: '', note: '' } },
 };
 const blank = () => ({
   title: '', standard: '', subtitle: '', intro: '',
+  messages: { ...defaultReadinessMessages },
   clauses: [], questions: [], identity: [], documents: [], glossary: [],
 });
 const card = 'rounded-2xl border border-slate-200 bg-white p-5 sm:p-6';
@@ -52,16 +60,43 @@ function Field({ name, label, value, onChange, max, required, multiline, options
   );
 }
 
-function Settings({ draft, onChange }) {
+function Settings({ draft, onChange, onMessageChange }) {
+  const messages = getReadinessMessages(draft);
   const field = (name, label, max, required, multiline) => (
     <Field name={name} label={label} max={max} required={required} multiline={multiline} value={draft[name]} onChange={onChange} />
   );
+  const msgField = (name, label) => (
+    <Field name={name} label={label} max={2000} multiline value={messages[name]} onChange={onMessageChange} />
+  );
   return (
-    <div className="grid gap-4">
-      {field('title', 'Judul asesmen', 200, true)}
-      {field('standard', 'Standar', 120, true)}
-      {field('subtitle', 'Subjudul / jenis lembaga', 250)}
-      {field('intro', 'Petunjuk pengisian', 3000, false, true)}
+    <div className="space-y-6">
+      <div className="grid gap-4">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-primary-900">Informasi Umum</h3>
+        {field('title', 'Judul asesmen', 200, true)}
+        {field('standard', 'Standar', 120, true)}
+        {field('subtitle', 'Subjudul / jenis lembaga', 250)}
+        {field('intro', 'Petunjuk pengisian (Pengantar)', 3000, false, true)}
+        {msgField('limitation', 'Catatan penting / batasan penilaian')}
+      </div>
+      <div className="grid gap-4 border-t border-slate-200 pt-5">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-primary-900">Panduan Pilihan Jawaban</h3>
+        {msgField('guideYes', 'Penjelasan pilihan "Ya"')}
+        {msgField('guidePartial', 'Penjelasan pilihan "Sebagian"')}
+        {msgField('guideNo', 'Penjelasan pilihan "Tidak"')}
+        {msgField('guideOptional', 'Penjelasan "Opsional (Lewati)"')}
+      </div>
+      <div className="grid gap-4 border-t border-slate-200 pt-5">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-primary-900">Arti &amp; Deskripsi Kategori Hasil Kesiapan</h3>
+        {msgField('descSiap', 'Deskripsi kategori "Siap"')}
+        {msgField('descCukup', 'Deskripsi kategori "Cukup"')}
+        {msgField('descKurang', 'Deskripsi kategori "Kurang"')}
+        {msgField('descBelum', 'Deskripsi kategori "Belum"')}
+      </div>
+      <div className="grid gap-4 border-t border-slate-200 pt-5">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-primary-900">Pesan pada Halaman Ringkasan Hasil</h3>
+        {msgField('completeMessage', 'Pesan ketika seluruh bukti telah lengkap')}
+        {msgField('nextStepMessage', 'Pesan langkah selanjutnya')}
+      </div>
     </div>
   );
 }
@@ -90,11 +125,18 @@ function ItemFields({ section, item, draft, onChange }) {
       {field('reference', 'Subklausul / rujukan', 120)}
       {field('text', 'Pertanyaan', 4000, true, true)}
       {checkbox('allowNA', 'Pertanyaan opsional (dapat dilewati bila tidak relevan)')}
+      {item.allowNA && field('optHint', 'Catatan opsional (petunjuk kapan pertanyaan ini dapat dilewati)', 1000, false, true)}
       {field('documentId', 'Dokumen acuan', undefined, false, false, [['', 'Tanpa dokumen acuan'], ...draft.documents.map(({ id, code, title }) => [id, code + ' — ' + title])])}
       {item.documentId && field('evidence', 'Ketentuan bukti', undefined, true, false, [['Wajib', 'Wajib'], ['Jika ada', 'Jika ada']])}
     </>
   );
-  if (section === 'identity') return field('label', 'Label kolom', 250, true);
+  if (section === 'identity') return (
+    <>
+      {field('label', 'Label kolom', 250, true)}
+      {field('placeholder', 'Contoh isian (placeholder)', 250)}
+      {field('hint', 'Petunjuk pengisian di bawah kolom', 600)}
+    </>
+  );
   if (section === 'documents') return (
     <>
       {field('code', 'Kode dokumen', 40, true)}
@@ -157,7 +199,7 @@ function describeItem(section, item, draft, number) {
   ].filter(Boolean).join(' · ')];
   if (section === 'documents') return [item.code + ' — ' + item.title, item.sample];
   if (section === 'glossary') return [item.term, item.definition];
-  return [item.label, ''];
+  return [item.label, item.hint || item.placeholder || ''];
 }
 
 function insertOrdered(list, masterList, value) {
@@ -586,7 +628,16 @@ export default function ReadinessManagement() {
                     </div>
                     {masterSection === 'settings' ? (
                       <div className="space-y-4">
-                        <Settings draft={master} onChange={({ target }) => setMaster({ ...master, [target.name]: target.value })} />
+                        <Settings
+                          draft={master}
+                          onChange={({ target }) => setMaster({ ...master, [target.name]: target.value })}
+                          onMessageChange={({ target }) =>
+                            setMaster({
+                              ...master,
+                              messages: { ...getReadinessMessages(master), [target.name]: target.value },
+                            })
+                          }
+                        />
                         <div className={rowActions}>
                           <button type="button" className={readinessPrimary} disabled={busy} onClick={() => void saveMasterSettings()}>
                             Simpan pengaturan master
@@ -686,7 +737,16 @@ export default function ReadinessManagement() {
                 {section === 'results' ? 'Hasil Responden' : collections[section]?.label || 'Pengaturan'}
               </h2>
               {section === 'settings' && (
-                <Settings draft={draft} onChange={({ target }) => setDraft({ ...draft, [target.name]: target.value })} />
+                <Settings
+                  draft={draft}
+                  onChange={({ target }) => setDraft({ ...draft, [target.name]: target.value })}
+                  onMessageChange={({ target }) =>
+                    setDraft({
+                      ...draft,
+                      messages: { ...getReadinessMessages(draft), [target.name]: target.value },
+                    })
+                  }
+                />
               )}
               {section === 'results' && record?.id && (
                 <ReadinessResultsAdmin

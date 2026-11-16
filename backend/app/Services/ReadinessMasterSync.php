@@ -22,7 +22,7 @@ class ReadinessMasterSync
 
     public static function apply(array $old, array $new, array $draft): array
     {
-        foreach (['title', 'standard', 'subtitle', 'intro'] as $metaKey) {
+        foreach (['title', 'standard', 'subtitle', 'intro', 'messages'] as $metaKey) {
             if (($draft[$metaKey] ?? null) === ($old[$metaKey] ?? null) && isset($new[$metaKey])) {
                 $draft[$metaKey] = $new[$metaKey];
             }

@@ -1,36 +1,48 @@
 export const readinessCatalogPath = '/layanan-akreditasi/readiness-assessment';
 export const readinessUrl = (id) => readinessCatalogPath + '/' + id;
 
-export const readinessLimitation = 'Kuesioner ini merupakan alat bantu kesiapan mandiri bagi LSP dan bukan merupakan keputusan akreditasi. Pemberian akreditasi KAN tetap didasarkan pada evaluasi resmi dan asesmen oleh tim asesor KAN.';
+export const defaultReadinessMessages = {
+  limitation: 'Kuesioner ini merupakan alat bantu kesiapan mandiri bagi lembaga dan bukan merupakan keputusan akreditasi. Pemberian akreditasi KAN tetap didasarkan pada evaluasi resmi dan asesmen oleh tim asesor KAN.',
+  guideYes: 'Pilih ini jika dokumen, prosedur, atau rekaman yang ditanyakan sudah ada secara lengkap dan sudah dijalankan di lembaga Anda.',
+  guidePartial: 'Pilih ini jika dokumen atau rekamannya baru disusun sebagian (masih berupa draf) atau belum sepenuhnya dijalankan.',
+  guideNo: 'Pilih ini jika ketentuan tersebut berlaku bagi lembaga Anda, namun dokumen atau rekamannya belum tersedia sama sekali.',
+  guideOptional: 'Khusus pada pertanyaan berlabel Opsional: biarkan kosong (lewati) jika kegiatan tersebut memang tidak dilakukan di lembaga Anda. Pertanyaan opsional yang dilewati tidak akan mengurangi penilaian kesiapan Anda.',
+  descSiap: 'Dokumen dan rekaman bukti lembaga Anda sudah sangat lengkap. Anda siap melanjutkan ke tahap pengajuan akreditasi berikutnya.',
+  descCukup: 'Sebagian besar bukti sudah tersedia dengan baik, namun masih ada beberapa dokumen yang perlu dilengkapi sebelum mengajukan permohonan.',
+  descKurang: 'Bukti yang tersedia masih terbatas. Sebaiknya fokus menyusun prosedur dan rekaman yang belum lengkap terlebih dahulu.',
+  descBelum: 'Sebagian besar bukti belum tersedia. Lembaga Anda memerlukan persiapan dokumen sistem manajemen dan teknis secara menyeluruh.',
+  completeMessage: 'Seluruh bukti yang berlaku telah lengkap! Tidak ada pertanyaan yang berstatus "Tidak" atau "Sebagian". Anda siap melanjutkan ke tahap evaluasi mandiri berikutnya.',
+  nextStepMessage: 'Apabila hasil kesiapan Anda telah mencapai kategori Siap, silakan unduh laporan ini sebagai PDF untuk menjadi panduan saat menyiapkan dokumen pengajuan akreditasi.',
+};
+
+export const readinessLimitation = defaultReadinessMessages.limitation;
 export const formatReadinessScore = (score) => score === null ? '—' : score.toLocaleString('id-ID', { maximumFractionDigits: 3 });
 
-export const readinessRatings = [
-  {
-    label: 'Siap',
-    tone: 'hijau',
-    meaning: 'Dokumen dan rekaman bukti LSP Anda sudah sangat lengkap. Anda siap melanjutkan ke pengisian formulir FPA 09-01 LSP.',
-  },
-  {
-    label: 'Cukup',
-    tone: 'hijau',
-    meaning: 'Sebagian besar bukti sudah tersedia dengan baik, namun masih ada beberapa dokumen yang perlu dilengkapi sebelum mengajukan permohonan.',
-  },
-  {
-    label: 'Kurang',
-    tone: 'kuning',
-    meaning: 'Bukti yang tersedia masih terbatas. Sebaiknya fokus menyusun prosedur dan rekaman yang belum lengkap terlebih dahulu.',
-  },
-  {
-    label: 'Belum',
-    tone: 'merah',
-    meaning: 'Sebagian besar bukti belum tersedia. LSP Anda memerlukan persiapan dokumen sistem manajemen dan skema secara menyeluruh.',
-  },
-];
+export function getReadinessMessages(assessment) {
+  const custom = assessment?.messages || {};
+  return Object.fromEntries(
+    Object.entries(defaultReadinessMessages).map(([key, fallback]) => [
+      key,
+      custom[key]?.trim() ? custom[key] : fallback,
+    ])
+  );
+}
+
+export function getReadinessRatings(messages = defaultReadinessMessages) {
+  return [
+    { label: 'Siap', tone: 'hijau', meaning: messages.descSiap || defaultReadinessMessages.descSiap },
+    { label: 'Cukup', tone: 'hijau', meaning: messages.descCukup || defaultReadinessMessages.descCukup },
+    { label: 'Kurang', tone: 'kuning', meaning: messages.descKurang || defaultReadinessMessages.descKurang },
+    { label: 'Belum', tone: 'merah', meaning: messages.descBelum || defaultReadinessMessages.descBelum },
+  ];
+}
+
+export const readinessRatings = getReadinessRatings(defaultReadinessMessages);
 
 export const answersList = [
-  ['yes', 'Ya', 'Pilih ini jika dokumen, prosedur, atau rekaman yang ditanyakan sudah ada secara lengkap dan sudah dijalankan di LSP Anda.'],
-  ['partial', 'Sebagian', 'Pilih ini jika dokumen atau rekamannya baru disusun sebagian (masih berupa draf) atau belum sepenuhnya dijalankan.'],
-  ['no', 'Tidak', 'Pilih ini jika ketentuan tersebut berlaku bagi LSP Anda, namun dokumen atau rekamannya belum tersedia sama sekali.'],
+  ['yes', 'Ya', defaultReadinessMessages.guideYes],
+  ['partial', 'Sebagian', defaultReadinessMessages.guidePartial],
+  ['no', 'Tidak', defaultReadinessMessages.guideNo],
 ];
 
 export const optionalHints = {
@@ -45,7 +57,7 @@ export const optionalHints = {
 };
 
 export const getOptionalHint = (question) =>
-  question.optHint || optionalHints[question.id] || 'Lewati (kosongkan) pertanyaan ini jika kegiatan tersebut tidak dilakukan di LSP Anda.';
+  question.optHint?.trim() || optionalHints[question.id] || 'Lewati (kosongkan) pertanyaan ini jika kegiatan tersebut tidak dilakukan di lembaga Anda.';
 
 export const identityMeta = {
   'I-01': {
@@ -80,37 +92,41 @@ export const identityMeta = {
   },
 };
 
-export const getIdentityMeta = (item, index) =>
-  identityMeta[item.id] || {
-    hint: item.hint || '',
-    type: item.type || 'text',
-    placeholder: item.placeholder || '',
-    fullSpan: index === 0 || index === 1 || index === 3,
+export const getIdentityMeta = (item, index) => {
+  const preset = identityMeta[item.id];
+  const labelLower = (item.label || '').toLowerCase();
+  let inferredType = preset?.type || 'text';
+  if (!preset && labelLower.includes('email')) inferredType = 'email';
+  else if (!preset && labelLower.includes('tahun')) inferredType = 'number';
+
+  return {
+    hint: item.hint?.trim() || preset?.hint || '',
+    type: item.type || inferredType,
+    placeholder: item.placeholder?.trim() || preset?.placeholder || '',
+    fullSpan: preset ? preset.fullSpan : index === 0 || index === 1 || index === 3,
   };
+};
 
-const ANSWER_ALIASES = new Map([
-  ['yes', 'yes'],
-  ['Ya', 'yes'],
-  ['partial', 'partial'],
-  ['Sebagian', 'partial'],
-  ['no', 'no'],
-  ['Tidak', 'no'],
-]);
+export const readinessAnswerLabel = (answer) => {
+  if (answer === 'yes' || answer === 'Ya') return 'Ya';
+  if (answer === 'partial' || answer === 'Sebagian') return 'Sebagian';
+  if (answer === 'no' || answer === 'Tidak') return 'Tidak';
+  return undefined;
+};
 
-const ANSWER_LABELS = new Map([
-  ['yes', 'Ya'],
-  ['partial', 'Sebagian'],
-  ['no', 'Tidak'],
-]);
+export const readinessPlainAnswerLabel = (answer) => {
+  if (answer === 'yes' || answer === 'Ya') return 'Ya';
+  if (answer === 'partial' || answer === 'Sebagian') return 'Sebagian';
+  if (answer === 'no' || answer === 'Tidak') return 'Tidak';
+  return undefined;
+};
 
 export function normalizeAnswer(raw) {
-  return ANSWER_ALIASES.get(raw);
+  if (raw === 'yes' || raw === 'Ya') return 'yes';
+  if (raw === 'partial' || raw === 'Sebagian') return 'partial';
+  if (raw === 'no' || raw === 'Tidak') return 'no';
+  return undefined;
 }
-
-export const readinessAnswerLabel = (answer) => ANSWER_LABELS.get(normalizeAnswer(answer));
-
-// Alias: implementasinya sama dengan readinessAnswerLabel
-export const readinessPlainAnswerLabel = readinessAnswerLabel;
 
 export function friendlyClauseTitle(clause) {
   if (!clause) return '';
@@ -126,7 +142,8 @@ export function formatScopeClauseLabel(clause, items = []) {
   const mandCount = items.filter((q) => !q.allowNA).length;
   const optCount = items.filter((q) => q.allowNA).length;
   const countLabel = optCount > 0 ? `${mandCount} wajib, ${optCount} opsional` : `${mandCount} wajib`;
-  const match = clause.title?.match(/^([A-Z])\.\s*(\S.*)$/); if (match) {
+  const match = clause.title?.match(/^([A-Z])\.\s*(.+)$/);
+  if (match) {
     const [, letter, rest] = match;
     const shortRest = ['D', 'F', 'G'].includes(letter) ? rest.replace(/^Persyaratan\s+/i, '') : rest;
     return `Bagian ${letter} — ${shortRest} (${countLabel})`;
@@ -134,97 +151,66 @@ export function formatScopeClauseLabel(clause, items = []) {
   return `${clause.code} — ${clause.title} (${countLabel})`;
 }
 
-function countAnswers(questions, responses) {
+export function tallyReadiness(questions, responses, messages = defaultReadinessMessages) {
   const counts = { yes: 0, partial: 0, no: 0, na: 0 };
-  const totals = { unansweredMand: 0, mandTotal: 0, optTotal: 0, mandDone: 0, optDone: 0 };
+  let unansweredMand = 0;
+  let mandTotal = 0;
+  let optTotal = 0;
+  let mandDone = 0;
+  let optDone = 0;
 
   for (const question of questions) {
     const isOptional = Boolean(question.allowNA);
+    if (isOptional) optTotal += 1;
+    else mandTotal += 1;
+
     const answer = normalizeAnswer(responses[question.id]?.answer);
-
-    totals[isOptional ? 'optTotal' : 'mandTotal'] += 1;
-
     if (answer) {
       counts[answer] += 1;
-      totals[isOptional ? 'optDone' : 'mandDone'] += 1;
+      if (isOptional) optDone += 1;
+      else mandDone += 1;
     } else if (isOptional) {
       counts.na += 1;
     } else {
-      totals.unansweredMand += 1;
+      unansweredMand += 1;
     }
   }
 
-  return { counts, ...totals };
-}
-
-function buildCukupDescription(noCount) {
-  const note = noCount > 0
-    ? ` Lengkapi terlebih dahulu ${noCount} bukti yang masih berstatus "Tidak".`
-    : ' Lengkapi beberapa bukti yang masih berstatus "Sebagian".';
-  return 'Sebagian besar bukti sudah tersedia dengan baik.' + note;
-}
-
-function resolveReadinessStatus({ unansweredMand, applicable, naCount, noCount, pct }) {
-  if (unansweredMand > 0) {
-    return {
-      status: 'Belum Lengkap',
-      tone: 'abu',
-      description: `Masih ada ${unansweredMand} pertanyaan wajib yang belum dijawab.`,
-    };
-  }
-  if (applicable === 0 && naCount > 0) {
-    return {
-      status: 'Tidak Diperlukan (Dilewati)',
-      tone: 'abu',
-      description: 'Tidak diperlukan karena kegiatan opsional terkait tidak dilakukan di LSP Anda.',
-    };
-  }
-  if (pct >= 80 && noCount === 0) {
-    return {
-      status: 'Siap',
-      tone: 'hijau',
-      description: 'Dokumen dan rekaman bukti LSP Anda sudah sangat lengkap. Anda siap melanjutkan ke pengisian formulir FPA 09-01 LSP.',
-    };
-  }
-  if (pct >= 60) {
-    return { status: 'Cukup', tone: 'hijau', description: buildCukupDescription(noCount) };
-  }
-  if (pct >= 40) {
-    return {
-      status: 'Kurang',
-      tone: 'kuning',
-      description: 'Ketersediaan bukti saat ini masih terbatas. Disarankan untuk melengkapi prosedur dan rekaman yang belum tersedia sebelum mengajukan akreditasi.',
-    };
-  }
-  return {
-    status: 'Belum',
-    tone: 'merah',
-    description: 'Sebagian besar bukti belum tersedia. LSP Anda memerlukan persiapan dokumen sistem manajemen dan skema secara menyeluruh.',
-  };
-}
-
-export function tallyReadiness(questions, responses) {
-  const { counts, unansweredMand, mandTotal, optTotal, mandDone, optDone } =
-    countAnswers(questions, responses);
-
   const applicable = counts.yes + counts.partial + counts.no;
-  const pct = applicable
-    ? Math.round(((counts.yes + 0.5 * counts.partial) / applicable) * 100)
-    : 0;
+  const answered = applicable;
+  const pct = applicable ? Math.round(((counts.yes + 0.5 * counts.partial) / applicable) * 100) : 0;
   const score = applicable ? (2 * counts.yes + counts.partial) / applicable : null;
 
-  const { status, tone, description } = resolveReadinessStatus({
-    unansweredMand,
-    applicable,
-    naCount: counts.na,
-    noCount: counts.no,
-    pct,
-  });
+  let status = 'Belum';
+  let tone = 'merah';
+  let description = messages.descBelum || defaultReadinessMessages.descBelum;
+
+  if (unansweredMand > 0) {
+    status = 'Belum Lengkap';
+    tone = 'abu';
+    description = `Masih ada ${unansweredMand} pertanyaan wajib yang belum dijawab.`;
+  } else if (applicable === 0 && counts.na > 0) {
+    status = 'Tidak Diperlukan (Dilewati)';
+    tone = 'abu';
+    description = 'Tidak diperlukan karena kegiatan opsional terkait tidak dilakukan.';
+  } else if (pct >= 80 && counts.no === 0) {
+    status = 'Siap';
+    tone = 'hijau';
+    description = messages.descSiap || defaultReadinessMessages.descSiap;
+  } else if (pct >= 60) {
+    status = 'Cukup';
+    tone = 'hijau';
+    description = messages.descCukup || defaultReadinessMessages.descCukup;
+  } else if (pct >= 40) {
+    status = 'Kurang';
+    tone = 'kuning';
+    description = messages.descKurang || defaultReadinessMessages.descKurang;
+  }
 
   return {
     counts,
     applicable,
-    answered: applicable,
+    answered,
     pct,
     score,
     status,
