@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ReadinessAssessment extends Model
 {
@@ -13,4 +14,9 @@ class ReadinessAssessment extends Model
         'published' => 'array',
         'published_at' => 'datetime',
     ];
+
+    public function responses(): HasMany
+    {
+        return $this->hasMany(ReadinessAssessmentResponse::class, 'readiness_assessment_id');
+    }
 }

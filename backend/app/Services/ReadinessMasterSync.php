@@ -22,6 +22,12 @@ class ReadinessMasterSync
 
     public static function apply(array $old, array $new, array $draft): array
     {
+        foreach (['title', 'standard', 'subtitle', 'intro'] as $metaKey) {
+            if (($draft[$metaKey] ?? null) === ($old[$metaKey] ?? null) && isset($new[$metaKey])) {
+                $draft[$metaKey] = $new[$metaKey];
+            }
+        }
+
         foreach (self::ORDER as $key) {
             $draft[$key] = self::syncList($key, $old[$key] ?? [], $new[$key] ?? [], $draft[$key] ?? [], $draft);
         }

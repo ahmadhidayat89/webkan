@@ -164,6 +164,8 @@ const adminReadinessPath = '/admin/readiness-assessments';
 export const listPublicReadiness = (signal) => api.get(readinessPath, { signal });
 export const getPublicReadiness = (id, signal) =>
   api.get(readinessPath + '/' + encodeURIComponent(id), { signal });
+export const submitPublicReadiness = (id, data) =>
+  api.post(readinessPath + '/' + encodeURIComponent(id) + '/submit', data);
 export const listReadiness = (signal) => api.get(adminReadinessPath, { signal });
 export const getReadiness = (id) => api.get(adminReadinessPath + '/' + id);
 export const getReadinessTemplate = (signal) => api.get(adminReadinessPath + '/template', { signal });
@@ -174,5 +176,10 @@ export const saveReadiness = (id, draft) => id
 export const deleteReadiness = (id) => api.delete(adminReadinessPath + '/' + id);
 export const publishReadiness = (id) => api.put(adminReadinessPath + '/' + id + '/publish');
 export const unpublishReadiness = (id) => api.delete(adminReadinessPath + '/' + id + '/publish');
+export const getReadinessResponses = (id) => api.get(adminReadinessPath + '/' + id + '/responses');
+export const deleteReadinessResponse = (id, responseId) =>
+  api.delete(adminReadinessPath + '/' + id + '/responses/' + responseId);
+export const exportReadinessCsv = (id) =>
+  api.get(adminReadinessPath + '/' + id + '/export-csv', { responseType: 'blob' });
 
 export default api;

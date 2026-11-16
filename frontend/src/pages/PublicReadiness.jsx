@@ -37,13 +37,13 @@ function AssessmentPage({ id }) {
       <div className="print:hidden"><Header /></div>
       <main>
         <div className="pt-24 pb-5 border-b border-primary-800 bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800 md:pt-36 lg:pt-40 print:hidden">
-          <div className="max-w-4xl px-4 mx-auto sm:px-6">
+          <div className="max-w-6xl px-4 mx-auto sm:px-6">
             <Link to={readinessCatalogPath} className="inline-flex items-center gap-2 text-sm font-semibold text-white hover:underline">
               <FaArrowLeft aria-hidden="true" /> Daftar asesmen
             </Link>
           </div>
         </div>
-        <div className="max-w-4xl px-4 pt-4 pb-16 mx-auto sm:px-6 print:max-w-none print:p-0">
+        <div className="max-w-6xl px-4 pt-4 pb-16 mx-auto sm:px-6 print:max-w-none print:p-0">
           {message && <p role="alert" className="p-5 bg-white border rounded-xl border-slate-200 text-slate-700">{message}</p>}
           {!assessment && !message && <output className="block text-slate-700">Memuat asesmen…</output>}
           {assessment && <ReadinessForm assessment={assessment} assessmentId={id} />}

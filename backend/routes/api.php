@@ -93,6 +93,8 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/readiness-assessments', [ReadinessAssessmentController::class, 'index']);
     Route::get('/readiness-assessments/{readinessAssessment}', [ReadinessAssessmentController::class, 'show']);
+    Route::post('/readiness-assessments/{readinessAssessment}/submit', [ReadinessAssessmentController::class, 'submit'])
+        ->middleware('throttle:30,1,readiness-submit');
 
     // Documents (public)
     Route::get('/documents', [DocumentController::class, 'index']);
@@ -167,6 +169,9 @@ Route::prefix('v1/admin')->middleware('auth:sanctum')->group(function () {
             ->parameters(['readiness-assessments' => 'readinessAssessment']);
         Route::put('readiness-assessments/{readinessAssessment}/publish', [AdminReadinessAssessmentController::class, 'publish']);
         Route::delete('readiness-assessments/{readinessAssessment}/publish', [AdminReadinessAssessmentController::class, 'unpublish']);
+        Route::get('readiness-assessments/{readinessAssessment}/responses', [AdminReadinessAssessmentController::class, 'responses']);
+        Route::delete('readiness-assessments/{readinessAssessment}/responses/{response}', [AdminReadinessAssessmentController::class, 'destroyResponse']);
+        Route::get('readiness-assessments/{readinessAssessment}/export-csv', [AdminReadinessAssessmentController::class, 'exportCsv']);
 
         // Direktori LPK (admin), per status: terakreditasi | akreditasi-dibekukan | akreditasi-dicabut
         Route::post('directory/import', [LpkController::class, 'importFile']);

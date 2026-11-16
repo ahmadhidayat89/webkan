@@ -4,6 +4,7 @@ import { FaClipboardCheck, FaPlus } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/admin/AdminLayout';
 import ReadinessForm from '../../components/readiness/ReadinessForm';
+import ReadinessResultsAdmin from '../../components/readiness/ReadinessResultsAdmin';
 import { readinessButton, readinessInput, readinessPrimary, readinessUrl } from '../../components/readiness/readiness';
 import { useConfirm } from '../../hooks/useConfirm';
 import {
@@ -88,7 +89,7 @@ function ItemFields({ section, item, draft, onChange }) {
       {field('clauseId', 'Klausul', undefined, true, false, draft.clauses.map(({ id, code, title }) => [id, code + ' — ' + title]))}
       {field('reference', 'Subklausul / rujukan', 120)}
       {field('text', 'Pertanyaan', 4000, true, true)}
-      {checkbox('allowNA', 'Izinkan jawaban Tidak berlaku (N/A)')}
+      {checkbox('allowNA', 'Pertanyaan opsional (dapat dilewati bila tidak relevan)')}
       {field('documentId', 'Dokumen acuan', undefined, false, false, [['', 'Tanpa dokumen acuan'], ...draft.documents.map(({ id, code, title }) => [id, code + ' — ' + title])])}
       {item.documentId && field('evidence', 'Ketentuan bukti', undefined, true, false, [['Wajib', 'Wajib'], ['Jika ada', 'Jika ada']])}
     </>
@@ -149,7 +150,7 @@ function describeItem(section, item, draft, number) {
   if (section === 'questions') {
     const clause = draft.clauses.find(({ id }) => id === item.clauseId);
     const document = draft.documents.find(({ id }) => id === item.documentId);
-    return [item.text, ['Butir ' + number, 'Klausul ' + (item.reference || clause?.code), document?.code, item.allowNA && 'N/A'].filter(Boolean).join(' · ')];
+    return [item.text, ['Butir ' + number, 'Klausul ' + (item.reference || clause?.code), document?.code, item.allowNA ? 'Opsional' : 'Wajib'].filter(Boolean).join(' · ')];
   }
   if (section === 'clauses') return [item.code + ' — ' + item.title, [
     draft.questions.filter(({ clauseId }) => clauseId === item.id).length + ' butir', item.always && 'Wajib', item.description,
@@ -355,7 +356,7 @@ function Preview({ draft, onClose }) {
   const dialog = useRef(null);
   useEffect(() => { dialog.current.showModal(); }, []);
   return (
-    <dialog ref={dialog} onClose={onClose} aria-labelledby="readiness-preview" className="max-h-[90vh] w-[min(94vw,64rem)] rounded-2xl bg-slate-50 p-4 backdrop:bg-slate-950/60 sm:p-6">
+    <dialog ref={dialog} onClose={onClose} aria-labelledby="readiness-preview" className="max-h-[90vh] w-[min(96vw,72rem)] rounded-2xl bg-slate-50 p-4 backdrop:bg-slate-950/60 sm:p-6">
       <div className="flex items-center justify-between gap-3 mb-4">
         <h2 id="readiness-preview" className="text-lg font-bold">Pratinjau formulir</h2>
         <button type="button" className={readinessButton} onClick={() => dialog.current.close()}>Tutup</button>
@@ -422,8 +423,8 @@ export default function ReadinessManagement() {
     const next = {
       ...master,
       ...change,
-      title: (change.title ?? master.title)?.trim() || 'Readiness Assessment LSP',
-      standard: (change.standard ?? master.standard)?.trim() || 'ISO/IEC 17024:2026',
+      title: (change.title ?? master.title)?.trim() || 'SiapKAN — Penilaian Kesiapan Akreditasi LSP',
+      standard: (change.standard ?? master.standard)?.trim() || 'SNI ISO/IEC 17024:2026',
     };
     setMaster(next);
     void perform(async () => {
@@ -467,11 +468,11 @@ export default function ReadinessManagement() {
     setError('');
     setReload((value) => value + 1);
   };
-  const edit = (id, duplicate = false) => perform(async () => {
+  const edit = (id, duplicate = false, targetTab = 'clauses') => perform(async () => {
     const [{ data: { data } }, { data: { data: latestMaster } }] = await Promise.all([getReadiness(id), getReadinessTemplate()]);
     setMaster(latestMaster);
     if (duplicate) open(null, { ...data.draft, title: (data.draft.title.slice(0, 190) + ' (Salinan)') });
-    else open(data, data.draft, 'clauses');
+    else open(data, data.draft, targetTab);
   });
   const useTemplate = () => perform(async () => {
     const { data: { data } } = await getReadinessTemplate();
@@ -620,9 +621,14 @@ export default function ReadinessManagement() {
                   </div>
                   <h2 className="mt-3 text-lg font-bold break-words text-slate-900">{entry.title}</h2>
                   <p className="text-sm text-slate-700">{entry.subtitle}</p>
-                  <p className="mt-3 text-sm text-slate-700">{entry.clause_count} klausul · {entry.question_count} butir</p>
+                  <p className="mt-3 text-sm text-slate-700">
+                    {entry.clause_count} klausul · {entry.question_count} butir · {entry.responses_count ?? 0} responden
+                  </p>
                   <div className={rowActions + ' mt-4'}>
                     <button type="button" className={readinessPrimary} disabled={busy} onClick={() => edit(entry.id)}>Kelola</button>
+                    <button type="button" className={readinessButton} disabled={busy} onClick={() => edit(entry.id, false, 'results')}>
+                      Lihat Hasil ({entry.responses_count ?? 0})
+                    </button>
                     <button type="button" className={readinessButton} disabled={busy} onClick={() => edit(entry.id, true)}>Duplikat</button>
                     <button type="button" className={readinessButton + ' text-red-700'} disabled={busy} onClick={() => void remove(entry)}>Hapus</button>
                   </div>
@@ -655,21 +661,44 @@ export default function ReadinessManagement() {
                 </>}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
               {Object.entries(collections).filter(([key]) => key !== 'glossary').map(([key, { label }]) => (
                 <div key={key} className="p-4 bg-white border rounded-xl border-slate-200"><p className="text-xl font-bold text-primary-800">{draft[key].length}</p><p className="text-sm text-slate-600">{label}</p></div>
               ))}
+              {record?.id && (
+                <div className="p-4 bg-white border rounded-xl border-slate-200">
+                  <p className="text-xl font-bold text-primary-800">{record.responses_count ?? 0}</p>
+                  <p className="text-sm text-slate-600">Responden</p>
+                </div>
+              )}
             </div>
             <div className={card}>
               <nav className="flex flex-wrap gap-2 pb-4 mb-5 border-b border-slate-200" aria-label="Bagian pengaturan asesmen">
-                {[...Object.entries(collections).map(([key, { label }]) => [key, label]), ['settings', 'Pengaturan']].map(([key, label]) => (
+                {[
+                  ...Object.entries(collections).map(([key, { label }]) => [key, label]),
+                  ['settings', 'Pengaturan'],
+                  ...(record?.id ? [['results', `Hasil Responden (${record.responses_count ?? 0})`]] : []),
+                ].map(([key, label]) => (
                   <button key={key} type="button" aria-pressed={section === key} className={section === key ? readinessPrimary : readinessButton} disabled={!!item} onClick={() => setSection(key)}>{label}</button>
                 ))}
               </nav>
-              <h2 className="mb-4 text-lg font-bold text-slate-900">{collections[section]?.label || 'Pengaturan'}</h2>
-              {section === 'settings'
-                ? <Settings draft={draft} onChange={({ target }) => setDraft({ ...draft, [target.name]: target.value })} />
-                : <Collection key={section} section={section} draft={draft} item={item} setItem={setItem} update={(change) => setDraft({ ...draft, ...change })} confirm={confirm} master={master} />}
+              <h2 className="mb-4 text-lg font-bold text-slate-900">
+                {section === 'results' ? 'Hasil Responden' : collections[section]?.label || 'Pengaturan'}
+              </h2>
+              {section === 'settings' && (
+                <Settings draft={draft} onChange={({ target }) => setDraft({ ...draft, [target.name]: target.value })} />
+              )}
+              {section === 'results' && record?.id && (
+                <ReadinessResultsAdmin
+                  assessmentId={record.id}
+                  draft={draft}
+                  confirm={confirm}
+                  onCountChange={(count) => setRecord((cur) => (cur ? { ...cur, responses_count: count } : cur))}
+                />
+              )}
+              {section !== 'settings' && section !== 'results' && (
+                <Collection key={section} section={section} draft={draft} item={item} setItem={setItem} update={(change) => setDraft({ ...draft, ...change })} confirm={confirm} master={master} />
+              )}
             </div>
           </fieldset>
         )}

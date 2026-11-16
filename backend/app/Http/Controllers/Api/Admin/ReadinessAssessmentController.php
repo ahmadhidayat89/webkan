@@ -5,38 +5,61 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SaveReadinessAssessment;
 use App\Models\ReadinessAssessment;
+use App\Models\ReadinessAssessmentResponse;
 use App\Services\ReadinessMasterSync;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class ReadinessAssessmentController extends Controller
 {
+    private const DISPLAY_DATE_TIME_FORMAT = 'd/m/Y H:i';
+
     public function index()
     {
-        $assessments = ReadinessAssessment::query()->latest('id')->get()->map(fn ($assessment) => [
-            'id' => $assessment->id,
-            'title' => $assessment->draft['title'],
-            'standard' => $assessment->draft['standard'],
-            'subtitle' => $assessment->draft['subtitle'],
-            'question_count' => count($assessment->draft['questions']),
-            'clause_count' => count($assessment->draft['clauses']),
-            'published_at' => $assessment->published_at,
-        ]);
+        $this->ensureDefaultTemplateSynced();
+
+        $assessments = ReadinessAssessment::query()
+            ->withCount('responses')
+            ->latest('id')
+            ->get()
+            ->map(fn ($assessment) => [
+                'id' => $assessment->id,
+                'title' => $assessment->draft['title'],
+                'standard' => $assessment->draft['standard'],
+                'subtitle' => $assessment->draft['subtitle'],
+                'question_count' => count($assessment->draft['questions']),
+                'clause_count' => count($assessment->draft['clauses']),
+                'responses_count' => (int) $assessment->responses_count,
+                'published_at' => $assessment->published_at,
+            ]);
 
         return response()->json(['data' => $assessments]);
     }
 
     public function template()
     {
+        $this->ensureDefaultTemplateSynced();
+
+        return response()->json(['data' => $this->loadMasterData()]);
+    }
+
+    public function ensureDefaultTemplateSynced(): void
+    {
+        $this->ensureResponsesTableExists();
+
         $settings = DB::table('readiness_master_settings')->first();
 
         if (! $settings) {
             $path = resource_path('readiness/lsp-17024.json');
             $default = json_decode(file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
             $this->saveMasterData($default);
+        } elseif (DB::table('readiness_master_clauses')->where('item_id', 'KAN')->exists()) {
+            $path = resource_path('readiness/lsp-17024.json');
+            $default = json_decode(file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
+            $this->syncDefaultTemplate($default);
         }
-
-        return response()->json(['data' => $this->loadMasterData()]);
     }
 
     public function updateTemplate(SaveReadinessAssessment $request)
@@ -73,6 +96,8 @@ class ReadinessAssessmentController extends Controller
 
     public function show(ReadinessAssessment $readinessAssessment)
     {
+        $this->ensureDefaultTemplateSynced();
+
         return response()->json(['data' => $this->editorData($readinessAssessment)]);
     }
 
@@ -112,9 +137,224 @@ class ReadinessAssessmentController extends Controller
         return $this->show($readinessAssessment);
     }
 
+    public function responses(ReadinessAssessment $readinessAssessment)
+    {
+        $this->ensureDefaultTemplateSynced();
+
+        $responses = $readinessAssessment->responses()
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $total = $responses->count();
+        $last = $responses->first()?->created_at?->copy()->timezone('Asia/Jakarta');
+        $avgPct = $total > 0 ? round($responses->avg('percentage'), 1) : 0;
+
+        $statusCounts = [
+            'Siap' => $responses->where('status', 'Siap')->count(),
+            'Cukup' => $responses->where('status', 'Cukup')->count(),
+            'Kurang' => $responses->where('status', 'Kurang')->count(),
+            'Belum' => $responses->where('status', 'Belum')->count(),
+            'Belum Lengkap' => $responses->where('status', 'Belum Lengkap')->count(),
+        ];
+
+        $questions = $readinessAssessment->draft['questions'] ?? [];
+        $questionSummary = [];
+
+        foreach ($questions as $index => $question) {
+            $qId = (string) $question['id'];
+            $isOpt = ! empty($question['allowNA']);
+            $counts = ['yes' => 0, 'partial' => 0, 'no' => 0, 'na' => 0];
+
+            foreach ($responses as $resp) {
+                $ans = $resp->responses[$qId]['answer'] ?? null;
+                if ($ans === 'yes' || $ans === 'partial' || $ans === 'no') {
+                    $counts[$ans]++;
+                } elseif ($isOpt) {
+                    $counts['na']++;
+                }
+            }
+
+            $questionSummary[] = [
+                'id' => $qId,
+                'number' => $index + 1,
+                'clauseId' => (string) $question['clauseId'],
+                'reference' => $question['reference'] ?? null,
+                'text' => $question['text'],
+                'allowNA' => $isOpt,
+                'documentId' => $question['documentId'] ?? null,
+                'total_answers' => $counts['yes'] + $counts['partial'] + $counts['no'],
+                'counts' => $counts,
+            ];
+        }
+
+        $formattedResponses = $responses->map(fn (ReadinessAssessmentResponse $r) => [
+            'id' => $r->id,
+            'scope' => $r->scope,
+            'selected_clauses' => $r->selected_clauses ?? [],
+            'identity' => $r->identity ?? [],
+            'responses' => $r->responses ?? [],
+            'status' => $r->status,
+            'percentage' => $r->percentage,
+            'yes_count' => $r->yes_count,
+            'partial_count' => $r->partial_count,
+            'no_count' => $r->no_count,
+            'na_count' => $r->na_count,
+            'created_at' => $r->created_at?->copy()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'created_at_human' => $r->created_at?->copy()->timezone('Asia/Jakarta')->format(self::DISPLAY_DATE_TIME_FORMAT),
+            'updated_at_human' => $r->updated_at?->copy()->timezone('Asia/Jakarta')->format(self::DISPLAY_DATE_TIME_FORMAT),
+        ])->values()->all();
+
+        return response()->json([
+            'data' => [
+                'stats' => [
+                    'total_responses' => $total,
+                    'average_percentage' => $avgPct,
+                    'ready_count' => $statusCounts['Siap'],
+                    'status_counts' => $statusCounts,
+                    'last_response_at' => $last ? $last->format('d/m/Y') : '-',
+                    'last_response_time' => $last ? $last->format(self::DISPLAY_DATE_TIME_FORMAT) : '-',
+                ],
+                'question_summary' => $questionSummary,
+                'responses' => $formattedResponses,
+            ],
+        ]);
+    }
+
+    public function destroyResponse(ReadinessAssessment $readinessAssessment, ReadinessAssessmentResponse $response)
+    {
+        abort_unless((int) $response->readiness_assessment_id === (int) $readinessAssessment->id, 404);
+        $response->delete();
+
+        return response()->noContent();
+    }
+
+    public function exportCsv(ReadinessAssessment $readinessAssessment)
+    {
+        $this->ensureDefaultTemplateSynced();
+
+        $responses = $readinessAssessment->responses()
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $draft = $readinessAssessment->draft;
+        $identities = $draft['identity'] ?? [];
+        $questions = $draft['questions'] ?? [];
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="hasil-readiness-assessment-' . $readinessAssessment->id . '.csv"',
+        ];
+
+        $callback = function () use ($responses, $identities, $questions) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            $colHeaders = [
+                '#',
+                'Waktu Pengisian',
+                'Cakupan',
+                'Status Kesiapan',
+                'Kesiapan (%)',
+                'Ya',
+                'Sebagian',
+                'Tidak',
+                'Opsional Dilewati',
+            ];
+            foreach ($identities as $ident) {
+                $colHeaders[] = $ident['label'];
+            }
+            foreach ($questions as $idx => $q) {
+                $ref = ! empty($q['reference']) ? ' (' . $q['reference'] . ')' : '';
+                $colHeaders[] = 'P' . ($idx + 1) . $ref . ': ' . $q['text'];
+            }
+            fputcsv($file, array_map([$this, 'safeCsvCell'], $colHeaders));
+
+            foreach ($responses as $rIdx => $resp) {
+                $row = [
+                    $rIdx + 1,
+                    $resp->created_at?->copy()->timezone('Asia/Jakarta')->format(self::DISPLAY_DATE_TIME_FORMAT) ?? '',
+                    $resp->scope ?? 'Cakupan lengkap',
+                    $resp->status,
+                    $resp->percentage . '%',
+                    $resp->yes_count,
+                    $resp->partial_count,
+                    $resp->no_count,
+                    $resp->na_count,
+                ];
+
+                foreach ($identities as $ident) {
+                    $idKey = (string) $ident['id'];
+                    $row[] = $resp->identity[$idKey] ?? '';
+                }
+
+                foreach ($questions as $q) {
+                    $qId = (string) $q['id'];
+                    $ans = $resp->responses[$qId]['answer'] ?? null;
+                    if ($ans === 'yes') {
+                        $row[] = 'Ya';
+                    } elseif ($ans === 'partial') {
+                        $row[] = 'Sebagian';
+                    } elseif ($ans === 'no') {
+                        $row[] = 'Tidak';
+                    } elseif (! empty($q['allowNA'])) {
+                        $row[] = 'Dilewati (Opsional)';
+                    } else {
+                        $row[] = 'Belum Dijawab';
+                    }
+                }
+
+                fputcsv($file, array_map([$this, 'safeCsvCell'], $row));
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    private function safeCsvCell(mixed $value): string
+    {
+        $text = (string) $value;
+
+        return preg_match('/^[=+@\\-\\t\\r]/', $text) ? "'" . $text : $text;
+    }
+
     private function editorData(ReadinessAssessment $assessment): array
     {
-        return $assessment->only('id', 'draft', 'published_at', 'updated_at');
+        return array_merge(
+            $assessment->only('id', 'draft', 'published_at', 'updated_at'),
+            ['responses_count' => $assessment->responses()->count()]
+        );
+    }
+
+    private function ensureResponsesTableExists(): void
+    {
+        if (Schema::hasTable('readiness_assessment_responses')) {
+            return;
+        }
+
+        Schema::create('readiness_assessment_responses', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('readiness_assessment_id')
+                ->constrained('readiness_assessments')
+                ->cascadeOnDelete();
+            $table->string('submission_token', 64)->nullable()->unique();
+            $table->string('scope', 250)->nullable();
+            $table->json('selected_clauses')->nullable();
+            $table->json('identity')->nullable();
+            $table->json('responses')->nullable();
+            $table->string('status', 80)->default('Belum');
+            $table->unsignedSmallInteger('percentage')->default(0);
+            $table->unsignedSmallInteger('yes_count')->default(0);
+            $table->unsignedSmallInteger('partial_count')->default(0);
+            $table->unsignedSmallInteger('no_count')->default(0);
+            $table->unsignedSmallInteger('na_count')->default(0);
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->timestamps();
+
+            $table->index(['readiness_assessment_id', 'created_at']);
+        });
     }
 
     private function loadMasterData(): array
@@ -189,8 +429,8 @@ class ReadinessAssessmentController extends Controller
             ->all();
 
         return [
-            'title' => $settings->title ?? 'Readiness Assessment LSP',
-            'standard' => $settings->standard ?? 'ISO/IEC 17024:2026',
+            'title' => $settings->title ?? 'SiapKAN — Penilaian Kesiapan Akreditasi LSP',
+            'standard' => $settings->standard ?? 'SNI ISO/IEC 17024:2026',
             'subtitle' => $settings->subtitle ?? null,
             'intro' => $settings->intro ?? null,
             'clauses' => $clauses,
@@ -199,6 +439,33 @@ class ReadinessAssessmentController extends Controller
             'documents' => $documents,
             'glossary' => $glossary,
         ];
+    }
+
+    private function syncDefaultTemplate(array $default): void
+    {
+        DB::transaction(function () use ($default) {
+            $old = $this->loadMasterData();
+            $this->saveMasterData($default);
+            $new = $this->loadMasterData();
+
+            ReadinessAssessment::query()->lockForUpdate()->get()
+                ->each(function (ReadinessAssessment $assessment) use ($old, $new) {
+                    $updatedDraft = ReadinessMasterSync::apply($old, $new, $assessment->draft);
+                    $changes = [];
+                    if ($updatedDraft != $assessment->draft) {
+                        $changes['draft'] = $updatedDraft;
+                    }
+                    if ($assessment->published !== null) {
+                        $updatedPublished = ReadinessMasterSync::apply($old, $new, $assessment->published);
+                        if ($updatedPublished != $assessment->published) {
+                            $changes['published'] = $updatedPublished;
+                        }
+                    }
+                    if ($changes !== []) {
+                        $assessment->update($changes);
+                    }
+                });
+        });
     }
 
     private function saveMasterData(array $draft): void

@@ -1,44 +1,69 @@
 import pdfMake from 'pdfmake/build/pdfmake.js';
 import pdfFonts from 'pdfmake/build/vfs_fonts.js';
 import {
-  formatReadinessScore, readinessAnswerLabel, readinessLimitation, tallyReadiness,
+  friendlyClauseTitle,
+  normalizeAnswer,
+  readinessLimitation,
+  readinessPlainAnswerLabel,
+  tallyReadiness,
 } from './readiness.js';
 
 pdfMake.addVirtualFileSystem(pdfFonts);
 
 export function downloadReadinessPdf({ assessment, identity = [], scope, groups, questions, responses, summary }) {
-  const priorities = questions.flatMap((question, index) => {
-    const answer = responses[question.id]?.answer;
+  const priorityRows = questions.flatMap((question, index) => {
+    const answer = normalizeAnswer(responses[question.id]?.answer);
     if (answer !== 'no' && answer !== 'partial') return [];
-
-    return [{
-      margin: [0, 0, 0, 9],
-      stack: [
-        { text: 'Butir ' + (index + 1) + ' - ' + readinessAnswerLabel(answer), bold: true, color: '#9a3412' },
-        { text: question.text, margin: [0, 2, 0, 0] },
-      ],
-    }];
+    return [[
+      { text: '#' + (index + 1), bold: true },
+      question.text,
+      { text: readinessPlainAnswerLabel(answer), bold: true, color: answer === 'no' ? '#b91c1c' : '#b45309' },
+    ]];
   });
 
-  const columnHeadings = ['Klausul', 'Ya', 'Sebagian', 'Tidak', 'N/A', 'Skor', 'Status'];
-  const rows = groups.map(({ clause, items }) => {
-    const { counts, score, status } = tallyReadiness(items, responses);
+  const columnHeadings = ['Bagian', 'Ya', 'Sebagian', 'Tidak', 'Opsional Dilewati', 'Status Kesiapan'];
+  const clauseRows = groups.map(({ clause, items }) => {
+    const { counts, status } = tallyReadiness(items, responses);
     return [
-      clause.code + ' - ' + clause.title,
-      ...[counts.yes, counts.partial, counts.no, counts.na, formatReadinessScore(score)]
+      friendlyClauseTitle(clause),
+      ...[counts.yes, counts.partial, counts.no, counts.na]
         .map((value) => ({ text: String(value), alignment: 'center' })),
       status,
     ];
   });
+
+  const docRows = (assessment.documents || []).flatMap((doc) => {
+    if (doc.code === 'D02') {
+      return [[
+        { text: 'D02', bold: true },
+        doc.title,
+        'Diisi Tahap Berikutnya',
+      ]];
+    }
+    const dItems = questions.filter((q) => q.documentId === doc.id || q.documentId === doc.code);
+    if (!dItems.length) return [];
+    const ev = tallyReadiness(dItems, responses);
+    return [[
+      { text: doc.code, bold: true },
+      doc.title,
+      ev.status,
+    ]];
+  });
+
   const assessmentTitle = assessment.title;
   const date = new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format();
-  const score = formatReadinessScore(summary.score) + (summary.score === null ? '' : ' / 2');
+
+  const identityBody = (assessment.identity || []).map((item) => {
+    const found = identity.find((entry) => entry.id === item.id || entry.label === item.label);
+    return [{ text: item.label, bold: true }, found?.value || '— belum diisi —'];
+  });
+  identityBody.push([{ text: 'Tanggal Pemeriksaan Mandiri', bold: true }, date]);
 
   const document = {
     pageSize: 'A4',
     pageMargins: [40, 38, 40, 42],
-    info: { title: 'Ringkasan hasil - ' + assessmentTitle },
-    defaultStyle: { fontSize: 10, color: '#334155', lineHeight: 1.16 },
+    info: { title: 'Ringkasan Kesiapan - ' + assessmentTitle },
+    defaultStyle: { fontSize: 10, color: '#334155', lineHeight: 1.18 },
     styles: {
       section: { bold: true, fontSize: 13, color: '#1e3a8a', margin: [0, 15, 0, 7] },
       secondary: { fontSize: 9, color: '#475569' },
@@ -51,55 +76,91 @@ export function downloadReadinessPdf({ assessment, identity = [], scope, groups,
       ],
     }),
     content: [
-      { text: 'Ringkasan hasil', fontSize: 24, bold: true, color: '#172554' },
-      { text: assessmentTitle, fontSize: 14, bold: true, color: '#1e40af', margin: [0, 5, 0, 3] },
-      { text: [assessment.standard, assessment.subtitle].filter(Boolean).join(' - '), style: 'secondary' },
-      { text: date + ' | ' + scope, style: 'secondary', margin: [0, 5, 0, 0] },
-      ...(identity.length ? [
-        { text: 'Identitas lembaga', style: 'section', headlineLevel: 1 },
-        {
-          layout: 'lightHorizontalLines',
-          table: {
-            widths: [145, '*'],
-            body: identity.map(({ label, value }) => [{ text: label, bold: true }, value]),
-          },
+      { text: 'Ringkasan Kesiapan Bukti Akreditasi LSP', fontSize: 20, bold: true, color: '#172554' },
+      { text: assessmentTitle, fontSize: 13, bold: true, color: '#1e40af', margin: [0, 4, 0, 2] },
+      { text: [assessment.standard, assessment.subtitle].filter(Boolean).join(' · '), style: 'secondary' },
+      { text: date + ' | ' + scope, style: 'secondary', margin: [0, 4, 0, 0] },
+      { text: 'Profil Lembaga Sertifikasi Person', style: 'section', headlineLevel: 1 },
+      {
+        layout: 'lightHorizontalLines',
+        table: {
+          widths: [160, '*'],
+          body: identityBody,
         },
-      ] : []),
-      { text: 'Penilaian keseluruhan: ' + summary.status, style: 'section' },
+      },
+      { text: 'Status Kesiapan Bukti LSP Anda: ' + summary.status, style: 'section' },
+      { text: summary.description, margin: [0, 0, 0, 8] },
       {
         columns: [
-          { text: [{ text: 'Skor kesiapan\n', bold: true }, score] },
-          { text: [{ text: 'Butir dijawab\n', bold: true }, summary.answered + ' / ' + questions.length] },
-          { text: [{ text: 'Prioritas perbaikan\n', bold: true }, String(priorities.length)] },
+          { text: [{ text: 'Ya (Lengkap)\n', bold: true }, String(summary.counts.yes)] },
+          { text: [{ text: 'Sebagian\n', bold: true }, String(summary.counts.partial)] },
+          { text: [{ text: 'Tidak (Belum Ada)\n', bold: true }, String(summary.counts.no)] },
+          { text: [{ text: 'Opsional Dilewati\n', bold: true }, String(summary.counts.na)] },
+          { text: [{ text: 'Wajib Terjawab\n', bold: true }, `${summary.mandDone}/${summary.mandTotal}`] },
         ],
       },
-      { text: 'Ya bernilai 2, Sebagian bernilai 1, dan Tidak bernilai 0. Butir N/A dikeluarkan dari skor.', style: 'secondary', margin: [0, 8, 0, 0] },
-      { text: 'Hasil per klausul', style: 'section' },
+      { text: 'Kesiapan per Bagian', style: 'section' },
       {
         layout: 'lightHorizontalLines',
         table: {
           headerRows: 1,
           keepWithHeaderRows: 1,
-          widths: ['*', 21, 45, 27, 26, 27, 100],
+          widths: ['*', 28, 45, 32, 65, 110],
           body: [
             columnHeadings.map((text, index) => ({
               text,
               bold: true,
               fillColor: '#eff6ff',
               color: '#172554',
-              alignment: index > 0 && index < 6 ? 'center' : 'left',
+              alignment: index > 0 && index < 5 ? 'center' : 'left',
             })),
-            ...rows,
+            ...clauseRows,
           ],
         },
       },
-      ...(priorities.length ? [
-        { text: 'Butir prioritas perbaikan', style: 'section', headlineLevel: 1 },
-        ...priorities,
+      ...(docRows.length ? [
+        { text: 'Kesiapan Dokumen Pendukung Pengajuan Akreditasi', style: 'section', headlineLevel: 1 },
+        {
+          layout: 'lightHorizontalLines',
+          table: {
+            headerRows: 1,
+            keepWithHeaderRows: 1,
+            widths: [35, '*', 115],
+            body: [
+              ['Kode', 'Dokumen yang Perlu Disiapkan', 'Status Kesiapan'].map((text) => ({
+                text,
+                bold: true,
+                fillColor: '#eff6ff',
+                color: '#172554',
+              })),
+              ...docRows,
+            ],
+          },
+        },
       ] : []),
-      { text: 'Langkah selanjutnya', style: 'section', headlineLevel: 1 },
-      { text: 'Siapkan bukti untuk butir yang perlu diperbaiki dan lengkapi klausul yang belum dinilai sebelum mengajukan akreditasi.' },
-      { text: 'Batasan penilaian', style: 'section', headlineLevel: 1 },
+      ...(priorityRows.length ? [
+        { text: `Daftar Bukti yang Perlu Dilengkapi (${priorityRows.length} Butir)`, style: 'section', headlineLevel: 1 },
+        {
+          layout: 'lightHorizontalLines',
+          table: {
+            headerRows: 1,
+            keepWithHeaderRows: 1,
+            widths: [35, '*', 70],
+            body: [
+              ['No.', 'Bukti yang Perlu Dilengkapi', 'Status Saat Ini'].map((text) => ({
+                text,
+                bold: true,
+                fillColor: '#eff6ff',
+                color: '#172554',
+              })),
+              ...priorityRows,
+            ],
+          },
+        },
+      ] : []),
+      { text: 'Langkah Selanjutnya', style: 'section', headlineLevel: 1 },
+      { text: 'Apabila hasil kesiapan Anda telah mencapai kategori Siap, silakan gunakan laporan ini sebagai panduan saat mengisi dokumen evaluasi mandiri FPA 09-01 LSP.' },
+      { text: 'Catatan Penting', style: 'section', headlineLevel: 1 },
       { text: readinessLimitation, style: 'secondary' },
     ],
     pageBreakBefore: (node, context) =>
