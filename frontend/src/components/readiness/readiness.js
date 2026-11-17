@@ -119,7 +119,7 @@ const DANGEROUS_PATTERNS = [
   /\bxp_cmdshell\b/i,
   /\bsleep\s*\(\s*\d+\s*\)/i,
   /\bbenchmark\s*\(/i,
-  /<\s*\/?\s*(script|iframe|object|embed|svg|img|style|link|meta)\b/i,
+  /<[\s/]*(?:script|iframe|object|embed|svg|img|style|link|meta)\b/i,
   /\b(javascript|vbscript|data)\s*:/i,
   /\bon[a-z]+\s*=/i,
 ];
@@ -127,7 +127,7 @@ const DANGEROUS_PATTERNS = [
 export function sanitizeIdentityInput(raw, meta = {}) {
   const str = String(raw ?? '')
     .replace(/[\u0000-\u001F\u007F]/g, ' ')
-    .replace(/<[^>]*>/g, '')
+    .replace(/<[^<>]*>/g, '')
     .replace(/[<>`]/g, '');
 
   if (meta.type === 'number') {
@@ -148,9 +148,23 @@ function validateYearValue(trimmed) {
   return '';
 }
 
+const EMAIL_FORBIDDEN_CHARS = /[\s?&=<>]/;
+
 function validateEmailValue(trimmed) {
-  const emailOk = /^[^\s@?&=<>]+@[^\s@?&=<>]+\.[^\s@?&=<>]{2,}$/.test(trimmed);
-  return emailOk ? '' : 'Format alamat email tidak valid (contoh: sekretariat@lsp-contoh.or.id).';
+  let valid = false;
+
+  if (!EMAIL_FORBIDDEN_CHARS.test(trimmed)) {
+    const parts = trimmed.split('@');
+    if (parts.length === 2 && parts[0]) {
+      const labels = parts[1].split('.');
+      valid =
+        labels.length >= 2 &&
+        labels.every((label) => label.length > 0) &&
+        labels[labels.length - 1].length >= 2;
+    }
+  }
+
+  return valid ? '' : 'Format alamat email tidak valid (contoh: sekretariat@lsp-contoh.or.id).';
 }
 
 export function validateIdentityField(value, item, meta = {}) {

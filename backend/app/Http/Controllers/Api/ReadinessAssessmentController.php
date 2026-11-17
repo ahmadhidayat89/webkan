@@ -175,16 +175,26 @@ class ReadinessAssessmentController extends Controller
             return ['', "Isian $label mengandung pola atau karakter yang tidak diizinkan."];
         }
 
+        $sanitized = $this->sanitizeIdentityText($rawStr);
+
+        return $sanitized === ''
+            ? ['', null]
+            : $this->validateIdentityByType($id, $label, $sanitized);
+    }
+
+    private function sanitizeIdentityText(string $rawStr): string
+    {
         $sanitized = strip_tags($rawStr);
         $sanitized = str_replace(['<', '>', '`'], '', $sanitized);
         $sanitized = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $sanitized) ?? '';
-        $sanitized = trim(preg_replace('/\s{2,}/u', ' ', $sanitized) ?? '');
 
-        if ($sanitized === '') {
-            return ['', null];
-        }
+        return trim(preg_replace('/\s{2,}/u', ' ', $sanitized) ?? '');
+    }
 
+    private function validateIdentityByType(string $id, string $label, string $sanitized): array
+    {
         $labelLower = mb_strtolower($label);
+
         if ($id === 'I-04' || str_contains($labelLower, 'email')) {
             return $this->validateEmailIdentity($label, $sanitized);
         }
