@@ -107,11 +107,14 @@ const AccreditationStepsManagement = () => {
       setSaving(true);
 
       const payload = {
-        icon: icon.trim(),
         title: title.trim(),
         tag: tag.trim(),
         description: description.trim(),
       };
+
+      if (!editingStep || icon !== editingStep.icon) {
+        payload.icon = icon.trim();
+      }
 
       let result;
 
@@ -137,7 +140,7 @@ const AccreditationStepsManagement = () => {
       }
     } catch (err) {
       console.error('AccreditationStep save error:', err);
-      toast.error('Terjadi kesalahan saat menyimpan data');
+      toast.error(err.response?.data?.errors?.icon?.[0] || 'Terjadi kesalahan saat menyimpan data');
     } finally {
       setSaving(false);
     }

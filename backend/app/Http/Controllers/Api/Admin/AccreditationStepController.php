@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\DB;
 
 class AccreditationStepController extends Controller
 {
+    // Match pictographs and flags as whole graphemes, including joined emoji.
+    // Keycap emoji start with an ASCII character and need their own alternative.
+    private const ICON_RULES = [
+        'bail', 'required', 'string', 'max:20',
+        'regex:/\A(?:(?=[\p{Extended_Pictographic}\p{Regional_Indicator}])\X|[0-9#*]\x{FE0F}?\x{20E3})+\z/u',
+    ];
+
+    private const ICON_MESSAGES = ['icon.regex' => 'Gunakan emoji untuk ikon langkah akreditasi.'];
+
     /**
      * Public endpoint — tanpa auth, untuk halaman publik.
      */
@@ -36,11 +45,11 @@ class AccreditationStepController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'icon'        => 'required|string|max:20',
+            'icon'        => self::ICON_RULES,
             'title'       => 'required|string|max:255',
             'tag'         => 'required|string|max:100',
             'description' => 'required|string',
-        ]);
+        ], self::ICON_MESSAGES);
 
         $validated['sort_order'] = (AccreditationStep::max('sort_order') ?? 0) + 1;
 
@@ -61,11 +70,11 @@ class AccreditationStepController extends Controller
         $step = AccreditationStep::findOrFail($id);
 
         $validated = $request->validate([
-            'icon'        => 'sometimes|required|string|max:20',
+            'icon'        => ['sometimes', ...self::ICON_RULES],
             'title'       => 'sometimes|required|string|max:255',
             'tag'         => 'sometimes|required|string|max:100',
             'description' => 'sometimes|required|string',
-        ]);
+        ], self::ICON_MESSAGES);
 
         $step->update($validated);
 
