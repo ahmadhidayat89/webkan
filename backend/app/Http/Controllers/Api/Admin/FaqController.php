@@ -50,6 +50,19 @@ class FaqController extends Controller
     }
 
     /**
+     * Detail satu FAQ (admin)
+     */
+    public function show($id)
+    {
+        $faq = Faq::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $faq,
+        ]);
+    }
+
+    /**
      * Ubah FAQ
      */
     public function update(Request $request, $id)

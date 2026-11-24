@@ -41,6 +41,9 @@ use App\Http\Controllers\Api\ReadinessAssessmentController;
 
 // Public routes
 Route::pattern('readinessAssessment', '[1-9][0-9]{0,17}');
+Route::pattern('id', '[1-9][0-9]{0,17}');
+Route::pattern('slider', '[1-9][0-9]{0,17}');
+Route::pattern('faq', '[1-9][0-9]{0,17}');
 
 Route::prefix('v1')->group(function () {
     // Homepage
@@ -106,10 +109,10 @@ Route::prefix('v1')->group(function () {
     // Surveys (public)
     Route::get('/surveys/{code}', [PublicSurveyController::class, 'show']);
     Route::post('/surveys/{code}/upload', [PublicSurveyController::class, 'upload'])
-          ->middleware('throttle:60,1,survey-upload');
+        ->middleware('throttle:60,1,survey-upload');
     Route::post('/surveys/{code}/submit', [PublicSurveyController::class, 'submit'])
         ->middleware('throttle:10,1,survey-submit');
-        
+
     // Sitemap & Robots
     Route::get('/sitemap.xml', [SitemapController::class, 'index']);
     Route::get('/robots.txt', [SitemapController::class, 'robots']);

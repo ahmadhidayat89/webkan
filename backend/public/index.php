@@ -48,6 +48,10 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 
 $kernel = $app->make(Kernel::class);
 
+if (isset($_POST['_method']) && is_string($_POST['_method'])) {
+    $_POST['_method'] = trim($_POST['_method'], " \t\n\r\0\x0B\"'");
+}
+
 $response = $kernel->handle(
     $request = Request::capture()
 )->send();

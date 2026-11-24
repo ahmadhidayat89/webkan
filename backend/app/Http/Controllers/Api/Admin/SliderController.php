@@ -34,10 +34,13 @@ class SliderController extends Controller
             'subtitle_en' => 'nullable|string',
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
             'link' => 'nullable|string|max:500',
-            'order' => 'nullable|integer',
-            'is_active' => 'nullable|in:0,1,true,false',
+            'order' => 'nullable|integer|min:0|max:10000',
+            'is_active' => 'nullable|in:0,1,true,false,"0","1"',
         ]);
-        $validated['is_active'] = filter_var($request->input('is_active', true), FILTER_VALIDATE_BOOLEAN);
+        $validated['is_active'] = filter_var(
+            trim((string) $request->input('is_active', true), "\"'"),
+            FILTER_VALIDATE_BOOLEAN
+        );
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('sliders', 'public');
@@ -75,10 +78,15 @@ class SliderController extends Controller
             'subtitle_en' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'link' => 'nullable|string|max:500',
-            'order' => 'nullable|integer',
-            'is_active' => 'nullable|in:0,1,true,false',
+            'order' => 'nullable|integer|min:0|max:10000',
+            'is_active' => 'nullable|in:0,1,true,false,"0","1"',
+            'remove_image' => 'nullable|in:0,1,true,false,"0","1"',
         ]);
-        $validated['is_active'] = filter_var($request->input('is_active', true), FILTER_VALIDATE_BOOLEAN);
+        $validated['is_active'] = filter_var(
+            trim((string) $request->input('is_active', true), "\"'"),
+            FILTER_VALIDATE_BOOLEAN
+        );
+        unset($validated['remove_image']);
 
         if ($request->hasFile('image')) {
             // Delete old image
@@ -86,7 +94,7 @@ class SliderController extends Controller
                 Storage::disk('public')->delete($slider->image);
             }
             $validated['image'] = $request->file('image')->store('sliders', 'public');
-        } elseif ($request->input('remove_image')) {
+        } elseif ($request->boolean('remove_image')) {
             if ($slider->image) {
                 Storage::disk('public')->delete($slider->image);
             }

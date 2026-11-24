@@ -21,6 +21,10 @@ class SecurityHeaders
             header_remove('X-Powered-By');
         }
 
+        if ($request->is('api/*')) {
+            $request->headers->set('Accept', 'application/json');
+        }
+
         try {
             $response = $next($request);
         } catch (Throwable $e) {
