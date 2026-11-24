@@ -112,7 +112,7 @@ const AccreditationStepsManagement = () => {
         description: description.trim(),
       };
 
-      if (!editingStep || icon !== editingStep.icon) {
+      if (icon !== editingStep?.icon) {
         payload.icon = icon.trim();
       }
 

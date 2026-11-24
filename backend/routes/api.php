@@ -39,11 +39,16 @@ use App\Http\Controllers\Api\ReadinessAssessmentController;
 |--------------------------------------------------------------------------
 */
 
+// Route patterns
+if (! defined('POSITIVE_INT_PATTERN')) {
+    define('POSITIVE_INT_PATTERN', '[1-9][0-9]{0,17}');
+}
+
 // Public routes
-Route::pattern('readinessAssessment', '[1-9][0-9]{0,17}');
-Route::pattern('id', '[1-9][0-9]{0,17}');
-Route::pattern('slider', '[1-9][0-9]{0,17}');
-Route::pattern('faq', '[1-9][0-9]{0,17}');
+Route::pattern('readinessAssessment', POSITIVE_INT_PATTERN);
+Route::pattern('id', POSITIVE_INT_PATTERN);
+Route::pattern('slider', POSITIVE_INT_PATTERN);
+Route::pattern('faq', POSITIVE_INT_PATTERN);
 
 Route::prefix('v1')->group(function () {
     // Homepage

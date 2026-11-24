@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Storage;
 
 class SliderController extends Controller
 {
+    private const BOOLEAN_RULE = 'nullable|in:0,1,true,false,"0","1"';
+
     /**
      * Display a listing of sliders.
      */
@@ -35,7 +37,7 @@ class SliderController extends Controller
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
             'link' => 'nullable|string|max:500',
             'order' => 'nullable|integer|min:0|max:10000',
-            'is_active' => 'nullable|in:0,1,true,false,"0","1"',
+            'is_active' => self::BOOLEAN_RULE,
         ]);
         $validated['is_active'] = filter_var(
             trim((string) $request->input('is_active', true), "\"'"),
@@ -79,8 +81,8 @@ class SliderController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'link' => 'nullable|string|max:500',
             'order' => 'nullable|integer|min:0|max:10000',
-            'is_active' => 'nullable|in:0,1,true,false,"0","1"',
-            'remove_image' => 'nullable|in:0,1,true,false,"0","1"',
+            'is_active' => self::BOOLEAN_RULE,
+            'remove_image' => self::BOOLEAN_RULE,
         ]);
         $validated['is_active'] = filter_var(
             trim((string) $request->input('is_active', true), "\"'"),
