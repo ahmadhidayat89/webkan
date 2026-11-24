@@ -39,7 +39,7 @@ class SecurityHeaders
      */
     protected function addSecurityHeaders(Response $response, Request $request): Response
     {
-        $csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';";
+        $csp = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';";
 
         $response->headers->set('Content-Security-Policy', $csp);
         $response->headers->set('X-Content-Type-Options', 'nosniff');
