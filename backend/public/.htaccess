@@ -28,7 +28,9 @@
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 
-    # Remove Server version and PHP disclosure
+    # Remove Server version and PHP disclosure (CWE-497 / WSTG-v42-INFO-02)
     Header always unset X-Powered-By
     Header unset X-Powered-By
+    Header always unset Server
+    Header unset Server
 </IfModule>

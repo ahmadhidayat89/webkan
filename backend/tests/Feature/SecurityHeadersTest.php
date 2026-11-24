@@ -42,6 +42,12 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->assertHeader('Permissions-Policy');
-        $this->assertFalse($response->headers->has('X-Powered-By'));
+        $this->assertFalse($response->headers->has('X-Powered-By'), 'X-Powered-By should not be present');
+
+        // Verify Server header does not leak version information (CWE-497)
+        if ($response->headers->has('Server')) {
+            $serverHeader = $response->headers->get('Server') ?? '';
+            $this->assertDoesNotMatchMatchesFormat('%d.%d', $serverHeader);
+        }
     }
 }

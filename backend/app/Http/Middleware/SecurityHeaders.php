@@ -52,6 +52,7 @@ class SecurityHeaders
         }
 
         $response->headers->remove('X-Powered-By');
+        $response->headers->remove('Server');
 
         return $response;
     }
