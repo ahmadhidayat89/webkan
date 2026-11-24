@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
 
@@ -42,5 +43,41 @@ class Handler extends ExceptionHandler
     public function register(): void
     {
         // Tambahkan callback reportable/renderable di sini bila diperlukan.
+    }
+
+    /**
+     * Convert an authentication exception into a response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Auth\AuthenticationException  $exception
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    protected function unauthenticated($request, AuthenticationException $exception)
+    {
+        if ($this->shouldReturnJson($request, $exception)) {
+            return response()->json(['message' => $exception->getMessage()], 401);
+        }
+
+        $redirectTo = $exception->redirectTo($request);
+
+        if (! $redirectTo) {
+            return $request->is('api/*')
+                ? response()->json(['message' => $exception->getMessage()], 401)
+                : response()->noContent(401);
+        }
+
+        return redirect()->guest($redirectTo);
+    }
+
+    /**
+     * Determine if the exception handler response should be JSON.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Throwable  $e
+     * @return bool
+     */
+    protected function shouldReturnJson($request, Throwable $e)
+    {
+        return $request->is('api/*') || parent::shouldReturnJson($request, $e);
     }
 }
